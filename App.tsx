@@ -14,6 +14,7 @@ import FieldConsultantView from './components/FieldConsultantView';
 import PruningAdvisorView from './components/PruningAdvisorView';
 import LandingPage from './components/LandingPage';
 import AdminDashboard from './components/AdminDashboard';
+import IoTDashboard from './components/IoTDashboard';
 import { UserProfile } from './types';
 import { Language } from './services/i18nService';
 
@@ -87,6 +88,7 @@ const App: React.FC = () => {
       case 'fleet': return <FleetView />;
       case 'irrigation': return <IrrigationView />;
       case 'tasks': return <TasksView />;
+      case 'iot': return <IoTDashboard />;
       case 'settings': return <SettingsView language={language} onLanguageChange={updateLanguage} />;
       default: return <Dashboard language={language} />;
     }

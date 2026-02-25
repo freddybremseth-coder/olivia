@@ -1,20 +1,30 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { 
-  DollarSign, ArrowUpRight, ArrowDownRight, Camera, Receipt, TrendingUp, 
-  Plus, X, Upload, Loader2, Sparkles, CheckCircle2, MapPin, Search, 
-  Filter, Trash2, Calendar, FileText, PieChart as PieChartIcon
+import {
+  DollarSign, ArrowUpRight, ArrowDownRight, Camera, Receipt, TrendingUp,
+  Plus, X, Upload, Loader2, Sparkles, CheckCircle2, MapPin, Search,
+  Filter, Trash2, Calendar, FileText, PieChart as PieChartIcon,
+  BarChart3, Target, Brain, ChevronRight, AlertCircle, Zap, Award
 } from 'lucide-react';
+import {
+  ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid
+} from 'recharts';
 import { geminiService } from '../services/geminiService';
-import { Transaction, Parcel } from '../types';
+import { Transaction, Parcel, Batch } from '../types';
+
+const COST_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#a855f7', '#ef4444', '#06b6d4'];
 
 const EconomyView: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [parcels, setParcels] = useState<Parcel[]>([]);
+  const [batches, setBatches] = useState<Batch[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(false);
   const [selectedParcelFilter, setSelectedParcelFilter] = useState<string>('all');
+  const [activeEconTab, setActiveEconTab] = useState<'transactions' | 'profitability'>('transactions');
+  const [isAnalyzingProfit, setIsAnalyzingProfit] = useState(false);
+  const [profitAnalysis, setProfitAnalysis] = useState<any>(null);
 
   const [newTx, setNewTx] = useState<Partial<Transaction>>({
     type: 'expense',
@@ -30,8 +40,10 @@ const EconomyView: React.FC = () => {
   const loadData = () => {
     const savedEconomy = localStorage.getItem('olivia_economy');
     const savedParcels = localStorage.getItem('olivia_parcels');
-    
+    const savedBatches = localStorage.getItem('olivia_batches');
+
     if (savedParcels) setParcels(JSON.parse(savedParcels));
+    if (savedBatches) setBatches(JSON.parse(savedBatches));
     if (savedEconomy) {
       setTransactions(JSON.parse(savedEconomy));
     } else {
@@ -80,6 +92,36 @@ const EconomyView: React.FC = () => {
     if (confirm("Slette denne transaksjonen?")) {
       const updated = transactions.filter(t => t.id !== id);
       saveTransactions(updated);
+    }
+  };
+
+  const runProfitAnalysis = async () => {
+    setIsAnalyzingProfit(true);
+    try {
+      const analysis = await geminiService.getProfitabilityAnalysis(batches, transactions, parcels, 'no');
+      setProfitAnalysis(analysis);
+    } catch (err) {
+      // Fallback: calculate locally
+      const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const costs = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Math.abs(t.amount), 0);
+      const totalKg = batches.reduce((s, b) => s + (b.weight || 0), 0);
+      setProfitAnalysis({
+        totalRevenue: income,
+        totalCosts: costs,
+        netProfit: income - costs,
+        profitMargin: income > 0 ? ((income - costs) / income) * 100 : 0,
+        revenuePerKg: totalKg > 0 ? income / totalKg : 0,
+        costPerKg: totalKg > 0 ? costs / totalKg : 0,
+        breakEvenKg: costs > 0 && income > 0 ? (costs / (income / totalKg)) : 0,
+        insights: ['Legg til mer transaksjonsdata for dypere analyse', 'Koble til AI for avanserte innsikter'],
+        parcelROI: parcels.map(p => {
+          const pIncome = transactions.filter(t => t.parcelId === p.id && t.type === 'income').reduce((s, t) => s + t.amount, 0);
+          const pCosts = transactions.filter(t => t.parcelId === p.id && t.type === 'expense').reduce((s, t) => s + Math.abs(t.amount), 0);
+          return { parcelId: p.id, roi: pCosts > 0 ? ((pIncome - pCosts) / pCosts) * 100 : 0, revenue: pIncome, costs: pCosts };
+        })
+      });
+    } finally {
+      setIsAnalyzingProfit(false);
     }
   };
 
@@ -166,6 +208,16 @@ const EconomyView: React.FC = () => {
         </div>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="flex gap-4 border-b border-white/10 pb-4">
+        <button onClick={() => setActiveEconTab('transactions')} className={`text-sm font-bold uppercase tracking-widest pb-1.5 border-b-2 transition-all ${activeEconTab === 'transactions' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'}`}>
+          Transaksjoner
+        </button>
+        <button onClick={() => setActiveEconTab('profitability')} className={`text-sm font-bold uppercase tracking-widest pb-1.5 border-b-2 transition-all flex items-center gap-2 ${activeEconTab === 'profitability' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'}`}>
+          <Target size={14} /> Lønnsomhetsanalyse
+        </button>
+      </div>
+
       {/* Finansielle Kort */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass rounded-[2rem] p-8 border border-white/10 relative overflow-hidden bg-gradient-to-br from-green-500/5 to-transparent">
@@ -202,6 +254,108 @@ const EconomyView: React.FC = () => {
         </div>
       </div>
 
+      {/* Profitability Analysis Tab */}
+      {activeEconTab === 'profitability' && (
+        <div className="space-y-8">
+          {!profitAnalysis ? (
+            <div className="glass rounded-[2.5rem] p-12 border border-white/10 text-center space-y-6">
+              <div className="p-6 bg-green-500/10 rounded-full w-fit mx-auto">
+                <Brain size={48} className="text-green-400" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-2">AI Lønnsomhetsanalyse</h3>
+                <p className="text-slate-400 text-sm max-w-md mx-auto">
+                  Analyser gårdens økonomi med AI – få innsikt i ROI per parsell, kostnad per kg, break-even og konkrete forbedringstips.
+                </p>
+              </div>
+              <button
+                onClick={runProfitAnalysis}
+                disabled={isAnalyzingProfit}
+                className="bg-green-500 hover:bg-green-400 disabled:opacity-50 text-black px-10 py-5 rounded-2xl font-bold transition-all shadow-xl shadow-green-500/20 flex items-center gap-3 mx-auto"
+              >
+                {isAnalyzingProfit ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
+                {isAnalyzingProfit ? 'Analyserer...' : 'Start lønnsomhetsanalyse'}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6 animate-in fade-in">
+              {/* Key Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: 'Netto fortjeneste', value: `€${(profitAnalysis.netProfit || 0).toLocaleString()}`, color: profitAnalysis.netProfit >= 0 ? 'text-green-400' : 'text-red-400', icon: <TrendingUp size={20} /> },
+                  { label: 'Margin', value: `${(profitAnalysis.profitMargin || 0).toFixed(1)}%`, color: 'text-blue-400', icon: <BarChart3 size={20} /> },
+                  { label: 'Inntekt/kg', value: `€${(profitAnalysis.revenuePerKg || 0).toFixed(2)}`, color: 'text-yellow-400', icon: <Award size={20} /> },
+                  { label: 'Kostnad/kg', value: `€${(profitAnalysis.costPerKg || 0).toFixed(2)}`, color: 'text-orange-400', icon: <Target size={20} /> }
+                ].map(m => (
+                  <div key={m.label} className="glass rounded-[2rem] p-6 border border-white/10">
+                    <div className={`${m.color} mb-2`}>{m.icon}</div>
+                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">{m.label}</p>
+                    <p className={`text-2xl font-bold ${m.color} mt-1`}>{m.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Break-even */}
+              <div className="glass rounded-[2rem] p-6 border border-yellow-500/20 bg-yellow-500/5">
+                <div className="flex items-center gap-3 mb-3">
+                  <Target size={20} className="text-yellow-400" />
+                  <h4 className="font-bold text-white">Break-even Analyse</h4>
+                </div>
+                <p className="text-slate-300 text-sm">
+                  Du trenger å selge <span className="text-yellow-400 font-bold">{(profitAnalysis.breakEvenKg || 0).toFixed(0)} kg</span> oliven for å dekke alle kostnader.
+                  Nåværende produksjon: <span className="text-white font-bold">{batches.reduce((s, b) => s + b.weight, 0)} kg</span>
+                </p>
+              </div>
+
+              {/* ROI per Parcel */}
+              {profitAnalysis.parcelROI && profitAnalysis.parcelROI.length > 0 && (
+                <div className="glass rounded-[2.5rem] p-8 border border-white/10">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">ROI per Parsell</h3>
+                  <div className="h-56">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={profitAnalysis.parcelROI.map((r: any) => ({
+                        name: parcels.find(p => p.id === r.parcelId)?.name || 'Ukjent',
+                        roi: Math.round(r.roi),
+                        inntekt: r.revenue,
+                        kostnader: r.costs
+                      }))}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                        <XAxis dataKey="name" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
+                        <Tooltip contentStyle={{ background: '#0a0a0b', border: '1px solid #333', borderRadius: '12px', fontSize: '11px' }} formatter={(v: any) => [`${v}%`, 'ROI']} />
+                        <Bar dataKey="roi" fill="#22c55e" radius={[6, 6, 0, 0]} name="ROI %" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+              {/* AI Insights */}
+              {profitAnalysis.insights && profitAnalysis.insights.length > 0 && (
+                <div className="glass rounded-[2.5rem] p-8 border border-purple-500/20 bg-purple-500/5">
+                  <h3 className="text-sm font-bold text-purple-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <Sparkles size={16} /> AI Forbedringstips
+                  </h3>
+                  <div className="space-y-3">
+                    {profitAnalysis.insights.map((insight: string, i: number) => (
+                      <div key={i} className="flex gap-3 items-start">
+                        <div className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</div>
+                        <p className="text-sm text-slate-300">{insight}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button onClick={() => setProfitAnalysis(null)} className="text-slate-500 hover:text-white text-sm font-bold flex items-center gap-2">
+                <Zap size={14} /> Kjør ny analyse
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeEconTab === 'transactions' && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 glass rounded-[2.5rem] border border-white/10 overflow-hidden">
           <div className="p-8 border-b border-white/10 flex justify-between items-center bg-white/5">
@@ -276,26 +430,68 @@ const EconomyView: React.FC = () => {
         <div className="space-y-6">
           <div className="glass rounded-[2.5rem] p-8 border border-white/10 bg-white/5">
              <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-6">Kostnadsfordeling</h3>
-             <div className="space-y-4">
-                {['Gjødsel', 'Arbeidskraft', 'Vedlikehold', 'Vann', 'Annet'].map((cat, i) => {
+             {/* Pie Chart */}
+             {(() => {
+               const cats = ['Gjødsel', 'Arbeidskraft', 'Vedlikehold', 'Vann', 'Sprøytemiddel', 'Annet'];
+               const data = cats.map((cat, i) => ({
+                 name: cat,
+                 value: filteredTransactions.filter(t => t.category === cat && t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0),
+                 color: COST_COLORS[i]
+               })).filter(d => d.value > 0);
+               return data.length > 0 ? (
+                 <div className="h-36 mb-4">
+                   <ResponsiveContainer width="100%" height="100%">
+                     <PieChart>
+                       <Pie data={data} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={3} dataKey="value">
+                         {data.map((entry, index) => <Cell key={index} fill={entry.color} />)}
+                       </Pie>
+                       <Tooltip contentStyle={{ background: '#0a0a0b', border: '1px solid #333', borderRadius: '12px', fontSize: '11px' }} formatter={(v: any) => [`€${v.toLocaleString()}`, '']} />
+                     </PieChart>
+                   </ResponsiveContainer>
+                 </div>
+               ) : null;
+             })()}
+             <div className="space-y-3">
+                {['Gjødsel', 'Arbeidskraft', 'Vedlikehold', 'Vann', 'Sprøytemiddel', 'Annet'].map((cat, i) => {
                   const catTotal = filteredTransactions.filter(t => t.category === cat && t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0);
                   const percentage = stats.expense > 0 ? (catTotal / stats.expense) * 100 : 0;
+                  if (catTotal === 0) return null;
                   return (
                     <div key={cat}>
-                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
-                        <span>{cat}</span>
-                        <span>€{catTotal.toLocaleString()}</span>
+                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">
+                        <span className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full" style={{ background: COST_COLORS[i] }} />
+                          {cat}
+                        </span>
+                        <span>€{catTotal.toLocaleString()} ({percentage.toFixed(0)}%)</span>
                       </div>
                       <div className="w-full bg-white/5 h-1 rounded-full">
-                        <div className={`h-full rounded-full ${['bg-green-500', 'bg-blue-500', 'bg-yellow-500', 'bg-purple-500', 'bg-slate-500'][i]}`} style={{ width: `${percentage}%` }}></div>
+                        <div className="h-full rounded-full transition-all" style={{ width: `${percentage}%`, background: COST_COLORS[i] }}></div>
                       </div>
                     </div>
                   );
                 })}
              </div>
           </div>
+
+          {/* Quick Profitability Button */}
+          <button
+            onClick={() => setActiveEconTab('profitability')}
+            className="w-full glass rounded-2xl p-5 border border-green-500/20 bg-green-500/5 hover:bg-green-500/10 transition-all flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-3">
+              <Target size={20} className="text-green-400" />
+              <div className="text-left">
+                <p className="text-sm font-bold text-white">Lønnsomhetsanalyse</p>
+                <p className="text-[10px] text-slate-500">ROI, break-even, AI-tips</p>
+              </div>
+            </div>
+            <ChevronRight size={16} className="text-green-400 group-hover:translate-x-1 transition-transform" />
+          </button>
         </div>
       </div>
+      )}
+
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
