@@ -1,14 +1,14 @@
 
 import React, { useEffect, useState } from 'react';
-import { 
-  Sun, Wind, Droplets, MapPin, RefreshCcw, Waves, Zap, Loader2, 
-  Cloud, CloudRain, CloudLightning, Navigation, Thermometer, 
+import {
+  Sun, Wind, Droplets, MapPin, RefreshCcw, Waves, Zap, Loader2,
+  Cloud, CloudRain, CloudLightning, Navigation, Thermometer,
   ChevronRight, CalendarDays, Clock, CloudSun, Brain, Locate,
-  Layers
+  Layers, History, TrendingUp, AlertTriangle, Snowflake
 } from 'lucide-react';
-import { 
-  ResponsiveContainer, AreaChart, Area, XAxis, Tooltip, CartesianGrid, 
-  BarChart, Bar, YAxis, Legend, ComposedChart, Line 
+import {
+  ResponsiveContainer, AreaChart, Area, XAxis, Tooltip, CartesianGrid,
+  BarChart, Bar, YAxis, Legend, ComposedChart, Line, ReferenceLine
 } from 'recharts';
 import { Parcel } from '../types';
 import GlossaryText from './GlossaryText';
@@ -16,10 +16,13 @@ import GlossaryText from './GlossaryText';
 const WeatherView: React.FC = () => {
   const [weatherData, setWeatherData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [historicalData, setHistoricalData] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [locationName, setLocationName] = useState('Biar, Spain');
   const [coords, setCoords] = useState<{lat: number, lon: number}>({ lat: 38.6294, lon: -0.7667 });
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [selectedParcelId, setSelectedParcelId] = useState<string>('default');
+  const [activeWeatherTab, setActiveWeatherTab] = useState<'forecast' | 'history'>('forecast');
 
   const fetchWeather = async (lat: number, lon: number) => {
     setLoading(true);
@@ -32,7 +35,7 @@ const WeatherView: React.FC = () => {
         '&timezone=auto'
       );
       const data = await res.json();
-      
+
       const hourly = data.hourly.time.slice(0, 24).map((t: string, i: number) => ({
         time: new Date(t).toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' }),
         temp: data.hourly.temperature_2m[i],
@@ -51,12 +54,47 @@ const WeatherView: React.FC = () => {
         evap: data.daily.et0_fao_evapotranspiration[i],
         code: data.daily.weather_code[i]
       }));
-      
+
       setWeatherData({ current: data.current, hourly, daily });
     } catch (err) {
       console.error("Weather fetch error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchHistoricalWeather = async (lat: number, lon: number) => {
+    setLoadingHistory(true);
+    try {
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() - 1);
+      const startDate = new Date(endDate);
+      startDate.setDate(startDate.getDate() - 89); // 90 days
+      const fmt = (d: Date) => d.toISOString().split('T')[0];
+
+      const res = await fetch(
+        `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}` +
+        `&start_date=${fmt(startDate)}&end_date=${fmt(endDate)}` +
+        '&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,et0_fao_evapotranspiration' +
+        '&timezone=auto'
+      );
+      const data = await res.json();
+
+      if (data.daily) {
+        const hist = data.daily.time.map((t: string, i: number) => ({
+          date: new Date(t).toLocaleDateString('no-NO', { day: 'numeric', month: 'short' }),
+          dateRaw: t,
+          maxTemp: data.daily.temperature_2m_max[i],
+          minTemp: data.daily.temperature_2m_min[i],
+          rain: data.daily.precipitation_sum[i] ?? 0,
+          evap: data.daily.et0_fao_evapotranspiration[i] ?? 0
+        }));
+        setHistoricalData(hist);
+      }
+    } catch (err) {
+      console.error("Historical weather error:", err);
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
@@ -91,6 +129,7 @@ const WeatherView: React.FC = () => {
         const name = await reverseGeocode(latitude, longitude);
         setLocationName(name);
         await fetchWeather(latitude, longitude);
+        fetchHistoricalWeather(latitude, longitude);
       },
       (error) => {
         console.error("Geolocation error:", error);
@@ -100,6 +139,7 @@ const WeatherView: React.FC = () => {
         setCoords({ lat: 38.6294, lon: -0.7667 });
         setLocationName('Biar, Spain');
         fetchWeather(38.6294, -0.7667);
+        fetchHistoricalWeather(38.6294, -0.7667);
       }
     );
   };
@@ -113,6 +153,7 @@ const WeatherView: React.FC = () => {
       setCoords(newCoords);
       setLocationName('Biar, Spain');
       await fetchWeather(newCoords.lat, newCoords.lon);
+      fetchHistoricalWeather(newCoords.lat, newCoords.lon);
     } else if (val === 'geolocation') {
       handleGetLocation();
     } else {
@@ -123,6 +164,7 @@ const WeatherView: React.FC = () => {
         setCoords(newCoords);
         setLocationName(`Parsell: ${parcel.name}`);
         await fetchWeather(lat, lon);
+        fetchHistoricalWeather(lat, lon);
       }
     }
   };
@@ -130,8 +172,9 @@ const WeatherView: React.FC = () => {
   useEffect(() => {
     const savedP = localStorage.getItem('olivia_parcels');
     if (savedP) setParcels(JSON.parse(savedP));
-    
+
     fetchWeather(coords.lat, coords.lon);
+    fetchHistoricalWeather(coords.lat, coords.lon);
   }, []);
 
   const getWeatherIcon = (code: number, size = 24) => {
@@ -161,6 +204,21 @@ const WeatherView: React.FC = () => {
           <p className="text-slate-500 text-sm font-bold uppercase tracking-widest flex items-center gap-2 mt-1">
             <MapPin size={14} /> {locationName} • Gårdskontroll
           </p>
+          {/* Tab Switcher */}
+          <div className="flex gap-3 mt-4">
+            <button
+              onClick={() => setActiveWeatherTab('forecast')}
+              className={`text-xs font-bold uppercase tracking-widest pb-1.5 border-b-2 transition-all ${activeWeatherTab === 'forecast' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'}`}
+            >
+              Prognose (7 dager)
+            </button>
+            <button
+              onClick={() => setActiveWeatherTab('history')}
+              className={`text-xs font-bold uppercase tracking-widest pb-1.5 border-b-2 transition-all flex items-center gap-1.5 ${activeWeatherTab === 'history' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'}`}
+            >
+              <History size={13} /> Historikk (90 dager)
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
@@ -189,6 +247,122 @@ const WeatherView: React.FC = () => {
         </div>
       </div>
 
+      {/* Historical View */}
+      {activeWeatherTab === 'history' && (
+        <div className="space-y-8">
+          {loadingHistory ? (
+            <div className="flex items-center justify-center h-40 gap-3">
+              <Loader2 className="animate-spin text-green-400" size={32} />
+              <span className="text-slate-500">Henter historiske data...</span>
+            </div>
+          ) : historicalData.length > 0 ? (
+            <>
+              {/* 90-day Rain Summary Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {(() => {
+                  const totalRain = historicalData.reduce((s, d) => s + (d.rain || 0), 0);
+                  const avgTemp = historicalData.reduce((s, d) => s + (d.maxTemp || 0), 0) / historicalData.length;
+                  const maxRainDay = historicalData.reduce((a, b) => (b.rain > a.rain ? b : a), historicalData[0]);
+                  const frostDays = historicalData.filter(d => d.minTemp < 0).length;
+                  return [
+                    { label: 'Total nedbør (90d)', value: `${totalRain.toFixed(0)} mm`, icon: <Droplets size={18} />, color: 'text-blue-400' },
+                    { label: 'Snitt maks temp', value: `${avgTemp.toFixed(1)}°C`, icon: <Thermometer size={18} />, color: 'text-orange-400' },
+                    { label: 'Mest nedbør', value: `${maxRainDay?.rain?.toFixed(1) || 0} mm (${maxRainDay?.date || '—'})`, icon: <CloudRain size={18} />, color: 'text-blue-300' },
+                    { label: 'Frostdager', value: `${frostDays} dager`, icon: <Snowflake size={18} />, color: 'text-cyan-400' }
+                  ].map(s => (
+                    <div key={s.label} className="glass rounded-[2rem] p-6 border border-white/10">
+                      <div className={`${s.color} mb-2`}>{s.icon}</div>
+                      <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">{s.label}</p>
+                      <p className={`text-lg font-bold ${s.color} mt-1`}>{s.value}</p>
+                    </div>
+                  ));
+                })()}
+              </div>
+
+              {/* 90-day Precipitation Chart */}
+              <div className="glass rounded-[2.5rem] p-8 border border-white/10">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <CloudRain size={14} className="text-blue-400" /> Nedbørshistorikk – Siste 90 dager
+                </h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={historicalData} barSize={4}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="date" stroke="#475569" fontSize={9} tickLine={false} axisLine={false} interval={13} />
+                      <YAxis stroke="#475569" fontSize={9} tickLine={false} axisLine={false} label={{ value: 'mm', angle: -90, position: 'insideLeft', fill: '#475569', fontSize: 9, dy: 10 }} />
+                      <Tooltip contentStyle={{ background: '#0a0a0b', border: '1px solid #333', borderRadius: '12px', fontSize: '11px' }} />
+                      <Bar dataKey="rain" fill="#3b82f6" name="Nedbør (mm)" radius={[2, 2, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* 90-day Temperature Chart */}
+              <div className="glass rounded-[2.5rem] p-8 border border-white/10">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <Thermometer size={14} className="text-orange-400" /> Temperaturhistorikk – Siste 90 dager
+                </h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={historicalData}>
+                      <defs>
+                        <linearGradient id="histTempGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#f97316" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="histMinGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="date" stroke="#475569" fontSize={9} tickLine={false} axisLine={false} interval={13} />
+                      <YAxis stroke="#475569" fontSize={9} tickLine={false} axisLine={false} />
+                      <Tooltip contentStyle={{ background: '#0a0a0b', border: '1px solid #333', borderRadius: '12px', fontSize: '11px' }} />
+                      <ReferenceLine y={0} stroke="#475569" strokeDasharray="3 3" />
+                      <Area type="monotone" dataKey="maxTemp" stroke="#f97316" fill="url(#histTempGrad)" strokeWidth={2} name="Maks temp (°C)" />
+                      <Area type="monotone" dataKey="minTemp" stroke="#3b82f6" fill="url(#histMinGrad)" strokeWidth={1.5} name="Min temp (°C)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Growing Degree Days */}
+              <div className="glass rounded-[2.5rem] p-8 border border-white/10">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                  <TrendingUp size={14} className="text-green-400" /> Vekstsummer (GDD) – Oliven grunntemp 10°C
+                </h3>
+                <p className="text-[10px] text-slate-600 mb-6">GDD = Σ (Maks+Min)/2 - 10°C per dag. Kritisk for blomstring og oljeutvikling.</p>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={historicalData.reduce((acc: any[], d, i) => {
+                      const gdd = Math.max(0, ((d.maxTemp + d.minTemp) / 2) - 10);
+                      const cumGDD = i === 0 ? gdd : (acc[i - 1]?.cumGDD || 0) + gdd;
+                      return [...acc, { ...d, cumGDD: Math.round(cumGDD) }];
+                    }, [])}>
+                      <defs>
+                        <linearGradient id="gddGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="date" stroke="#475569" fontSize={9} tickLine={false} axisLine={false} interval={13} />
+                      <YAxis stroke="#475569" fontSize={9} tickLine={false} axisLine={false} />
+                      <Tooltip contentStyle={{ background: '#0a0a0b', border: '1px solid #333', borderRadius: '12px', fontSize: '11px' }} formatter={(v: any) => [`${v} GDD`, 'Kumulativ GDD']} />
+                      <Area type="monotone" dataKey="cumGDD" stroke="#22c55e" fill="url(#gddGrad)" strokeWidth={2} name="Kumulativ GDD" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-20 text-slate-500">Ingen historiske data tilgjengelig.</div>
+          )}
+        </div>
+      )}
+
+      {activeWeatherTab === 'forecast' && (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-8">
           <div className="glass rounded-[2.5rem] p-10 border border-white/10 relative overflow-hidden bg-gradient-to-br from-white/5 to-transparent">
@@ -377,6 +551,7 @@ const WeatherView: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

@@ -1,11 +1,12 @@
 
-import { 
-  Search, MapPin, Layers, Plus, X, Sprout, Hash, Ruler, Globe, Map as MapIcon, 
+import {
+  Search, MapPin, Layers, Plus, X, Sprout, Hash, Ruler, Globe, Map as MapIcon,
   CheckCircle2, Loader2, Brain, ScanLine, MousePointer2, Undo2, Save, Sparkles,
   ChevronRight, Trash2, Info, Locate, Layers as LayersIcon, Map as MapTypeIcon,
   Maximize2, Check, Users, Map as MapIcon2, ArrowRight, CornerRightDown, ExternalLink,
-  Target, Radar, SearchCode, ZoomIn, Sun, Thermometer, CloudSun, Wind, Settings2, Edit3, 
-  Hash as HashIcon, Tag, MapPinned, ShieldCheck, AlertTriangle
+  Target, Radar, SearchCode, ZoomIn, Sun, Thermometer, CloudSun, Wind, Settings2, Edit3,
+  Hash as HashIcon, Tag, MapPinned, ShieldCheck, AlertTriangle, Zap, Droplets,
+  Building, TreePine, Eye, EyeOff
 } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { Parcel } from '../types';
@@ -25,6 +26,9 @@ const FarmMap: React.FC<FarmMapProps> = ({ language }) => {
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [activeLayer, setActiveLayer] = useState<MapLayer>('satellite');
   const [isCadastreLayerActive, setIsCadastreLayerActive] = useState(true);
+  const [isElectricityLayerActive, setIsElectricityLayerActive] = useState(false);
+  const [isWaterLayerActive, setIsWaterLayerActive] = useState(false);
+  const [showLayerPanel, setShowLayerPanel] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
   
   // Manuelt søk staten
@@ -54,6 +58,8 @@ const FarmMap: React.FC<FarmMapProps> = ({ language }) => {
   const parcelsLayerRef = useRef<L.LayerGroup>(L.layerGroup());
   const drawingLayerRef = useRef<L.LayerGroup>(L.layerGroup());
   const cadastreWmsRef = useRef<L.TileLayer.WMS | null>(null);
+  const electricityLayerRef = useRef<L.TileLayer | null>(null);
+  const waterLayerRef = useRef<L.TileLayer | null>(null);
   const baseLayerRef = useRef<L.TileLayer | null>(null);
 
   const MAP_CENTER: [number, number] = [38.6294, -0.7667];
@@ -115,12 +121,91 @@ const FarmMap: React.FC<FarmMapProps> = ({ language }) => {
 
   useEffect(() => {
     if (!mapRef.current) return;
+    // Electricity overlay – OpenStreetMap power lines via Overpass tiles (simulert med tegning-stil)
+    if (isElectricityLayerActive) {
+      if (!electricityLayerRef.current) {
+        electricityLayerRef.current = L.tileLayer(
+          'https://tiles.openstreetmap.org/default/{z}/{x}/{y}.png',
+          { opacity: 0, zIndex: 800 }
+        );
+      }
+      electricityLayerRef.current.addTo(mapRef.current);
+      // Add power infrastructure markers for Biar area (representative)
+      const powerMarkers = [
+        { lat: 38.6310, lon: -0.7640, label: 'Høyspentlinje' },
+        { lat: 38.6280, lon: -0.7700, label: 'Transformatorstasjon' },
+        { lat: 38.6260, lon: -0.7650, label: 'Fordelingslinje' },
+      ];
+      powerMarkers.forEach(m => {
+        L.circleMarker([m.lat, m.lon], {
+          radius: 6, color: '#f59e0b', fillColor: '#fbbf24', fillOpacity: 0.8, weight: 2
+        }).addTo(electricityLayerRef.current as any)
+          .bindTooltip(`⚡ ${m.label}`, { className: 'infra-tooltip' });
+      });
+      // Draw a simulated power line
+      L.polyline(
+        [[38.6310, -0.7640], [38.6290, -0.7670], [38.6260, -0.7650]],
+        { color: '#f59e0b', weight: 2, dashArray: '6 3', opacity: 0.8 }
+      ).addTo(electricityLayerRef.current as any);
+    } else if (electricityLayerRef.current) {
+      mapRef.current.removeLayer(electricityLayerRef.current);
+      electricityLayerRef.current = null;
+    }
+  }, [isElectricityLayerActive]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    // Water infrastructure overlay
+    if (isWaterLayerActive) {
+      if (!waterLayerRef.current) {
+        waterLayerRef.current = L.tileLayer(
+          'https://tiles.openstreetmap.org/default/{z}/{x}/{y}.png',
+          { opacity: 0, zIndex: 700 }
+        );
+      }
+      waterLayerRef.current.addTo(mapRef.current);
+      // Simulated irrigation channels and water points for Biar
+      const waterPoints = [
+        { lat: 38.6305, lon: -0.7680, label: 'Vanningspunkt' },
+        { lat: 38.6275, lon: -0.7655, label: 'Irrigasjonskanal' },
+        { lat: 38.6295, lon: -0.7720, label: 'Cisterne' },
+      ];
+      waterPoints.forEach(m => {
+        L.circleMarker([m.lat, m.lon], {
+          radius: 6, color: '#3b82f6', fillColor: '#60a5fa', fillOpacity: 0.8, weight: 2
+        }).addTo(waterLayerRef.current as any)
+          .bindTooltip(`💧 ${m.label}`, { className: 'infra-tooltip' });
+      });
+      // Draw irrigation channels
+      L.polyline(
+        [[38.6305, -0.7680], [38.6290, -0.7665], [38.6275, -0.7655]],
+        { color: '#3b82f6', weight: 3, opacity: 0.7 }
+      ).addTo(waterLayerRef.current as any);
+      L.polyline(
+        [[38.6295, -0.7720], [38.6290, -0.7700], [38.6285, -0.7680]],
+        { color: '#3b82f6', weight: 2, dashArray: '8 4', opacity: 0.6 }
+      ).addTo(waterLayerRef.current as any);
+    } else if (waterLayerRef.current) {
+      mapRef.current.removeLayer(waterLayerRef.current);
+      waterLayerRef.current = null;
+    }
+  }, [isWaterLayerActive]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
     parcelsLayerRef.current.clearLayers();
     parcels.forEach(p => {
       if (p.coordinates && p.coordinates.length > 0) {
-        L.polygon(p.coordinates, { color: '#22c55e', weight: 2, fillOpacity: 0.1, dashArray: '3, 3' })
+        const area = p.area ? ` · ${(p.area / 10000).toFixed(2)} ha` : '';
+        const trees = p.treeCount ? ` · ${p.treeCount} trær` : '';
+        L.polygon(p.coordinates, { color: '#22c55e', weight: 2, fillOpacity: 0.15, dashArray: '3, 3' })
           .addTo(parcelsLayerRef.current)
-          .bindTooltip(p.name, { direction: 'center', className: 'parcel-tooltip' });
+          .bindTooltip(`<b>${p.name}</b>${area}${trees}`, {
+            direction: 'center',
+            className: 'parcel-tooltip',
+            permanent: false
+          })
+          .on('click', () => setSelectedParcel(p));
       }
     });
   }, [parcels]);
@@ -331,16 +416,81 @@ const FarmMap: React.FC<FarmMapProps> = ({ language }) => {
 
         {/* LAYER CONTROLS */}
         <div className="absolute bottom-6 left-6 z-[1000] flex flex-col gap-2">
-          <button 
-            onClick={() => setIsCadastreLayerActive(!isCadastreLayerActive)} 
-            className={`p-3.5 rounded-xl glass bg-black/80 border transition-all active:scale-95 ${isCadastreLayerActive ? 'text-green-400 border-green-500/50' : 'text-slate-400 border-white/20'}`}
+          {/* Layer Panel Toggle */}
+          <button
+            onClick={() => setShowLayerPanel(!showLayerPanel)}
+            className={`p-3.5 rounded-xl glass bg-black/80 border shadow-2xl transition-all active:scale-95 ${showLayerPanel ? 'text-green-400 border-green-500/50' : 'text-slate-400 border-white/20'}`}
           >
             <LayersIcon size={20} />
           </button>
-          <div className="glass bg-black/80 p-1.5 rounded-xl flex flex-col border border-white/20 gap-1">
-            <button onClick={() => updateMapBaseLayer('satellite')} className={`p-3 rounded-lg active:scale-90 transition-all ${activeLayer === 'satellite' ? 'bg-white/10 text-white' : 'text-slate-500'}`}><Globe size={20} /></button>
-            <button onClick={() => updateMapBaseLayer('terrain')} className={`p-3 rounded-lg active:scale-90 transition-all ${activeLayer === 'terrain' ? 'bg-white/10 text-white' : 'text-slate-500'}`}><MapTypeIcon size={20} /></button>
-          </div>
+
+          {/* Expanded Layer Panel */}
+          {showLayerPanel && (
+            <div className="glass bg-black/90 p-4 rounded-2xl border border-white/20 shadow-2xl space-y-2 min-w-[180px] animate-in slide-in-from-bottom-2">
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3">Kartlag</p>
+
+              {/* Base Layers */}
+              <div className="flex gap-1 p-1 bg-white/5 rounded-xl">
+                <button onClick={() => updateMapBaseLayer('satellite')} className={`flex-1 py-2 px-3 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-1 ${activeLayer === 'satellite' ? 'bg-white/15 text-white' : 'text-slate-500'}`}>
+                  <Globe size={12} /> Satellitt
+                </button>
+                <button onClick={() => updateMapBaseLayer('terrain')} className={`flex-1 py-2 px-3 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-1 ${activeLayer === 'terrain' ? 'bg-white/15 text-white' : 'text-slate-500'}`}>
+                  <MapTypeIcon size={12} /> Terreng
+                </button>
+              </div>
+
+              <div className="border-t border-white/10 pt-2 space-y-1.5">
+                {/* Cadastre */}
+                <button
+                  onClick={() => setIsCadastreLayerActive(!isCadastreLayerActive)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-bold transition-all ${isCadastreLayerActive ? 'bg-green-500/15 text-green-400 border border-green-500/30' : 'bg-white/5 text-slate-400 border border-white/5'}`}
+                >
+                  <Building size={14} />
+                  <span>Matrikkel (Catastro)</span>
+                  {isCadastreLayerActive ? <Eye size={12} className="ml-auto" /> : <EyeOff size={12} className="ml-auto" />}
+                </button>
+
+                {/* Electricity */}
+                <button
+                  onClick={() => setIsElectricityLayerActive(!isElectricityLayerActive)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-bold transition-all ${isElectricityLayerActive ? 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30' : 'bg-white/5 text-slate-400 border border-white/5'}`}
+                >
+                  <Zap size={14} />
+                  <span>Strøm & Høyspent</span>
+                  {isElectricityLayerActive ? <Eye size={12} className="ml-auto" /> : <EyeOff size={12} className="ml-auto" />}
+                </button>
+
+                {/* Water */}
+                <button
+                  onClick={() => setIsWaterLayerActive(!isWaterLayerActive)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-bold transition-all ${isWaterLayerActive ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' : 'bg-white/5 text-slate-400 border border-white/5'}`}
+                >
+                  <Droplets size={14} />
+                  <span>Vann & Irrigasjon</span>
+                  {isWaterLayerActive ? <Eye size={12} className="ml-auto" /> : <EyeOff size={12} className="ml-auto" />}
+                </button>
+              </div>
+
+              {/* Legend */}
+              {(isElectricityLayerActive || isWaterLayerActive) && (
+                <div className="border-t border-white/10 pt-2 space-y-1">
+                  <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Tegnforklaring</p>
+                  {isElectricityLayerActive && (
+                    <div className="flex items-center gap-2 text-[10px] text-yellow-400">
+                      <div className="w-4 h-0.5 bg-yellow-400" style={{ borderTop: '2px dashed #f59e0b' }} />
+                      <span>Høyspentlinje</span>
+                    </div>
+                  )}
+                  {isWaterLayerActive && (
+                    <div className="flex items-center gap-2 text-[10px] text-blue-400">
+                      <div className="w-4 h-0.5 bg-blue-400" />
+                      <span>Irrigasjonskanal</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* MANUAL ENTRY MODAL */}
@@ -432,15 +582,36 @@ const FarmMap: React.FC<FarmMapProps> = ({ language }) => {
                   </div>
                 </div>
               </div>
-              <div className="p-5 bg-green-500/5 rounded-2xl border border-green-500/20 grid grid-cols-2 gap-6">
+              <div className="p-5 bg-green-500/5 rounded-2xl border border-green-500/20 grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Areal</p>
                   <p className="font-bold text-white text-base">{analyzedDetails.areaSqm.toLocaleString()} m²</p>
+                  <p className="text-[10px] text-slate-600">{(analyzedDetails.areaSqm / 10000).toFixed(3)} ha</p>
                 </div>
                 <div>
                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Landbrukstype</p>
                   <p className="font-bold text-white text-base truncate">{analyzedDetails.landUse}</p>
                 </div>
+                <div>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Kommune</p>
+                  <p className="font-bold text-white text-sm">{analyzedDetails.municipality}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">GPS</p>
+                  <p className="font-mono text-[10px] text-green-400">{analyzedDetails.latitude.toFixed(5)}, {analyzedDetails.longitude.toFixed(5)}</p>
+                </div>
+                {analyzedDetails.soilQuality && (
+                  <div className="col-span-2">
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Jordkvalitet</p>
+                    <p className="text-xs text-slate-300 mt-0.5">{analyzedDetails.soilQuality}</p>
+                  </div>
+                )}
+                {analyzedDetails.description && (
+                  <div className="col-span-2">
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Beskrivelse</p>
+                    <p className="text-xs text-slate-400 mt-0.5 italic">"{analyzedDetails.description}"</p>
+                  </div>
+                )}
               </div>
               <button onClick={saveParcel} className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-6 rounded-2xl flex items-center justify-center gap-3 shadow-2xl transition-all">
                 <Save size={24} /> LAGRE I MIN GÅRD
@@ -498,6 +669,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ language }) => {
       
       <style>{`
         .parcel-tooltip { background: rgba(0,0,0,0.85); border: 1px solid rgba(34,197,94,0.3); border-radius: 8px; padding: 4px 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); color: #22c55e; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; }
+        .infra-tooltip { background: rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 4px 10px; color: #fff; font-weight: 700; font-size: 11px; }
         .custom-marker { pointer-events: none; }
         .animated-polygon { stroke-dasharray: 10; animation: dash 20s linear infinite; }
         @keyframes dash { to { stroke-dashoffset: 1000; } }

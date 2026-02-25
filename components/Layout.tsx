@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { 
-  LayoutDashboard, Map as MapIcon, CloudSun, Sprout, TrendingUp, Truck, Droplets, 
-  ClipboardList, Settings, LogOut, ShieldCheck, Sparkles, Scissors, Menu, X, ChevronLeft, ChevronRight, User
+import {
+  LayoutDashboard, Map as MapIcon, CloudSun, Sprout, TrendingUp, Truck, Droplets,
+  ClipboardList, Settings, LogOut, ShieldCheck, Sparkles, Scissors, Menu, X, ChevronLeft, ChevronRight, User,
+  Activity
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { Language, getTranslation } from '../services/i18nService';
@@ -31,6 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
     { id: 'fleet', icon: Truck, label: getTranslation('fleet', language) },
     { id: 'irrigation', icon: Droplets, label: getTranslation('irrigation', language) },
     { id: 'tasks', icon: ClipboardList, label: getTranslation('tasks', language) },
+    { id: 'iot', icon: Activity, label: 'IoT Sensorer' },
   ];
 
   const adminItems = user.role === 'super_admin' ? [

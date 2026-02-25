@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Sprout, X, ShoppingCart, Layers, Star, Edit3, Wand2, 
-  TrendingUp, History, Info, Sparkles, BarChart3, LineChart, 
+import {
+  Plus, Sprout, X, ShoppingCart, Layers, Star, Edit3, Wand2,
+  TrendingUp, History, Info, Sparkles, BarChart3, LineChart,
   Target, Award, Archive, Trash2, CheckCircle2, FlaskConical,
   Scale, Calendar, MapPin, ChevronRight, Loader2, RefreshCcw,
   ChefHat, Save, MessageSquare, AlertCircle, Utensils,
-  PlusCircle, MinusCircle, Check
+  PlusCircle, MinusCircle, Check, Clock, BookOpen,
+  Droplets, Thermometer, Timer
 } from 'lucide-react';
 import { Batch, Parcel, Recipe, Ingredient } from '../types';
 import { geminiService } from '../services/geminiService';
@@ -17,7 +18,7 @@ const ProductionView: React.FC = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'active' | 'history' | 'recipes'>('active');
+  const [activeTab, setActiveTab] = useState<'active' | 'history' | 'recipes' | 'guide'>('active');
 
   // Recipe Editor State
   const [editingRecipe, setEditingRecipe] = useState<Partial<Recipe> | null>(null);
@@ -59,8 +60,87 @@ const ProductionView: React.FC = () => {
       setRecipes(JSON.parse(savedRecipes));
     } else {
       const initialRecipes: Recipe[] = [
-        { id: 'r1', name: 'Tradisjonell Biar-lake', ingredients: [{name: 'Havsalt', amount: '10', unit: '%'}, {name: 'Rosmarin', amount: '200', unit: 'g'}], rating: 5, notes: 'Basert på 1920-oppskrift', isAiGenerated: false, isQualityAssured: true },
-        { id: 'r2', name: 'Sitrus-infusert Oliven', ingredients: [{name: 'Sitronskall', amount: '50', unit: 'g'}, {name: 'Lime', amount: '2', unit: 'stk'}], rating: 4, notes: 'For gourmet-markedet', isAiGenerated: true, isQualityAssured: true }
+        {
+          id: 'r1',
+          name: 'Tradisjonell Biar-Lake (10% saltlake)',
+          ingredients: [
+            { name: 'Vann', amount: '1', unit: 'liter' },
+            { name: 'Havsalt (grovt)', amount: '100', unit: 'g (10%)' },
+            { name: 'Hvitløk', amount: '4', unit: 'fedd' },
+            { name: 'Fersk rosmarin', amount: '2', unit: 'kvister' },
+            { name: 'Timian', amount: '1', unit: 'kvist' },
+            { name: 'Laurbærblad', amount: '2', unit: 'stk' },
+            { name: 'Svart pepper (hel)', amount: '10', unit: 'korn' }
+          ],
+          rating: 5,
+          notes: 'Klassisk Biar-oppskrift fra 1920-tallet. Grønne oliven legges i syre-lake i 8-12 måneder. Saltlaken byttes hver 3. måned. Bruk Manzanilla eller Gordal for beste resultat.',
+          isAiGenerated: false,
+          isQualityAssured: true
+        },
+        {
+          id: 'r2',
+          name: 'Spansk Mojo-Marinade (Kanarisk stil)',
+          ingredients: [
+            { name: 'Ekstra virgin olivenolje', amount: '200', unit: 'ml' },
+            { name: 'Rød chili', amount: '2', unit: 'stk' },
+            { name: 'Hvitløk', amount: '6', unit: 'fedd' },
+            { name: 'Paprika (røkt)', amount: '2', unit: 'ts' },
+            { name: 'Spidskommen', amount: '1', unit: 'ts' },
+            { name: 'Eplecidereddik', amount: '50', unit: 'ml' },
+            { name: 'Havsalt', amount: '1', unit: 'ts' },
+            { name: 'Frisk oregano', amount: '1', unit: 'ss' }
+          ],
+          rating: 5,
+          notes: 'Oliven marineres i 48-72 timer ved romtemperatur. Ypperlig for Picual-sort pga høyt polyfenolinhold. Kan lagres opptil 3 måneder kjølig.',
+          isAiGenerated: false,
+          isQualityAssured: true
+        },
+        {
+          id: 'r3',
+          name: 'Sitrus & Urte Gourmet-Lake',
+          ingredients: [
+            { name: 'Vann', amount: '1', unit: 'liter' },
+            { name: 'Havsalt', amount: '80', unit: 'g (8%)' },
+            { name: 'Sitronskall (biologisk)', amount: '2', unit: 'stk' },
+            { name: 'Appelsinskall', amount: '1', unit: 'stk' },
+            { name: 'Fersk timian', amount: '4', unit: 'kvister' },
+            { name: 'Rosmarin', amount: '2', unit: 'kvister' },
+            { name: 'Fennikelfroe', amount: '1', unit: 'ts' },
+            { name: 'Hvit pepper (hel)', amount: '5', unit: 'korn' }
+          ],
+          rating: 4,
+          notes: 'Skandinavisk-inspirert oppskrift for premium gourmetmarkedet. Lagringstid: 6-8 måneder. Passer utmerket for Arbequina-sorten pga mildere smak.',
+          isAiGenerated: false,
+          isQualityAssured: true
+        },
+        {
+          id: 'r4',
+          name: 'Lut-Behandlet (Alm. Prosess)',
+          ingredients: [
+            { name: 'Matningstjenlig natronlut (NaOH)', amount: '20', unit: 'g/liter (2%)' },
+            { name: 'Vann', amount: '1', unit: 'liter' },
+            { name: 'Deretter saltlake: Havsalt', amount: '80-100', unit: 'g/liter' },
+            { name: 'Sitronskall', amount: '1', unit: 'stk (valgfritt)' }
+          ],
+          rating: 4,
+          notes: 'Tradisjonell spansk prosess for å fjerne bitterhet raskt (6-12 timer vs. 6-12 måneder). Oliven bades i 2% lut til de er gjennombehandlet (sjekk kjernen – beige = klar). Skyll grundig 3x, deretter i saltlake i 2-4 uker. VIKTIG: Bruk kun matningstjenlig NaOH, ikke industriell.',
+          isAiGenerated: false,
+          isQualityAssured: true
+        },
+        {
+          id: 'r5',
+          name: 'Tørrherdet med Salt (Marokkansk stil)',
+          ingredients: [
+            { name: 'Grovt havsalt', amount: '1', unit: 'kg per kg oliven' },
+            { name: 'Olivenolje (etterbehandling)', amount: '50', unit: 'ml' },
+            { name: 'Spidskommen (valgfritt)', amount: '1', unit: 'ts' },
+            { name: 'Rød chili (valgfritt)', amount: '1', unit: 'stk' }
+          ],
+          rating: 4,
+          notes: 'Svarte, overmodne oliven legges lagvis med grovt salt. Rist daglig i 4-6 uker. Saltet trekker ut fuktigheten og bitterstoffene. Resultatet er rynkede, konsentrerte oliven med intens smak. Avslutt med lett oljebehandling og krydder.',
+          isAiGenerated: false,
+          isQualityAssured: true
+        }
       ];
       setRecipes(initialRecipes);
       localStorage.setItem('olivia_recipes', JSON.stringify(initialRecipes));
@@ -180,10 +260,113 @@ const ProductionView: React.FC = () => {
             <button onClick={() => setActiveTab('active')} className={`text-sm font-bold uppercase tracking-widest transition-all pb-2 border-b-2 ${activeTab === 'active' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'}`}>Aktive ({batches.filter(b=>b.status==='ACTIVE').length})</button>
             <button onClick={() => setActiveTab('history')} className={`text-sm font-bold uppercase tracking-widest transition-all pb-2 border-b-2 ${activeTab === 'history' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'}`}>Historikk ({batches.filter(b=>b.status==='ARCHIVED').length})</button>
             <button onClick={() => setActiveTab('recipes')} className={`text-sm font-bold uppercase tracking-widest transition-all pb-2 border-b-2 ${activeTab === 'recipes' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'}`}>Oppskriftsbok ({recipes.length})</button>
+            <button onClick={() => setActiveTab('guide')} className={`text-sm font-bold uppercase tracking-widest transition-all pb-2 border-b-2 flex items-center gap-1.5 ${activeTab === 'guide' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'}`}><BookOpen size={13} /> Prosessguide</button>
           </div>
 
           <div className="space-y-4">
-            {activeTab === 'recipes' ? (
+            {activeTab === 'guide' ? (
+              <div className="space-y-6 animate-in fade-in">
+                {/* Processing Methods Overview */}
+                <div className="glass rounded-[2rem] p-7 border border-white/10">
+                  <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <BookOpen size={20} className="text-green-400" /> Bordoliven – Komplett Prosessguide
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    {[
+                      { method: 'Saltlake', time: '6–12 måneder', bitterness: 'Mild', color: 'Grønn/Sort', icon: <Droplets size={20} />, color2: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
+                      { method: 'Lut (NaOH)', time: '2–4 uker', bitterness: 'Ingen', color: 'Grønn', icon: <FlaskConical size={20} />, color2: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20' },
+                      { method: 'Tørrherding', time: '4–6 uker', bitterness: 'Konsentrert', color: 'Sort', icon: <Thermometer size={20} />, color2: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' }
+                    ].map(m => (
+                      <div key={m.method} className={`p-5 rounded-2xl border ${m.bg}`}>
+                        <div className={`${m.color2} mb-3`}>{m.icon}</div>
+                        <h4 className="font-bold text-white mb-2">{m.method}</h4>
+                        <div className="space-y-1.5 text-[10px]">
+                          <div className="flex justify-between text-slate-400">
+                            <span>Tid:</span><span className="text-white font-bold">{m.time}</span>
+                          </div>
+                          <div className="flex justify-between text-slate-400">
+                            <span>Bitterhet:</span><span className="text-white font-bold">{m.bitterness}</span>
+                          </div>
+                          <div className="flex justify-between text-slate-400">
+                            <span>Farge:</span><span className="text-white font-bold">{m.color}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 7-Stage Processing Pipeline */}
+                <div className="glass rounded-[2rem] p-7 border border-white/10">
+                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <Timer size={14} /> 7-Stegs Saltlake-Prosess (Tradisjonell)
+                  </h3>
+                  <div className="space-y-4">
+                    {[
+                      { stage: 'PLUKKING', num: '01', title: 'Innhøsting', time: 'Okt–Nov', desc: 'Plukk ved riktig modenhetsindeks (0-4 skala). Grønne: index 1-2. Sorte: index 5-7. Unngå mekanisk skade. Bruk åndbar emballasje. Sorter etter størrelse og farge innen 12 timer.', icon: <Sprout size={16} />, color: 'text-green-400' },
+                      { stage: 'LAKE', num: '02', title: 'Saltlake', time: '1–3 måneder', desc: 'Forbered 8-10% saltlake (80-100g NaCl per liter). Bruk rent vann (klorinnhold < 0.1ppm). Dekk oliven helt. Legg press på toppen. Hold 15-20°C. Kontroller pH (mål: 3.5-4.5 etter gjæring).', icon: <Droplets size={16} />, color: 'text-blue-400' },
+                      { stage: 'SKYLLING', num: '03', title: 'Skylling & Rens', time: '1–3 dager', desc: 'Skyll grundig med rent vann. Fjern hvitt lag (gjæringsslam = normalt). Vurder om bitterhet er akseptabel. Lukt: fermentert/frisk = OK. Unngå skadede bær.', icon: <RefreshCcw size={16} />, color: 'text-cyan-400' },
+                      { stage: 'MARINERING', num: '04', title: 'Marinering & Smakssetting', time: '2–8 uker', desc: 'Velg marinadetype (se oppskriftsbok). Tilsett urter, hvitløk og krydder. Bruk glasskrukker eller food-grade plastbeholdere. Temp: 18-22°C. Smak jevnlig – oliven absorberer smak gradvis.', icon: <ChefHat size={16} />, color: 'text-purple-400' },
+                      { stage: 'LAGRING', num: '05', title: 'Lagring & Modning', time: '1–6 måneder', desc: 'Mørkt, kjølig rom (10-15°C ideelt). Kontroller pH månedlig (mål: 3.8-4.5). Sjekk for mugg (hvit flott = ofte ufarlig, grønn/sort = kast). Dokumenter dato og batch-nummer.', icon: <Archive size={16} />, color: 'text-yellow-400' },
+                      { stage: 'PAKKING', num: '06', title: 'Pakking & Merking', time: '1–2 dager', desc: 'Bruk steriliserte glass (kok 10 min). Fyll med frisk saltlake (samme konsentrasjon). La 2cm luftrom. Lukk tett. Merk: produsent, sort, innhøstingsdato, best-før (18-24 mnd). Vakuumforseglet = lengre holdbarhet.', icon: <Scale size={16} />, color: 'text-orange-400' },
+                      { stage: 'SALG', num: '07', title: 'Salg & Distribusjon', time: 'Løpende', desc: 'Oppbevar kjølig (under 12°C) inntil salg. Ferske markeder: direkte salg. Grossister: krever HACCP-sertifikat. Nettbutikk: isolert frakt. Pris: grønn gourmet €8-15/kg, premium sort €10-20/kg.', icon: <ShoppingCart size={16} />, color: 'text-green-400' }
+                    ].map((s, i) => (
+                      <div key={s.stage} className="flex gap-4 p-5 rounded-2xl bg-white/5 border border-white/5 hover:border-green-500/20 transition-all">
+                        <div className="flex flex-col items-center gap-2">
+                          <div className={`p-2.5 rounded-xl ${s.color.replace('text-', 'bg-').replace('400', '500/10')} border ${s.color.replace('text-', 'border-').replace('400', '500/20')} ${s.color}`}>
+                            {s.icon}
+                          </div>
+                          {i < 6 && <div className="w-px flex-1 bg-white/10" />}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[10px] font-mono text-slate-600">{s.num}</span>
+                            <h4 className="font-bold text-white">{s.title}</h4>
+                            <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 bg-white/5 rounded-full text-slate-500">{s.time}</span>
+                          </div>
+                          <p className="text-xs text-slate-400 leading-relaxed">{s.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quality Control Table */}
+                <div className="glass rounded-[2rem] p-7 border border-white/10">
+                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <Award size={14} /> Kvalitetskontroll – Kritiske Parametere
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="text-[9px] text-slate-600 uppercase font-bold tracking-widest border-b border-white/5">
+                          <th className="pb-3 pr-4">Parameter</th>
+                          <th className="pb-3 pr-4">Optimal</th>
+                          <th className="pb-3 pr-4">Advarsel</th>
+                          <th className="pb-3">Tiltak</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5 text-xs">
+                        {[
+                          { param: 'pH', opt: '3.8–4.5', warn: '< 3.5 eller > 5.0', action: 'Juster salt, konsulter ekspert' },
+                          { param: 'Saltinnhold', opt: '6–10%', warn: '< 5% (risiko for råte)', action: 'Øk saltkonsentrasjon' },
+                          { param: 'Temperatur', opt: '10–20°C', warn: '> 25°C', action: 'Flytt til kjøligere sted' },
+                          { param: 'Modenhetsindeks', opt: '1–3 (grønn)', warn: '> 5 (overmodig)', action: 'Bruk til olje i stedet' },
+                          { param: 'Tekstur', opt: 'Fast, krispy', warn: 'Myk, klissete', action: 'Undersøk for sykdom' }
+                        ].map(r => (
+                          <tr key={r.param} className="hover:bg-white/5">
+                            <td className="py-3 pr-4 font-bold text-white">{r.param}</td>
+                            <td className="py-3 pr-4 text-green-400">{r.opt}</td>
+                            <td className="py-3 pr-4 text-yellow-400">{r.warn}</td>
+                            <td className="py-3 text-slate-400">{r.action}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            ) : activeTab === 'recipes' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {recipes.map(recipe => (
                   <div key={recipe.id} className="glass rounded-[2rem] p-6 border border-white/10 hover:border-green-500/30 transition-all group">
