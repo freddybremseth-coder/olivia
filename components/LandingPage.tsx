@@ -5,9 +5,10 @@ import { Sprout, ShieldCheck, TrendingUp, Zap, ChevronRight, Check, ShieldAlert 
 interface LandingPageProps {
   onLogin: () => void;
   onAdminLogin: () => void;
+  onRegister: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
   return (
     <div className="min-h-screen bg-[#0a0a0b] text-white selection:bg-green-500/30">
       {/* Hero Section */}
@@ -38,7 +39,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin }) => {
             Olivia AI gir deg full kontroll over olivenlunden din. Fra Catastro-intelligens til IoT-overvåking og økonomisk analyse.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
-            <button onClick={onLogin} className="bg-green-500 text-black px-8 py-4 rounded-2xl font-bold text-lg hover:bg-green-400 transition-all shadow-xl shadow-green-500/20 flex items-center gap-2">
+            <button onClick={onRegister} className="bg-green-500 text-black px-8 py-4 rounded-2xl font-bold text-lg hover:bg-green-400 transition-all shadow-xl shadow-green-500/20 flex items-center gap-2">
               Start din gratis prøveperiode <ChevronRight size={20} />
             </button>
             <p className="text-slate-500 text-sm italic">Ingen kredittkort kreves for å starte.</p>
@@ -82,7 +83,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin }) => {
                 <li className="flex items-center gap-3 text-slate-300"><Check size={18} className="text-green-400" /> Full AI-analyse</li>
                 <li className="flex items-center gap-3 text-slate-300"><Check size={18} className="text-green-400" /> Dokumenthvelv</li>
               </ul>
-              <button onClick={onLogin} className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 font-bold hover:bg-white/10 transition-all">Velg Månedlig</button>
+              <button onClick={onRegister} className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 font-bold hover:bg-white/10 transition-all">Velg Månedlig</button>
             </div>
             {/* Annual */}
             <div className="glass p-10 rounded-[3rem] border border-green-500/50 relative overflow-hidden bg-green-500/5 shadow-2xl shadow-green-500/10">
@@ -98,7 +99,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin }) => {
                 <li className="flex items-center gap-3 text-slate-300"><Check size={18} className="text-green-400" /> Prioritert support</li>
                 <li className="flex items-center gap-3 text-slate-300"><Check size={18} className="text-green-400" /> Ubegrenset lagring</li>
               </ul>
-              <button onClick={onLogin} className="w-full py-4 rounded-2xl bg-green-500 text-black font-bold hover:bg-green-400 transition-all shadow-lg">Velg Årlig</button>
+              <button onClick={onRegister} className="w-full py-4 rounded-2xl bg-green-500 text-black font-bold hover:bg-green-400 transition-all shadow-lg">Velg Årlig</button>
             </div>
           </div>
         </div>
