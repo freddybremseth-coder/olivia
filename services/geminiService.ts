@@ -77,8 +77,53 @@ export interface CadastralDetails {
 export class GeminiService {
   private cache = new Map<string, CadastralDetails>();
 
+  private getClaudeKey(): string | null {
+    return localStorage.getItem('olivia_claude_api_key') || null;
+  }
+
+  private getGeminiKey(): string {
+    return localStorage.getItem('olivia_gemini_api_key') || process.env.API_KEY || '';
+  }
+
   private getAI() {
-    return new GoogleGenAI({ apiKey: process.env.API_KEY });
+    return new GoogleGenAI({ apiKey: this.getGeminiKey() });
+  }
+
+  async callClaude(prompt: string, model: string = 'claude-sonnet-4-6'): Promise<string> {
+    const key = this.getClaudeKey();
+    if (!key) throw new Error('Ingen Claude API-nøkkel konfigurert');
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as { error?: { message?: string } }).error?.message || `Claude API feil: ${response.status}`);
+    }
+    const data = await response.json() as { content: Array<{ type: string; text: string }> };
+    return data.content[0]?.text || '';
+  }
+
+  private async generateText(prompt: string): Promise<string> {
+    if (this.getClaudeKey()) {
+      return this.callClaude(prompt);
+    }
+    const ai = this.getAI();
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt
+    });
+    return response.text ?? '';
   }
 
   async analyzeParcelCadastre(searchQueryOrCoords: string, lang: string = 'no'): Promise<CadastralDetails> {
