@@ -1,0 +1,8 @@
+{
+  "name": "Olivia AI - Smart Farm OS",
+  "description": "An advanced AI-powered farm management system for high-end olive oil production, featuring cadastral intelligence, IoT monitoring, and economic analytics.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ]
+}
