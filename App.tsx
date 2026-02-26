@@ -77,6 +77,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setIsAdmin(false);
+    setActiveTab('dashboard');
     localStorage.removeItem('olivia_session');
   };
 

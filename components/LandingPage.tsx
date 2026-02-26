@@ -23,6 +23,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <button onClick={onAdminLogin} className="text-xs text-slate-500 hover:text-purple-400 flex items-center gap-1 transition-colors">
             <ShieldAlert size={14} /> Admin Access
           </button>
+          <button onClick={onRegister} className="text-sm text-slate-300 hover:text-white px-4 py-2 transition-colors">Opprett konto</button>
           <button onClick={onLogin} className="bg-white/5 hover:bg-white/10 px-6 py-2 rounded-xl text-sm font-bold border border-white/10 transition-all">Logg inn</button>
         </div>
       </nav>
