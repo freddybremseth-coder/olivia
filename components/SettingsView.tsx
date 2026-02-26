@@ -53,7 +53,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
   const maskKey = (key: string) => key ? key.slice(0, 8) + '•'.repeat(Math.max(0, key.length - 12)) + key.slice(-4) : '';
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-white">{getTranslation('settings', language)}</h2>
         <button onClick={handleSave} className="flex items-center gap-2 bg-green-500 text-black px-6 py-3 rounded-2xl font-bold hover:bg-green-400 transition-all">
@@ -63,7 +63,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="glass rounded-[2.5rem] p-10 border border-white/10 space-y-6">
+        <div className="glass rounded-[2.5rem] p-8 border border-white/10 space-y-6">
           <h3 className="text-xl font-bold flex items-center gap-2"><Building2 className="text-green-400" /> {getTranslation('farm_config', language)}</h3>
           <div className="space-y-4">
             <div>
@@ -80,7 +80,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
           </div>
         </div>
 
-        <div className="glass rounded-[2.5rem] p-10 border border-white/10 space-y-6">
+        <div className="glass rounded-[2.5rem] p-8 border border-white/10 space-y-6">
           <h3 className="text-xl font-bold flex items-center gap-2"><Globe className="text-blue-400" /> {getTranslation('language_label', language)}</h3>
           <div className="space-y-4">
             <div>
@@ -107,7 +107,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
       </div>
 
       {/* API Keys */}
-      <div className="glass rounded-[2.5rem] p-10 border border-white/10 space-y-6">
+      <div className="glass rounded-[2.5rem] p-8 border border-white/10 space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold flex items-center gap-2"><Key className="text-yellow-400" /> API-nøkler</h3>
           <button onClick={handleSaveApiKeys} className="flex items-center gap-2 bg-yellow-500 text-black px-5 py-2.5 rounded-2xl font-bold hover:bg-yellow-400 transition-all text-sm">
