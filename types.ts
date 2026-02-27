@@ -21,6 +21,8 @@ export interface UserProfile {
 
 export type TableOliveStage = 'PLUKKING' | 'LAKE' | 'SKYLLING' | 'MARINERING' | 'LAGRING' | 'PAKKING' | 'SALG';
 
+export type FlavorProfile = 'mild' | 'syrlig' | 'krydret' | 'urterik' | 'sitrus' | 'hvitlok' | 'middelhav';
+
 export interface AppDocument {
   id: string;
   name: string;
@@ -54,13 +56,24 @@ export interface ComprehensiveAnalysis {
   missingDetails: string[];
 }
 
+export interface BatchSale {
+  id: string;
+  date: string;
+  kg: number;
+  pricePerKg: number;
+  buyer?: string;
+  note?: string;
+}
+
 export interface Batch {
   id: string;
   parcelId: string;
+  recipeId?: string;
+  oliveType?: string;
   harvestDate: string;
-  weight: number; 
+  weight: number;
   quality: 'Premium' | 'Standard' | 'Commercial';
-  qualityScore: number; 
+  qualityScore: number;
   status: 'ACTIVE' | 'ARCHIVED';
   laborHours: number;
   laborCost: number;
@@ -69,6 +82,9 @@ export interface Batch {
   tableOliveYieldKg?: number;
   traceabilityCode: string;
   currentStage?: TableOliveStage;
+  stageStartDate?: string;
+  completedStages?: TableOliveStage[];
+  sales?: BatchSale[];
 }
 
 export interface Transaction {
@@ -79,6 +95,7 @@ export interface Transaction {
   date: string;
   note: string;
   parcelId?: string;
+  batchId?: string;
 }
 
 export interface Sensor {
@@ -113,7 +130,13 @@ export interface Ingredient {
 export interface Recipe {
   id: string;
   name: string;
+  flavorProfile?: FlavorProfile;
+  description?: string;
+  recommendedOliveTypes?: string[];
   ingredients: Ingredient[];
+  brineChangeDays?: number[];
+  marinadeDayFrom?: number;
+  readyAfterDays?: number;
   rating: number;
   notes: string;
   isAiGenerated: boolean;

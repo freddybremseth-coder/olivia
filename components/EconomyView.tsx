@@ -4,13 +4,14 @@ import {
   DollarSign, ArrowUpRight, ArrowDownRight, Camera, Receipt, TrendingUp,
   Plus, X, Upload, Loader2, Sparkles, CheckCircle2, MapPin, Search,
   Filter, Trash2, Calendar, FileText, PieChart as PieChartIcon,
-  BarChart3, Target, Brain, ChevronRight, AlertCircle, Zap, Award
+  BarChart3, Target, Brain, ChevronRight, AlertCircle, Zap, Award,
+  ShoppingCart, Trophy, Layers
 } from 'lucide-react';
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from 'recharts';
 import { geminiService } from '../services/geminiService';
-import { Transaction, Parcel, Batch } from '../types';
+import { Transaction, Parcel, Batch, Recipe } from '../types';
 
 const COST_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#a855f7', '#ef4444', '#06b6d4'];
 
@@ -22,7 +23,10 @@ const EconomyView: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(false);
   const [selectedParcelFilter, setSelectedParcelFilter] = useState<string>('all');
-  const [activeEconTab, setActiveEconTab] = useState<'transactions' | 'profitability'>('transactions');
+  const [activeEconTab, setActiveEconTab] = useState<'transactions' | 'batchsales' | 'profitability'>('transactions');
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
+  const [newSale, setNewSale] = useState({ batchId: '', kg: 0, pricePerKg: 0, buyer: '', date: new Date().toISOString().split('T')[0], note: '' });
   const [isAnalyzingProfit, setIsAnalyzingProfit] = useState(false);
   const [profitAnalysis, setProfitAnalysis] = useState<any>(null);
 
@@ -42,8 +46,10 @@ const EconomyView: React.FC = () => {
     const savedParcels = localStorage.getItem('olivia_parcels');
     const savedBatches = localStorage.getItem('olivia_batches');
 
+    const savedRecipes = localStorage.getItem('olivia_recipes');
     if (savedParcels) setParcels(JSON.parse(savedParcels));
     if (savedBatches) setBatches(JSON.parse(savedBatches));
+    if (savedRecipes) setRecipes(JSON.parse(savedRecipes));
     if (savedEconomy) {
       setTransactions(JSON.parse(savedEconomy));
     } else {
@@ -123,6 +129,36 @@ const EconomyView: React.FC = () => {
     } finally {
       setIsAnalyzingProfit(false);
     }
+  };
+
+  const handleLogSale = () => {
+    if (!newSale.batchId || !newSale.kg || !newSale.pricePerKg) {
+      alert('Velg batch, kg og pris per kg.');
+      return;
+    }
+    const total = newSale.kg * newSale.pricePerKg;
+    const batch = batches.find(b => b.id === newSale.batchId);
+    // Save as transaction
+    const tx: Transaction = {
+      id: 'T' + Date.now(),
+      type: 'income',
+      category: 'Batchsalg',
+      amount: total,
+      date: newSale.date,
+      note: `Batch ${newSale.batchId}${newSale.buyer ? ' – ' + newSale.buyer : ''}: ${newSale.kg}kg × €${newSale.pricePerKg}/kg`,
+      parcelId: batch?.parcelId,
+      batchId: newSale.batchId,
+    };
+    // Also update batch.sales
+    const updatedBatches = batches.map(b => b.id === newSale.batchId
+      ? { ...b, sales: [...(b.sales || []), { id: 'S' + Date.now(), date: newSale.date, kg: newSale.kg, pricePerKg: newSale.pricePerKg, buyer: newSale.buyer, note: newSale.note }] }
+      : b
+    );
+    saveTransactions([tx, ...transactions]);
+    setBatches(updatedBatches);
+    localStorage.setItem('olivia_batches', JSON.stringify(updatedBatches));
+    setIsSaleModalOpen(false);
+    setNewSale({ batchId: '', kg: 0, pricePerKg: 0, buyer: '', date: new Date().toISOString().split('T')[0], note: '' });
   };
 
   const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -209,11 +245,14 @@ const EconomyView: React.FC = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-4 border-b border-white/10 pb-4">
-        <button onClick={() => setActiveEconTab('transactions')} className={`text-sm font-bold uppercase tracking-widest pb-1.5 border-b-2 transition-all ${activeEconTab === 'transactions' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'}`}>
+      <div className="flex gap-4 border-b border-white/10 pb-4 overflow-x-auto">
+        <button onClick={() => setActiveEconTab('transactions')} className={`text-sm font-bold uppercase tracking-widest pb-1.5 border-b-2 transition-all whitespace-nowrap ${activeEconTab === 'transactions' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'}`}>
           Transaksjoner
         </button>
-        <button onClick={() => setActiveEconTab('profitability')} className={`text-sm font-bold uppercase tracking-widest pb-1.5 border-b-2 transition-all flex items-center gap-2 ${activeEconTab === 'profitability' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'}`}>
+        <button onClick={() => setActiveEconTab('batchsales')} className={`text-sm font-bold uppercase tracking-widest pb-1.5 border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeEconTab === 'batchsales' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'}`}>
+          <ShoppingCart size={14} /> Batchsalg
+        </button>
+        <button onClick={() => setActiveEconTab('profitability')} className={`text-sm font-bold uppercase tracking-widest pb-1.5 border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeEconTab === 'profitability' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'}`}>
           <Target size={14} /> Lønnsomhetsanalyse
         </button>
       </div>
@@ -355,6 +394,109 @@ const EconomyView: React.FC = () => {
         </div>
       )}
 
+      {/* ── BATCHSALG TAB ──────────────────────────────────────────────────── */}
+      {activeEconTab === 'batchsales' && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <p className="text-slate-400 text-sm">Logg salg per batch og se hvilken parsell + oppskrift som gir best resultat.</p>
+            <button onClick={() => setIsSaleModalOpen(true)}
+              className="bg-green-500 hover:bg-green-400 text-black px-5 py-2.5 rounded-2xl font-bold text-sm flex items-center gap-2 transition-all">
+              <Plus size={16} /> Logg Salg
+            </button>
+          </div>
+
+          {/* Beste resultater */}
+          {(() => {
+            const batchesWithSales = batches.filter(b => b.sales && b.sales.length > 0);
+            if (batchesWithSales.length === 0) return null;
+            const ranked = batchesWithSales.map(b => {
+              const totalRevenue = (b.sales || []).reduce((s, sale) => s + (sale.kg * sale.pricePerKg), 0);
+              const revenuePerKg = b.weight > 0 ? totalRevenue / b.weight : 0;
+              const parcel = parcels.find(p => p.id === b.parcelId);
+              const recipe = recipes.find(r => r.id === b.recipeId);
+              return { batch: b, totalRevenue, revenuePerKg, parcel, recipe };
+            }).sort((a, b) => b.revenuePerKg - a.revenuePerKg);
+
+            return (
+              <div className="glass rounded-[2rem] p-7 border border-yellow-500/20 bg-yellow-500/5">
+                <h3 className="text-sm font-bold text-yellow-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+                  <Trophy size={16} /> Beste Resultater – Parsell × Oppskrift
+                </h3>
+                <div className="space-y-3">
+                  {ranked.map((r, i) => (
+                    <div key={r.batch.id} className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${i === 0 ? 'bg-yellow-500/20 text-yellow-400' : i === 1 ? 'bg-slate-500/20 text-slate-400' : 'bg-orange-500/10 text-orange-400'}`}>
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-white">{r.batch.id} – {r.batch.oliveType || 'Bordoliven'}</p>
+                        <p className="text-[10px] text-slate-500">
+                          {r.parcel?.name || 'Ukjent parsell'}
+                          {r.recipe && <span className="text-purple-400"> • {r.recipe.name}</span>}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-green-400 font-bold text-sm">€{r.revenuePerKg.toFixed(2)}/kg</p>
+                        <p className="text-[10px] text-slate-500">Total: €{r.totalRevenue.toFixed(0)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Batch sales list */}
+          <div className="space-y-4">
+            {batches.filter(b => b.status === 'ACTIVE' || (b.sales && b.sales.length > 0)).map(batch => {
+              const parcel = parcels.find(p => p.id === batch.parcelId);
+              const recipe = recipes.find(r => r.id === batch.recipeId);
+              const totalSold = (batch.sales || []).reduce((s, sale) => s + sale.kg, 0);
+              const totalRevenue = (batch.sales || []).reduce((s, sale) => s + (sale.kg * sale.pricePerKg), 0);
+              return (
+                <div key={batch.id} className="glass rounded-[2rem] p-6 border border-white/10">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-mono text-slate-500 bg-white/5 px-2 py-0.5 rounded">{batch.id}</span>
+                        <span className="text-sm font-bold text-white">{batch.oliveType || 'Bordoliven'} – {batch.weight} kg</span>
+                      </div>
+                      <p className="text-[10px] text-slate-500">
+                        {parcel?.name || 'Ukjent parsell'}
+                        {recipe && <span className="text-purple-400"> • {recipe.name}</span>}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-green-400 font-bold">€{totalRevenue.toFixed(0)}</p>
+                      <p className="text-[10px] text-slate-500">{totalSold} kg solgt av {batch.weight} kg</p>
+                    </div>
+                  </div>
+                  {batch.sales && batch.sales.length > 0 && (
+                    <div className="space-y-1.5 border-t border-white/5 pt-3">
+                      {batch.sales.map((sale, i) => (
+                        <div key={i} className="flex justify-between text-[10px] text-slate-400">
+                          <span>{sale.date} {sale.buyer && <span className="text-slate-500">– {sale.buyer}</span>}</span>
+                          <span>{sale.kg}kg × €{sale.pricePerKg}/kg = <span className="text-green-400 font-bold">€{(sale.kg * sale.pricePerKg).toFixed(0)}</span></span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {(!batch.sales || batch.sales.length === 0) && (
+                    <p className="text-[10px] text-slate-600 italic">Ingen salg registrert ennå</p>
+                  )}
+                </div>
+              );
+            })}
+            {batches.length === 0 && (
+              <div className="glass rounded-[2rem] p-12 text-center border border-white/10">
+                <Layers size={40} className="text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-500 text-sm">Ingen batches. Gå til Produksjon for å opprette en batch.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {activeEconTab === 'transactions' && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 glass rounded-[2.5rem] border border-white/10 overflow-hidden">
@@ -492,6 +634,62 @@ const EconomyView: React.FC = () => {
       </div>
       )}
 
+
+      {/* Logg Salg Modal */}
+      {isSaleModalOpen && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="glass w-full max-w-md rounded-[2.5rem] p-8 border border-white/20 shadow-2xl space-y-5">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2"><ShoppingCart size={20} className="text-green-400" /> Logg Batchsalg</h3>
+              <button onClick={() => setIsSaleModalOpen(false)} className="p-2 text-slate-500"><X size={22} /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Batch</label>
+                <select className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none"
+                  value={newSale.batchId} onChange={e => setNewSale({ ...newSale, batchId: e.target.value })}>
+                  <option value="">Velg batch...</option>
+                  {batches.filter(b => b.status === 'ACTIVE').map(b => (
+                    <option key={b.id} value={b.id}>{b.id} – {b.oliveType || 'Bordoliven'} ({b.weight}kg)</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Kg solgt</label>
+                  <input type="number" placeholder="0" className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none"
+                    value={newSale.kg || ''} onChange={e => setNewSale({ ...newSale, kg: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Pris per kg (€)</label>
+                  <input type="number" step="0.5" placeholder="0.00" className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none"
+                    value={newSale.pricePerKg || ''} onChange={e => setNewSale({ ...newSale, pricePerKg: Number(e.target.value) })} />
+                </div>
+              </div>
+              {newSale.kg > 0 && newSale.pricePerKg > 0 && (
+                <div className="bg-green-500/10 border border-green-500/20 rounded-2xl px-5 py-3 text-center">
+                  <p className="text-[10px] text-slate-400 uppercase font-bold">Totalbeløp</p>
+                  <p className="text-2xl font-bold text-green-400">€{(newSale.kg * newSale.pricePerKg).toFixed(2)}</p>
+                </div>
+              )}
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Kjøper (valgfritt)</label>
+                <input type="text" placeholder="Navn på kjøper / butikk..." className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none"
+                  value={newSale.buyer} onChange={e => setNewSale({ ...newSale, buyer: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Dato</label>
+                <input type="date" className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none"
+                  value={newSale.date} onChange={e => setNewSale({ ...newSale, date: e.target.value })} />
+              </div>
+            </div>
+            <button onClick={handleLogSale}
+              className="w-full bg-green-500 text-black font-bold py-4 rounded-[2rem] hover:bg-green-400 transition-all">
+              Lagre salg
+            </button>
+          </div>
+        </div>
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
