@@ -62,52 +62,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="glass rounded-[2.5rem] p-8 border border-white/10 space-y-6">
-          <h3 className="text-xl font-bold flex items-center gap-2"><Building2 className="text-green-400" /> {getTranslation('farm_config', language)}</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">{getTranslation('farm_name', language)}</label>
-              <input type="text" className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3 text-white focus:outline-none" value={settings.farmName} onChange={e => setSettings({...settings, farmName: e.target.value})} />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">{getTranslation('address_label', language)}</label>
-              <div className="relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                <input type="text" className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-5 py-3 text-white focus:outline-none" value={settings.farmAddress} onChange={e => setSettings({...settings, farmAddress: e.target.value})} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="glass rounded-[2.5rem] p-8 border border-white/10 space-y-6">
-          <h3 className="text-xl font-bold flex items-center gap-2"><Globe className="text-blue-400" /> {getTranslation('language_label', language)}</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">{getTranslation('language_label', language)}</label>
-              <select className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3 text-white focus:outline-none" value={settings.language} onChange={e => setSettings({...settings, language: e.target.value as Language})}>
-                <option value="en">English 🇬🇧</option>
-                <option value="es">Español 🇪🇸</option>
-                <option value="it">Italiano 🇮🇹</option>
-                <option value="fr">Français 🇫🇷</option>
-                <option value="no">Norsk 🇳🇴</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">{getTranslation('currency', language)}</label>
-              <select className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3 text-white focus:outline-none" value={settings.currency} onChange={e => setSettings({...settings, currency: e.target.value})}>
-                <option value="EUR">EUR (€)</option>
-                <option value="USD">USD ($)</option>
-                <option value="GBP">GBP (£)</option>
-                <option value="NOK">NOK (kr)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* API Keys */}
-      <div className="glass rounded-[2.5rem] p-8 border border-white/10 space-y-6">
+      {/* API Keys - first for visibility */}
+      <div className="glass rounded-[2.5rem] p-8 border border-yellow-500/20 shadow-[0_0_20px_rgba(234,179,8,0.05)] space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold flex items-center gap-2"><Key className="text-yellow-400" /> API-nøkler</h3>
           <button onClick={handleSaveApiKeys} className="flex items-center gap-2 bg-yellow-500 text-black px-5 py-2.5 rounded-2xl font-bold hover:bg-yellow-400 transition-all text-sm">
@@ -174,6 +130,50 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
           <p>Claude-nøkkel satt → bruker Claude (claude-opus-4-6 / claude-sonnet-4-6)</p>
           <p>Kun Gemini-nøkkel → bruker Google Gemini</p>
           <p>Ingen nøkler → bruker miljøvariabel (GEMINI_API_KEY fra .env)</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="glass rounded-[2.5rem] p-8 border border-white/10 space-y-6">
+          <h3 className="text-xl font-bold flex items-center gap-2"><Building2 className="text-green-400" /> {getTranslation('farm_config', language)}</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">{getTranslation('farm_name', language)}</label>
+              <input type="text" className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3 text-white focus:outline-none" value={settings.farmName} onChange={e => setSettings({...settings, farmName: e.target.value})} />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">{getTranslation('address_label', language)}</label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                <input type="text" className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-5 py-3 text-white focus:outline-none" value={settings.farmAddress} onChange={e => setSettings({...settings, farmAddress: e.target.value})} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass rounded-[2.5rem] p-8 border border-white/10 space-y-6">
+          <h3 className="text-xl font-bold flex items-center gap-2"><Globe className="text-blue-400" /> {getTranslation('language_label', language)}</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">{getTranslation('language_label', language)}</label>
+              <select className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3 text-white focus:outline-none" value={settings.language} onChange={e => setSettings({...settings, language: e.target.value as Language})}>
+                <option value="en">English 🇬🇧</option>
+                <option value="es">Español 🇪🇸</option>
+                <option value="it">Italiano 🇮🇹</option>
+                <option value="fr">Français 🇫🇷</option>
+                <option value="no">Norsk 🇳🇴</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">{getTranslation('currency', language)}</label>
+              <select className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3 text-white focus:outline-none" value={settings.currency} onChange={e => setSettings({...settings, currency: e.target.value})}>
+                <option value="EUR">EUR (€)</option>
+                <option value="USD">USD ($)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="NOK">NOK (kr)</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
     </div>

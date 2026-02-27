@@ -379,8 +379,9 @@ Svar i JSON: { "amount": number, "date": "YYYY-MM-DD", "category": "...", "note"
   }
 
   async getFarmInsights(weather: any, soil: any, lang: string, location: string): Promise<FarmInsight[]> {
-    const ai = this.getAI();
+    if (!this.getGeminiKey() && !this.getClaudeKey()) return [];
     try {
+      const ai = this.getAI();
       const weatherSummary = weather ? `Temp: ${weather.temperature_2m}°C, Fuktighet: ${weather.relative_humidity_2m}%, Vind: ${weather.wind_speed_10m} km/t` : 'ukjent vær';
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
