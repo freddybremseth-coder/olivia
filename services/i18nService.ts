@@ -103,7 +103,9 @@ export const translations: Record<Language, Record<string, string>> = {
     language_label: "System Language",
     currency: "Currency",
     save_settings: "Save Changes",
-    saved: "Saved!"
+    saved: "Saved!",
+    no_api_key: "No API key configured. AI analysis is unavailable.",
+    go_to_settings: "Go to Settings → API Keys to add your Gemini or Claude key."
   },
   es: {
     dashboard: "Panel",
@@ -197,7 +199,9 @@ export const translations: Record<Language, Record<string, string>> = {
     language_label: "Idioma del Sistema",
     currency: "Moneda",
     save_settings: "Guardar Cambios",
-    saved: "¡Guardado!"
+    saved: "¡Guardado!",
+    no_api_key: "Sin clave API. El análisis de IA no está disponible.",
+    go_to_settings: "Ve a Ajustes → Claves API para añadir tu clave Gemini o Claude."
   },
   it: {
     dashboard: "Dashboard",
@@ -291,7 +295,9 @@ export const translations: Record<Language, Record<string, string>> = {
     language_label: "Lingua di Sistema",
     currency: "Valuta",
     save_settings: "Salva Impostazioni",
-    saved: "Salvato!"
+    saved: "Salvato!",
+    no_api_key: "Nessuna chiave API configurata. L'analisi AI non è disponibile.",
+    go_to_settings: "Vai a Impostazioni → Chiavi API per aggiungere la tua chiave Gemini o Claude."
   },
   fr: {
     dashboard: "Tableau de bord",
@@ -385,7 +391,9 @@ export const translations: Record<Language, Record<string, string>> = {
     language_label: "Langue du Système",
     currency: "Devise",
     save_settings: "Enregistrer",
-    saved: "Enregistré !"
+    saved: "Enregistré !",
+    no_api_key: "Aucune clé API configurée. L'analyse IA n'est pas disponible.",
+    go_to_settings: "Allez dans Paramètres → Clés API pour ajouter votre clé Gemini ou Claude."
   },
   no: {
     dashboard: "Dashboard",
@@ -479,7 +487,9 @@ export const translations: Record<Language, Record<string, string>> = {
     language_label: "Systemspråk",
     currency: "Valuta",
     save_settings: "Lagre endringer",
-    saved: "Lagret!"
+    saved: "Lagret!",
+    no_api_key: "Ingen API-nøkkel konfigurert. AI-analyse er ikke tilgjengelig.",
+    go_to_settings: "Gå til Innstillinger → API-nøkler for å legge inn din Gemini- eller Claude-nøkkel."
   }
 };
 

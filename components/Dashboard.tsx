@@ -176,6 +176,12 @@ const Dashboard: React.FC<DashboardProps> = ({ language }) => {
                 <div className="space-y-4">
                   {[1, 2, 3].map(i => <div key={i} className="h-16 bg-white/5 animate-pulse rounded-2xl"></div>)}
                 </div>
+              ) : insights.length === 0 ? (
+                <div className="text-center py-6 space-y-3">
+                  <AlertCircle size={32} className="text-slate-600 mx-auto" />
+                  <p className="text-sm text-slate-400">{getTranslation('no_api_key', language)}</p>
+                  <p className="text-xs text-slate-600">{getTranslation('go_to_settings', language)}</p>
+                </div>
               ) : (
                 insights.map((insight, i) => (
                   <div key={insight.id || i} className="flex gap-4 group">
