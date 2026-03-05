@@ -20,6 +20,8 @@ import GlossaryText from './GlossaryText';
 
 interface DashboardProps {
   language: Language;
+  weatherData: any;
+  locationName: string;
 }
 
 const mockEconomicData = [
@@ -38,18 +40,19 @@ const mockHarvestData = [
   { parcel: 'Vest', weight: 600 },
 ];
 
-const Dashboard: React.FC<DashboardProps> = ({ language }) => {
+const Dashboard: React.FC<DashboardProps> = ({ language, weatherData, locationName }) => {
   const [insights, setInsights] = useState<FarmInsight[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchInsights = async () => {
+    if (!weatherData) return;
     setLoading(true);
     try {
       const data = await geminiService.getFarmInsights(
-        { temp: 28, rain: 2 }, 
+        { temp: weatherData.current.temperature_2m, rain: weatherData.daily[0].precipitation_sum }, 
         { moisture: 45 }, 
         language,
-        'Biar, Alicante, ES'
+        locationName
       );
       setInsights(data);
     } catch (err) {
@@ -61,7 +64,9 @@ const Dashboard: React.FC<DashboardProps> = ({ language }) => {
 
   useEffect(() => {
     fetchInsights();
-  }, [language]);
+  }, [language, weatherData, locationName]);
+  
+  const isSprayingSafe = weatherData?.current.wind_speed_10m < 15;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
@@ -130,18 +135,24 @@ const Dashboard: React.FC<DashboardProps> = ({ language }) => {
                  <Wind size={80} className="text-white" />
                </div>
                <div className="relative z-10 space-y-4">
-                 <h4 className="text-slate-400 font-medium">Biar, Spania • {getTranslation('weather_now', language)}</h4>
-                 <div className="flex items-center gap-6">
-                   <div className="flex items-center gap-2">
-                     <Thermometer className="text-yellow-400" size={32} />
-                     <span className="text-4xl font-bold">28°C</span>
+                 <h4 className="text-slate-400 font-medium">{locationName} • {getTranslation('weather_now', language)}</h4>
+                 {weatherData ? (
+                   <div className="flex items-center gap-6">
+                     <div className="flex items-center gap-2">
+                       <Thermometer className="text-yellow-400" size={32} />
+                       <span className="text-4xl font-bold">{Math.round(weatherData.current.temperature_2m)}°C</span>
+                     </div>
+                     <div className="h-10 w-px bg-white/10"></div>
+                     <div className="space-y-1">
+                       <p className="text-xs text-slate-500 uppercase tracking-widest">{weatherData.current.relative_humidity_2m}% {getTranslation('humidity', language)}</p>
+                       <p className={`text-sm font-bold ${isSprayingSafe ? 'text-green-400' : 'text-red-400'}`}>
+                         {isSprayingSafe ? getTranslation('perfect_spraying', language) : 'For mye vind'}
+                       </p>
+                     </div>
                    </div>
-                   <div className="h-10 w-px bg-white/10"></div>
-                   <div className="space-y-1">
-                     <p className="text-xs text-slate-500 uppercase tracking-widest">{getTranslation('humidity', language)}</p>
-                     <p className="text-sm font-bold text-green-400">{getTranslation('perfect_spraying', language)}</p>
-                   </div>
-                 </div>
+                 ) : (
+                    <div className="h-10 animate-pulse bg-white/10 rounded-lg"></div>
+                 )}
                </div>
             </div>
 

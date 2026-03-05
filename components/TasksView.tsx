@@ -1,7 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, MoreHorizontal, User, MapPin, AlertCircle, X, CheckCircle2 } from 'lucide-react';
+import { Plus, MoreHorizontal, User, MapPin, AlertCircle, X, CheckCircle2, ClipboardList } from 'lucide-react';
 import { Task, Parcel } from '../types';
+
+const SUGGESTED_TASKS: Partial<Task>[] = [
+  { title: 'Innhøsting av oliven', priority: 'Kritisk', category: 'Innhøsting' },
+  { title: 'Årlig hovedbeskjæring (Vinter)', priority: 'Høy', category: 'Vedlikehold' },
+  { title: 'Sprøyting mot olivenflue', priority: 'Høy', category: 'Plantevern' },
+  { title: 'Gjødsling (Vår)', priority: 'Middels', category: 'Gjødsel' },
+  { title: 'Ettersyn av vanningsanlegg', priority: 'Middels', category: 'Vanning' },
+  { title: 'Fjerning av døde/skadede grener', priority: 'Middels', category: 'Vedlikehold' },
+  { title: 'Ugresskontroll', priority: 'Lav', category: 'Vedlikehold' },
+  { title: 'Planlegging for planting av nye trær', priority: 'Lav', category: 'Planlegging' },
+];
 
 const TasksView: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -56,7 +67,7 @@ const TasksView: React.FC = () => {
       ...(newTask as Task),
       id: Date.now().toString(),
     };
-    saveTasks([...tasks, task]);
+    saveTasks([task, ...tasks]);
     setIsModalOpen(false);
     setNewTask({ priority: 'Middels', status: 'TODO', category: 'Vedlikehold', user: 'Juan', parcelId: parcels[0]?.id });
   };
@@ -64,6 +75,10 @@ const TasksView: React.FC = () => {
   const updateTaskStatus = (id: string, newStatus: Task['status']) => {
     const updated = tasks.map(t => t.id === id ? { ...t, status: newStatus } : t);
     saveTasks(updated);
+  };
+
+  const handleSuggestionClick = (suggestion: Partial<Task>) => {
+    setNewTask(prev => ({ ...prev, ...suggestion }));
   };
 
   const columns = [
@@ -146,16 +161,16 @@ const TasksView: React.FC = () => {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="glass w-full max-w-md rounded-[2.5rem] p-8 border border-white/20 shadow-2xl space-y-6">
-            <div className="flex justify-between items-center">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="glass w-full max-w-lg rounded-[2.5rem] p-8 border border-white/20 shadow-2xl overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center mb-6 flex-shrink-0">
               <h3 className="text-xl font-bold">Opprett Ny Oppgave</h3>
               <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                 <X size={20} />
               </button>
             </div>
-            
-            <div className="space-y-4">
+
+            <div className="flex-1 overflow-y-auto pr-4 -mr-4 space-y-6">
               <div>
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Hva skal gjøres?</label>
                 <input 
@@ -198,6 +213,16 @@ const TasksView: React.FC = () => {
               </div>
 
               <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Kategori</label>
+                  <input 
+                    type="text"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none"
+                    value={newTask.category || ''}
+                    onChange={e => setNewTask({...newTask, category: e.target.value})}
+                  />
+              </div>
+
+              <div>
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Ansvarlig</label>
                 <input 
                   type="text"
@@ -206,14 +231,38 @@ const TasksView: React.FC = () => {
                   onChange={e => setNewTask({...newTask, user: e.target.value})}
                 />
               </div>
+
+              {/* Suggestions */}
+              <div className="pt-4">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <ClipboardList size={14} /> Vanlige Oppgaver (Forslag)
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {SUGGESTED_TASKS.map((suggestion, i) => (
+                    <button 
+                      key={i}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="text-left text-xs bg-white/5 border border-transparent hover:border-green-500/50 hover:bg-green-500/10 px-3 py-2 rounded-lg transition-all"
+                    >
+                      <span className={`text-[9px] font-bold ${
+                          suggestion.priority === 'Kritisk' ? 'text-red-400' : 
+                          suggestion.priority === 'Høy' ? 'text-yellow-400' : 'text-blue-400'
+                        }`}>{suggestion.priority}</span>
+                      <p className="text-slate-300">{suggestion.title}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            <button 
-              onClick={handleAddTask}
-              className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-4 rounded-2xl transition-all"
-            >
-              Lagre Oppgave
-            </button>
+            <div className="pt-6 mt-auto flex-shrink-0">
+              <button 
+                onClick={handleAddTask}
+                className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-4 rounded-2xl transition-all"
+              >
+                Lagre Oppgave
+              </button>
+            </div>
           </div>
         </div>
       )}
