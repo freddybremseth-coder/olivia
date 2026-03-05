@@ -185,6 +185,52 @@ const WeatherView: React.FC = () => {
     return <Sun size={size} className="text-yellow-400" />;
   };
 
+  const generateAIAnalysis = (weather: any, location: string): string => {
+    if (!weather) return "Laster AI analyse...";
+  
+    const insights = [];
+  
+    // 1. Evapotranspiration (ET0) Analysis
+    const todayEvap = weather.daily[0]?.evap;
+    const avgEvap = weather.daily.slice(0, 3).reduce((sum: number, day: any) => sum + day.evap, 0) / 3;
+    if (todayEvap > 4) {
+      insights.push(`høy fordamping (ET0 på ${todayEvap.toFixed(1)}mm)`);
+    } else if (avgEvap > 3.5) {
+      insights.push(`moderat fordamping (ET0) de neste dagene`);
+    }
+  
+    // 2. Spraying Conditions Analysis
+    const optimalSprayTime = weather.hourly.find((h: any) => {
+      const hour = parseInt(h.time.split(':')[0]);
+      return h.wind < 10 && h.rain === 0 && hour > 4 && hour < 11;
+    });
+    if (optimalSprayTime) {
+      insights.push(`optimale sprøyteforhold i morgen tidlig rundt kl. ${optimalSprayTime.time}`);
+    } else {
+        const nextBestTime = weather.hourly.find((h: any) => h.wind < 15 && h.rain === 0);
+        if(nextBestTime) insights.push(`vindfulle forhold, men mulig sprøytevindu rundt kl. ${nextBestTime.time}`);
+    }
+
+    // 3. Heat Stress Analysis
+    const hotDays = weather.daily.slice(0, 4).filter((d: any) => d.maxTemp > 30);
+    if (hotDays.length >= 3) {
+        const maxTemp = Math.max(...hotDays.map(d => d.maxTemp));
+        insights.push(`en hetebølge med temperaturer opp mot ${maxTemp.toFixed(0)}°C er på vei, vurder tiltak for å redusere stress`);
+    }
+
+    // 4. Rain Analysis
+    const nextRainDay = weather.daily.find((d: any) => d.rainProb > 40);
+    if (nextRainDay) {
+        insights.push(`det er ${nextRainDay.rainProb}% sjanse for ${nextRainDay.rainSum}mm nedbør på ${nextRainDay.date.split(' ')[0]}`);
+    }
+
+    if (insights.length === 0) {
+        return `Forholdene ved ${location} ser stabile ut. Ingen spesielle varsler for de kommende dagene.`
+    }
+
+    return `Lokale forhold ved ${location} indikerer ${insights.join(', ')}.`;
+  }
+
   if (loading) return (
     <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
       <Loader2 className="animate-spin text-green-400" size={48} />
@@ -193,6 +239,7 @@ const WeatherView: React.FC = () => {
   );
 
   const isSprayingSafe = weatherData.current.wind_speed_10m < 15;
+  const aiAnalysisText = generateAIAnalysis(weatherData, locationName);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
@@ -543,7 +590,7 @@ const WeatherView: React.FC = () => {
               <Brain size={16} /> AI Mikroklima Analyse
             </h3>
             <p className="text-xs text-slate-300 italic leading-relaxed relative z-10">
-              "<GlossaryText text={`Lokale forhold ved ${locationName} indikerer økt fordamping (ET0) de neste dagene. Optimale sprøyteforhold er i morgen tidlig før kl. 09:00. Hold øye med polyfenol-nivået hvis varmen vedvarer.`} />"
+              "<GlossaryText text={aiAnalysisText} />"
             </p>
             <button className="mt-6 flex items-center gap-2 text-[10px] font-bold text-green-400 uppercase tracking-widest group-hover:gap-3 transition-all">
               Se full rapport <ChevronRight size={14} />

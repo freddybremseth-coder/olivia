@@ -385,9 +385,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ language }) => {
            )}
         </div>
 
-        {/* ... (layer controls remain the same) ... */}
-
-        {/* MANUAL ENTRY MODAL (Updated) */}
+        {/* MANUAL ENTRY MODAL */}
         {showManualEntry && (
           <div className="absolute inset-0 z-[2000] bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
              <form onSubmit={performDirectCadastralSearch} className="w-full max-w-sm glass bg-[#0a0a0b] p-6 md:p-8 rounded-[2rem] border border-white/20 shadow-2xl space-y-6">
@@ -431,8 +429,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ language }) => {
           </div>
         )}
         
-        {/* ... (rest of the JSX remains largely the same) ... */}
-         <div className="absolute bottom-6 left-6 z-[1000] flex flex-col gap-2">
+        <div className="absolute bottom-6 left-6 z-[1000] flex flex-col gap-2">
           {/* Layer Panel Toggle */}
           <button
             onClick={() => setShowLayerPanel(!showLayerPanel)}
