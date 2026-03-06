@@ -15,13 +15,11 @@ const catastroFetch = async (url: string): Promise<string> => {
     } catch (_) { /* faller gjennom */ }
   }
 
-  // 2) Direkte – virker om Catastro tillater CORS
+  // 2) Direkte – Catastro tillater CORS; les body også ved HTTP 500 (SOAP fault er XML)
   try {
     const r = await fetch(url);
-    if (r.ok) {
-      const text = await r.text();
-      if (text.trim().startsWith("<")) return text;
-    }
+    const text = await r.text();
+    if (text.trim().startsWith("<")) return text;
   } catch (_) { /* CORS blokkert */ }
 
   // 3) allorigins.win/get – JSON-wrapper (mer pålitelig enn /raw)
