@@ -15,32 +15,56 @@ const catastroFetch = async (url: string): Promise<string> => {
     } catch (_) { /* faller gjennom */ }
   }
 
-  // 2) corsproxy.io
+  // 2) Direkte – virker om Catastro tillater CORS
   try {
-    const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+    const r = await fetch(url);
     if (r.ok) {
       const text = await r.text();
       if (text.trim().startsWith("<")) return text;
-      errors.push(`corsproxy: ugyldig svar`);
-    } else {
-      errors.push(`corsproxy HTTP ${r.status}`);
     }
-  } catch (e: any) {
-    errors.push(`corsproxy: ${e.message}`);
-  }
+  } catch (_) { /* CORS blokkert */ }
 
-  // 3) allorigins.win
+  // 3) allorigins.win/get – JSON-wrapper (mer pålitelig enn /raw)
   try {
-    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
+    const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
     if (r.ok) {
-      const text = await r.text();
+      const json = await r.json();
+      const text: string = json?.contents ?? "";
       if (text.trim().startsWith("<")) return text;
-      errors.push(`allorigins: ugyldig svar`);
+      errors.push(`allorigins: ugyldig innhold`);
     } else {
       errors.push(`allorigins HTTP ${r.status}`);
     }
   } catch (e: any) {
     errors.push(`allorigins: ${e.message}`);
+  }
+
+  // 4) api.codetabs.com
+  try {
+    const r = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`);
+    if (r.ok) {
+      const text = await r.text();
+      if (text.trim().startsWith("<")) return text;
+      errors.push(`codetabs: ugyldig innhold`);
+    } else {
+      errors.push(`codetabs HTTP ${r.status}`);
+    }
+  } catch (e: any) {
+    errors.push(`codetabs: ${e.message}`);
+  }
+
+  // 5) corsproxy.io
+  try {
+    const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+    if (r.ok) {
+      const text = await r.text();
+      if (text.trim().startsWith("<")) return text;
+      errors.push(`corsproxy: ugyldig innhold`);
+    } else {
+      errors.push(`corsproxy HTTP ${r.status}`);
+    }
+  } catch (e: any) {
+    errors.push(`corsproxy: ${e.message}`);
   }
 
   throw new Error(`Catastro utilgjengelig. (${errors.join('; ')})`);
