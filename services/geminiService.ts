@@ -1,5 +1,5 @@
 
-import { GoogleGenAI } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Sensor, Recipe, Language } from "../types";
 
 //<editor-fold desc="Interfaces">
@@ -101,7 +101,7 @@ export class GeminiService {
     if (!apiKey) {
       throw new Error('API key for Gemini is not configured. Please set it in the application settings.');
     }
-    return new GoogleGenAI(apiKey);
+    return new GoogleGenerativeAI(apiKey);
   }
 
   async analyzeParcelCadastre(searchQueryOrCoords: string, lang: Language = 'no'): Promise<CadastralDetails> {
