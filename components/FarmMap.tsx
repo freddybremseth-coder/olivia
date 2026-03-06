@@ -11,6 +11,7 @@ import L from 'leaflet';
 import { geminiService, CadastralDetails } from '../services/geminiService';
 import { sedecService } from '../services/sedecService';
 import { useTranslation } from '../services/i18nService';
+import { MUNICIPALITIES, Municipality } from '../data/es_municipalities';
 
 import * as turf from '@turf/turf';
 
@@ -37,6 +38,13 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
   const [manualPar, setManualPar] = useState('215');
   const [manualProvCod, setManualProvCod] = useState('03');
   const [manualMunCod, setManualMunCod] = useState('023');
+
+  const [munSearchText, setMunSearchText] = useState('Biar, Alicante');
+  const [munSuggestions, setMunSuggestions] = useState<Municipality[]>([]);
+  const [lastLookupParams, setLastLookupParams] = useState<{ provCod: string; munCod: string; pol: string } | null>(null);
+  const [relatedInput, setRelatedInput] = useState('');
+  const [relatedResults, setRelatedResults] = useState<Array<{ data: any; polygon: [number, number][] | null; areaSqm: number; selected: boolean }>>([]);
+  const [isFetchingRelated, setIsFetchingRelated] = useState(false);
 
   const [drawingCoords, setDrawingCoords] = useState<[number, number][]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -174,7 +182,18 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
 
   const processCadastralDetails = async (details: CadastralDetails, polygonCoords?: [number, number][]) => {
     setAnalysisStatus('Verifiserer grenser og areal...');
-    if (!details.areaSqm || details.areaSqm <= 0) throw new Error("Fant matrikkeldata, men arealet er ugyldig eller 0 m².");
+
+    setAnalysisStatus('Tegner eiendomsgrenser...');
+    const finalPolygon = polygonCoords || await sedecService.getParcelPolygon(details.cadastralId, [details.latitude, details.longitude]);
+
+    // Compute area from polygon if API returned 0 or missing
+    if ((!details.areaSqm || details.areaSqm <= 0) && finalPolygon && finalPolygon.length > 2) {
+      try {
+        const turfPoly = turf.polygon([finalPolygon.map(p => [p[1], p[0]])]);
+        details.areaSqm = Math.round(turf.area(turfPoly));
+      } catch {}
+    }
+
     setAnalyzedDetails(details);
     setEditName(`${details.municipality || 'Ukjent'} Pol ${details.cadastralId.slice(6, 9)} Par ${details.cadastralId.slice(9, 14)}`);
     setEditTreeCount(details.treeCount || 0);
@@ -184,8 +203,6 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
       mapRef.current.flyTo([details.latitude, details.longitude], 18);
     }
 
-    setAnalysisStatus('Tegner eiendomsgrenser...');
-    const finalPolygon = polygonCoords || await sedecService.getParcelPolygon(details.cadastralId, [details.latitude, details.longitude]);
     if (finalPolygon) {
       setDrawingCoords(finalPolygon);
       if (mapRef.current) L.polygon(finalPolygon, { color: '#22c55e', fillOpacity: 0.4, weight: 4 }).addTo(drawingLayerRef.current);
@@ -237,12 +254,92 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
         description: null, soilQuality: null, treeCount: 0
       };
       await processCadastralDetails(details, polygon);
+      setLastLookupParams({ provCod: manualProvCod, munCod: manualMunCod, pol: manualPol });
+      setRelatedResults([]);
+      setRelatedInput('');
     } catch (err: any) {
       alert(err.message || "En feil oppstod under direkte søk.");
     } finally {
       setIsAnalyzing(false);
       setAnalysisStatus('');
     }
+  };
+
+  const handleMunSearch = (text: string) => {
+    setMunSearchText(text);
+    if (text.length < 2) { setMunSuggestions([]); return; }
+    const lower = text.toLowerCase();
+    setMunSuggestions(
+      MUNICIPALITIES.filter(m =>
+        m.municipalityName.toLowerCase().includes(lower) ||
+        m.provinceName.toLowerCase().includes(lower)
+      ).slice(0, 8)
+    );
+  };
+
+  const selectMunicipality = (m: Municipality) => {
+    setMunSearchText(`${m.municipalityName}, ${m.provinceName}`);
+    setManualProvCod(m.provinceCode);
+    setManualMunCod(m.municipalityCode);
+    setMunSuggestions([]);
+  };
+
+  const fetchRelatedParcels = async () => {
+    if (!lastLookupParams || !relatedInput.trim() || isFetchingRelated) return;
+    setIsFetchingRelated(true);
+    const nums = relatedInput.split(/[,\s]+/).map(n => n.trim()).filter(Boolean);
+    const results: typeof relatedResults = [];
+    for (const num of nums) {
+      try {
+        const data = await sedecService.getAlphanumericDataByCode(
+          lastLookupParams.provCod, lastLookupParams.munCod, lastLookupParams.pol, num
+        );
+        if (!data?.cadastralId) continue;
+        const polygon = await sedecService.getParcelPolygon(data.cadastralId);
+        let areaSqm = data.areaSqm || 0;
+        if (areaSqm <= 0 && polygon && polygon.length > 2) {
+          try {
+            const tp = turf.polygon([polygon.map((p: [number,number]) => [p[1], p[0]])]);
+            areaSqm = Math.round(turf.area(tp));
+          } catch {}
+        }
+        results.push({ data, polygon, areaSqm, selected: true });
+      } catch {}
+    }
+    setRelatedResults(results);
+    setIsFetchingRelated(false);
+  };
+
+  const importSelectedRelated = () => {
+    if (!lastLookupParams) return;
+    relatedResults.filter(r => r.selected).forEach(r => {
+      let lat = 0, lon = 0;
+      if (r.polygon && r.polygon.length > 0) {
+        try {
+          const tp = turf.polygon([r.polygon.map((p: [number,number]) => [p[1], p[0]])]);
+          const c = turf.centerOfMass(tp);
+          lat = c.geometry.coordinates[1];
+          lon = c.geometry.coordinates[0];
+        } catch {
+          lat = r.polygon[0][0]; lon = r.polygon[0][1];
+        }
+      }
+      const newParcel: Parcel = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        name: `Pol ${lastLookupParams.pol} Par ${r.data.cadastralId.slice(12, 14).trim() || r.data.cadastralId.slice(-5)}`,
+        cadastralId: r.data.cadastralId,
+        area: r.areaSqm,
+        treeCount: 0,
+        treeVariety: 'Picual',
+        coordinates: r.polygon || [[lat, lon]],
+        cropType: r.data.landUse,
+        irrigationStatus: 'Optimal',
+        lat, lon,
+      };
+      onParcelSave(newParcel);
+    });
+    setRelatedResults([]);
+    setRelatedInput('');
   };
 
   const handleLocateAndSync = () => {
@@ -382,15 +479,34 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
                 <button type="button" onClick={() => setShowManualEntry(false)} className="text-slate-500 hover:text-white p-2"><X size={20} /></button>
               </div>
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-slate-500 uppercase font-bold ml-1 tracking-widest">Provinskode (INE)</label>
-                    <input type="text" value={manualProvCod} onChange={e => setManualProvCod(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-green-500/50" placeholder="03" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-slate-500 uppercase font-bold ml-1 tracking-widest">Kommunekode</label>
-                    <input type="text" value={manualMunCod} onChange={e => setManualMunCod(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-green-500/50" placeholder="023" />
-                  </div>
+                <div className="space-y-1 relative">
+                  <label className="text-[10px] text-slate-500 uppercase font-bold ml-1 tracking-widest">Kommune / Provins</label>
+                  <input
+                    type="text"
+                    value={munSearchText}
+                    onChange={e => handleMunSearch(e.target.value)}
+                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-green-500/50"
+                    placeholder="Skriv kommunenavn..."
+                    autoComplete="off"
+                  />
+                  {munSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 z-[9999] mt-1 bg-[#111] border border-white/20 rounded-2xl overflow-hidden shadow-2xl">
+                      {munSuggestions.map(m => (
+                        <button
+                          key={`${m.provinceCode}-${m.municipalityCode}`}
+                          type="button"
+                          onClick={() => selectMunicipality(m)}
+                          className="w-full text-left px-5 py-3 hover:bg-white/10 border-b border-white/5 last:border-none flex items-center justify-between"
+                        >
+                          <span className="text-sm text-white font-bold">{m.municipalityName}</span>
+                          <span className="text-[10px] text-slate-500 font-mono">{m.provinceCode}{m.municipalityCode} · {m.provinceName}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {manualProvCod && manualMunCod && (
+                    <p className="text-[10px] text-slate-500 ml-1 font-mono">Prov: {manualProvCod} · Mun: {manualMunCod}</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
@@ -504,6 +620,60 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
                 <Save size={24} /> LAGRE I MIN GÅRD
               </button>
             </div>
+          </div>
+        )}
+
+        {lastLookupParams && (
+          <div className="glass bg-[#0a0a0b] rounded-[2rem] p-6 border border-white/10 space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400"><SearchCode size={16} /></div>
+              <div>
+                <p className="text-xs font-bold text-white">Andre parseller i Pol {lastLookupParams.pol}</p>
+                <p className="text-[10px] text-slate-500 font-mono">Prov {lastLookupParams.provCod} · Mun {lastLookupParams.munCod}</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={relatedInput}
+                onChange={e => setRelatedInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && fetchRelatedParcels()}
+                placeholder="Parcela-nr, f.eks. 191, 192, 193"
+                className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500/50 placeholder:text-slate-600"
+              />
+              <button
+                type="button"
+                onClick={fetchRelatedParcels}
+                disabled={isFetchingRelated || !relatedInput.trim()}
+                className="px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-xl border border-blue-500/30 disabled:opacity-40 transition-all"
+              >
+                {isFetchingRelated ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+              </button>
+            </div>
+            {relatedResults.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Funnet {relatedResults.length} parseller</p>
+                {relatedResults.map((r, i) => (
+                  <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${r.selected ? 'border-blue-500/40 bg-blue-500/5' : 'border-white/5 bg-white/2 opacity-50'}`}
+                    onClick={() => setRelatedResults(prev => prev.map((x, j) => j === i ? { ...x, selected: !x.selected } : x))}>
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${r.selected ? 'border-blue-500 bg-blue-500' : 'border-white/20'}`}>
+                      {r.selected && <CheckCircle2 size={10} className="text-black" />}
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <p className="text-xs text-white font-bold font-mono truncate">{r.data.cadastralId}</p>
+                      <p className="text-[10px] text-slate-500">{r.areaSqm > 0 ? `${r.areaSqm.toLocaleString()} m²` : 'Ukjent areal'} · {r.data.landUse || 'Ukjent bruk'}</p>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  onClick={importSelectedRelated}
+                  disabled={!relatedResults.some(r => r.selected)}
+                  className="w-full bg-blue-500 hover:bg-blue-400 disabled:opacity-40 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-sm transition-all"
+                >
+                  <Save size={14} /> Importer valgte ({relatedResults.filter(r => r.selected).length})
+                </button>
+              </div>
+            )}
           </div>
         )}
 
