@@ -96,7 +96,7 @@ export class GeminiService {
     if (!weatherData) return [];
     const ai = this.getAI();
     const model = ai.getGenerativeModel({ 
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         systemInstruction: `You are an expert agronomist AI for an olive farm. Your task is to generate 2-3 brief, actionable insights based on the provided weather forecast data. Focus on what a farm manager needs to know *today*.
         
         RULES:
@@ -151,7 +151,7 @@ export class GeminiService {
 
     const ai = this.getAI();
     const model = ai.getGenerativeModel({
-      model: "gemini-1.5-flash-latest",
+      model: "gemini-1.5-flash",
       systemInstruction: `You are a specialized agent for Spanish property information (Catastro).
       TASK: Identify cadastral data for the following request.
       INSTRUCTIONS:
@@ -213,7 +213,7 @@ export class GeminiService {
 
   async adjustRecipe(currentRecipe: Partial<Recipe>, prompt: string): Promise<Partial<Recipe>> {
     const ai = this.getAI();
-    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const result: EnhancedGenerateContentResponse = await model.generateContent({
         contents: [{ role: 'user', parts: [{text: `Adjust this olive recipe: ${JSON.stringify(currentRecipe)} based on: "${prompt}". Respond in JSON.`}]}],
@@ -229,7 +229,7 @@ export class GeminiService {
   async analyzeComprehensive(imagesBase64: string[], lang: Language): Promise<ComprehensiveAnalysisResult> {
     const ai = this.getAI();
     const model = ai.getGenerativeModel({ 
-        model: "gemini-1.5-pro-latest",
+        model: "gemini-1.5-pro",
         systemInstruction: `You are an expert agronomist and botanist specializing in olive trees ("Olea europaea"). Your task is to perform a comprehensive analysis based on user-provided images.
 
         Analysis Steps:
@@ -325,7 +325,7 @@ export class GeminiService {
   async getIrrigationRecommendation(sensors: Sensor[], forecast: any[], lang: Language): Promise<IrrigationAdvice> {
     const ai = this.getAI();
     const model = ai.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         systemInstruction: `You are an expert irrigation advisor for olive farms. Your task is to provide a concrete irrigation recommendation based on sensor data and weather forecasts.
 
         Analyze the provided data to determine the immediate water needs of the olive grove.
@@ -374,7 +374,7 @@ export class GeminiService {
   ): Promise<{ title: string; analysis: string }> {
     const ai = this.getAI();
     const model = ai.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         systemInstruction: `You are an AI agronomist with a PhD in olive cultivation and 30 years of experience with climate effects on Mediterranean crops. You are analyzing rainfall data for an olive farm in ${locationName}.
 
         TASK:
