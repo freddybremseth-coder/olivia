@@ -1,45 +1,49 @@
 const CATASTRO_HOST = "https://ovc.catastro.meh.es";
 
-/**
- * Henter en Catastro-URL via:
- *  1. Vite dev-proxy  (/api/catastro/...)  – fungerer under `npm run dev`
- *  2. allorigins.win  – fungerer i produksjon
- *  3. corsproxy.io    – reservefallback
- * Kaster en lesbar feil om alle alternativer svikter.
- */
 const catastroFetch = async (url: string): Promise<string> => {
   const path = url.replace(CATASTRO_HOST, "");
+  const errors: string[] = [];
 
-  // 1) Vite dev-proxy
+  // 1) Vite dev-proxy – kun lokalt under `npm run dev`
+  if (import.meta.env.DEV) {
+    try {
+      const r = await fetch(`/api/catastro${path}`);
+      if (r.ok) {
+        const text = await r.text();
+        if (text.trim().startsWith("<")) return text;
+      }
+    } catch (_) { /* faller gjennom */ }
+  }
+
+  // 2) corsproxy.io
   try {
-    const r = await fetch(`/api/catastro${path}`);
+    const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
     if (r.ok) {
       const text = await r.text();
       if (text.trim().startsWith("<")) return text;
+      errors.push(`corsproxy: ugyldig svar`);
+    } else {
+      errors.push(`corsproxy HTTP ${r.status}`);
     }
-  } catch (_) { /* ikke i dev-modus */ }
+  } catch (e: any) {
+    errors.push(`corsproxy: ${e.message}`);
+  }
 
-  // 2) allorigins.win
+  // 3) allorigins.win
   try {
     const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
     if (r.ok) {
       const text = await r.text();
       if (text.trim().startsWith("<")) return text;
-      throw new Error(`Ugyldig svar fra allorigins: ${text.slice(0, 120)}`);
+      errors.push(`allorigins: ugyldig svar`);
+    } else {
+      errors.push(`allorigins HTTP ${r.status}`);
     }
-    throw new Error(`allorigins HTTP ${r.status}`);
   } catch (e: any) {
-    if (!e.message?.startsWith("allorigins") && !e.message?.startsWith("Ugyldig")) throw e;
-    console.warn("[catastroFetch] allorigins feilet:", e.message);
+    errors.push(`allorigins: ${e.message}`);
   }
 
-  // 3) corsproxy.io
-  const r3 = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
-  if (!r3.ok) throw new Error(`Catastro-proxy feilet (HTTP ${r3.status}). Prøv igjen.`);
-  const text3 = await r3.text();
-  if (!text3.trim().startsWith("<"))
-    throw new Error(`Uventet svar fra proxy: ${text3.slice(0, 120)}`);
-  return text3;
+  throw new Error(`Catastro utilgjengelig. (${errors.join('; ')})`);
 };
 
 export class SedecService {
