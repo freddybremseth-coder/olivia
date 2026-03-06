@@ -19,8 +19,7 @@ import LoginModal, { StoredUser } from './components/LoginModal';
 import ProfitabilityPage from './pages/Profitability';
 import { UserProfile, Language, Parcel } from './types';
 
-// IMPORTANT: Replace with your actual Google Maps API key
-const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
+const GOOGLE_MAPS_API_KEY = '12RW6scFNZqQtRP1RU0TJvZoZHMtiiRo';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -44,7 +43,6 @@ const App: React.FC = () => {
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
   });
   
-  // State for parcels
   const [parcels, setParcels] = useState<Parcel[]>([
     { id: 'p1', name: 'Hovedlunden', area: 12.5, crop: 'Arbequina', soilType: 'Leire', registrationDate: '2022-03-15', lat: 38.6300, lon: -0.7650, boundaries: [] },
     { id: 'p2', name: 'Nordhellinga', area: 8.2, crop: 'Picual', soilType: 'Sandholdig leire', registrationDate: '2021-09-20', lat: 38.6325, lon: -0.7680, boundaries: [] },

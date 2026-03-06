@@ -34,12 +34,7 @@ const Dashboard: React.FC<DashboardProps> = ({ language, weatherData, locationNa
     if (!weatherData) return;
     setLoading(true);
     try {
-      const data = await geminiService.getFarmInsights(
-        { temp: weatherData.current.temperature_2m, rain: weatherData.daily[0].precipitation_sum }, 
-        { moisture: 45 }, 
-        language,
-        locationName
-      );
+      const data = await geminiService.getFarmInsights(weatherData, language);
       setInsights(data);
     } catch (err) {
       console.error("Dashboard Insights Error:", err);
