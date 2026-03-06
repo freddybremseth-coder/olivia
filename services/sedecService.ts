@@ -1,111 +1,105 @@
 
+// corsproxy.io gir CORS-headere slik at nettleseren aksepterer svaret fra Catastro
+const CORS_PROXY = "https://corsproxy.io/?";
+
+const proxiedFetch = async (url: string): Promise<Response> => {
+  // Prøv direkte først (fungerer fra Node / noen nettlesere)
+  try {
+    const direct = await fetch(url, { mode: "cors" });
+    if (direct.ok) return direct;
+  } catch {}
+  // Fallback: rut gjennom CORS-proxy
+  return fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+};
+
 export class SedecService {
   private static BASE_WFS_URL = "https://ovc.catastro.minhafp.es/ovcservweb/ovcwfs/ServidorWFS.aspx";
-  // Korrekt, offisielt endepunkt for alfanumerisk data (datos no protegidos)
-  private static BASE_ALPHANUMERIC_URL = "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_DNPPP";
-  // Mer robust endepunkt som bruker INE-koder i stedet for tekstnavn
-  private static BASE_ALPHANUMERIC_URL_CODIGOS = "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroCodigos.asmx/Consulta_DNPPP_Codigos";
+
+  // Offisielle Catastro-endepunkter — bruker HTTPS-varianten
+  private static BASE_ALPHANUMERIC_URL =
+    "https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_DNPPP";
+  private static BASE_ALPHANUMERIC_URL_CODIGOS =
+    "https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroCodigos.asmx/Consulta_DNPPP_Codigos";
 
   async getParcelPolygon(refCat: string, fallbackCoords?: [number, number]): Promise<[number, number][] | null> {
     try {
-      const parcelId = refCat.slice(0, 14);
-      
+      const parcelId = refCat.replace(/\s/g, "").slice(0, 14);
+
       const params = new URLSearchParams({
         SERVICE: "WFS",
         VERSION: "1.1.0",
         REQUEST: "GetFeature",
         TYPENAME: "CP:CadastralParcel",
         FEATUREID: `CP.CadastralParcel.${parcelId}`,
-        SRSNAME: "EPSG:4326"
+        SRSNAME: "EPSG:4326",
       });
 
       const response = await fetch(`${SedecService.BASE_WFS_URL}?${params.toString()}`);
-      if (!response.ok) throw new Error("CORS or Server Error fetching polygon");
+      if (!response.ok) throw new Error("WFS server error");
 
       const xmlText = await response.text();
       const coords = this.parseGmlPolygon(xmlText);
-      
+
       if (coords && coords.length > 0) return coords;
-      throw new Error("No coordinates in XML");
+      throw new Error("No coordinates in WFS response");
     } catch (error) {
-      console.warn("WFS Polygon fetch failed, using fallback circle for", refCat, error);
+      console.warn("WFS Polygon fetch failed, using fallback for", refCat, error);
       if (fallbackCoords) {
-        const offset = 0.0003; 
+        const o = 0.0003;
+        const [lat, lon] = fallbackCoords;
         return [
-          [fallbackCoords[0] + offset, fallbackCoords[1] - offset],
-          [fallbackCoords[0] + offset, fallbackCoords[1] + offset],
-          [fallbackCoords[0] - offset, fallbackCoords[1] + offset],
-          [fallbackCoords[0] - offset, fallbackCoords[1] - offset],
-          [fallbackCoords[0] + offset, fallbackCoords[1] - offset]
+          [lat + o, lon - o],
+          [lat + o, lon + o],
+          [lat - o, lon + o],
+          [lat - o, lon - o],
+          [lat + o, lon - o],
         ];
       }
       return null;
     }
   }
 
-  // Oppdatert metode for å hente alfanumeriske data via det offisielle API-et
-  async getAlphanumericData(provincia: string, municipio: string, poligono: string, parcela: string): Promise<any | null> {
-    try {
-      const params = new URLSearchParams({
-        Provincia: provincia,
-        Municipio: municipio,
-        Poligono: poligono,
-        Parcela: parcela
-      });
-      
-      // Catastro API returnerer XML og kan ha CORS-problemer. En proxy kan være nødvendig i produksjon.
-      const response = await fetch(`${SedecService.BASE_ALPHANUMERIC_URL}?${params.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const xmlText = await response.text();
-      const data = this.parseAlphanumericXml(xmlText);
-      
-      if (!data.cadastralId) {
-        throw new Error("Could not parse Cadastral ID from the response.");
-      }
-      
-      return data;
-    } catch (error) {
-      console.error("Failed to fetch or parse alphanumeric data:", error);
-      return null;
-    }
+  async getAlphanumericData(
+    provincia: string,
+    municipio: string,
+    poligono: string,
+    parcela: string
+  ): Promise<any | null> {
+    const params = new URLSearchParams({ Provincia: provincia, Municipio: municipio, Poligono: poligono, Parcela: parcela });
+    return this._fetchAndParse(`${SedecService.BASE_ALPHANUMERIC_URL}?${params}`);
   }
 
-  /**
-   * Henter alfanumeriske data (datos no protegidos) fra Catastro basert på provins- og kommune-koder (INE).
-   * Dette er en mer robust metode enn å bruke tekstnavn for å unngå feil med staving og formatering.
-   * @param provinciaCod INE-koden for provinsen (f.eks. "03" for Alicante).
-   * @param municipioCod INE-koden for kommunen (f.eks. "014" for Altea).
-   * @param poligono Polygonnummer.
-   * @param parcela Parsellnummer.
-   * @returns Et objekt med matrikkeldata, eller null ved feil.
-   */
-  async getAlphanumericDataByCode(provinciaCod: string, municipioCod: string, poligono: string, parcela: string): Promise<any | null> {
+  async getAlphanumericDataByCode(
+    provinciaCod: string,
+    municipioCod: string,
+    poligono: string,
+    parcela: string
+  ): Promise<any | null> {
+    const params = new URLSearchParams({
+      CodigoProvincia: provinciaCod,
+      CodigoMunicipio: municipioCod,
+      Poligono: poligono,
+      Parcela: parcela,
+    });
+    return this._fetchAndParse(`${SedecService.BASE_ALPHANUMERIC_URL_CODIGOS}?${params}`);
+  }
+
+  private async _fetchAndParse(url: string): Promise<any | null> {
     try {
-      const params = new URLSearchParams({
-        CodigoProvincia: provinciaCod,
-        CodigoMunicipio: municipioCod,
-        Poligono: poligono,
-        Parcela: parcela
-      });
-      
-      const response = await fetch(`${SedecService.BASE_ALPHANUMERIC_URL_CODIGOS}?${params.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const response = await proxiedFetch(url);
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
       const xmlText = await response.text();
+      console.log("[Catastro XML]", xmlText.slice(0, 400));
+
       const data = this.parseAlphanumericXml(xmlText);
-      
-      if (!data.cadastralId) {
-        throw new Error("Could not parse Cadastral ID from the response.");
-      }
-      
+
+      if (!data.cadastralId) throw new Error("Fant ikke Referencia Catastral i svaret.");
+
       return data;
     } catch (error) {
-      console.error("Failed to fetch or parse alphanumeric data by code:", error);
+      console.error("Catastro fetch/parse failed:", error);
       return null;
     }
   }
@@ -113,35 +107,31 @@ export class SedecService {
   private parseAlphanumericXml(xml: string): any {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xml, "text/xml");
-    
-    // Finner rot-elementet for eiendomsdata
-    const bi = xmlDoc.querySelector("bico > bi");
-    const dt = xmlDoc.querySelector("dt");
-    const loct = xmlDoc.querySelector("loct");
-
-    if (!bi && !dt) {
-      console.warn("No 'bi' or 'dt' element found in XML response for alphanumeric data.");
-      return {};
-    }
 
     const result: any = {};
-    
-    // Hent Referencia Catastral (20 siffer)
-    const pc1 = dt?.querySelector("pc > pc1")?.textContent || "";
-    const pc2 = dt?.querySelector("pc > pc2")?.textContent || "";
-    result.cadastralId = `${pc1}${pc2}`;
 
-    // Hent areal
-    const superficie = bi?.querySelector("dt > debi > sfe")?.textContent;
-    if (superficie) {
-      result.areaSqm = parseInt(superficie, 10);
+    // Referencia Catastral: pc1 + pc2 (kan ligge direkte under <dt> eller inne i <bico>)
+    const allPc1 = xmlDoc.querySelectorAll("pc1");
+    const allPc2 = xmlDoc.querySelectorAll("pc2");
+    if (allPc1.length > 0 && allPc2.length > 0) {
+      result.cadastralId = (allPc1[0].textContent || "") + (allPc2[0].textContent || "");
     }
-    
-    // Hent bruksklasse (Rústico/Urbano) og hovedbruk
-    result.landUse = bi?.querySelector("dt > debi > luso")?.textContent || "Ukjent";
-    
-    // Hent lokasjon/adresse hvis tilgjengelig
-    result.address = loct?.querySelector("ldt")?.textContent || "Ingen adresse funnet";
+
+    // Areal (sfe = superficie en m²)
+    const sfeEl = xmlDoc.querySelector("sfe");
+    if (sfeEl?.textContent) result.areaSqm = parseInt(sfeEl.textContent.trim(), 10);
+
+    // Bruksklasse
+    const lusoEl = xmlDoc.querySelector("luso");
+    result.landUse = lusoEl?.textContent?.trim() || "Ukjent";
+
+    // Adresse
+    const ldtEl = xmlDoc.querySelector("ldt");
+    result.address = ldtEl?.textContent?.trim() || "Ingen adresse";
+
+    // Eier (titular) — kun tilgjengelig hvis API-et returnerer det (datos no protegidos)
+    const titEl = xmlDoc.querySelector("tit nif");
+    if (titEl) result.ownerNif = titEl.textContent?.trim();
 
     return result;
   }
@@ -150,21 +140,23 @@ export class SedecService {
     try {
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(xml, "text/xml");
-      
+
       const posListElements = xmlDoc.getElementsByTagNameNS("*", "posList");
       if (posListElements.length === 0) return null;
-      
+
       const coordsStr = posListElements[0].textContent || "";
       const values = coordsStr.trim().split(/\s+/).map(Number);
-      
+
       const coordinates: [number, number][] = [];
-      for (let i = 0; i < values.length; i += 2) {
-        if (!isNaN(values[i]) && !isNaN(values[i+1])) {
+      for (let i = 0; i < values.length - 1; i += 2) {
+        if (!isNaN(values[i]) && !isNaN(values[i + 1])) {
           coordinates.push([values[i], values[i + 1]]);
         }
       }
-      return coordinates;
-    } catch { return null; }
+      return coordinates.length > 2 ? coordinates : null;
+    } catch {
+      return null;
+    }
   }
 }
 
