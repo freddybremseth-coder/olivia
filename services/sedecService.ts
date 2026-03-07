@@ -87,9 +87,8 @@ export class SedecService {
         refcat: parcelId,
         srsname: "EPSG::4326",
       });
-      const r = await fetch(`${SedecService.WFS_URL}?${params}`);
-      if (!r.ok) throw new Error(`WFS HTTP ${r.status}`);
-      const xml = await r.text();
+      const url = `${SedecService.WFS_URL}?${params}`;
+      const xml = await catastroFetch(url);
       const coords = this.parseGmlPolygon(xml);
       if (coords && coords.length > 2) return coords;
       throw new Error("Ingen koordinater i WFS-svar");
