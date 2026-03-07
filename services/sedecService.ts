@@ -75,7 +75,7 @@ const catastroFetch = async (url: string): Promise<string> => {
 
 export class SedecService {
   private static WFS_URL =
-    "https://ovc.catastro.meh.es/cartografia/INSPIRE/spadastroWFS/wfs.aspx";
+    "https://ovc.catastro.meh.es/INSPIRE/wfsCP.aspx";
   private static ALPHA_CODES_URL =
     `${CATASTRO_HOST}/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroCodigos.asmx/Consulta_DNPPP_Codigos`;
 
@@ -86,10 +86,10 @@ export class SedecService {
     try {
       const parcelId = refCat.replace(/\s/g, "").slice(0, 14);
       const params = new URLSearchParams({
-        SERVICE: "WFS", VERSION: "2.0.0", REQUEST: "GetFeature",
-        TYPENAMES: "CP:CadastralParcel",
-        FEATUREID: `CP.CadastralParcel.${parcelId}`,
-        SRSNAME: "EPSG:4326",
+        service: "wfs", version: "2", request: "getfeature",
+        STOREDQUERIE_ID: "GetParcel",
+        refcat: parcelId,
+        srsname: "EPSG::4326",
       });
       const r = await fetch(`${SedecService.WFS_URL}?${params}`);
       if (!r.ok) throw new Error(`WFS HTTP ${r.status}`);
