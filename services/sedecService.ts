@@ -121,13 +121,15 @@ export class SedecService {
       `?CodigoProvincia=${provCode}&CodigoMunicipio=&CodigoMunicipioIne=&NombreMunicipio=${encodeURIComponent(namePrefix.toUpperCase())}`;
     const xml = await catastroFetch(url);
     const doc = new DOMParser().parseFromString(xml, 'text/xml');
-    // Response: <muni><nm>BIAR</nm><locat><cd>3</cd><cmc>43</cmc></locat>...
+    // Response returns ALL province municipalities — filter client-side by name
+    // <muni><nm>BIAR</nm><locat><cd>3</cd><cmc>43</cmc></locat>...
+    const upper = namePrefix.toUpperCase();
     return Array.from(doc.querySelectorAll('muni')).map(el => ({
       provinceCode: provCode,
       provinceName: provLabel,
       municipalityCode: el.querySelector('cmc')?.textContent?.trim() ?? '',
       municipalityName: el.querySelector('nm')?.textContent?.trim() ?? '',
-    })).filter(m => m.municipalityCode);
+    })).filter(m => m.municipalityCode && m.municipalityName.toUpperCase().includes(upper));
   }
 
   async getAlphanumericDataByCode(
@@ -162,16 +164,18 @@ export class SedecService {
     const xmlDoc = parser.parseFromString(xml, "text/xml");
     const result: any = {};
 
-    const pc1 = xmlDoc.querySelector("pc1")?.textContent?.trim() ?? "";
-    const pc2 = xmlDoc.querySelector("pc2")?.textContent?.trim() ?? "";
-    const id = pc1 + pc2;
+    // Must use getElementsByTagNameNS because Catastro XML has default namespace
+    const get = (tag: string) =>
+      xmlDoc.getElementsByTagNameNS("*", tag)[0]?.textContent?.trim() ?? "";
+
+    const id = get("pc1") + get("pc2");
     if (id.length >= 14) result.cadastralId = id;
 
-    const sfe = xmlDoc.querySelector("sfe");
-    if (sfe?.textContent) result.areaSqm = parseInt(sfe.textContent.trim(), 10) || 0;
+    const sfeText = get("sfe");
+    result.areaSqm = sfeText ? parseInt(sfeText, 10) || 0 : 0;
 
-    result.landUse = xmlDoc.querySelector("luso")?.textContent?.trim() || "Ukjent";
-    result.address  = xmlDoc.querySelector("ldt")?.textContent?.trim()  || "Ingen adresse";
+    result.landUse = get("luso") || "Ukjent";
+    result.address  = get("ldt")  || "Ingen adresse";
 
     return result;
   }
