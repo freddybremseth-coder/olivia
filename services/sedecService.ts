@@ -4,16 +4,12 @@ const catastroFetch = async (url: string): Promise<string> => {
   const path = url.replace(CATASTRO_HOST, "");
   const errors: string[] = [];
 
-  // 1) Vite dev-proxy – kun lokalt under `npm run dev`
-  if (import.meta.env.DEV) {
-    try {
-      const r = await fetch(`/api/catastro${path}`);
-      if (r.ok) {
-        const text = await r.text();
-        if (text.trim().startsWith("<")) return text;
-      }
-    } catch (_) { /* faller gjennom */ }
-  }
+  // 1) Intern proxy – Vite dev-proxy lokalt, Vercel rewrite i produksjon
+  try {
+    const r = await fetch(`/api/catastro${path}`);
+    const text = await r.text();
+    if (text.replace(/^\uFEFF/, '').trim().startsWith("<")) return text;
+  } catch (_) { /* faller gjennom */ }
 
   // 2) Direkte – Catastro tillater CORS; les body også ved HTTP 500 (SOAP fault er XML)
   try {
