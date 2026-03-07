@@ -246,7 +246,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
         );
         if (mun) {
           setAnalysisStatus('Henter data fra Catastro...');
-          await doDirectSearch(mun.provinceCode, mun.municipalityCode, pol, par);
+          await doDirectSearch(mun.provinceCode, mun.municipalityCode, pol, par, mun.municipalityName);
           return;
         }
       }
@@ -261,8 +261,20 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     }
   };
 
-  const doDirectSearch = async (provCod: string, munCod: string, pol: string, par: string) => {
-    const data = await sedecService.getAlphanumericDataByCode(provCod, munCod, pol, par);
+  const doDirectSearch = async (provCod: string, munCod: string, pol: string, par: string, munName?: string) => {
+    // Verifiser kommunekode mot Catastro API om kommunenavn er kjent
+    let resolvedMunCod = munCod;
+    if (munName && munName.length >= 2) {
+      try {
+        const provLabel = Object.entries(PROVINCE_CODE_MAP).find(([, v]) => v === provCod)?.[0] ?? '';
+        const results = await sedecService.searchMunicipalities(provCod, munName, provLabel);
+        if (results.length > 0 && results[0].municipalityCode) {
+          resolvedMunCod = results[0].municipalityCode;
+          setManualMunCod(resolvedMunCod);
+        }
+      } catch { /* bruk oppgitt kode */ }
+    }
+    const data = await sedecService.getAlphanumericDataByCode(provCod, resolvedMunCod, pol, par);
     const polygon = await sedecService.getParcelPolygon(data.cadastralId);
     if (!polygon) throw new Error("Fant data, men kunne ikke hente eiendommens grenser.");
     const polygonForTurf = turf.polygon([polygon.map(p => [p[1], p[0]])]);
@@ -278,7 +290,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
       description: null, soilQuality: null, treeCount: 0
     };
     await processCadastralDetails(details, polygon);
-    setLastLookupParams({ provCod, munCod, pol });
+    setLastLookupParams({ provCod, munCod: resolvedMunCod, pol });
     setRelatedResults([]);
     setRelatedInput('');
   };
@@ -292,7 +304,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     setDrawingCoords([]);
     drawingLayerRef.current.clearLayers();
     try {
-      await doDirectSearch(manualProvCod, manualMunCod, manualPol, manualPar);
+      await doDirectSearch(manualProvCod, manualMunCod, manualPol, manualPar, munSearchText.split(',')[0].trim());
     } catch (err: any) {
       alert(err.message || "En feil oppstod under direkte søk.");
     } finally {
