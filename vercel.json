@@ -1,8 +1,5 @@
 {
   "rewrites": [
-    {
-      "source": "/api/catastro/:path*",
-      "destination": "https://ovc.catastro.meh.es/:path*"
-    }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

@@ -1,15 +1,22 @@
 const CATASTRO_HOST = "https://ovc.catastro.meh.es";
 
+/** Returns true only for actual XML (not HTML error pages) */
+const isXml = (text: string) => {
+  const t = text.replace(/^\uFEFF/, '').trim();
+  return t.startsWith("<?xml") || t.startsWith("<consulta") || t.startsWith("<string") || t.startsWith("<municipiero") || t.startsWith("<datos") || t.startsWith("<wfs") || t.startsWith("<FeatureCollection");
+};
+
 const catastroFetch = async (url: string): Promise<string> => {
   const path = url.replace(CATASTRO_HOST, "");
   const errors: string[] = [];
 
-  // 1) Intern proxy – Vite dev-proxy lokalt, Vercel rewrite i produksjon
+  // 1) Intern proxy – Vite dev-proxy lokalt, Vercel serverless i produksjon
   try {
     const r = await fetch(`/api/catastro${path}`);
     const text = await r.text();
-    if (text.replace(/^\uFEFF/, '').trim().startsWith("<")) return text;
-  } catch (_) { /* faller gjennom */ }
+    if (isXml(text)) return text;
+    errors.push(`proxy HTTP ${r.status}: ikke XML (${text.slice(0, 60)})`);
+  } catch (e: any) { errors.push(`proxy: ${e.message}`); }
 
   // 2) Direkte – Catastro tillater CORS; les body også ved HTTP 500 (SOAP fault er XML)
   try {
@@ -109,8 +116,9 @@ export class SedecService {
   async searchMunicipalities(
     provCode: string, namePrefix: string, provLabel: string
   ): Promise<import('../data/es_municipalities').Municipality[]> {
+    // Catastro expects uppercase municipality names
     const url = `${CATASTRO_HOST}/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroCodigos.asmx/ConsultaMunicipioCodigos` +
-      `?CodigoProvincia=${provCode}&NombreMunicipio=${encodeURIComponent(namePrefix)}`;
+      `?CodigoProvincia=${provCode}&NombreMunicipio=${encodeURIComponent(namePrefix.toUpperCase())}`;
     const xml = await catastroFetch(url);
     const doc = new DOMParser().parseFromString(xml, 'text/xml');
     return Array.from(doc.querySelectorAll('muni locat')).map(el => ({
