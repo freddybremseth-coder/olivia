@@ -111,6 +111,21 @@ export class SedecService {
     }
   }
 
+  async searchMunicipalities(
+    provCode: string, namePrefix: string, provLabel: string
+  ): Promise<import('../data/es_municipalities').Municipality[]> {
+    const url = `${CATASTRO_HOST}/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroCodigos.asmx/ConsultaMunicipioCodigos` +
+      `?CodigoProvincia=${provCode}&NombreMunicipio=${encodeURIComponent(namePrefix)}`;
+    const xml = await catastroFetch(url);
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    return Array.from(doc.querySelectorAll('muni locat')).map(el => ({
+      provinceCode: el.querySelector('nump')?.textContent?.trim() ?? provCode,
+      provinceName: provLabel,
+      municipalityCode: el.querySelector('cmund')?.textContent?.trim() ?? '',
+      municipalityName: el.querySelector('nm')?.textContent?.trim() ?? '',
+    })).filter(m => m.municipalityCode);
+  }
+
   async getAlphanumericDataByCode(
     provinciaCod: string, municipioCod: string,
     poligono: string, parcela: string

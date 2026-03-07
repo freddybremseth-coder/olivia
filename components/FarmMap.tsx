@@ -11,7 +11,7 @@ import L from 'leaflet';
 import { geminiService, CadastralDetails } from '../services/geminiService';
 import { sedecService } from '../services/sedecService';
 import { useTranslation } from '../services/i18nService';
-import { MUNICIPALITIES, Municipality } from '../data/es_municipalities';
+import { MUNICIPALITIES, Municipality, PROVINCE_CODE_MAP } from '../data/es_municipalities';
 
 import * as turf from '@turf/turf';
 
@@ -41,6 +41,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
 
   const [munSearchText, setMunSearchText] = useState('Biar, Alicante');
   const [munSuggestions, setMunSuggestions] = useState<Municipality[]>([]);
+  const munDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [lastLookupParams, setLastLookupParams] = useState<{ provCod: string; munCod: string; pol: string } | null>(null);
   const [relatedInput, setRelatedInput] = useState('');
   const [relatedResults, setRelatedResults] = useState<Array<{ data: any; polygon: [number, number][] | null; areaSqm: number; selected: boolean }>>([]);
@@ -278,14 +279,34 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
 
   const handleMunSearch = (text: string) => {
     setMunSearchText(text);
+    if (munDebounceRef.current) clearTimeout(munDebounceRef.current);
     if (text.length < 2) { setMunSuggestions([]); return; }
     const lower = text.toLowerCase();
+    // Umiddelbar statisk filtrering
     setMunSuggestions(
       MUNICIPALITIES.filter(m =>
         m.municipalityName.toLowerCase().includes(lower) ||
         m.provinceName.toLowerCase().includes(lower)
       ).slice(0, 8)
     );
+    // Dynamisk Catastro-søk hvis "Kommunenavn, Provins" er oppgitt
+    const commaIdx = text.indexOf(',');
+    if (commaIdx > 1) {
+      const munName = text.slice(0, commaIdx).trim();
+      const provName = text.slice(commaIdx + 1).trim();
+      const provEntry = Object.entries(PROVINCE_CODE_MAP).find(
+        ([k]) => k.toLowerCase() === provName.toLowerCase()
+      );
+      if (provEntry && munName.length >= 2) {
+        const [provLabel, provCode] = provEntry;
+        munDebounceRef.current = setTimeout(async () => {
+          try {
+            const results = await sedecService.searchMunicipalities(provCode, munName, provLabel);
+            if (results.length > 0) setMunSuggestions(results.slice(0, 8));
+          } catch { /* behold statiske resultater */ }
+        }, 400);
+      }
+    }
   };
 
   const selectMunicipality = (m: Municipality) => {
