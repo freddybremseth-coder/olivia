@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   TrendingUp, TrendingDown, Plus, Trash2, Save, X,
   Leaf, Droplets, Wrench, Tractor, Package, MoreHorizontal,
@@ -14,10 +14,11 @@ import {
   Parcel, Language, HarvestRecord, FarmExpense, SubsidyIncome,
   SalesChannel, ExpenseCategory, SubsidyType
 } from '../types';
-
-const LS_HARVESTS  = 'olivia_harvests';
-const LS_EXPENSES  = 'olivia_expenses';
-const LS_SUBSIDIES = 'olivia_subsidies';
+import {
+  fetchHarvests, fetchExpenses, fetchSubsidies,
+  upsertExpense, deleteExpense as dbDeleteExpense,
+  upsertSubsidy, deleteSubsidy as dbDeleteSubsidy,
+} from '../services/db';
 
 const CHANNEL_LABELS: Record<SalesChannel, string> = {
   cooperativa:  'Cooperativa',
@@ -72,17 +73,15 @@ interface Props { language: Language; parcels: Parcel[]; }
 type EcoTab = 'oversikt' | 'utgifter' | 'inntekter' | 'per_parsell';
 
 const ProfitabilityDashboard: React.FC<Props> = ({ language, parcels }) => {
-  const [harvests] = useState<HarvestRecord[]>(() => {
-    try { return JSON.parse(localStorage.getItem(LS_HARVESTS) || '[]'); } catch { return []; }
-  });
-  const [expenses, setExpenses] = useState<FarmExpense[]>(() => {
-    try { return JSON.parse(localStorage.getItem(LS_EXPENSES) || '[]'); } catch { return []; }
-  });
-  const [subsidies, setSubsidies] = useState<SubsidyIncome[]>(() => {
-    try { return JSON.parse(localStorage.getItem(LS_SUBSIDIES) || '[]'); } catch { return []; }
-  });
-  const saveExpenses  = (u: FarmExpense[])   => { setExpenses(u);  localStorage.setItem(LS_EXPENSES,  JSON.stringify(u)); };
-  const saveSubsidies = (u: SubsidyIncome[]) => { setSubsidies(u); localStorage.setItem(LS_SUBSIDIES, JSON.stringify(u)); };
+  const [harvests,  setHarvests]  = useState<HarvestRecord[]>([]);
+  const [expenses,  setExpenses]  = useState<FarmExpense[]>([]);
+  const [subsidies, setSubsidies] = useState<SubsidyIncome[]>([]);
+
+  useEffect(() => {
+    fetchHarvests().then(setHarvests);
+    fetchExpenses().then(setExpenses);
+    fetchSubsidies().then(setSubsidies);
+  }, []);
 
   const [activeTab,       setActiveTab]       = useState<EcoTab>('oversikt');
   const [season,          setSeason]          = useState(currentSeason());
@@ -96,21 +95,31 @@ const ProfitabilityDashboard: React.FC<Props> = ({ language, parcels }) => {
   }, [harvests, expenses, subsidies]);
 
   const [newExp, setNewExp] = useState<Partial<FarmExpense>>({ season: currentSeason(), date: new Date().toISOString().slice(0,10), category: 'innhøsting', scope: 'parcel', amount: 0, description: '' });
-  const addExpense = () => {
+  const addExpense = async () => {
     if (!newExp.amount || newExp.amount <= 0 || !newExp.description) return;
     const rec: FarmExpense = { id: `E${Date.now()}`, date: newExp.date!, season: newExp.season!, category: newExp.category as ExpenseCategory, description: newExp.description, amount: newExp.amount, scope: newExp.scope as 'farm'|'parcel', parcelId: newExp.scope==='parcel' ? newExp.parcelId : undefined };
-    saveExpenses([rec, ...expenses]);
+    await upsertExpense(rec);
+    setExpenses(prev => [rec, ...prev]);
     setNewExp(p => ({...p, amount: 0, description: ''}));
     setShowExpenseForm(false);
   };
+  const removeExpense = async (id: string) => {
+    await dbDeleteExpense(id);
+    setExpenses(prev => prev.filter(e => e.id !== id));
+  };
 
   const [newSub, setNewSub] = useState<Partial<SubsidyIncome>>({ season: currentSeason(), date: new Date().toISOString().slice(0,10), type: 'eu_okologisk', amount: 0, description: '' });
-  const addSubsidy = () => {
+  const addSubsidy = async () => {
     if (!newSub.amount || newSub.amount <= 0) return;
     const rec: SubsidyIncome = { id: `S${Date.now()}`, date: newSub.date!, season: newSub.season!, type: newSub.type as SubsidyType, amount: newSub.amount, description: newSub.description || SUBSIDY_LABELS[newSub.type as SubsidyType] };
-    saveSubsidies([rec, ...subsidies]);
+    await upsertSubsidy(rec);
+    setSubsidies(prev => [rec, ...prev]);
     setNewSub(p => ({...p, amount: 0, description: ''}));
     setShowSubsidyForm(false);
+  };
+  const removeSubsidy = async (id: string) => {
+    await dbDeleteSubsidy(id);
+    setSubsidies(prev => prev.filter(s => s.id !== id));
   };
 
   const sHarvests  = harvests.filter(h => h.season === season);
@@ -276,7 +285,7 @@ const ProfitabilityDashboard: React.FC<Props> = ({ language, parcels }) => {
                       <p className="text-[10px] text-slate-500">{e.date}</p>
                     </div>
                     <p className="text-base font-black text-red-400 flex-shrink-0">€{e.amount.toLocaleString('no')}</p>
-                    <button onClick={()=>{if(!confirm('Slette?'))return;saveExpenses(expenses.filter(x=>x.id!==e.id));}} className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg flex-shrink-0 transition-colors"><Trash2 size={14}/></button>
+                    <button onClick={()=>removeExpense(e.id)} className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg flex-shrink-0 transition-colors"><Trash2 size={14}/></button>
                   </div>
                 ))}
               </div>
@@ -317,7 +326,7 @@ const ProfitabilityDashboard: React.FC<Props> = ({ language, parcels }) => {
               </div>
             )}
             {sSubsidies.length===0&&!showSubsidyForm?<p className="text-sm text-slate-500">Ingen tilskudd registrert. EU-støtte for økologisk landbruk (PAC/PAO) legges inn her.</p>:sSubsidies.map(s=>(
-              <div key={s.id} className="flex items-center gap-3 p-3 bg-blue-500/5 rounded-xl border border-blue-500/10"><ShieldCheck size={14} className="text-blue-400 flex-shrink-0"/><div className="flex-1 min-w-0"><p className="text-xs font-bold text-white">{SUBSIDY_LABELS[s.type]}</p><p className="text-[10px] text-slate-500">{s.date}{s.description?` · ${s.description}`:''}</p></div><span className="text-sm font-black text-blue-400">€{s.amount.toLocaleString('no')}</span><button onClick={()=>{if(!confirm('Slette?'))return;saveSubsidies(subsidies.filter(x=>x.id!==s.id));}} className="p-1.5 text-slate-600 hover:text-red-400 rounded-lg transition-colors"><Trash2 size={12}/></button></div>
+              <div key={s.id} className="flex items-center gap-3 p-3 bg-blue-500/5 rounded-xl border border-blue-500/10"><ShieldCheck size={14} className="text-blue-400 flex-shrink-0"/><div className="flex-1 min-w-0"><p className="text-xs font-bold text-white">{SUBSIDY_LABELS[s.type]}</p><p className="text-[10px] text-slate-500">{s.date}{s.description?` · ${s.description}`:''}</p></div><span className="text-sm font-black text-blue-400">€{s.amount.toLocaleString('no')}</span><button onClick={()=>removeSubsidy(s.id)} className="p-1.5 text-slate-600 hover:text-red-400 rounded-lg transition-colors"><Trash2 size={12}/></button></div>
             ))}
           </div>
           <div className="glass rounded-2xl p-5 border border-white/10 flex items-center justify-between font-bold"><span className="text-slate-300">Totale inntekter {season}</span><span className="text-xl font-black text-green-400">{fmt(totalRevenue)}</span></div>

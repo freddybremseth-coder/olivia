@@ -17,6 +17,7 @@ import IoTDashboard from './components/IoTDashboard';
 import LoginModal, { StoredUser } from './components/LoginModal';
 import ProfitabilityPage from './pages/Profitability';
 import { UserProfile, Language, Parcel } from './types';
+import { fetchParcels, upsertParcel, deleteParcel } from './services/db';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -40,13 +41,28 @@ const App: React.FC = () => {
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
   });
 
-  const [parcels, setParcels] = useState<Parcel[]>([
+  const DEFAULT_PARCELS: Parcel[] = [
     { id: 'p1', name: 'Hovedlunden', area: 125000, cropType: 'Arbequina', soilType: 'Leire', treeCount: 350, irrigationStatus: 'Optimal', coordinates: [[38.6300, -0.7650]], lat: 38.6300, lon: -0.7650 },
     { id: 'p2', name: 'Nordhellinga', area: 82000, cropType: 'Picual', soilType: 'Sandholdig leire', treeCount: 220, irrigationStatus: 'Optimal', coordinates: [[38.6325, -0.7680]], lat: 38.6325, lon: -0.7680 },
-  ]);
-  const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(parcels[0]);
+  ];
 
-  const handleParcelSave = (parcel: Parcel) => {
+  const [parcels, setParcels] = useState<Parcel[]>(DEFAULT_PARCELS);
+  const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(DEFAULT_PARCELS[0]);
+  const [parcelsLoaded, setParcelsLoaded] = useState(false);
+
+  // Load parcels from Supabase on mount
+  useEffect(() => {
+    fetchParcels().then(rows => {
+      if (rows.length > 0) {
+        setParcels(rows);
+        setSelectedParcel(rows[0]);
+      }
+      setParcelsLoaded(true);
+    });
+  }, []);
+
+  const handleParcelSave = async (parcel: Parcel) => {
+    await upsertParcel(parcel);
     const index = parcels.findIndex(p => p.id === parcel.id);
     if (index !== -1) {
       const newParcels = [...parcels];
@@ -57,7 +73,8 @@ const App: React.FC = () => {
     }
   };
 
-  const handleParcelDelete = (parcelId: string) => {
+  const handleParcelDelete = async (parcelId: string) => {
+    await deleteParcel(parcelId);
     setParcels(parcels.filter(p => p.id !== parcelId));
   };
 

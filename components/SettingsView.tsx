@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, MapPin, Globe, CheckCircle2, Building2, Key, Eye, EyeOff, ExternalLink, Crosshair } from 'lucide-react';
 import { useTranslation } from '../services/i18nService';
 import { Language } from '../types';
+import { fetchSettings, saveSettings as dbSaveSettings } from '../services/db';
 
 interface SettingsViewProps {
   language: Language;
@@ -25,15 +26,38 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
   const [apiSaved, setApiSaved] = useState(false);
 
   useEffect(() => {
-    const savedSettings = localStorage.getItem('olivia_settings');
-    if (savedSettings) setSettings(JSON.parse(savedSettings));
+    // Load from Supabase, fall back to localStorage during transition
+    fetchSettings().then(remote => {
+      if (remote) {
+        setSettings({
+          farmName:    remote.farm_name,
+          farmAddress: remote.farm_address,
+          farmLat:     remote.farm_lat,
+          farmLon:     remote.farm_lon,
+          language:    remote.language as Language,
+          currency:    remote.currency,
+        });
+      } else {
+        const savedSettings = localStorage.getItem('olivia_settings');
+        if (savedSettings) setSettings(JSON.parse(savedSettings));
+      }
+    });
     setApiKeys({
       gemini: localStorage.getItem('olivia_gemini_api_key') || '',
       claude: localStorage.getItem('olivia_claude_api_key') || ''
     });
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    await dbSaveSettings({
+      farm_name:    settings.farmName,
+      farm_address: settings.farmAddress,
+      farm_lat:     settings.farmLat,
+      farm_lon:     settings.farmLon,
+      language:     settings.language,
+      currency:     settings.currency,
+    });
+    // Keep localStorage in sync for components that still read it (language, coords)
     localStorage.setItem('olivia_settings', JSON.stringify(settings));
     onLanguageChange(settings.language);
     setSaved(true);

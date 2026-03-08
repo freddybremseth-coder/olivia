@@ -13,6 +13,7 @@
   "dependencies": {
     "@google/genai": "^1.35.0",
     "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.98.0",
     "@tailwindcss/postcss": "^4.2.1",
     "@turf/turf": "^7.3.4",
     "@vis.gl/react-google-maps": "^1.7.1",

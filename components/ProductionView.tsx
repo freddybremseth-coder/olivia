@@ -12,6 +12,7 @@ import {
 import { Batch, Parcel, Recipe, Ingredient, TableOliveStage, Language, HarvestRecord, SalesChannel } from '../types';
 import { geminiService } from '../services/geminiService';
 import { useTranslation } from '../services/i18nService';
+import { fetchHarvests, upsertHarvest, deleteHarvest as dbDeleteHarvest } from '../services/db';
 import {
   DEFAULT_RECIPES, FLAVOR_PROFILE_LABELS, FLAVOR_PROFILE_COLORS, OLIVE_TYPES
 } from '../data/olivenRecipes';
@@ -34,7 +35,6 @@ const CHANNEL_COLORS: Record<SalesChannel, string> = {
 const VARIETIES = ['Picual', 'Arbequina', 'Hojiblanca', 'Manzanilla', 'Lechin', 'Cornicabra', 'Frantoio', 'Leccino', 'Annen'];
 
 const currentSeason = () => new Date().getFullYear().toString();
-const LS_HARVESTS = 'olivia_harvests';
 
 const STAGES: TableOliveStage[] = ['PLUKKING', 'LAKE', 'SKYLLING', 'MARINERING', 'LAGRING', 'PAKKING', 'SALG'];
 
@@ -56,10 +56,8 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
     SALG: t('sale'),
   };
   
-  // ── Harvest records (persisted to localStorage) ──────────────────────────
-  const [harvests, setHarvests] = useState<HarvestRecord[]>(() => {
-    try { return JSON.parse(localStorage.getItem(LS_HARVESTS) || '[]'); } catch { return []; }
-  });
+  // ── Harvest records (persisted to Supabase) ───────────────────────────────
+  const [harvests, setHarvests] = useState<HarvestRecord[]>([]);
   const [harvestSeason, setHarvestSeason] = useState(currentSeason());
   const [newHarvest, setNewHarvest] = useState<Partial<HarvestRecord>>({
     season: currentSeason(),
@@ -69,11 +67,12 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
     channel: 'cooperativa',
     pricePerKg: 0.45,
   });
-  const saveHarvests = (updated: HarvestRecord[]) => {
-    setHarvests(updated);
-    localStorage.setItem(LS_HARVESTS, JSON.stringify(updated));
-  };
-  const addHarvest = () => {
+
+  useEffect(() => {
+    fetchHarvests().then(setHarvests);
+  }, []);
+
+  const addHarvest = async () => {
     if (!newHarvest.parcelId || !newHarvest.kg || newHarvest.kg <= 0) return;
     const rec: HarvestRecord = {
       id: `H${Date.now()}`,
@@ -86,12 +85,14 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
       pricePerKg: newHarvest.pricePerKg || 0,
       notes: newHarvest.notes,
     };
-    saveHarvests([rec, ...harvests]);
+    await upsertHarvest(rec);
+    setHarvests(prev => [rec, ...prev]);
     setNewHarvest(prev => ({ ...prev, kg: 0, notes: '' }));
   };
-  const deleteHarvest = (id: string) => {
+  const deleteHarvestRecord = async (id: string) => {
     if (!confirm('Slette denne høsteregistreringen?')) return;
-    saveHarvests(harvests.filter(h => h.id !== id));
+    await dbDeleteHarvest(id);
+    setHarvests(prev => prev.filter(h => h.id !== id));
   };
   const seasonHarvests = harvests.filter(h => h.season === harvestSeason);
   const totalKg = seasonHarvests.reduce((s, h) => s + h.kg, 0);
@@ -404,7 +405,7 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
                         <p className="text-xs text-slate-400">{h.kg.toLocaleString('no')} kg × €{h.pricePerKg}/kg = <span className="text-green-400 font-bold">€{(h.kg * h.pricePerKg).toLocaleString('no',{maximumFractionDigits:0})}</span></p>
                         {h.notes && <p className="text-[10px] text-slate-500 mt-0.5 italic">{h.notes}</p>}
                       </div>
-                      <button onClick={() => deleteHarvest(h.id)} className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg flex-shrink-0 transition-colors"><Trash2 size={14} /></button>
+                      <button onClick={() => deleteHarvestRecord(h.id)} className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg flex-shrink-0 transition-colors"><Trash2 size={14} /></button>
                     </div>
                   ))}
                 </div>
