@@ -183,7 +183,7 @@ const App: React.FC = () => {
       case 'economy': return <ProfitabilityPage language={language} parcels={parcels} />;
       case 'fleet': return <FleetView />;
       case 'irrigation': return <IrrigationView />;
-      case 'tasks': return <TasksView />;
+      case 'tasks': return <TasksView parcels={parcels} />;
       case 'iot': return <IoTDashboard />;
       case 'settings': return <SettingsView language={language} onLanguageChange={updateLanguage} />;
       default: return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;

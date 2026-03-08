@@ -298,7 +298,15 @@ const ProfitabilityDashboard: React.FC<Props> = ({ language, parcels }) => {
         <div className="space-y-6">
           <div className="glass rounded-2xl p-6 border border-green-500/20 space-y-4">
             <div className="flex items-center justify-between"><h4 className="font-bold text-white flex items-center gap-2"><Wheat size={16} className="text-green-400"/> Høsteinntekter {season}</h4><span className="text-base font-black text-green-400">{fmt(harvestRevenue)}</span></div>
-            {sHarvests.length===0?<p className="text-sm text-slate-500">Ingen høsteregistreringer. Gå til Produksjon → Høsting for å registrere.</p>:(
+            {sHarvests.length===0?(
+              <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-4 flex items-start gap-3">
+                <Wheat size={18} className="text-green-400 flex-shrink-0 mt-0.5"/>
+                <div>
+                  <p className="text-sm font-bold text-green-300">Høsteinntekter registreres i Produksjon</p>
+                  <p className="text-xs text-slate-400 mt-1">Gå til <span className="text-green-400 font-bold">Produksjon → Høsting</span> og logg hva du høstet fra hver parsell, antall kg, kanal og pris. Dataene vises automatisk her.</p>
+                </div>
+              </div>
+            ):(
               <div className="space-y-2">{sHarvests.map(h=>(
                 <div key={h.id} className="flex items-center gap-3 p-3 bg-white/3 rounded-xl border border-white/5">
                   <div className="flex-1 min-w-0"><p className="text-xs font-bold text-white">{parcels.find(p=>p.id===h.parcelId)?.name||h.parcelId} · {h.variety}</p><p className="text-[10px] text-slate-500">{h.date} · {h.kg.toLocaleString('no')} kg × €{h.pricePerKg}/kg</p></div>
