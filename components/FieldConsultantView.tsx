@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Camera, RefreshCcw, Sparkles, CheckCircle2, AlertTriangle,
-  AlertCircle, ChevronRight, Sprout, Bug, Info, Loader2, X, Upload,
+  AlertCircle, ChevronRight, Sprout, Bug, Info, Loader2, X,
   Scissors, Search, Calendar, Plus, Layers, ArrowRight, History, Trash2, Clock,
   Target, Tag, Award, Image as ImageIcon, ScanEye, Plane, Thermometer, Waves, Zap,
   Save, ArrowUpDown, MapPin, Filter, Scale, FlaskConical, Droplets
@@ -38,7 +38,6 @@ const FieldConsultantView: React.FC = () => {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
 
   useEffect(() => {
@@ -95,20 +94,6 @@ const FieldConsultantView: React.FC = () => {
         const base64 = canvasRef.current.toDataURL('image/jpeg', 0.8);
         setImages(prev => [...prev, base64]);
       }
-    }
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      setError(null);
-      Array.from(files).forEach((file: File) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImages(prev => [...prev, reader.result as string]);
-        };
-        reader.readAsDataURL(file);
-      });
     }
   };
 
@@ -285,14 +270,10 @@ const FieldConsultantView: React.FC = () => {
             <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden glass border border-white/10 shadow-2xl bg-black">
               <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover opacity-80" />
               
-              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-8">
-                <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all">
-                  <Upload size={24} />
-                </button>
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
                 <button onClick={capturePhoto} className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md border-4 border-white flex items-center justify-center group active:scale-95 transition-all">
                   <div className="w-14 h-14 rounded-full bg-white group-hover:bg-green-400 transition-colors"></div>
                 </button>
-                <div className="w-14 h-14" />
               </div>
             </div>
           ) : (
@@ -320,14 +301,12 @@ const FieldConsultantView: React.FC = () => {
                 </button>
               </div>
             ))}
-            {/* Always show upload button so user can add more images after analysis */}
-            <input type="file" multiple accept="image/*" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={capturePhoto}
               className="flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-white hover:border-white/40 transition-all"
             >
               <Plus size={20} />
-              <span className="text-[9px] font-bold uppercase">Legg til</span>
+              <span className="text-[9px] font-bold uppercase">Ta bilde</span>
             </button>
           </div>
 

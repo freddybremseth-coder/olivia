@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Camera, RefreshCcw, Scissors, CheckCircle2, AlertTriangle, 
-  Calendar, ChevronRight, Info, Loader2, Plus, ArrowRight, Layers, Upload,
+  Calendar, ChevronRight, Info, Loader2, Plus, ArrowRight, Layers,
   Clock, CalendarCheck, CalendarDays, History, Trash2, Eye, MapPin, X, Sparkles, Save
 } from 'lucide-react';
 import { geminiService, PruningPlan } from '../services/geminiService';
@@ -27,7 +27,6 @@ const PruningAdvisorView: React.FC = () => {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = () => {
     const settings = localStorage.getItem('olivia_settings');
@@ -86,20 +85,6 @@ const PruningAdvisorView: React.FC = () => {
         stopCamera();
         analyzeImage(base64.split(',')[1]);
       }
-    }
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setCapturedImage(base64);
-        stopCamera();
-        analyzeImage(base64.split(',')[1]);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -262,11 +247,8 @@ const PruningAdvisorView: React.FC = () => {
                 <div className="absolute inset-0 border-[2px] border-white/10 m-12 rounded-[2rem] pointer-events-none flex items-center justify-center opacity-10">
                   <Scissors size={140} className="text-white" />
                 </div>
-                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-8">
-                  <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
-                  <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all"><Upload size={24} /></button>
+                <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
                   <button onClick={capturePhoto} className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md border-4 border-white flex items-center justify-center group active:scale-95 transition-all"><div className="w-14 h-14 rounded-full bg-white group-hover:bg-green-400 transition-colors"></div></button>
-                  <div className="w-14 h-14"></div>
                 </div>
               </>
             ) : (
