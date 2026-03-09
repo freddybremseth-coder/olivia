@@ -283,7 +283,6 @@ const FieldConsultantView: React.FC = () => {
               <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover opacity-80" />
               
               <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-8">
-                <input type="file" multiple accept="image/*" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
                 <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all">
                   <Upload size={24} />
                 </button>
@@ -308,17 +307,37 @@ const FieldConsultantView: React.FC = () => {
             </div>
           )}
 
-          {/* Filmstrip / Gallery */}
-          <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar min-h-[100px]">
+          {/* Filmstrip / Gallery + add more images when camera is off */}
+          <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar min-h-[88px] items-center">
             {images.map((img, i) => (
-              <div key={i} className="relative flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden border border-white/10 group">
+              <div key={i} className="relative flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border border-white/10 group">
                 <img src={img} className="w-full h-full object-cover" />
-                <button onClick={() => removeImage(i)} className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => removeImage(i)} className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity">
                   <X size={12} />
                 </button>
               </div>
             ))}
+            {/* Always show upload button so user can add more images after analysis */}
+            <input type="file" multiple accept="image/*" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-white hover:border-white/40 transition-all"
+            >
+              <Plus size={20} />
+              <span className="text-[9px] font-bold uppercase">Legg til</span>
+            </button>
           </div>
+
+          {/* Re-analyze button — shown when we have images but no result yet, OR when needsMoreImages */}
+          {images.length > 0 && !isAnalyzing && (!analysisResult || analysisResult.needsMoreImages) && (
+            <button
+              onClick={runAnalysis}
+              className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-4 rounded-2xl flex items-center justify-center gap-2 text-sm transition-all active:scale-95"
+            >
+              <Sparkles size={18} />
+              {analysisResult?.needsMoreImages ? `Analyser på nytt (${images.length} bilder)` : 'Start analyse'}
+            </button>
+          )}
           
           <div className="glass rounded-2xl p-4 border border-white/5">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Parsell for analyse</label>
@@ -563,48 +582,27 @@ const FieldConsultantView: React.FC = () => {
           )}
 
           {!isAnalyzing && !analysisResult && !error && (
-            <div className="h-full flex flex-col items-center justify-center text-center p-12 glass rounded-[3rem] border border-dashed border-white/10">
-               {images.length > 0 ? (
-                 <div className="space-y-8 animate-in zoom-in-95 duration-500">
-                    <div className="w-24 h-24 rounded-full bg-green-500/10 flex items-center justify-center text-green-400 mx-auto border border-green-500/20 neon-glow-green">
-                      <ImageIcon size={48} />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-bold text-white tracking-tight">Klar for analyse</h3>
-                      <p className="text-sm text-slate-400 italic max-w-xs mx-auto">
-                        Du har lastet opp {images.length} {images.length === 1 ? 'bilde' : 'bilder'}.
-                      </p>
-                    </div>
-                    <button 
-                      onClick={runAnalysis}
-                      className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-6 rounded-[2.5rem] shadow-2xl flex items-center justify-center gap-3 text-xl transition-all active:scale-95 group overflow-hidden"
-                    >
-                      <Sparkles size={24} className="group-hover:rotate-12 transition-transform" />
-                      Start Analyse
-                      <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
-                    </button>
-                 </div>
-               ) : (
-                 <>
-                   <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-slate-500 mb-6 mx-auto">
-                     <ScanEye size={40} />
-                   </div>
-                   <h3 className="text-xl font-bold text-slate-400 uppercase tracking-widest">Klar for felt-analyse</h3>
-                   <p className="text-sm text-slate-500 mt-4 max-w-xs leading-relaxed italic mx-auto">
-                     Ta bilder av blader, struktur og frukt. AI-en gir deg en komplett helse- og beskjæringsrapport.
-                   </p>
-                 </>
-               )}
+            <div className="flex flex-col items-center justify-center text-center p-12 glass rounded-[3rem] border border-dashed border-white/10">
+              <ScanEye size={40} className="text-slate-600 mb-4" />
+              <h3 className="text-xl font-bold text-slate-400 uppercase tracking-widest">Klar for felt-analyse</h3>
+              <p className="text-sm text-slate-500 mt-3 max-w-xs leading-relaxed italic mx-auto">
+                Legg til bilder av blader, struktur og frukt — bruk «+»-knappen til venstre.
+              </p>
             </div>
           )}
 
           {error && (
-            <div className="p-8 rounded-3xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-4 animate-in slide-in-from-top-4">
-              <AlertTriangle size={32} />
-              <div>
-                <p className="text-sm font-bold uppercase tracking-widest mb-1">Analyse Feilet</p>
-                <p className="text-xs opacity-80 leading-relaxed">{error}</p>
+            <div className="p-6 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 space-y-3 animate-in slide-in-from-top-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle size={24} />
+                <p className="text-sm font-bold uppercase tracking-widest">Analyse Feilet</p>
               </div>
+              <p className="text-xs text-red-300/80 leading-relaxed">{error}</p>
+              {images.length > 0 && (
+                <button onClick={runAnalysis} className="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all">
+                  <RefreshCcw size={14} /> Prøv igjen
+                </button>
+              )}
             </div>
           )}
         </div>

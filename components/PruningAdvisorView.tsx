@@ -194,6 +194,7 @@ const PruningAdvisorView: React.FC = () => {
   };
 
   const renderMarkers = (steps: any[]) => {
+    if (!steps?.length) return null;
     return (
       <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
         {steps.map((step, i) => {
@@ -301,7 +302,32 @@ const PruningAdvisorView: React.FC = () => {
         </div>
 
         <div className="space-y-6 overflow-y-auto lg:max-h-[80vh] pr-2 custom-scrollbar">
-          {plan ? (
+          {/* Loading indicator */}
+          {isAnalyzing && (
+            <div className="flex flex-col items-center justify-center p-12 glass rounded-3xl border border-white/10 gap-6">
+              <Loader2 className="animate-spin text-green-400" size={48} />
+              <div className="text-center">
+                <p className="text-white font-bold uppercase tracking-widest text-sm">Analyserer...</p>
+                <p className="text-slate-500 text-xs mt-1 italic">Mapper snittpunkter og vurderer trearkitektur</p>
+              </div>
+            </div>
+          )}
+
+          {/* Error display */}
+          {error && !isAnalyzing && (
+            <div className="p-6 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 space-y-3">
+              <div className="flex items-center gap-3">
+                <AlertTriangle size={24} />
+                <p className="font-bold text-sm">Analyse feilet</p>
+              </div>
+              <p className="text-xs text-red-300/80 leading-relaxed">{error}</p>
+              <button onClick={reset} className="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all">
+                <RefreshCcw size={16} /> Prøv igjen med nytt bilde
+              </button>
+            </div>
+          )}
+
+          {plan && !isAnalyzing ? (
             <div className="space-y-6 animate-in slide-in-from-right-6 duration-700">
               <div className="glass rounded-3xl p-6 border border-white/10 bg-gradient-to-br from-green-500/5 to-transparent">
                 <div className="flex justify-between items-start mb-6">
@@ -351,7 +377,7 @@ const PruningAdvisorView: React.FC = () => {
                    <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest hidden sm:block">Trykk for å markere</span>
                 </h4>
                 <div className="space-y-3">
-                  {plan.pruningSteps.map((step, i) => (
+                  {(plan.pruningSteps || []).map((step, i) => (
                     <div
                       key={i}
                       onMouseEnter={() => setActiveMarker(i)}
@@ -423,14 +449,15 @@ const PruningAdvisorView: React.FC = () => {
                 Bilder og metadata lagres automatisk i arkivet ved lagring.
               </p>
             </div>
-          ) : (
+          ) : !isAnalyzing && !error ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-12 glass rounded-[3rem] border border-dashed border-white/10">
                <Scissors size={48} className="text-slate-600 mb-8 animate-pulse" />
                <h3 className="text-xl font-bold text-slate-400">Klar for analyse</h3>
                <p className="text-sm text-slate-500 mt-3 max-w-xs leading-relaxed">
-                 Ta et bilde for å få en visualisert beskjæringsplan og arkivere metadata med bilde.
+                 Last opp et bilde for å få en visualisert beskjæringsplan.
                </p>
             </div>
+          ) : null
           )}
         </div>
       </div>
