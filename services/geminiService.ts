@@ -305,119 +305,59 @@ Gi en kort norsk forklaring på hvorfor denne mengden er riktig.`,
 
   async analyzeComprehensive(imagesBase64: string[], lang: string): Promise<ComprehensiveAnalysisResult> {
     const ai = this.getAI();
-    const imageParts = imagesBase64.map(data => ({ inlineData: { mimeType: 'image/jpeg', data } }));
+    const imageParts = imagesBase64.map(data => ({
+      inlineData: {
+        mimeType: (data.startsWith('iVBOR') ? 'image/png' : 'image/jpeg') as 'image/jpeg' | 'image/png',
+        data
+      }
+    }));
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: [{ role: 'user', parts: [...imageParts, { text: `Du er en olivenagronom med doktorgrad i Olea europaea og 30+ års felterfaring fra Andalucia, Toscana og Tunesia. Du konsulterer for profesjonelle olivenprodusenter.
+      contents: [{ role: 'user', parts: [...imageParts, { text: `Du er en olivenagronom med doktorgrad i Olea europaea og 30+ års felterfaring fra Andalucia, Toscana og Tunesia.
 
-OPPGAVE: Gi en komplett, agronomi-faglig analyse som en seniorekspert ville levert til en kommersiell produsent.
+Analyser bildet(ene) grundig og returner NØYAKTIG dette JSON-objektet (ingen markdown, bare ren JSON):
 
-─── HELSEANALYSE ────────────────────────────────────────────
-Se spesifikt etter (bruk latinske navn der relevant):
-• Soppsykdommer: Olivenbladflekk (Spilocaea oleagina – karakteristiske sootspot-flekker), Antracnose (Colletotrichum acutatum/gloeosporioides – brunrote frukter), Verticilliumvisning (Verticillium dahliae – ensidig visning), Olivenknoll (Pseudomonas savastanoi – tumorliknende vekster), Fumagine (sotdugg fra lus-sekresjon)
-• Skadedyr: Olivenflue (Bactrocera oleae – stikkeskader i frukt), Olivenmøll (Prays oleae – 3 generasjoner: blom/blad/fruktform), Cicada-skader, Cottony cushion scale (Icerya purchasi), Olivenvikler (Palpita unionalis), Bladlus (Saissetia oleae)
-• Næringsstatus: N-mangel (uniformt gulning, redusert skuddvekst), Fe-klorose (ung-blad mellomgrønn klorose, pH-relatert), B-mangel (misformede knopper, abortering), Mg-mangel (intervenal klorose eldre blader), K-mangel (bladkantbrenning i tørke)
-• Vannings- og abiotisk stress: Tørkestress (rullete blader, grågrønt), Overvanning (gule nedre blader, rotråte-tegn), Frostskaer (svart bark, sprekker), Saltskade (marginal nekrose)
-• Kronarkitektur: Sentralstemme vs polisykkel (vaseform), lysgjennomtrengning (estimert %), internodielengde, produktiv vs ikke-produktiv ved
+{
+  "diagnosis": {
+    "subject": "hva som er avbildet",
+    "variety": "olivensort eller Ukjent",
+    "condition": "SUNN eller OBSERVASJON eller SYK",
+    "diagnosis": "detaljert patologisk vurdering med latinske navn der relevant",
+    "actions": ["tiltak 1", "tiltak 2", "tiltak 3"]
+  },
+  "pruning": {
+    "treeType": "sort og trekategori",
+    "ageEstimate": "estimert alder som tekst",
+    "pruningSteps": [
+      { "area": "grenområde", "action": "hva som skal gjøres", "priority": "HØY", "x": 50, "y": 30 }
+    ],
+    "recommendedDate": "YYYY-MM-DD",
+    "timingAdvice": "forklaring på optimal timing",
+    "toolsNeeded": ["verktøy 1", "verktøy 2"]
+  },
+  "expertReport": {
+    "urgencyScore": 5,
+    "economicImpact": "estimert produksjonstap % og konsekvens",
+    "yieldEstimate": "estimert kg/tre",
+    "fertilizerRecommendation": "NPK-ratio + mikronæring",
+    "irrigationNote": "vanningsbehov basert på visuell tilstand",
+    "rejuvenationNeeded": false,
+    "nextKeyAction": "den ene viktigste handlingen nå"
+  },
+  "varietyConfidence": 75,
+  "needsMoreImages": false,
+  "missingDetails": []
+}
 
-─── SORTIDENTIFIKASJON ─────────────────────────────────────
-Vurder morfologi grundig:
-• Gordal Sevillana: store, kjøttfulle frukter, store oval blader
-• Changlot Real: oval/avlang frukt, mellomstore blader med lys underside, typisk Valencia
-• Genoesa: regional spansk sort
-• Picual: trekantede spissede blader, robuste greiner, mørk bark
-• Arbequina: små runde blader, hengende greiner, kompakt vekst
-• Hojiblanca: store lyse blader, flat grenarkitektur
-• Manzanilla: runde blader, tidlig modning
-• Cornicabra: tykke mørke blader, karakteristisk bøyde greiner
-• Frantoio/Leccino: toscanske sorter, smale blader
-• Gi konfidenspoeng 0–100
-
-─── ALDERSVURDERING ────────────────────────────────────────
-• Stammediameter og bark-tekstur (glatt = ung, riflet = gammel)
-• Internodielengde og kronkompleksitet
-• Produktiv fase: 1–15 år (ikke produktiv/lav), 15–150 år (full produksjon), 150–500 år (redusert men stabil), 500+ år (historisk, foryngelse nødvendig)
-• Indiker om treet er i vekstfase, topproduksjon eller nedgangsperiode
-
-─── BESKJÆRINGSPLAN ────────────────────────────────────────
-For hvert kutt:
-• Spesifikt område og grentype (primærgren, sekundærgren, sucker, vannris/suckers)
-• Begrunnelse (lysblokking %, sykdomsport, for gammel ved [>8 år = lav produktivitet], ubalanse, vinterskade)
-• Type kutt: tilbakeføring vs tynning vs foryngelse
-• Prioritet HØY (produktivitet/helse) / MIDDELS (form) / LAV (estetikk)
-• xy-koordinater i bildet (0–100)
-Angi: lett vedlikehold, moderat renovasjon ELLER kraftig foryngelse (policing)
-
-─── EKSPERTRAPPORT ──────────────────────────────────────────
-• urgencyScore 0–10: 0=perfekt, 10=krev tiltak i dag
-• Estimert produksjonstap % pga påviste problemer
-• Realistisk avkastningsestimat kg/tre under nåværende tilstand
-• Gjødselanbefaling: NPK-ratio og mikronæring (f.eks. "N:P:K 15-5-20 + 0.3% borsyre foliærsprøyting")
-• Vanningsobservasjon
-• Er foryngelsesbeskjæring nødvendig?
-• Den ÉNE viktigste handlingen akkurat nå
-
-Svar i JSON.` }] }],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            diagnosis: {
-              type: Type.OBJECT,
-              properties: {
-                subject: { type: Type.STRING },
-                variety: { type: Type.STRING },
-                condition: { type: Type.STRING },
-                diagnosis: { type: Type.STRING },
-                actions: { type: Type.ARRAY, items: { type: Type.STRING } }
-              },
-              required: ['subject', 'variety', 'condition', 'diagnosis', 'actions']
-            },
-            pruning: {
-              type: Type.OBJECT,
-              properties: {
-                treeType: { type: Type.STRING },
-                ageEstimate: { type: Type.STRING },
-                pruningSteps: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      area: { type: Type.STRING },
-                      action: { type: Type.STRING },
-                      priority: { type: Type.STRING },
-                      x: { type: Type.NUMBER },
-                      y: { type: Type.NUMBER }
-                    }
-                  }
-                },
-                recommendedDate: { type: Type.STRING },
-                timingAdvice: { type: Type.STRING },
-                toolsNeeded: { type: Type.ARRAY, items: { type: Type.STRING } }
-              },
-              required: ['treeType', 'ageEstimate', 'pruningSteps', 'recommendedDate', 'timingAdvice', 'toolsNeeded']
-            },
-            expertReport: {
-              type: Type.OBJECT,
-              properties: {
-                urgencyScore: { type: Type.NUMBER },
-                economicImpact: { type: Type.STRING },
-                yieldEstimate: { type: Type.STRING },
-                fertilizerRecommendation: { type: Type.STRING },
-                irrigationNote: { type: Type.STRING },
-                rejuvenationNeeded: { type: Type.BOOLEAN },
-                nextKeyAction: { type: Type.STRING },
-              },
-              required: ['urgencyScore', 'economicImpact', 'yieldEstimate', 'fertilizerRecommendation', 'irrigationNote', 'rejuvenationNeeded', 'nextKeyAction']
-            },
-            varietyConfidence: { type: Type.NUMBER },
-            needsMoreImages: { type: Type.BOOLEAN },
-            missingDetails: { type: Type.ARRAY, items: { type: Type.STRING } }
-          },
-          required: ['diagnosis', 'pruning', 'expertReport', 'varietyConfidence', 'needsMoreImages', 'missingDetails']
-        }
-      }
+Bruk faglig ekspertise:
+- Sykdommer: Spilocaea oleagina, Colletotrichum acutatum, Verticillium dahliae, Pseudomonas savastanoi
+- Skadedyr: Bactrocera oleae, Prays oleae, Saissetia oleae
+- Næring: N/Fe/B/Mg/K-mangler med spesifikke symptomer
+- Sorter: Gordal Sevillana (store blader), Changlot Real (lys underside), Picual (spisse blader), Arbequina (kompakt), Hojiblanca (lyse blader)
+- urgencyScore: 0=perfekt, 10=krev tiltak i dag
+- priority-felt: kun verdiene HØY, MIDDELS eller LAV
+- x/y: koordinater 0–100 i bildet` }] }]
+    , config: { responseMimeType: "application/json" }
     });
     const text = response.text;
     if (!text) throw new Error('Tom respons fra AI');
@@ -448,57 +388,33 @@ Svar i JSON.` }] }],
 
   async analyzePruning(image: string, lang: string): Promise<PruningPlan> {
     const ai = this.getAI();
+    const mimeType = (image.startsWith('iVBOR') ? 'image/png' : 'image/jpeg') as 'image/jpeg' | 'image/png';
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'image/jpeg', data: image } }, { text: `Du er olivenbeskjæringsmester med ekspertise fra Spania, Italia og Marokko.
+      contents: [{ role: 'user', parts: [
+        { inlineData: { mimeType, data: image } },
+        { text: `Du er olivenbeskjæringsmester med ekspertise fra Spania, Italia og Marokko.
 
-Lag en detaljert BESKJÆRINGSPLAN for dette treet:
+Analyser treet og returner NØYAKTIG dette JSON-objektet (ingen markdown, bare ren JSON):
 
-1. TREANALYSE:
-   - Sort (Picual, Arbequina, Hojiblanca, etc.) og aldersstimeering
-   - Nåværende form (vase, åpen midt, flerleder)
-   - Lysgjennomtrengning (estimert %)
+{
+  "treeType": "sort og trekategori",
+  "ageEstimate": "estimert alder som tekst",
+  "pruningSteps": [
+    { "area": "grenområde som skal kuttes", "action": "spesifikk handling og begrunnelse", "priority": "HØY", "x": 50, "y": 30 }
+  ],
+  "recommendedDate": "YYYY-MM-DD",
+  "timingAdvice": "forklaring på optimal timing for beskjæring",
+  "toolsNeeded": ["Beskjæringssaks", "Baufil", "Sårpasta"]
+}
 
-2. PRIORITERTE KUTT:
-   - For hvert kutt: område, handling, prioritet (HØY/MIDDELS/LAV)
-   - Begrunn hvert kutt (lysblokking, sykdom, for gammel ved, ubalanse)
-   - Gi x,y koordinater i bildet (0-100 skala)
-
-3. TIMING:
-   - Beste tidspunkt (oliven beskjæres normalt jan-mars i Spania)
-   - Om treet trenger kraftig foryngelsesbeskjæring vs lett vedlikehold
-
-4. VERKTØY: List spesifikke verktøy med begrunnelse
-
-Svar i JSON.` }] }],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            treeType: { type: Type.STRING },
-            ageEstimate: { type: Type.STRING },
-            pruningSteps: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  area: { type: Type.STRING },
-                  action: { type: Type.STRING },
-                  priority: { type: Type.STRING },
-                  x: { type: Type.NUMBER },
-                  y: { type: Type.NUMBER }
-                },
-                required: ['area', 'action', 'priority', 'x', 'y']
-              }
-            },
-            recommendedDate: { type: Type.STRING },
-            timingAdvice: { type: Type.STRING },
-            toolsNeeded: { type: Type.ARRAY, items: { type: Type.STRING } }
-          },
-          required: ['treeType', 'ageEstimate', 'pruningSteps', 'recommendedDate', 'timingAdvice', 'toolsNeeded']
-        }
-      }
+Regler:
+- priority: kun HØY, MIDDELS eller LAV
+- x/y: koordinater 0–100 der kuttet er i bildet
+- Gi minst 3 og maks 8 kuttpunkter
+- recommendedDate: en dato i YYYY-MM-DD format` }
+      ] }],
+      config: { responseMimeType: "application/json" }
     });
     const text = response.text;
     if (!text) throw new Error('Tom respons fra AI');
