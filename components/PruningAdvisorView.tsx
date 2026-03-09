@@ -460,7 +460,7 @@ const PruningAdvisorView: React.FC = () => {
                </p>
             </div>
           ) : null
-          )}
+          }
         </div>
       </div>
 
