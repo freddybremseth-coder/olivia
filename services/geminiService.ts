@@ -100,6 +100,39 @@ export class GeminiService {
     return new GoogleGenAI({ apiKey: this.getGeminiKey() });
   }
 
+  private async callGeminiVision(imagesBase64: string[], prompt: string): Promise<string> {
+    const apiKey = this.getGeminiKey();
+    if (!apiKey) throw new Error('Ingen Gemini API-nøkkel konfigurert. Gå til Innstillinger.');
+
+    const imageParts = imagesBase64.map(data => ({
+      inline_data: {
+        mime_type: data.startsWith('iVBOR') ? 'image/png' : 'image/jpeg',
+        data
+      }
+    }));
+
+    const body = {
+      contents: [{ parts: [...imageParts, { text: prompt }] }],
+      generationConfig: { response_mime_type: 'application/json' }
+    };
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    );
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      const errMsg = (err as any)?.error?.message || `HTTP ${response.status}`;
+      throw new Error(errMsg);
+    }
+
+    const data = await response.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error('Tom respons fra Gemini API');
+    return text;
+  }
+
   async callClaude(prompt: string, model: string = 'claude-sonnet-4-6'): Promise<string> {
     const key = this.getClaudeKey();
     if (!key) throw new Error('Ingen Claude API-nøkkel konfigurert');
@@ -304,16 +337,7 @@ Gi en kort norsk forklaring på hvorfor denne mengden er riktig.`,
   }
 
   async analyzeComprehensive(imagesBase64: string[], lang: string): Promise<ComprehensiveAnalysisResult> {
-    const ai = this.getAI();
-    const imageParts = imagesBase64.map(data => ({
-      inlineData: {
-        mimeType: (data.startsWith('iVBOR') ? 'image/png' : 'image/jpeg') as 'image/jpeg' | 'image/png',
-        data
-      }
-    }));
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{ role: 'user', parts: [...imageParts, { text: `Du er en olivenagronom med doktorgrad i Olea europaea og 30+ års felterfaring fra Andalucia, Toscana og Tunesia.
+    const prompt = `Du er en olivenagronom med doktorgrad i Olea europaea og 30+ års felterfaring fra Andalucia, Toscana og Tunesia.
 
 Analyser bildet(ene) grundig og returner NØYAKTIG dette JSON-objektet (ingen markdown, bare ren JSON):
 
@@ -356,11 +380,8 @@ Bruk faglig ekspertise:
 - Sorter: Gordal Sevillana (store blader), Changlot Real (lys underside), Picual (spisse blader), Arbequina (kompakt), Hojiblanca (lyse blader)
 - urgencyScore: 0=perfekt, 10=krev tiltak i dag
 - priority-felt: kun verdiene HØY, MIDDELS eller LAV
-- x/y: koordinater 0–100 i bildet` }] }]
-    , config: { responseMimeType: "application/json" }
-    });
-    const text = response.text;
-    if (!text) throw new Error('Tom respons fra AI');
+- x/y: koordinater 0–100 i bildet`;
+    const text = await this.callGeminiVision(imagesBase64, prompt);
     return JSON.parse(text);
   }
 
@@ -387,13 +408,7 @@ Svar i JSON.` }] }],
   }
 
   async analyzePruning(image: string, lang: string): Promise<PruningPlan> {
-    const ai = this.getAI();
-    const mimeType = (image.startsWith('iVBOR') ? 'image/png' : 'image/jpeg') as 'image/jpeg' | 'image/png';
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{ role: 'user', parts: [
-        { inlineData: { mimeType, data: image } },
-        { text: `Du er olivenbeskjæringsmester med ekspertise fra Spania, Italia og Marokko.
+    const prompt = `Du er olivenbeskjæringsmester med ekspertise fra Spania, Italia og Marokko.
 
 Analyser treet og returner NØYAKTIG dette JSON-objektet (ingen markdown, bare ren JSON):
 
@@ -412,12 +427,8 @@ Regler:
 - priority: kun HØY, MIDDELS eller LAV
 - x/y: koordinater 0–100 der kuttet er i bildet
 - Gi minst 3 og maks 8 kuttpunkter
-- recommendedDate: en dato i YYYY-MM-DD format` }
-      ] }],
-      config: { responseMimeType: "application/json" }
-    });
-    const text = response.text;
-    if (!text) throw new Error('Tom respons fra AI');
+- recommendedDate: en dato i YYYY-MM-DD format`;
+    const text = await this.callGeminiVision([image], prompt);
     return JSON.parse(text);
   }
 
