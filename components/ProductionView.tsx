@@ -33,7 +33,7 @@ const CHANNEL_COLORS: Record<SalesChannel, string> = {
   olje_premier: 'bg-yellow-500/20 text-yellow-200',
   olje_export:  'bg-blue-500/20 text-blue-300',
 };
-const VARIETIES = ['Picual', 'Arbequina', 'Hojiblanca', 'Manzanilla', 'Lechin', 'Cornicabra', 'Frantoio', 'Leccino', 'Annen'];
+const VARIETIES = ['Gordal', 'Changlot Real', 'Genoesa', 'Picual', 'Arbequina', 'Hojiblanca', 'Manzanilla', 'Lechin', 'Cornicabra', 'Frantoio', 'Leccino', 'Annen'];
 
 const currentSeason = () => new Date().getFullYear().toString();
 
@@ -256,7 +256,8 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
     setBatchIngredients(JSON.parse(JSON.stringify(recipe.ingredients)));
     setBatchRecipeName(recipe.name);
     setBatchFlavorTarget(recipe.flavorProfile || 'mild');
-    setBatchStep(2);
+    setNewBatch({ yieldType: 'Table', quality: 'Premium', status: 'ACTIVE', weight: 0, harvestDate: new Date().toISOString().split('T')[0], currentStage: 'PLUKKING' });
+    setBatchStep(1);
     setIsBatchModalOpen(true);
   };
 
@@ -897,10 +898,13 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Dato</label>
-                      <input type="date" value={newBatch.harvestDate}
-                        onChange={e => setNewBatch(prev => ({ ...prev, harvestDate: e.target.value }))}
-                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none" />
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Oliventype</label>
+                      <select value={newBatch.oliveType || ''}
+                        onChange={e => setNewBatch(prev => ({ ...prev, oliveType: e.target.value }))}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-green-500/50">
+                        <option value="">Velg sort...</option>
+                        {VARIETIES.map(v => <option key={v} value={v} className="bg-slate-800">{v}</option>)}
+                      </select>
                     </div>
                     <div>
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Kvalitet</label>
@@ -912,6 +916,12 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
                         <option value="Standard">Standard</option>
                       </select>
                     </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Dato</label>
+                    <input type="date" value={newBatch.harvestDate}
+                      onChange={e => setNewBatch(prev => ({ ...prev, harvestDate: e.target.value }))}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none" />
                   </div>
                   <div className="flex gap-2 justify-end pt-2">
                     <button onClick={() => setIsBatchModalOpen(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Avbryt</button>

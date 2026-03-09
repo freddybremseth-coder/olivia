@@ -300,7 +300,7 @@ const PruningAdvisorView: React.FC = () => {
           )}
         </div>
 
-        <div className="space-y-6 overflow-y-auto max-h-[80vh] pr-2 custom-scrollbar">
+        <div className="space-y-6 overflow-y-auto lg:max-h-[80vh] pr-2 custom-scrollbar">
           {plan ? (
             <div className="space-y-6 animate-in slide-in-from-right-6 duration-700">
               <div className="glass rounded-3xl p-6 border border-white/10 bg-gradient-to-br from-green-500/5 to-transparent">
@@ -337,23 +337,32 @@ const PruningAdvisorView: React.FC = () => {
                 </div>
               </div>
 
+              {/* Timing advice */}
+              {plan.timingAdvice && (
+                <div className="glass rounded-2xl p-4 border border-blue-500/20 bg-blue-500/5">
+                  <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1 flex items-center gap-1"><CalendarCheck size={11}/> Optimal timing</p>
+                  <p className="text-sm text-slate-300">{plan.timingAdvice}</p>
+                </div>
+              )}
+
               <div className="glass rounded-3xl p-6 border border-white/10">
-                <h4 className="text-sm font-bold text-white mb-6 flex items-center justify-between">
+                <h4 className="text-sm font-bold text-white mb-4 flex items-center justify-between">
                    <div className="flex items-center gap-2"><Layers size={16} className="text-slate-400" /> Handlingsplan</div>
-                   <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Hold over for å se punkt</span>
+                   <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest hidden sm:block">Trykk for å markere</span>
                 </h4>
                 <div className="space-y-3">
                   {plan.pruningSteps.map((step, i) => (
-                    <div 
-                      key={i} 
+                    <div
+                      key={i}
                       onMouseEnter={() => setActiveMarker(i)}
                       onMouseLeave={() => setActiveMarker(null)}
+                      onTouchStart={() => setActiveMarker(i)}
                       className={`p-4 rounded-2xl border transition-all flex gap-4 cursor-pointer ${
                         activeMarker === i ? 'bg-green-500/10 border-green-500/40' : 'bg-white/5 border-white/5 hover:border-white/20'
                       }`}
                     >
                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
-                         step.priority === 'HØY' ? 'bg-red-500/20 text-red-400 border border-red-500/20' : 
+                         step.priority === 'HØY' ? 'bg-red-500/20 text-red-400 border border-red-500/20' :
                          step.priority === 'MIDDELS' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/20' :
                          'bg-green-500/20 text-green-400 border border-green-500/20'
                        }`}>
@@ -370,6 +379,18 @@ const PruningAdvisorView: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Tools needed */}
+              {plan.toolsNeeded && plan.toolsNeeded.length > 0 && (
+                <div className="glass rounded-2xl p-4 border border-white/10">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1"><Scissors size={11}/> Verktøy som trengs</p>
+                  <div className="flex flex-wrap gap-2">
+                    {plan.toolsNeeded.map((tool, i) => (
+                      <span key={i} className="text-xs bg-slate-800 text-slate-300 border border-white/10 px-2.5 py-1 rounded-lg">{tool}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button 
@@ -394,7 +415,7 @@ const PruningAdvisorView: React.FC = () => {
                   }`}
                 >
                   {taskSaved ? <CheckCircle2 size={20} /> : <CalendarDays size={20} />}
-                  <span>{taskSaved ? 'Planlagt i kalender' : 'Add to Calendar'}</span>
+                  <span>{taskSaved ? 'Planlagt i kalender' : 'Legg til kalender'}</span>
                 </button>
               </div>
               

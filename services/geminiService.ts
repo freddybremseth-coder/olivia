@@ -33,9 +33,20 @@ export interface PlantDiagnosis {
   actions: string[];
 }
 
+export interface ExpertOliveReport {
+  urgencyScore: number;           // 0–10, 10 = krev umiddelbar handling
+  economicImpact: string;         // Estimert produksjonstap % og konsekvens
+  yieldEstimate: string;          // Estimert kg/tre basert på tilstand
+  fertilizerRecommendation: string; // NPK + mikronæring anbefaling
+  irrigationNote: string;         // Vanningsbehov basert på visuell tilstand
+  rejuvenationNeeded: boolean;    // Trenger foryngelsesbeskjæring
+  nextKeyAction: string;          // Den ene viktigste handlingen nå
+}
+
 export interface ComprehensiveAnalysisResult {
   diagnosis: PlantDiagnosis;
   pruning: PruningPlan;
+  expertReport: ExpertOliveReport;
   varietyConfidence: number;
   needsMoreImages: boolean;
   missingDetails: string[];
@@ -297,38 +308,56 @@ Gi en kort norsk forklaring på hvorfor denne mengden er riktig.`,
     const imageParts = imagesBase64.map(data => ({ inlineData: { mimeType: 'image/jpeg', data } }));
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-pro',
-      contents: { parts: [...imageParts, { text: `Du er en verdensekspert på oliven (Olea europaea) og mediterrant landbruk med 30+ års erfaring.
+      contents: { parts: [...imageParts, { text: `Du er en olivenagronom med doktorgrad i Olea europaea og 30+ års felterfaring fra Andalucia, Toscana og Tunesia. Du konsulterer for profesjonelle olivenprodusenter.
 
-OPPGAVE: Utfør en komplett, profesjonell analyse av disse olivenbildene.
+OPPGAVE: Gi en komplett, agronomi-faglig analyse som en seniorekspert ville levert til en kommersiell produsent.
 
-HELSEANALYSE – Se etter:
-- Sykdommer: Olivenbladflekk (Spilocaea oleagina), Antracnose (Colletotrichum acutatum), Verticilliumvisning (Verticillium dahliae), Olivenknoll (Pseudomonas savastanoi), Cercospora-flekk
-- Skadedyr: Olivenflue (Bactrocera oleae), Olivenmøll (Prays oleae), Olivenvikler, Cottony cushion scale, bladlus
-- Næringsstress: Nitrogen- (gulning), Jern- (klorose), Bor- (misformede knopper), Kalsium-mangel
-- Vanningsstress: Overdreven tørke (rullet bladkant) eller vanningsstress (blågrønne blader)
-- Treform: Sentralstemme vs vasestemme, lysgjennomtrengning, kroneprofil
+─── HELSEANALYSE ────────────────────────────────────────────
+Se spesifikt etter (bruk latinske navn der relevant):
+• Soppsykdommer: Olivenbladflekk (Spilocaea oleagina – karakteristiske sootspot-flekker), Antracnose (Colletotrichum acutatum/gloeosporioides – brunrote frukter), Verticilliumvisning (Verticillium dahliae – ensidig visning), Olivenknoll (Pseudomonas savastanoi – tumorliknende vekster), Fumagine (sotdugg fra lus-sekresjon)
+• Skadedyr: Olivenflue (Bactrocera oleae – stikkeskader i frukt), Olivenmøll (Prays oleae – 3 generasjoner: blom/blad/fruktform), Cicada-skader, Cottony cushion scale (Icerya purchasi), Olivenvikler (Palpita unionalis), Bladlus (Saissetia oleae)
+• Næringsstatus: N-mangel (uniformt gulning, redusert skuddvekst), Fe-klorose (ung-blad mellomgrønn klorose, pH-relatert), B-mangel (misformede knopper, abortering), Mg-mangel (intervenal klorose eldre blader), K-mangel (bladkantbrenning i tørke)
+• Vannings- og abiotisk stress: Tørkestress (rullete blader, grågrønt), Overvanning (gule nedre blader, rotråte-tegn), Frostskaer (svart bark, sprekker), Saltskade (marginal nekrose)
+• Kronarkitektur: Sentralstemme vs polisykkel (vaseform), lysgjennomtrengning (estimert %), internodielengde, produktiv vs ikke-produktiv ved
 
-SORTIDENTIFIKASJON – Forsøk å identifisere:
-- Picual (trekantede blader, robuste greiner)
-- Arbequina (små runde blader, hengende greiner)
-- Hojiblanca (store lyse blader, flatt grenkrona)
-- Cornicabra (tykke mørke blader, greiner med karakteristisk bøy)
-- Manzanilla, Gordal, Empeltre, Frantoio, Leccino, eller andre
-- Gi eksakt konfidenspoeng 0-100
+─── SORTIDENTIFIKASJON ─────────────────────────────────────
+Vurder morfologi grundig:
+• Gordal Sevillana: store, kjøttfulle frukter, store oval blader
+• Changlot Real: oval/avlang frukt, mellomstore blader med lys underside, typisk Valencia
+• Genoesa: regional spansk sort
+• Picual: trekantede spissede blader, robuste greiner, mørk bark
+• Arbequina: små runde blader, hengende greiner, kompakt vekst
+• Hojiblanca: store lyse blader, flat grenarkitektur
+• Manzanilla: runde blader, tidlig modning
+• Cornicabra: tykke mørke blader, karakteristisk bøyde greiner
+• Frantoio/Leccino: toscanske sorter, smale blader
+• Gi konfidenspoeng 0–100
 
-ALDERSVURDERING:
-- Undersøk stammediameter og bark-tekstur
-- Veksttegn og kronform
-- Estimer alder: 1-10 år (ung), 10-50 år (etablert), 50-200 år (gammel), 200+ år (historisk)
+─── ALDERSVURDERING ────────────────────────────────────────
+• Stammediameter og bark-tekstur (glatt = ung, riflet = gammel)
+• Internodielengde og kronkompleksitet
+• Produktiv fase: 1–15 år (ikke produktiv/lav), 15–150 år (full produksjon), 150–500 år (redusert men stabil), 500+ år (historisk, foryngelse nødvendig)
+• Indiker om treet er i vekstfase, topproduksjon eller nedgangsperiode
 
-BESKJÆRINGSPLAN:
-- Prioriter kuttpunkter basert på treform og lysbehov
-- Angi prioritet (HØY/MIDDELS/LAV) for hvert kutt
-- Beskriv nøyaktig hvilken gren/område som skal kuttes og hvorfor
-- Gi anbefalt tidspunkt (etter høst = des-jan, vedlikehold = feb-mar)
-- Verktøy som trengs (greinsag, hekksaks, baufil, etc.)
+─── BESKJÆRINGSPLAN ────────────────────────────────────────
+For hvert kutt:
+• Spesifikt område og grentype (primærgren, sekundærgren, sucker, vannris/suckers)
+• Begrunnelse (lysblokking %, sykdomsport, for gammel ved [>8 år = lav produktivitet], ubalanse, vinterskade)
+• Type kutt: tilbakeføring vs tynning vs foryngelse
+• Prioritet HØY (produktivitet/helse) / MIDDELS (form) / LAV (estetikk)
+• xy-koordinater i bildet (0–100)
+Angi: lett vedlikehold, moderat renovasjon ELLER kraftig foryngelse (policing)
 
-Svar i JSON-format.` }] },
+─── EKSPERTRAPPORT ──────────────────────────────────────────
+• urgencyScore 0–10: 0=perfekt, 10=krev tiltak i dag
+• Estimert produksjonstap % pga påviste problemer
+• Realistisk avkastningsestimat kg/tre under nåværende tilstand
+• Gjødselanbefaling: NPK-ratio og mikronæring (f.eks. "N:P:K 15-5-20 + 0.3% borsyre foliærsprøyting")
+• Vanningsobservasjon
+• Er foryngelsesbeskjæring nødvendig?
+• Den ÉNE viktigste handlingen akkurat nå
+
+Svar i JSON.` }] },
       config: { 
         responseMimeType: "application/json",
         responseSchema: {
@@ -369,11 +398,24 @@ Svar i JSON-format.` }] },
               },
               required: ['treeType', 'ageEstimate', 'pruningSteps', 'recommendedDate', 'timingAdvice', 'toolsNeeded']
             },
+            expertReport: {
+              type: Type.OBJECT,
+              properties: {
+                urgencyScore: { type: Type.NUMBER },
+                economicImpact: { type: Type.STRING },
+                yieldEstimate: { type: Type.STRING },
+                fertilizerRecommendation: { type: Type.STRING },
+                irrigationNote: { type: Type.STRING },
+                rejuvenationNeeded: { type: Type.BOOLEAN },
+                nextKeyAction: { type: Type.STRING },
+              },
+              required: ['urgencyScore', 'economicImpact', 'yieldEstimate', 'fertilizerRecommendation', 'irrigationNote', 'rejuvenationNeeded', 'nextKeyAction']
+            },
             varietyConfidence: { type: Type.NUMBER },
             needsMoreImages: { type: Type.BOOLEAN },
             missingDetails: { type: Type.ARRAY, items: { type: Type.STRING } }
           },
-          required: ['diagnosis', 'pruning', 'varietyConfidence', 'needsMoreImages', 'missingDetails']
+          required: ['diagnosis', 'pruning', 'expertReport', 'varietyConfidence', 'needsMoreImages', 'missingDetails']
         }
       }
     });
@@ -427,7 +469,34 @@ Lag en detaljert BESKJÆRINGSPLAN for dette treet:
 4. VERKTØY: List spesifikke verktøy med begrunnelse
 
 Svar i JSON.` }] },
-      config: { responseMimeType: "application/json" }
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            treeType: { type: Type.STRING },
+            ageEstimate: { type: Type.STRING },
+            pruningSteps: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  area: { type: Type.STRING },
+                  action: { type: Type.STRING },
+                  priority: { type: Type.STRING },
+                  x: { type: Type.NUMBER },
+                  y: { type: Type.NUMBER }
+                },
+                required: ['area', 'action', 'priority', 'x', 'y']
+              }
+            },
+            recommendedDate: { type: Type.STRING },
+            timingAdvice: { type: Type.STRING },
+            toolsNeeded: { type: Type.ARRAY, items: { type: Type.STRING } }
+          },
+          required: ['treeType', 'ageEstimate', 'pruningSteps', 'recommendedDate', 'timingAdvice', 'toolsNeeded']
+        }
+      }
     });
     return JSON.parse(response.text || "{}");
   }

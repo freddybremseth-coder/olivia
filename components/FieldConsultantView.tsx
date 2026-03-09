@@ -1,11 +1,11 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { 
-  Camera, RefreshCcw, Sparkles, CheckCircle2, AlertTriangle, 
+import {
+  Camera, RefreshCcw, Sparkles, CheckCircle2, AlertTriangle,
   AlertCircle, ChevronRight, Sprout, Bug, Info, Loader2, X, Upload,
   Scissors, Search, Calendar, Plus, Layers, ArrowRight, History, Trash2, Clock,
   Target, Tag, Award, Image as ImageIcon, ScanEye, Plane, Thermometer, Waves, Zap,
-  Save, ArrowUpDown, MapPin, Filter
+  Save, ArrowUpDown, MapPin, Filter, Scale, FlaskConical, Droplets
 } from 'lucide-react';
 import { geminiService, ComprehensiveAnalysisResult, DroneAnalysisResult } from '../services/geminiService';
 import { Task, PruningHistoryItem, Parcel } from '../types';
@@ -335,7 +335,7 @@ const FieldConsultantView: React.FC = () => {
         </div>
 
         {/* Right Side: Analysis Results */}
-        <div className="space-y-6 overflow-y-auto max-h-[80vh] custom-scrollbar pr-2">
+        <div className="space-y-6 overflow-y-auto lg:max-h-[80vh] custom-scrollbar pr-2">
           {isAnalyzing && (
             <div className="h-full flex flex-col items-center justify-center space-y-6 glass rounded-[3rem] p-12">
                <Loader2 className="animate-spin text-green-400" size={48} />
@@ -400,58 +400,134 @@ const FieldConsultantView: React.FC = () => {
               </div>
 
               {activeTab === 'health' && (
-                <div className="space-y-6 animate-in fade-in duration-500">
-                  <div className="p-6 rounded-[2rem] glass border border-white/10 space-y-6">
+                <div className="space-y-4 animate-in fade-in duration-500">
+                  {/* Expert urgency + age bar */}
+                  {analysisResult.expertReport && (
+                    <div className="glass p-4 rounded-2xl border border-white/10 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Hastegrad</span>
+                        <span className={`text-xs font-black px-2 py-0.5 rounded-full ${
+                          analysisResult.expertReport.urgencyScore >= 7 ? 'bg-red-500/20 text-red-400' :
+                          analysisResult.expertReport.urgencyScore >= 4 ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-green-500/20 text-green-400'
+                        }`}>{analysisResult.expertReport.urgencyScore}/10</span>
+                      </div>
+                      <div className="w-full bg-slate-800 rounded-full h-2">
+                        <div className={`h-2 rounded-full transition-all ${
+                          analysisResult.expertReport.urgencyScore >= 7 ? 'bg-red-500' :
+                          analysisResult.expertReport.urgencyScore >= 4 ? 'bg-yellow-500' : 'bg-green-500'
+                        }`} style={{ width: `${analysisResult.expertReport.urgencyScore * 10}%` }} />
+                      </div>
+                      <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3">
+                        <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest mb-1">Viktigste tiltak nå</p>
+                        <p className="text-sm text-white font-medium">{analysisResult.expertReport.nextKeyAction}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="p-5 rounded-2xl glass border border-white/10 space-y-4">
                     <div>
                       <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <Bug size={14} className="text-orange-400" /> Patologisk Vurdering
+                        <Bug size={14} className="text-orange-400" /> Patologisk vurdering
                       </h4>
                       <p className="text-sm text-slate-300 leading-relaxed italic">"{analysisResult.diagnosis?.diagnosis || 'Ingen diagnose tilgjengelig.'}"</p>
                     </div>
-                    
                     <div className="space-y-2">
-                      <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2">Anbefalte Tiltak</h4>
+                      <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Anbefalte tiltak</h4>
                       {analysisResult.diagnosis?.actions?.map((action, i) => (
-                        <div key={i} className="flex gap-4 text-sm text-slate-300 p-4 rounded-2xl bg-white/5 border border-white/5">
+                        <div key={i} className="flex gap-3 text-sm text-slate-300 p-3 rounded-xl bg-white/5 border border-white/5">
                           <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 text-[10px] font-bold flex-shrink-0 mt-0.5">{i+1}</div>
                           {action}
                         </div>
-                      )) || <p className="text-xs text-slate-500 px-2 italic">Ingen spesifikke tiltak funnet.</p>}
+                      )) || <p className="text-xs text-slate-500 italic">Ingen spesifikke tiltak funnet.</p>}
                     </div>
                   </div>
+
+                  {/* Expert report grid */}
+                  {analysisResult.expertReport && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="glass p-4 rounded-2xl border border-white/10">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Scale size={11} /> Produksjonstap</p>
+                        <p className="text-sm text-red-400 font-bold">{analysisResult.expertReport.economicImpact}</p>
+                      </div>
+                      <div className="glass p-4 rounded-2xl border border-white/10">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Sprout size={11} /> Avkastning/tre</p>
+                        <p className="text-sm text-green-400 font-bold">{analysisResult.expertReport.yieldEstimate}</p>
+                      </div>
+                      <div className="glass p-4 rounded-2xl border border-white/10 sm:col-span-2">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><FlaskConical size={11} /> Gjødselanbefaling</p>
+                        <p className="text-sm text-blue-300">{analysisResult.expertReport.fertilizerRecommendation}</p>
+                      </div>
+                      <div className="glass p-4 rounded-2xl border border-white/10 sm:col-span-2">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Droplets size={11} /> Vanningsvurdering</p>
+                        <p className="text-sm text-slate-300">{analysisResult.expertReport.irrigationNote}</p>
+                      </div>
+                      {analysisResult.expertReport.rejuvenationNeeded && (
+                        <div className="glass p-4 rounded-2xl border border-orange-500/30 bg-orange-500/5 sm:col-span-2">
+                          <p className="text-xs font-bold text-orange-400 flex items-center gap-2"><AlertCircle size={14} /> Foryngelsesbeskjæring anbefalt</p>
+                          <p className="text-xs text-slate-400 mt-1">Treet er i en fase der kraftig policing-beskjæring vil øke fremtidig avkastning vesentlig.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
               {activeTab === 'pruning' && analysisResult.pruning && (
-                <div className="space-y-6 animate-in fade-in duration-500">
-                  <div className="glass rounded-[2rem] p-6 border border-white/10 space-y-6">
-                    <div className="flex justify-between items-center">
-                       <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Arkitektoniske Snitt</h4>
-                       <span className="text-[10px] font-bold text-blue-400">Status: {analysisResult.pruning.ageEstimate}</span>
+                <div className="space-y-4 animate-in fade-in duration-500">
+                  {/* Age + timing header */}
+                  <div className="glass p-4 rounded-2xl border border-white/10 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1"><Clock size={11}/> Estimert alder</span>
+                      <span className="text-xs font-bold text-blue-300">{analysisResult.pruning.ageEstimate}</span>
                     </div>
-                    <div className="space-y-3">
-                      {analysisResult.pruning.pruningSteps?.map((step, i) => (
-                        <div 
-                          key={i} 
-                          onMouseEnter={() => setActiveMarker(i)}
-                          onMouseLeave={() => setActiveMarker(null)}
-                          className={`p-4 rounded-2xl border transition-all flex gap-4 cursor-pointer ${
-                            activeMarker === i ? 'bg-green-500/10 border-green-500/40 translate-x-1' : 'bg-black/40 border-white/5'
-                          }`}
-                        >
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
-                            step.priority === 'HØY' ? 'bg-red-500/20 text-red-400 border border-red-500/20' : 'bg-green-500/20 text-green-400 border border-green-500/20'
-                          }`}>
-                            {i + 1}
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest mb-1">{step.area}</p>
-                            <p className="text-sm text-slate-300 leading-relaxed">{step.action}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    {analysisResult.pruning.timingAdvice && (
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
+                        <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Optimal timing</p>
+                        <p className="text-sm text-slate-300">{analysisResult.pruning.timingAdvice}</p>
+                      </div>
+                    )}
                   </div>
+
+                  <div className="glass rounded-2xl p-5 border border-white/10 space-y-3">
+                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Beskjæringsplan — trykk for å markere punkt</h4>
+                    {analysisResult.pruning.pruningSteps?.map((step, i) => (
+                      <div
+                        key={i}
+                        onMouseEnter={() => setActiveMarker(i)}
+                        onMouseLeave={() => setActiveMarker(null)}
+                        onTouchStart={() => setActiveMarker(i)}
+                        className={`p-4 rounded-xl border transition-all flex gap-3 cursor-pointer ${
+                          activeMarker === i ? 'bg-green-500/10 border-green-500/40' : 'bg-black/40 border-white/5'
+                        }`}
+                      >
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
+                          step.priority === 'HØY' ? 'bg-red-500/20 text-red-400 border border-red-500/20' :
+                          step.priority === 'MIDDELS' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/20' :
+                          'bg-green-500/20 text-green-400 border border-green-500/20'
+                        }`}>{i + 1}</div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest">{step.area}</p>
+                            {step.priority === 'HØY' && <span className="text-[8px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded font-bold">KRITISK</span>}
+                          </div>
+                          <p className="text-sm text-slate-300 leading-relaxed">{step.action}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Tools needed */}
+                  {analysisResult.pruning.toolsNeeded && analysisResult.pruning.toolsNeeded.length > 0 && (
+                    <div className="glass p-4 rounded-2xl border border-white/10">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1"><Scissors size={11}/> Verktøy som trengs</p>
+                      <div className="flex flex-wrap gap-2">
+                        {analysisResult.pruning.toolsNeeded.map((tool, i) => (
+                          <span key={i} className="text-xs bg-slate-800 text-slate-300 border border-white/10 px-2.5 py-1 rounded-lg">{tool}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

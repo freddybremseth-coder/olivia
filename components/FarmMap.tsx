@@ -766,9 +766,18 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
                   <div className="space-y-1">
                     <label className="text-[10px] text-slate-500 uppercase font-bold ml-1">Sort</label>
                     <select value={editVariety} onChange={e => setEditVariety(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none">
+                      <option value="Gordal">Gordal</option>
+                      <option value="Changlot Real">Changlot Real</option>
+                      <option value="Genoesa">Genoesa</option>
                       <option value="Picual">Picual</option>
                       <option value="Arbequina">Arbequina</option>
                       <option value="Hojiblanca">Hojiblanca</option>
+                      <option value="Manzanilla">Manzanilla</option>
+                      <option value="Lechin">Lechin</option>
+                      <option value="Cornicabra">Cornicabra</option>
+                      <option value="Frantoio">Frantoio</option>
+                      <option value="Leccino">Leccino</option>
+                      <option value="Annen">Annen</option>
                     </select>
                   </div>
                 </div>
