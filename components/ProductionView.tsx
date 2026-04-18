@@ -13,7 +13,11 @@ import {
 import { Batch, Parcel, Recipe, Ingredient, TableOliveStage, Language, HarvestRecord, SalesChannel } from '../types';
 import { geminiService } from '../services/geminiService';
 import { useTranslation } from '../services/i18nService';
-import { fetchHarvests, upsertHarvest, deleteHarvest as dbDeleteHarvest } from '../services/db';
+import {
+  fetchHarvests, upsertHarvest, deleteHarvest as dbDeleteHarvest,
+  fetchBatches, upsertBatch, deleteBatch as dbDeleteBatch,
+  fetchRecipes, upsertRecipe, upsertRecipes, deleteRecipe as dbDeleteRecipe,
+} from '../services/db';
 import {
   DEFAULT_RECIPES, FLAVOR_PROFILE_LABELS, FLAVOR_PROFILE_COLORS, OLIVE_TYPES
 } from '../data/olivenRecipes';
@@ -100,7 +104,12 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
   const totalRevenue = seasonHarvests.reduce((s, h) => s + h.kg * h.pricePerKg, 0);
   const seasons = [...new Set([currentSeason(), ...harvests.map(h => h.season)])].sort((a,b) => b.localeCompare(a));
 
-  const [batches, setBatches] = useState<Batch[]>([
+  // ── Batches and recipes (persisted to Supabase) ───────────────────────────
+  const [batches, setBatches] = useState<Batch[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+
+  // Seed used only on first ever run if Supabase has no batches yet
+  const SEED_BATCHES: Batch[] = [
     {
       id: 'B001', parcelId: 'p1', recipeId: 'R001', yieldType: 'Table', quality: 'Premium', weight: 150,
       harvestDate: '2023-10-28', currentStage: 'MARINERING', status: 'ACTIVE',
@@ -119,9 +128,28 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
       id: 'B002', parcelId: 'p2', recipeId: 'R003', yieldType: 'Table', quality: 'Good', weight: 320,
       harvestDate: '2023-11-05', currentStage: 'LAKE', status: 'ACTIVE',
       logs: [{ stage: 'PLUKKING', startDate: '2023-11-05', notes: 'Maskinell høsting.' }],
-    }
-  ]);
-  const [recipes, setRecipes] = useState<Recipe[]>(DEFAULT_RECIPES);
+    },
+  ];
+
+  useEffect(() => {
+    (async () => {
+      const [b, r] = await Promise.all([fetchBatches(), fetchRecipes()]);
+      if (b.length === 0) {
+        // First-run seed: upload demo batches so the empty state isn't scary
+        await Promise.all(SEED_BATCHES.map(upsertBatch));
+        setBatches(SEED_BATCHES);
+      } else {
+        setBatches(b);
+      }
+      if (r.length === 0) {
+        // First-run seed: upload the curated default recipe library
+        await upsertRecipes(DEFAULT_RECIPES);
+        setRecipes(DEFAULT_RECIPES);
+      } else {
+        setRecipes(r);
+      }
+    })();
+  }, []);
   const [mainTab, setMainTab] = useState<MainTab>('harvest');
   const [flavorFilter, setFlavorFilter] = useState<FlavorFilter>('all');
   const [recipeSearch, setRecipeSearch] = useState('');
@@ -166,13 +194,17 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
     setIsRecipeModalOpen(true);
   };
 
-  const handleSaveRecipe = () => {
+  const handleSaveRecipe = async () => {
     if (!editingRecipe || !editingRecipe.name) return;
-    if (editingRecipe.id) {
-      setRecipes(recipes.map(r => r.id === editingRecipe!.id ? editingRecipe as Recipe : r));
-    } else {
-      setRecipes([...recipes, { id: `R${Date.now()}`, rating: 4, notes: '', isAiGenerated: false, isQualityAssured: false, ...editingRecipe } as Recipe]);
-    }
+    const recipe: Recipe = editingRecipe.id
+      ? (editingRecipe as Recipe)
+      : ({ id: `R${Date.now()}`, rating: 4, notes: '', isAiGenerated: false, isQualityAssured: false, ...editingRecipe } as Recipe);
+    await upsertRecipe(recipe);
+    setRecipes(prev => {
+      const idx = prev.findIndex(r => r.id === recipe.id);
+      if (idx === -1) return [...prev, recipe];
+      const copy = [...prev]; copy[idx] = recipe; return copy;
+    });
     setIsRecipeModalOpen(false);
     setEditingRecipe(null);
   };
@@ -293,7 +325,7 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
     }
   };
 
-  const handleCreateBatch = () => {
+  const handleCreateBatch = async () => {
     if (!newBatch.parcelId || !newBatch.weight || newBatch.weight <= 0) {
       alert(t('please_select_parcel_and_weight'));
       return;
@@ -311,7 +343,8 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
       recipeSnapshot: batchIngredients.length > 0 ? [...batchIngredients] : undefined,
       logs: [{ stage: 'PLUKKING', startDate: new Date().toISOString().split('T')[0], notes: 'Batch opprettet.' }]
     };
-    setBatches([...batches, batch]);
+    await upsertBatch(batch);
+    setBatches(prev => [...prev, batch]);
     setIsBatchModalOpen(false);
     setBatchStep(1);
     setBatchIngredients([]);
@@ -320,29 +353,29 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
     setNewBatch({ yieldType: 'Table', quality: 'Premium', status: 'ACTIVE', weight: 0, harvestDate: new Date().toISOString().split('T')[0], currentStage: 'PLUKKING' });
   };
 
-  const handleAdvanceStage = (batchId: string) => {
-    setBatches(batches.map(b => {
-      if (b.id === batchId) {
-        const currentIndex = STAGES.indexOf(b.currentStage);
-        if (currentIndex < STAGES.length - 1) {
-          const nextStage = STAGES[currentIndex + 1];
-          return { 
-            ...b, 
-            currentStage: nextStage,
-            logs: [...(b.logs || []), { stage: nextStage, startDate: new Date().toISOString().split('T')[0], notes: '' }]
-          };
-        } else { // Last stage, archive it
-          return { ...b, status: 'ARCHIVED' };
-        }
-      }
-      return b;
-    }));
-  };
-  
-  const handleDeleteRecipe = (id: string) => {
-    if (confirm(t('delete_recipe_confirm'))) {
-        setRecipes(recipes.filter(r => r.id !== id));
+  const handleAdvanceStage = async (batchId: string) => {
+    const target = batches.find(b => b.id === batchId);
+    if (!target) return;
+    const currentIndex = STAGES.indexOf(target.currentStage as TableOliveStage);
+    let updated: Batch;
+    if (currentIndex < STAGES.length - 1) {
+      const nextStage = STAGES[currentIndex + 1];
+      updated = {
+        ...target,
+        currentStage: nextStage,
+        logs: [...(target.logs || []), { stage: nextStage, startDate: new Date().toISOString().split('T')[0], notes: '' }],
+      };
+    } else {
+      updated = { ...target, status: 'ARCHIVED' };
     }
+    await upsertBatch(updated);
+    setBatches(prev => prev.map(b => b.id === batchId ? updated : b));
+  };
+
+  const handleDeleteRecipe = async (id: string) => {
+    if (!confirm(t('delete_recipe_confirm'))) return;
+    await dbDeleteRecipe(id);
+    setRecipes(prev => prev.filter(r => r.id !== id));
   };
 
   const activeBatches = batches.filter(b => b.status === 'ACTIVE');

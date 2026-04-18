@@ -8,6 +8,10 @@ import {
 import { geminiService, PruningPlan } from '../services/geminiService';
 import { Task, PruningHistoryItem, Parcel } from '../types';
 import { Language } from '../services/i18nService';
+import {
+  fetchPruningHistory, upsertPruningItem, deletePruningItem,
+  upsertTask, fetchParcels,
+} from '../services/db';
 
 const PruningAdvisorView: React.FC = () => {
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -28,21 +32,19 @@ const PruningAdvisorView: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const loadData = () => {
+  const loadData = async () => {
     const settings = localStorage.getItem('olivia_settings');
     if (settings) {
       const parsed = JSON.parse(settings);
       setLanguage(parsed.language || 'en');
     }
 
-    const savedHistory = localStorage.getItem('olivia_pruning_history');
-    if (savedHistory) setHistory(JSON.parse(savedHistory));
-
-    const savedParcels = localStorage.getItem('olivia_parcels');
-    if (savedParcels) {
-      const parsed = JSON.parse(savedParcels);
-      setParcels(parsed);
-      if (parsed.length > 0 && !selectedParcelId) setSelectedParcelId(parsed[0].id);
+    // Pruning history + parcels live in Supabase
+    const [hist, prc] = await Promise.all([fetchPruningHistory(), fetchParcels()]);
+    setHistory(hist);
+    if (prc.length > 0) {
+      setParcels(prc);
+      if (!selectedParcelId) setSelectedParcelId(prc[0].id);
     }
   };
 
@@ -110,11 +112,11 @@ const PruningAdvisorView: React.FC = () => {
     finally { setIsAnalyzing(false); }
   };
 
-  const saveToHistory = () => {
-    if (!plan || !capturedImage) return;
+  const saveToHistory = async (): Promise<PruningHistoryItem | null> => {
+    if (!plan || !capturedImage) return null;
 
     const newItem: PruningHistoryItem = {
-      id: Date.now().toString(),
+      id: `prune-${Date.now()}`,
       date: new Date().toISOString(),
       images: [capturedImage],
       treeType: plan.treeType,
@@ -124,34 +126,28 @@ const PruningAdvisorView: React.FC = () => {
       scheduledTime: scheduledDate
     };
 
-    const updatedHistory = [newItem, ...history];
-    setHistory(updatedHistory);
-    localStorage.setItem('olivia_pruning_history', JSON.stringify(updatedHistory));
+    await upsertPruningItem(newItem);
+    setHistory(prev => [newItem, ...prev]);
     setHistorySaved(true);
     setTimeout(() => setHistorySaved(false), 3000);
+    return newItem;
   };
 
-  const deleteHistoryItem = (id: string, e: React.MouseEvent) => {
+  const deleteHistoryItem = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updated = history.filter(item => item.id !== id);
-    setHistory(updated);
-    localStorage.setItem('olivia_pruning_history', JSON.stringify(updated));
+    await deletePruningItem(id);
+    setHistory(prev => prev.filter(item => item.id !== id));
   };
 
-  const addToCalendar = () => {
+  const addToCalendar = async () => {
     if (!plan || !capturedImage) return;
-    
-    // Save to history for record keeping
-    saveToHistory();
 
-    const savedTasks = localStorage.getItem('olivia_tasks');
-    const tasks: Task[] = savedTasks ? JSON.parse(savedTasks) : [];
-    
-    const parcelName = parcels.find(p => p.id === selectedParcelId)?.name || 'Ukjent parsell';
-    
+    // Save the analysis itself to history
+    await saveToHistory();
+
     const newTask: Task = {
       id: `task-${Date.now()}`,
-      title: `Add to Calendar: Beskjæring av ${plan.treeType}`,
+      title: `Beskjæring av ${plan.treeType}`,
       priority: 'Høy',
       category: 'Vedlikehold',
       user: 'AI-Planlegger',
@@ -160,11 +156,10 @@ const PruningAdvisorView: React.FC = () => {
       parcelId: selectedParcelId
     };
 
-    const updatedTasks = [...tasks, newTask];
-    localStorage.setItem('olivia_tasks', JSON.stringify(updatedTasks));
-    
+    await upsertTask(newTask);
+    // Notify any open TasksView to refresh
     window.dispatchEvent(new Event('storage'));
-    
+
     setTaskSaved(true);
     setTimeout(() => setTaskSaved(false), 4000);
   };

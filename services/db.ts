@@ -2,11 +2,15 @@
  * db.ts – all Supabase data operations for Olivia Farm OS
  *
  * Tables (created via SQL migration in Supabase dashboard):
- *   parcels, harvest_records, farm_expenses, subsidy_income, farm_settings
+ *   parcels, harvest_records, farm_expenses, subsidy_income, farm_settings,
+ *   batches, recipes, tasks, pruning_history
  */
 
 import { supabase } from './supabaseClient';
-import type { Parcel, HarvestRecord, FarmExpense, SubsidyIncome } from '../types';
+import type {
+  Parcel, HarvestRecord, FarmExpense, SubsidyIncome,
+  Batch, Recipe, Task, PruningHistoryItem,
+} from '../types';
 
 // ── PARCELS ──────────────────────────────────────────────────────────────────
 
@@ -250,4 +254,306 @@ function subsidyToRow(s: SubsidyIncome) {
     amount: s.amount,
     description: s.description,
   };
+}
+
+// ── BATCHES ──────────────────────────────────────────────────────────────────
+
+export async function fetchBatches(): Promise<Batch[]> {
+  const { data, error } = await supabase
+    .from('batches')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { console.error('fetchBatches', error); return []; }
+  return (data ?? []).map(rowToBatch);
+}
+
+export async function upsertBatch(b: Batch): Promise<void> {
+  const { error } = await supabase
+    .from('batches')
+    .upsert(batchToRow(b), { onConflict: 'id' });
+  if (error) console.error('upsertBatch', error);
+}
+
+export async function deleteBatch(id: string): Promise<void> {
+  const { error } = await supabase.from('batches').delete().eq('id', id);
+  if (error) console.error('deleteBatch', error);
+}
+
+// ── RECIPES ──────────────────────────────────────────────────────────────────
+
+export async function fetchRecipes(): Promise<Recipe[]> {
+  const { data, error } = await supabase
+    .from('recipes')
+    .select('*')
+    .order('created_at', { ascending: true });
+  if (error) { console.error('fetchRecipes', error); return []; }
+  return (data ?? []).map(rowToRecipe);
+}
+
+export async function upsertRecipe(r: Recipe): Promise<void> {
+  const { error } = await supabase
+    .from('recipes')
+    .upsert(recipeToRow(r), { onConflict: 'id' });
+  if (error) console.error('upsertRecipe', error);
+}
+
+export async function upsertRecipes(list: Recipe[]): Promise<void> {
+  if (!list.length) return;
+  const { error } = await supabase
+    .from('recipes')
+    .upsert(list.map(recipeToRow), { onConflict: 'id' });
+  if (error) console.error('upsertRecipes', error);
+}
+
+export async function deleteRecipe(id: string): Promise<void> {
+  const { error } = await supabase.from('recipes').delete().eq('id', id);
+  if (error) console.error('deleteRecipe', error);
+}
+
+// ── TASKS ────────────────────────────────────────────────────────────────────
+
+export async function fetchTasks(): Promise<Task[]> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { console.error('fetchTasks', error); return []; }
+  return (data ?? []).map(rowToTask);
+}
+
+export async function upsertTask(t: Task): Promise<void> {
+  const { error } = await supabase
+    .from('tasks')
+    .upsert(taskToRow(t), { onConflict: 'id' });
+  if (error) console.error('upsertTask', error);
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  const { error } = await supabase.from('tasks').delete().eq('id', id);
+  if (error) console.error('deleteTask', error);
+}
+
+// ── PRUNING HISTORY ──────────────────────────────────────────────────────────
+
+export async function fetchPruningHistory(): Promise<PruningHistoryItem[]> {
+  const { data, error } = await supabase
+    .from('pruning_history')
+    .select('*')
+    .order('date', { ascending: false });
+  if (error) { console.error('fetchPruningHistory', error); return []; }
+  return (data ?? []).map(rowToPruning);
+}
+
+export async function upsertPruningItem(p: PruningHistoryItem): Promise<void> {
+  const { error } = await supabase
+    .from('pruning_history')
+    .upsert(pruningToRow(p), { onConflict: 'id' });
+  if (error) console.error('upsertPruningItem', error);
+}
+
+export async function deletePruningItem(id: string): Promise<void> {
+  const { error } = await supabase.from('pruning_history').delete().eq('id', id);
+  if (error) console.error('deletePruningItem', error);
+}
+
+// ── Row mappers (new tables) ─────────────────────────────────────────────────
+
+function rowToBatch(r: any): Batch {
+  return {
+    id: r.id,
+    parcelId: r.parcel_id ?? '',
+    recipeId: r.recipe_id ?? undefined,
+    recipeName: r.recipe_name ?? undefined,
+    recipeSnapshot: r.recipe_snapshot ?? undefined,
+    oliveType: r.olive_type ?? undefined,
+    harvestDate: r.harvest_date,
+    weight: Number(r.weight ?? 0),
+    quality: r.quality,
+    qualityScore: r.quality_score ?? undefined,
+    status: r.status,
+    laborHours: r.labor_hours ?? undefined,
+    laborCost: r.labor_cost ?? undefined,
+    yieldType: r.yield_type,
+    oilYieldLiters: r.oil_yield_liters ?? undefined,
+    tableOliveYieldKg: r.table_olive_yield_kg ?? undefined,
+    traceabilityCode: r.traceability_code ?? undefined,
+    currentStage: r.current_stage ?? undefined,
+    stageStartDate: r.stage_start_date ?? undefined,
+    completedStages: r.completed_stages ?? undefined,
+    sales: r.sales ?? undefined,
+    logs: r.logs ?? undefined,
+    qualityMetrics: r.quality_metrics ?? undefined,
+  };
+}
+
+function batchToRow(b: Batch) {
+  return {
+    id: b.id,
+    parcel_id: b.parcelId || null,
+    recipe_id: b.recipeId ?? null,
+    recipe_name: b.recipeName ?? null,
+    recipe_snapshot: b.recipeSnapshot ?? null,
+    olive_type: b.oliveType ?? null,
+    harvest_date: b.harvestDate,
+    weight: b.weight,
+    quality: b.quality,
+    quality_score: b.qualityScore ?? null,
+    status: b.status,
+    labor_hours: b.laborHours ?? null,
+    labor_cost: b.laborCost ?? null,
+    yield_type: b.yieldType,
+    oil_yield_liters: b.oilYieldLiters ?? null,
+    table_olive_yield_kg: b.tableOliveYieldKg ?? null,
+    traceability_code: b.traceabilityCode ?? null,
+    current_stage: b.currentStage ?? null,
+    stage_start_date: b.stageStartDate ?? null,
+    completed_stages: b.completedStages ?? null,
+    sales: b.sales ?? null,
+    logs: b.logs ?? null,
+    quality_metrics: b.qualityMetrics ?? null,
+  };
+}
+
+function rowToRecipe(r: any): Recipe {
+  return {
+    id: r.id,
+    name: r.name,
+    flavorProfile: r.flavor_profile ?? undefined,
+    description: r.description ?? undefined,
+    recommendedOliveTypes: r.recommended_olive_types ?? undefined,
+    ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
+    brineChangeDays: r.brine_change_days ?? undefined,
+    marinadeDayFrom: r.marinade_day_from ?? undefined,
+    readyAfterDays: r.ready_after_days ?? undefined,
+    rating: Number(r.rating ?? 4),
+    notes: r.notes ?? '',
+    isAiGenerated: !!r.is_ai_generated,
+    isQualityAssured: !!r.is_quality_assured,
+  };
+}
+
+function recipeToRow(r: Recipe) {
+  return {
+    id: r.id,
+    name: r.name,
+    flavor_profile: r.flavorProfile ?? null,
+    description: r.description ?? null,
+    recommended_olive_types: r.recommendedOliveTypes ?? null,
+    ingredients: r.ingredients ?? [],
+    brine_change_days: r.brineChangeDays ?? null,
+    marinade_day_from: r.marinadeDayFrom ?? null,
+    ready_after_days: r.readyAfterDays ?? null,
+    rating: r.rating,
+    notes: r.notes ?? '',
+    is_ai_generated: r.isAiGenerated,
+    is_quality_assured: r.isQualityAssured,
+  };
+}
+
+function rowToTask(r: any): Task {
+  return {
+    id: r.id,
+    title: r.title,
+    priority: r.priority,
+    category: r.category,
+    user: r.user_name ?? '',
+    status: r.status,
+    parcelId: r.parcel_id ?? undefined,
+    dueDate: r.due_date ?? undefined,
+  };
+}
+
+function taskToRow(t: Task) {
+  return {
+    id: t.id,
+    title: t.title,
+    priority: t.priority,
+    category: t.category,
+    user_name: t.user ?? '',
+    status: t.status,
+    parcel_id: t.parcelId ?? null,
+    due_date: t.dueDate ?? null,
+  };
+}
+
+function rowToPruning(r: any): PruningHistoryItem {
+  return {
+    id: r.id,
+    date: r.date,
+    images: Array.isArray(r.images) ? r.images : [],
+    treeType: r.tree_type ?? '',
+    ageEstimate: r.age_estimate ?? '',
+    analysis: r.analysis ?? undefined,
+    plan: r.plan ?? undefined,
+    scheduledTime: r.scheduled_time ?? undefined,
+    parcelId: r.parcel_id ?? undefined,
+  };
+}
+
+function pruningToRow(p: PruningHistoryItem) {
+  return {
+    id: p.id,
+    date: p.date,
+    images: p.images ?? [],
+    tree_type: p.treeType ?? null,
+    age_estimate: p.ageEstimate ?? null,
+    analysis: p.analysis ?? null,
+    plan: p.plan ?? null,
+    scheduled_time: p.scheduledTime ?? null,
+    parcel_id: p.parcelId ?? null,
+  };
+}
+
+// ── One-time localStorage → Supabase migration ───────────────────────────────
+// Reads any pre-existing legacy localStorage entries and uploads them. Marks
+// them as migrated using a flag key so it only runs once per browser. Safe to
+// call on every app startup.
+
+const MIGRATION_FLAG = 'olivia_migrated_to_supabase_v1';
+
+export async function migrateLocalStorageToSupabase(): Promise<{
+  migrated: { batches: number; recipes: number; tasks: number; pruning: number };
+  skipped: boolean;
+}> {
+  const empty = { batches: 0, recipes: 0, tasks: 0, pruning: 0 };
+  if (typeof window === 'undefined') return { migrated: empty, skipped: true };
+  if (localStorage.getItem(MIGRATION_FLAG)) return { migrated: empty, skipped: true };
+
+  const result = { ...empty };
+
+  try {
+    const rawTasks = localStorage.getItem('olivia_tasks');
+    if (rawTasks) {
+      const tasks: Task[] = JSON.parse(rawTasks);
+      for (const t of tasks) { await upsertTask(t); result.tasks++; }
+    }
+  } catch (e) { console.warn('migrate tasks', e); }
+
+  try {
+    const rawPruning = localStorage.getItem('olivia_pruning_history');
+    if (rawPruning) {
+      const items: PruningHistoryItem[] = JSON.parse(rawPruning);
+      for (const p of items) { await upsertPruningItem(p); result.pruning++; }
+    }
+  } catch (e) { console.warn('migrate pruning', e); }
+
+  try {
+    const rawBatches = localStorage.getItem('olivia_batches');
+    if (rawBatches) {
+      const items: Batch[] = JSON.parse(rawBatches);
+      for (const b of items) { await upsertBatch(b); result.batches++; }
+    }
+  } catch (e) { console.warn('migrate batches', e); }
+
+  try {
+    const rawRecipes = localStorage.getItem('olivia_recipes');
+    if (rawRecipes) {
+      const items: Recipe[] = JSON.parse(rawRecipes);
+      await upsertRecipes(items);
+      result.recipes = items.length;
+    }
+  } catch (e) { console.warn('migrate recipes', e); }
+
+  localStorage.setItem(MIGRATION_FLAG, new Date().toISOString());
+  return { migrated: result, skipped: false };
 }

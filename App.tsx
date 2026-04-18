@@ -17,7 +17,7 @@ import IoTDashboard from './components/IoTDashboard';
 import LoginModal, { StoredUser } from './components/LoginModal';
 import ProfitabilityPage from './pages/Profitability';
 import { UserProfile, Language, Parcel } from './types';
-import { fetchParcels, upsertParcel, deleteParcel } from './services/db';
+import { fetchParcels, upsertParcel, deleteParcel, migrateLocalStorageToSupabase } from './services/db';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -50,7 +50,7 @@ const App: React.FC = () => {
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(DEFAULT_PARCELS[0]);
   const [parcelsLoaded, setParcelsLoaded] = useState(false);
 
-  // Load parcels from Supabase on mount
+  // Load parcels from Supabase on mount + run one-time localStorage migration
   useEffect(() => {
     fetchParcels().then(rows => {
       if (rows.length > 0) {
@@ -59,6 +59,16 @@ const App: React.FC = () => {
       }
       setParcelsLoaded(true);
     });
+    // One-shot upload of any pre-existing localStorage data (tasks, batches,
+    // recipes, pruning history). Safe to run on every startup; does nothing
+    // after the first successful run thanks to a flag in localStorage.
+    migrateLocalStorageToSupabase()
+      .then(({ migrated, skipped }) => {
+        if (!skipped) {
+          console.info('[migration] uploaded to Supabase', migrated);
+        }
+      })
+      .catch(err => console.warn('[migration] failed', err));
   }, []);
 
   const handleParcelSave = async (parcel: Parcel) => {

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, MoreHorizontal, User, MapPin, AlertCircle, X, CheckCircle2, ClipboardList, Edit2, Play } from 'lucide-react';
 import { Task, Parcel } from '../types';
+import { fetchTasks, upsertTask, deleteTask as dbDeleteTask } from '../services/db';
 
 const SUGGESTED_TASKS: Partial<Task>[] = [
   { title: 'Innhøsting av oliven', priority: 'Kritisk', category: 'Innhøsting' },
@@ -26,24 +27,29 @@ const TasksView: React.FC<TasksViewProps> = ({ parcels }) => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [formTask, setFormTask] = useState<Partial<Task>>(EMPTY_TASK);
 
+  // Tasks live in Supabase. Load on mount and refresh whenever another view
+  // (e.g. the pruning advisor that auto-creates tasks) dispatches a 'storage' event.
+  const reload = async () => {
+    const rows = await fetchTasks();
+    setTasks(rows);
+  };
+
   useEffect(() => {
-    const saved = localStorage.getItem('olivia_tasks');
-    if (saved) {
-      setTasks(JSON.parse(saved));
-    } else {
-      const initial: Task[] = [
-        { id: '1', title: 'Beskjæring sektor Nord', priority: 'Høy', category: 'Vedlikehold', user: 'Juan', status: 'TODO', parcelId: parcels[0]?.id },
-        { id: '3', title: 'Reparasjon av traktor', priority: 'Kritisk', category: 'Flåte', user: 'Mario', status: 'IN_PROGRESS' },
-        { id: '4', title: 'Innhøsting batch 002', priority: 'Lav', category: 'Produksjon', user: 'Team', status: 'DONE', parcelId: parcels[1]?.id },
-      ];
-      setTasks(initial);
-      localStorage.setItem('olivia_tasks', JSON.stringify(initial));
-    }
+    reload();
+    const onStorage = () => reload();
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  const saveTasks = (updated: Task[]) => {
-    setTasks(updated);
-    localStorage.setItem('olivia_tasks', JSON.stringify(updated));
+  const persistTask = async (task: Task) => {
+    await upsertTask(task);
+    setTasks(prev => {
+      const idx = prev.findIndex(t => t.id === task.id);
+      if (idx === -1) return [task, ...prev];
+      const copy = [...prev];
+      copy[idx] = task;
+      return copy;
+    });
   };
 
   const openNew = () => {
@@ -58,24 +64,26 @@ const TasksView: React.FC<TasksViewProps> = ({ parcels }) => {
     setIsModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formTask.title) return;
-    if (editingTask) {
-      saveTasks(tasks.map(t => t.id === editingTask.id ? { ...t, ...formTask } as Task : t));
-    } else {
-      saveTasks([{ ...(formTask as Task), id: Date.now().toString(), status: 'TODO' }, ...tasks]);
-    }
+    const task: Task = editingTask
+      ? ({ ...editingTask, ...formTask } as Task)
+      : ({ ...(formTask as Task), id: `task-${Date.now()}`, status: 'TODO' });
+    await persistTask(task);
     setIsModalOpen(false);
     setEditingTask(null);
   };
 
-  const updateStatus = (id: string, status: Task['status']) => {
-    saveTasks(tasks.map(t => t.id === id ? { ...t, status } : t));
+  const updateStatus = async (id: string, status: Task['status']) => {
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+    await persistTask({ ...t, status });
   };
 
-  const deleteTask = (id: string) => {
+  const deleteTask = async (id: string) => {
     if (!confirm('Slette oppgaven?')) return;
-    saveTasks(tasks.filter(t => t.id !== id));
+    await dbDeleteTask(id);
+    setTasks(prev => prev.filter(t => t.id !== id));
   };
 
   const columns: { title: string; status: Task['status']; color: string }[] = [
