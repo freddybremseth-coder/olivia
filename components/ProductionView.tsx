@@ -21,6 +21,7 @@ import {
 import {
   DEFAULT_RECIPES, FLAVOR_PROFILE_LABELS, FLAVOR_PROFILE_COLORS, OLIVE_TYPES
 } from '../data/olivenRecipes';
+import BatchTimeline from './BatchTimeline';
 
 type FlavorFilter = 'all' | 'mild' | 'syrlig' | 'krydret' | 'urterik' | 'sitrus' | 'hvitlok' | 'middelhav';
 type MainTab = 'harvest' | 'pipeline' | 'active' | 'history' | 'recipes' | 'guide';
@@ -572,7 +573,19 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
         activeBatches.length === 0 ? (
             <div className="text-center py-20 px-4 bg-slate-900/50 rounded-2xl border border-dashed border-slate-700" dangerouslySetInnerHTML={{ __html: t('no_active_batches') }} />
         ) : (
-          <div className="overflow-x-auto pb-2">
+          <div className="space-y-6">
+            {/* Horisontal tidslinje per batch */}
+            <BatchTimeline
+              batches={activeBatches}
+              parcels={parcels}
+              recipes={recipes}
+              language={language}
+              onAdvance={handleAdvanceStage}
+              maxRows={20}
+            />
+
+            {/* Eksisterende kanban-kolonner per steg */}
+            <div className="overflow-x-auto pb-2">
             <div className="flex gap-4 min-w-max">
               {STAGES.map(stage => {
                 const stageBatches = batchesInStage(stage);
@@ -600,6 +613,7 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
                   </div>
                 );
               })}
+            </div>
             </div>
           </div>
         )
