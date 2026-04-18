@@ -22,6 +22,8 @@ import {
   DEFAULT_RECIPES, FLAVOR_PROFILE_LABELS, FLAVOR_PROFILE_COLORS, OLIVE_TYPES
 } from '../data/olivenRecipes';
 import BatchTimeline from './BatchTimeline';
+import RecipeScalerModal from './RecipeScalerModal';
+import BatchQRCode from './BatchQRCode';
 
 type FlavorFilter = 'all' | 'mild' | 'syrlig' | 'krydret' | 'urterik' | 'sitrus' | 'hvitlok' | 'middelhav';
 type MainTab = 'harvest' | 'pipeline' | 'active' | 'history' | 'recipes' | 'guide';
@@ -181,6 +183,9 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
 
   // ── Content declaration modal ─────────────────────────────────────────────
   const [viewingBatch, setViewingBatch] = useState<Batch | null>(null);
+
+  // ── Recipe scaler modal ───────────────────────────────────────────────────
+  const [scalingRecipe, setScalingRecipe] = useState<Recipe | null>(null);
 
   const handleOpenRecipeModal = (recipe: Recipe | null = null) => {
     if (recipe) {
@@ -734,6 +739,13 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
                     >
                       <Plus size={14} />
                     </button>
+                    <button
+                      onClick={() => setScalingRecipe(recipe)}
+                      className="p-1.5 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-all"
+                      title="Skaler oppskrift + estimer kost/fortjeneste"
+                    >
+                      <Scale size={14} />
+                    </button>
                     <button onClick={() => handleOpenRecipeModal(recipe)} className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
                       <Edit3 size={14} />
                     </button>
@@ -1164,6 +1176,9 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
                 </p>
               </div>
 
+              {/* Sporbarhets-QR */}
+              <BatchQRCode batch={viewingBatch} />
+
               {/* Print/copy note */}
               <div className="bg-yellow-500/5 border border-yellow-500/10 rounded-xl p-3 text-xs text-yellow-300/70">
                 <Tag size={12} className="inline mr-1" />
@@ -1178,6 +1193,10 @@ const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) =>
         </div>
       )}
 
+      {/* Recipe scaler modal */}
+      {scalingRecipe && (
+        <RecipeScalerModal recipe={scalingRecipe} onClose={() => setScalingRecipe(null)} />
+      )}
     </div>
   );
 };
