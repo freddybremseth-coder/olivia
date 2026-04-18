@@ -18,6 +18,7 @@ import LoginModal, { StoredUser } from './components/LoginModal';
 import ProfitabilityPage from './pages/Profitability';
 import { UserProfile, Language, Parcel } from './types';
 import { fetchParcels, upsertParcel, deleteParcel, migrateLocalStorageToSupabase } from './services/db';
+import { getCurrentSession, onAuthChange, signOut as authSignOut } from './services/auth';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -104,23 +105,17 @@ const App: React.FC = () => {
     }
   };
 
+  // Settings (language only — no longer used for session storage)
   useEffect(() => {
-    const session = localStorage.getItem('olivia_session');
-    if (session) {
-      try {
-        const { user: savedUser, isAdmin: savedAdmin } = JSON.parse(session);
-        setUser(savedUser);
-        setIsAdmin(savedAdmin);
-        setIsLoggedIn(true);
-      } catch { localStorage.removeItem('olivia_session'); }
-    }
-
     const settings = localStorage.getItem('olivia_settings');
     if (settings) {
       const parsed = JSON.parse(settings);
       if (parsed.language) setLanguage(parsed.language);
     }
+  }, []);
 
+  // Weather refresh whenever the selected parcel changes
+  useEffect(() => {
     if (selectedParcel) {
       const lat = selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0];
       const lon = selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1];
@@ -128,21 +123,45 @@ const App: React.FC = () => {
     }
   }, [selectedParcel]);
 
+  // Supabase auth: hydrate from stored session on load + subscribe to changes.
+  useEffect(() => {
+    let cancelled = false;
+    getCurrentSession().then(result => {
+      if (cancelled || !result) return;
+      setUser(result.user);
+      setIsAdmin(result.isAdmin);
+      setIsLoggedIn(true);
+    });
+    const unsubscribe = onAuthChange(result => {
+      if (cancelled) return;
+      if (result) {
+        setUser(result.user);
+        setIsAdmin(result.isAdmin);
+        setIsLoggedIn(true);
+        setShowLogin(false);
+      } else {
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+      }
+    });
+    return () => { cancelled = true; unsubscribe(); };
+  }, []);
+
   const handleLoginSuccess = (storedUser: StoredUser, admin: boolean) => {
-    const profileUser: UserProfile = {
-      id: storedUser.id, name: storedUser.name, email: storedUser.email,
-      role: storedUser.role, subscription: storedUser.subscription,
-      subscriptionStart: storedUser.subscriptionStart, avatar: storedUser.avatar
-    };
-    setUser(profileUser);
+    // The auth listener will set state too, but doing it here makes the
+    // transition feel instant.
+    setUser(storedUser);
     setIsAdmin(admin);
     setIsLoggedIn(true);
     setShowLogin(false);
-    localStorage.setItem('olivia_session', JSON.stringify({ user: profileUser, isAdmin: admin }));
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false); setIsAdmin(false); setActiveTab('dashboard');
+  const handleLogout = async () => {
+    await authSignOut();
+    setIsLoggedIn(false);
+    setIsAdmin(false);
+    setActiveTab('dashboard');
+    // Wipe any legacy localStorage session left over from the old flow
     localStorage.removeItem('olivia_session');
   };
 

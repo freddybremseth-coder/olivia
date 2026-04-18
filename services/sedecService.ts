@@ -6,74 +6,43 @@ const isXml = (text: string) => {
   return t.startsWith("<?xml") || t.startsWith("<consulta") || t.startsWith("<string") || t.startsWith("<municipiero") || t.startsWith("<datos") || t.startsWith("<wfs") || t.startsWith("<FeatureCollection");
 };
 
+/**
+ * Catastro fetch — uses our own proxy at /api/catastro (Vite dev-proxy locally,
+ * Vercel serverless in production). The previous fallbacks via allorigins.win,
+ * api.codetabs.com and corsproxy.io leaked every cadastral lookup to random
+ * third-party services and added latency on every request, so they're removed.
+ *
+ * If the local proxy fails we try Catastro directly once (it sets CORS in some
+ * cases and returns XML even on HTTP 500 SOAP faults), then surface a real
+ * error instead of silently swallowing it.
+ */
 const catastroFetch = async (url: string): Promise<string> => {
   const path = url.replace(CATASTRO_HOST, "");
   const errors: string[] = [];
 
-  // 1) Intern proxy – Vite dev-proxy lokalt, Vercel serverless i produksjon
+  // 1) Own proxy
   try {
     const r = await fetch(`/api/catastro${path}`);
     const text = await r.text();
     if (isXml(text)) return text;
-    errors.push(`proxy HTTP ${r.status}: ikke XML (${text.slice(0, 60)})`);
-  } catch (e: any) { errors.push(`proxy: ${e.message}`); }
+    errors.push(`proxy HTTP ${r.status}: ikke XML (${text.slice(0, 80)})`);
+  } catch (e: any) {
+    errors.push(`proxy: ${e.message}`);
+  }
 
-  // 2) Direkte – Catastro tillater CORS; les body også ved HTTP 500 (SOAP fault er XML)
+  // 2) Direct (last-resort; Catastro sometimes allows CORS and returns XML even on 500)
   try {
     const r = await fetch(url);
     const text = await r.text();
-    console.log("[Catastro direkte]", r.status, JSON.stringify(text.slice(0, 400)));
-    // fjern BOM (\uFEFF) før sjekk
-    if (text.replace(/^\uFEFF/, '').trim().startsWith("<")) return text;
+    if (text.replace(/^\uFEFF/, "").trim().startsWith("<")) return text;
     errors.push(`direkte HTTP ${r.status}: ikke XML (${text.slice(0, 80)})`);
   } catch (e: any) {
     errors.push(`direkte: ${e.message}`);
   }
 
-  // 3) allorigins.win/get – JSON-wrapper (mer pålitelig enn /raw)
-  try {
-    const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-    if (r.ok) {
-      const json = await r.json();
-      const text: string = json?.contents ?? "";
-      if (text.trim().startsWith("<")) return text;
-      errors.push(`allorigins: ugyldig innhold`);
-    } else {
-      errors.push(`allorigins HTTP ${r.status}`);
-    }
-  } catch (e: any) {
-    errors.push(`allorigins: ${e.message}`);
-  }
-
-  // 4) api.codetabs.com
-  try {
-    const r = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`);
-    if (r.ok) {
-      const text = await r.text();
-      if (text.trim().startsWith("<")) return text;
-      errors.push(`codetabs: ugyldig innhold`);
-    } else {
-      errors.push(`codetabs HTTP ${r.status}`);
-    }
-  } catch (e: any) {
-    errors.push(`codetabs: ${e.message}`);
-  }
-
-  // 5) corsproxy.io
-  try {
-    const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
-    if (r.ok) {
-      const text = await r.text();
-      if (text.trim().startsWith("<")) return text;
-      errors.push(`corsproxy: ugyldig innhold`);
-    } else {
-      errors.push(`corsproxy HTTP ${r.status}`);
-    }
-  } catch (e: any) {
-    errors.push(`corsproxy: ${e.message}`);
-  }
-
-  throw new Error(`Catastro utilgjengelig. (${errors.join('; ')})`);
+  throw new Error(
+    `Catastro utilgjengelig. Sjekk at /api/catastro proxyer mot ovc.catastro.meh.es. (${errors.join("; ")})`
+  );
 };
 
 export class SedecService {

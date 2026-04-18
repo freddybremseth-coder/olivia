@@ -85,41 +85,73 @@ export interface CadastralDetails {
   description: string;
 }
 
+/**
+ * AI key strategy
+ * ---------------
+ *  - If a user pastes a Gemini / Claude key in Settings (stored in localStorage)
+ *    we hit the upstream API directly with that key — useful for local dev
+ *    and BYOK scenarios.
+ *  - Otherwise we route every request through our own serverless proxies at
+ *    /api/ai/gemini and /api/ai/anthropic, which inject the real key from
+ *    Vercel env vars (GEMINI_API_KEY / ANTHROPIC_API_KEY). The browser never
+ *    sees the production key.
+ */
+
+const GEMINI_PROXY_BASE   = '/api/ai/gemini';
+const ANTHROPIC_PROXY_URL = '/api/ai/anthropic/v1/messages';
+// Placeholder accepted by the SDK when we'll proxy and inject the real key
+const PROXY_PLACEHOLDER_KEY = 'proxied';
+
 export class GeminiService {
   private cache = new Map<string, CadastralDetails>();
 
   private getClaudeKey(): string | null {
+    if (typeof localStorage === 'undefined') return null;
     return localStorage.getItem('olivia_claude_api_key') || null;
   }
 
   private getGeminiKey(): string {
-    return localStorage.getItem('olivia_gemini_api_key') || process.env.API_KEY || '';
+    if (typeof localStorage === 'undefined') return '';
+    return localStorage.getItem('olivia_gemini_api_key') || '';
   }
 
+  /** True when we should route AI calls through our serverless proxies. */
+  private useGeminiProxy(): boolean { return !this.getGeminiKey(); }
+  private useClaudeProxy(): boolean { return !this.getClaudeKey(); }
+
   private getAI() {
+    if (this.useGeminiProxy()) {
+      // Point the SDK at our proxy; the placeholder key is never used upstream.
+      return new GoogleGenAI({
+        apiKey: PROXY_PLACEHOLDER_KEY,
+        httpOptions: { baseUrl: GEMINI_PROXY_BASE },
+      });
+    }
     return new GoogleGenAI({ apiKey: this.getGeminiKey() });
   }
 
   private async callGeminiVision(imagesBase64: string[], prompt: string): Promise<string> {
-    const apiKey = this.getGeminiKey();
-    if (!apiKey) throw new Error('Ingen Gemini API-nøkkel konfigurert. Gå til Innstillinger.');
-
     const imageParts = imagesBase64.map(data => ({
       inline_data: {
         mime_type: data.startsWith('iVBOR') ? 'image/png' : 'image/jpeg',
-        data
-      }
+        data,
+      },
     }));
 
     const body = {
       contents: [{ parts: [...imageParts, { text: prompt }] }],
-      generationConfig: { response_mime_type: 'application/json' }
+      generationConfig: { response_mime_type: 'application/json' },
     };
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-    );
+    const url = this.useGeminiProxy()
+      ? `${GEMINI_PROXY_BASE}/v1beta/models/gemini-2.0-flash:generateContent`
+      : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.getGeminiKey()}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
@@ -134,21 +166,26 @@ export class GeminiService {
   }
 
   async callClaude(prompt: string, model: string = 'claude-sonnet-4-6'): Promise<string> {
-    const key = this.getClaudeKey();
-    if (!key) throw new Error('Ingen Claude API-nøkkel konfigurert');
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const useProxy = this.useClaudeProxy();
+    const url = useProxy ? ANTHROPIC_PROXY_URL : 'https://api.anthropic.com/v1/messages';
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01',
+    };
+    if (!useProxy) {
+      headers['x-api-key'] = this.getClaudeKey()!;
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    }
+
+    const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers,
       body: JSON.stringify({
         model,
         max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }]
-      })
+        messages: [{ role: 'user', content: prompt }],
+      }),
     });
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
@@ -159,13 +196,14 @@ export class GeminiService {
   }
 
   private async generateText(prompt: string): Promise<string> {
+    // Prefer Claude only when the user has explicitly set a Claude key
     if (this.getClaudeKey()) {
       return this.callClaude(prompt);
     }
     const ai = this.getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: prompt
+      contents: prompt,
     });
     return response.text ?? '';
   }
