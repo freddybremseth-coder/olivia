@@ -1,9 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Camera, RefreshCcw, Scissors, CheckCircle2, AlertTriangle, 
+import {
+  Camera, RefreshCcw, Scissors, CheckCircle2, AlertTriangle,
   Calendar, ChevronRight, Info, Loader2, Plus, ArrowRight, Layers,
-  Clock, CalendarCheck, CalendarDays, History, Trash2, Eye, MapPin, X, Sparkles, Save
+  Clock, CalendarCheck, CalendarDays, History, Trash2, Eye, MapPin, X, Sparkles, Save, Upload
 } from 'lucide-react';
 import { geminiService, PruningPlan } from '../services/geminiService';
 import { Task, PruningHistoryItem, Parcel } from '../types';
@@ -12,6 +12,7 @@ import {
   fetchPruningHistory, upsertPruningItem, deletePruningItem,
   upsertTask, fetchParcels,
 } from '../services/db';
+import { fileToResizedDataUrl } from '../lib/imageUpload';
 
 const PruningAdvisorView: React.FC = () => {
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -28,9 +29,11 @@ const PruningAdvisorView: React.FC = () => {
   const [selectedParcelId, setSelectedParcelId] = useState<string>('');
   const [activeMarker, setActiveMarker] = useState<number | null>(null);
   const [language, setLanguage] = useState<Language>('en');
+  const [isUploading, setIsUploading] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     const settings = localStorage.getItem('olivia_settings');
@@ -87,6 +90,26 @@ const PruningAdvisorView: React.FC = () => {
         stopCamera();
         analyzeImage(base64.split(',')[1]);
       }
+    }
+  };
+
+  const handleFilePick = () => fileInputRef.current?.click();
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    setError(null);
+    try {
+      const dataUrl = await fileToResizedDataUrl(file);
+      setCapturedImage(dataUrl);
+      stopCamera();
+      await analyzeImage(dataUrl.split(',')[1]);
+    } catch (err: any) {
+      setError(`Kunne ikke laste opp bilde: ${err?.message || String(err)}`);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -242,9 +265,25 @@ const PruningAdvisorView: React.FC = () => {
                 <div className="absolute inset-0 border-[2px] border-white/10 m-12 rounded-[2rem] pointer-events-none flex items-center justify-center opacity-10">
                   <Scissors size={140} className="text-white" />
                 </div>
-                <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
+                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-6">
+                  <button
+                    onClick={handleFilePick}
+                    disabled={isUploading}
+                    title="Last opp bilde"
+                    className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-md border-2 border-white/60 flex items-center justify-center text-white hover:bg-white/20 active:scale-95 transition-all disabled:opacity-60"
+                  >
+                    {isUploading ? <Loader2 size={22} className="animate-spin" /> : <Upload size={22} />}
+                  </button>
                   <button onClick={capturePhoto} className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md border-4 border-white flex items-center justify-center group active:scale-95 transition-all"><div className="w-14 h-14 rounded-full bg-white group-hover:bg-green-400 transition-colors"></div></button>
                 </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <canvas ref={canvasRef} className="hidden" />
               </>
             ) : (
               <div className="relative w-full h-full">

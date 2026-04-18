@@ -5,11 +5,12 @@ import {
   AlertCircle, ChevronRight, Sprout, Bug, Info, Loader2, X,
   Scissors, Search, Calendar, Plus, Layers, ArrowRight, History, Trash2, Clock,
   Target, Tag, Award, Image as ImageIcon, ScanEye, Plane, Thermometer, Waves, Zap,
-  Save, ArrowUpDown, MapPin, Filter, Scale, FlaskConical, Droplets
+  Save, ArrowUpDown, MapPin, Filter, Scale, FlaskConical, Droplets, Upload
 } from 'lucide-react';
 import { geminiService, ComprehensiveAnalysisResult, DroneAnalysisResult } from '../services/geminiService';
 import { Task, PruningHistoryItem, Parcel } from '../types';
 import { Language } from '../services/i18nService';
+import { filesToResizedDataUrls } from '../lib/imageUpload';
 import GlossaryText from './GlossaryText';
 
 type ResultTab = 'health' | 'pruning' | 'drone';
@@ -38,7 +39,9 @@ const FieldConsultantView: React.FC = () => {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     const settings = localStorage.getItem('olivia_settings');
@@ -99,6 +102,29 @@ const FieldConsultantView: React.FC = () => {
 
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleFilePick = () => fileInputRef.current?.click();
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setIsUploading(true);
+    setError(null);
+    try {
+      const dataUrls = await filesToResizedDataUrls(files);
+      if (dataUrls.length === 0) {
+        setError('Ingen av bildene kunne leses.');
+      } else {
+        setImages(prev => [...prev, ...dataUrls]);
+      }
+    } catch (err: any) {
+      setError(`Kunne ikke laste opp bilde: ${err?.message || String(err)}`);
+    } finally {
+      setIsUploading(false);
+      // Reset so the same file can be picked again if needed
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const runAnalysis = async () => {
@@ -269,8 +295,16 @@ const FieldConsultantView: React.FC = () => {
           {showCamera ? (
             <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden glass border border-white/10 shadow-2xl bg-black">
               <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover opacity-80" />
-              
-              <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
+
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4">
+                <button
+                  onClick={handleFilePick}
+                  disabled={isUploading}
+                  title="Last opp bilde fra enheten"
+                  className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md border-2 border-white/40 text-white flex items-center justify-center hover:border-white/80 active:scale-95 transition-all disabled:opacity-40"
+                >
+                  {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
+                </button>
                 <button onClick={capturePhoto} className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md border-4 border-white flex items-center justify-center group active:scale-95 transition-all">
                   <div className="w-14 h-14 rounded-full bg-white group-hover:bg-green-400 transition-colors"></div>
                 </button>
@@ -308,6 +342,14 @@ const FieldConsultantView: React.FC = () => {
               <Plus size={20} />
               <span className="text-[9px] font-bold uppercase">Ta bilde</span>
             </button>
+            <button
+              onClick={handleFilePick}
+              disabled={isUploading}
+              className="flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed border-green-500/30 flex flex-col items-center justify-center gap-1 text-green-400 hover:text-green-300 hover:border-green-400/60 transition-all disabled:opacity-40"
+            >
+              {isUploading ? <Loader2 size={20} className="animate-spin" /> : <Upload size={20} />}
+              <span className="text-[9px] font-bold uppercase">Last opp</span>
+            </button>
           </div>
 
           {/* Re-analyze button — shown when we have images but no result yet, OR when needsMoreImages */}
@@ -333,6 +375,14 @@ const FieldConsultantView: React.FC = () => {
           </div>
           
           <canvas ref={canvasRef} className="hidden" />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileUpload}
+            className="hidden"
+          />
         </div>
 
         {/* Right Side: Analysis Results */}
