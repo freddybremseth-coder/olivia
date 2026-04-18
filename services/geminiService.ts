@@ -93,31 +93,56 @@ export class GeminiService {
   }
 
   private getGeminiKey(): string {
-    return localStorage.getItem('olivia_gemini_api_key') || process.env.API_KEY || '';
+    // 1) User-provided key in Settings → localStorage
+    const stored = (typeof localStorage !== 'undefined') ? localStorage.getItem('olivia_gemini_api_key') : null;
+    if (stored) return stored;
+    // 2) Build-time env (Vite exposes only VITE_*; keep API_KEY fallback for AI Studio runner)
+    const env = (import.meta as any)?.env ?? {};
+    return env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY || env.API_KEY || '';
   }
 
   private getAI() {
     return new GoogleGenAI({ apiKey: this.getGeminiKey() });
   }
 
+  /**
+   * Strip ```json … ``` markdown wrappers and extract the first JSON object/array.
+   * Gemini frequently wraps JSON in fences even when responseMimeType is set.
+   */
+  private extractJson(text: string): string {
+    const trimmed = text.trim();
+    // Fenced ```json …``` or ``` … ```
+    const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    if (fenceMatch) return fenceMatch[1].trim();
+    // First {...} or [...]
+    const objMatch = trimmed.match(/[\{\[][\s\S]*[\}\]]/);
+    if (objMatch) return objMatch[0];
+    return trimmed;
+  }
+
   private async callGeminiVision(imagesBase64: string[], prompt: string): Promise<string> {
     const apiKey = this.getGeminiKey();
     if (!apiKey) throw new Error('Ingen Gemini API-nøkkel konfigurert. Gå til Innstillinger.');
 
+    // Use camelCase per Gemini v1beta REST API spec.
     const imageParts = imagesBase64.map(data => ({
-      inline_data: {
-        mime_type: data.startsWith('iVBOR') ? 'image/png' : 'image/jpeg',
+      inlineData: {
+        mimeType: data.startsWith('iVBOR') ? 'image/png' : 'image/jpeg',
         data
       }
     }));
 
     const body = {
       contents: [{ parts: [...imageParts, { text: prompt }] }],
-      generationConfig: { response_mime_type: 'application/json' }
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.2,
+      }
     };
 
+    const model = 'gemini-2.5-flash';
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
     );
 
@@ -129,8 +154,16 @@ export class GeminiService {
 
     const data = await response.json();
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error('Tom respons fra Gemini API');
-    return text;
+    if (!text) {
+      const finishReason = data?.candidates?.[0]?.finishReason;
+      const blockReason = data?.promptFeedback?.blockReason;
+      throw new Error(
+        blockReason ? `Bilde blokkert av Gemini (${blockReason}). Prøv et annet bilde.`
+        : finishReason ? `Tom respons fra Gemini (${finishReason}).`
+        : 'Tom respons fra Gemini API'
+      );
+    }
+    return this.extractJson(text);
   }
 
   async callClaude(prompt: string, model: string = 'claude-sonnet-4-6'): Promise<string> {

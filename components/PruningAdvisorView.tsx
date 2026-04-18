@@ -10,7 +10,7 @@ import { Task, PruningHistoryItem, Parcel } from '../types';
 import { Language } from '../services/i18nService';
 
 const PruningAdvisorView: React.FC = () => {
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [hasStream, setHasStream] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [plan, setPlan] = useState<PruningPlan | null>(null);
@@ -27,6 +27,32 @@ const PruningAdvisorView: React.FC = () => {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Hold MediaStream in a ref so cleanup actually sees the live stream
+  // (state captured by useEffect cleanup is the *initial* render's value).
+  const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * Downscale a base64 image to maxDim px and return raw base64 (no data URL prefix).
+   * Keeps Gemini calls fast and avoids 413/timeout on multi-MB camera frames.
+   */
+  const downscaleBase64 = (dataUrl: string, maxDim = 1600, quality = 0.82): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const ctx = c.getContext('2d');
+        if (!ctx) return reject(new Error('Canvas-kontekst utilgjengelig'));
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', quality).split(',')[1]);
+      };
+      img.onerror = () => reject(new Error('Kunne ikke laste bilde for nedskalering'));
+      img.src = dataUrl;
+    });
 
   const loadData = () => {
     const settings = localStorage.getItem('olivia_settings');
@@ -49,28 +75,46 @@ const PruningAdvisorView: React.FC = () => {
   useEffect(() => {
     loadData();
     startCamera();
+    // Cleanup uses the ref so it sees the *current* stream, not the one captured at mount.
     return () => stopCamera();
   }, []);
 
   const startCamera = async () => {
+    // Don't double-start
+    if (streamRef.current) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('Nettleseren støtter ikke kamera (getUserMedia). Bruk filopplasting i stedet.');
+      return;
+    }
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' }, audio: false 
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
       });
-      setStream(mediaStream);
+      streamRef.current = mediaStream;
+      setHasStream(true);
       if (videoRef.current) videoRef.current.srcObject = mediaStream;
       setError(null);
-    } catch (err) { 
-      console.error("Kamerafeil:", err);
-      setError("Kunne ikke få tilgang til kameraet.");
+    } catch (err: any) {
+      console.error('Kamerafeil:', err);
+      const name = err?.name || '';
+      const msg =
+        name === 'NotAllowedError' ? 'Kamera-tilgang ble nektet. Aktiver tilgang i nettleseren, eller last opp et bilde i stedet.'
+        : name === 'NotFoundError' ? 'Fant ingen kamera. Last opp et bilde i stedet.'
+        : name === 'NotReadableError' ? 'Kameraet er i bruk av en annen app. Lukk den og prøv igjen.'
+        : 'Kunne ikke få tilgang til kameraet. Du kan også laste opp et bilde.';
+      setError(msg);
     }
   };
 
   const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop());
-      setStream(null);
+    const s = streamRef.current;
+    if (s) {
+      s.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
     }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setHasStream(false);
   };
 
   const capturePhoto = () => {
@@ -80,34 +124,53 @@ const PruningAdvisorView: React.FC = () => {
         canvasRef.current.width = videoRef.current.videoWidth;
         canvasRef.current.height = videoRef.current.videoHeight;
         context.drawImage(videoRef.current, 0, 0);
-        const base64 = canvasRef.current.toDataURL('image/jpeg', 0.8);
-        setCapturedImage(base64);
+        const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.9);
+        setCapturedImage(dataUrl);
         stopCamera();
-        analyzeImage(base64.split(',')[1]);
+        analyzeImage(dataUrl);
       }
     }
   };
 
-  const analyzeImage = async (base64: string) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setCapturedImage(dataUrl);
+      stopCamera();
+      analyzeImage(dataUrl);
+    };
+    reader.onerror = () => setError('Kunne ikke lese bildefilen.');
+    reader.readAsDataURL(file);
+  };
+
+  const analyzeImage = async (dataUrlOrBase64: string) => {
     setIsAnalyzing(true);
     setPlan(null);
     setError(null);
     setScheduledDate('');
     setHistorySaved(false);
     setTaskSaved(false);
-    
+
     try {
+      // Always downscale before sending — full HD JPEG can be 2-4 MB base64 and slows Gemini significantly.
+      const isDataUrl = dataUrlOrBase64.startsWith('data:');
+      const dataUrl = isDataUrl ? dataUrlOrBase64 : `data:image/jpeg;base64,${dataUrlOrBase64}`;
+      const base64 = await downscaleBase64(dataUrl, 1600, 0.82);
       const result = await geminiService.analyzePruning(base64, language);
       setPlan(result);
       if (result.recommendedDate) {
         setScheduledDate(result.recommendedDate);
       }
     } catch (err: any) {
-      console.error("Beskjæring analyse feil:", err);
+      console.error('Beskjæring analyse feil:', err);
       const msg = err?.message || String(err);
       setError(`Analyse feilet: ${msg}`);
+    } finally {
+      setIsAnalyzing(false);
     }
-    finally { setIsAnalyzing(false); }
   };
 
   const saveToHistory = () => {
@@ -243,13 +306,38 @@ const PruningAdvisorView: React.FC = () => {
           <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden glass border border-white/10 shadow-2xl bg-black">
             {!capturedImage ? (
               <>
-                <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover opacity-60" />
+                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover opacity-60" />
+                {/* Hidden canvas used by capturePhoto() — must be in the DOM. */}
+                <canvas ref={canvasRef} className="hidden" />
                 <div className="absolute inset-0 border-[2px] border-white/10 m-12 rounded-[2rem] pointer-events-none flex items-center justify-center opacity-10">
                   <Scissors size={140} className="text-white" />
                 </div>
-                <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
-                  <button onClick={capturePhoto} className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md border-4 border-white flex items-center justify-center group active:scale-95 transition-all"><div className="w-14 h-14 rounded-full bg-white group-hover:bg-green-400 transition-colors"></div></button>
+                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Last opp bilde i stedet"
+                    className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-md border-2 border-white/40 flex items-center justify-center text-white hover:bg-white/20 active:scale-95 transition-all"
+                  >
+                    <Plus size={22} />
+                  </button>
+                  <button
+                    onClick={capturePhoto}
+                    disabled={!hasStream}
+                    title={hasStream ? 'Ta bilde' : 'Kamera ikke tilgjengelig'}
+                    className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md border-4 border-white flex items-center justify-center group active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <div className="w-14 h-14 rounded-full bg-white group-hover:bg-green-400 transition-colors"></div>
+                  </button>
+                  <div className="w-14 h-14" />{/* spacer to keep capture button centered */}
                 </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
               </>
             ) : (
               <div className="relative w-full h-full">
