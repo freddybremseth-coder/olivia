@@ -11,8 +11,38 @@
  *   - upsertProfile(profile)
  */
 
-import { supabase } from './supabaseClient';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 import type { UserProfile } from '../types';
+
+/**
+ * Rejects with a friendly Norwegian error if `promise` doesn't settle within
+ * `ms` milliseconds. Prevents the login button from spinning forever when the
+ * Supabase URL is unreachable (paused project, DNS failure, wrong env var).
+ */
+function withTimeout<T>(promise: Promise<T>, ms = 15000, label = 'Forespørselen'): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => {
+      reject(new Error(
+        `${label} tok for lang tid. Sjekk internett-tilkoblingen, eller at ` +
+        `Supabase-prosjektet er aktivt (gratis-prosjekter pauses etter 7 dager uten bruk).`
+      ));
+    }, ms);
+    promise.then(
+      (v) => { clearTimeout(t); resolve(v); },
+      (e) => { clearTimeout(t); reject(e); },
+    );
+  });
+}
+
+/** Guard every Supabase call with the config check + timeout. */
+function assertConfigured(): void {
+  if (!isSupabaseConfigured) {
+    throw new Error(
+      'Pålogging er ikke tilgjengelig: Supabase er ikke konfigurert. ' +
+      'Kontakt administrator (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY mangler).'
+    );
+  }
+}
 
 // Hard-coded admin enrolment code (same value as the legacy localStorage flow).
 // On signup the value is sent in user_metadata.role = 'super_admin' and the
@@ -66,8 +96,20 @@ export async function upsertProfile(profile: UserProfile): Promise<void> {
 }
 
 export async function signInWithPassword(email: string, password: string): Promise<AuthResult> {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(translateAuthError(error.message));
+  assertConfigured();
+  let data: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['data'];
+  try {
+    const res = await withTimeout(
+      supabase.auth.signInWithPassword({ email, password }),
+      15000,
+      'Innlogging',
+    );
+    if (res.error) throw new Error(translateAuthError(res.error.message));
+    data = res.data;
+  } catch (e: any) {
+    // Bubble up friendly text for any network / fetch failure too.
+    throw new Error(translateAuthError(e?.message || String(e)));
+  }
   if (!data.user) throw new Error('Innlogging feilet.');
 
   const profile = await fetchProfile(data.user.id, data.user.email ?? email);
@@ -93,18 +135,29 @@ export async function signUpWithPassword(
   name: string,
   adminCode?: string,
 ): Promise<AuthResult> {
+  assertConfigured();
   const isAdmin = adminCode === ADMIN_CODE;
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        name,
-        role: isAdmin ? 'super_admin' : 'farmer',
-      },
-    },
-  });
-  if (error) throw new Error(translateAuthError(error.message));
+  let data: Awaited<ReturnType<typeof supabase.auth.signUp>>['data'];
+  try {
+    const res = await withTimeout(
+      supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            role: isAdmin ? 'super_admin' : 'farmer',
+          },
+        },
+      }),
+      15000,
+      'Registrering',
+    );
+    if (res.error) throw new Error(translateAuthError(res.error.message));
+    data = res.data;
+  } catch (e: any) {
+    throw new Error(translateAuthError(e?.message || String(e)));
+  }
   if (!data.user) throw new Error('Kontoen kunne ikke opprettes.');
 
   // If "confirm email" is enabled in Supabase, data.session is null and the
@@ -132,6 +185,26 @@ export async function signUpWithPassword(
 export async function signOut(): Promise<void> {
   const { error } = await supabase.auth.signOut();
   if (error) console.warn('signOut', error);
+}
+
+/**
+ * Sends a password-reset email via Supabase. The link lands on
+ * `redirectTo` (defaults to the current origin) where the user can choose
+ * a new password — Supabase handles the session exchange automatically.
+ */
+export async function sendPasswordReset(email: string, redirectTo?: string): Promise<void> {
+  assertConfigured();
+  const target = redirectTo ?? (typeof window !== 'undefined' ? `${window.location.origin}/#reset-password` : undefined);
+  try {
+    const res = await withTimeout(
+      supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: target }),
+      15000,
+      'Sending av e-post',
+    );
+    if (res.error) throw new Error(translateAuthError(res.error.message));
+  } catch (e: any) {
+    throw new Error(translateAuthError(e?.message || String(e)));
+  }
 }
 
 export async function getCurrentSession(): Promise<AuthResult | null> {
@@ -184,13 +257,24 @@ export function onAuthChange(handler: AuthChangeHandler): () => void {
   return () => data.subscription.unsubscribe();
 }
 
-/** Translate common Supabase Auth error strings into Norwegian. */
+/** Translate common Supabase Auth + network error strings into Norwegian. */
 function translateAuthError(message: string): string {
-  const m = message.toLowerCase();
+  const m = (message || '').toLowerCase();
+  // Supabase-worded auth errors
   if (m.includes('invalid login') || m.includes('invalid credentials')) return 'Feil e-post eller passord.';
-  if (m.includes('email not confirmed')) return 'Du må bekrefte e-postadressen din før du kan logge inn.';
-  if (m.includes('user already registered')) return 'En konto med denne e-posten finnes allerede.';
+  if (m.includes('email not confirmed')) return 'Du må bekrefte e-postadressen din før du kan logge inn. Sjekk innboksen.';
+  if (m.includes('user already registered')) return 'En konto med denne e-posten finnes allerede. Prøv å logge inn eller tilbakestill passordet.';
   if (m.includes('password should be at least')) return 'Passordet må være minst 6 tegn.';
-  if (m.includes('rate limit')) return 'For mange forsøk. Vent litt og prøv igjen.';
-  return message;
+  if (m.includes('rate limit') || m.includes('too many')) return 'For mange forsøk. Vent noen minutter og prøv igjen.';
+  if (m.includes('user not found')) return 'Ingen konto funnet for denne e-posten.';
+  // Network / connectivity failures (these used to silently hang the UI)
+  if (m.includes('failed to fetch') || m.includes('networkerror') || m.includes('network request failed')) {
+    return 'Kunne ikke nå serveren. Sjekk internett, eller at Supabase-prosjektet er aktivt (gratis-prosjekter pauses etter 7 dager uten bruk).';
+  }
+  if (m.includes('err_name_not_resolved') || m.includes('dns')) {
+    return 'Supabase-URL-en finnes ikke (DNS-feil). Kontakt administrator — VITE_SUPABASE_URL må oppdateres.';
+  }
+  if (m.includes('tok for lang tid')) return message; // already our friendly timeout text
+  if (m.includes('supabase er ikke konfigurert') || m.includes('ikke konfigurert')) return message;
+  return message || 'Ukjent feil.';
 }
