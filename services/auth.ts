@@ -188,6 +188,30 @@ export async function signOut(): Promise<void> {
 }
 
 /**
+ * Updates the password for the currently-signed-in user. Called from the
+ * reset-password page *after* Supabase has exchanged the recovery link for
+ * a session (which happens automatically on page load).
+ *
+ * Requires minimum 6 characters (Supabase default).
+ */
+export async function updatePassword(newPassword: string): Promise<void> {
+  assertConfigured();
+  if (newPassword.length < 6) {
+    throw new Error('Passordet må være minst 6 tegn.');
+  }
+  try {
+    const res = await withTimeout(
+      supabase.auth.updateUser({ password: newPassword }),
+      15000,
+      'Oppdatering av passord',
+    );
+    if (res.error) throw new Error(translateAuthError(res.error.message));
+  } catch (e: any) {
+    throw new Error(translateAuthError(e?.message || String(e)));
+  }
+}
+
+/**
  * Sends a password-reset email via Supabase. The link lands on
  * `redirectTo` (defaults to the current origin) where the user can choose
  * a new password — Supabase handles the session exchange automatically.
@@ -226,6 +250,20 @@ export async function getCurrentSession(): Promise<AuthResult | null> {
     return { user: fallback, isAdmin: false };
   }
   return { user: profile, isAdmin: profile.role === 'super_admin' };
+}
+
+/**
+ * Subscribe specifically to Supabase's PASSWORD_RECOVERY event, which fires
+ * when the client detects a recovery link in the URL and exchanges it for a
+ * session. Used by App.tsx to switch to the ResetPasswordPage view.
+ *
+ * Returns an unsubscribe fn.
+ */
+export function onPasswordRecovery(handler: () => void): () => void {
+  const { data } = supabase.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') handler();
+  });
+  return () => data.subscription.unsubscribe();
 }
 
 export type AuthChangeHandler = (result: AuthResult | null) => void;

@@ -16,10 +16,22 @@ import LandingPage from './components/LandingPage';
 import AdminDashboard from './components/AdminDashboard';
 import IoTDashboard from './components/IoTDashboard';
 import LoginModal, { StoredUser } from './components/LoginModal';
+import ResetPasswordPage from './components/ResetPasswordPage';
 import ProfitabilityPage from './pages/Profitability';
 import { UserProfile, Language, Parcel } from './types';
 import { fetchParcels, upsertParcel, deleteParcel, migrateLocalStorageToSupabase } from './services/db';
-import { getCurrentSession, onAuthChange, signOut as authSignOut } from './services/auth';
+import { getCurrentSession, onAuthChange, onPasswordRecovery, signOut as authSignOut } from './services/auth';
+
+/**
+ * Detect a Supabase recovery URL synchronously — used as the initial state
+ * so we never flash the login/dashboard during the brief window before the
+ * PASSWORD_RECOVERY event fires. Supabase v2 uses either a `#...type=recovery`
+ * hash fragment (implicit) or `?code=...&type=recovery` query string (PKCE).
+ */
+function isRecoveryUrl(): boolean {
+  if (typeof window === 'undefined') return false;
+  return /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
+}
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -28,6 +40,7 @@ const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>('no');
   const [showLogin, setShowLogin] = useState(false);
   const [loginDefaultMode, setLoginDefaultMode] = useState<'login' | 'register'>('login');
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(isRecoveryUrl);
 
   const [weatherData, setWeatherData] = useState<any>(null);
   const [locationName, setLocationName] = useState('Biar, Spain');
@@ -127,12 +140,16 @@ const App: React.FC = () => {
   // Supabase auth: hydrate from stored session on load + subscribe to changes.
   useEffect(() => {
     let cancelled = false;
-    getCurrentSession().then(result => {
-      if (cancelled || !result) return;
-      setUser(result.user);
-      setIsAdmin(result.isAdmin);
-      setIsLoggedIn(true);
-    });
+    // Skip hydration if we're in the recovery flow — we don't want to land the
+    // user on the dashboard before they've chosen a new password.
+    if (!isRecoveryUrl()) {
+      getCurrentSession().then(result => {
+        if (cancelled || !result) return;
+        setUser(result.user);
+        setIsAdmin(result.isAdmin);
+        setIsLoggedIn(true);
+      });
+    }
     const unsubscribe = onAuthChange(result => {
       if (cancelled) return;
       if (result) {
@@ -145,7 +162,11 @@ const App: React.FC = () => {
         setIsAdmin(false);
       }
     });
-    return () => { cancelled = true; unsubscribe(); };
+    const unsubRecovery = onPasswordRecovery(() => {
+      if (cancelled) return;
+      setIsPasswordRecovery(true);
+    });
+    return () => { cancelled = true; unsubscribe(); unsubRecovery(); };
   }, []);
 
   const handleLoginSuccess = (storedUser: StoredUser, admin: boolean) => {
@@ -176,6 +197,13 @@ const App: React.FC = () => {
     setLoginDefaultMode(mode);
     setShowLogin(true);
   };
+
+  // Password-recovery takes priority over everything else: the user arrived
+  // via the email link and needs to set a new password before anything else
+  // matters (dashboard, login modal, etc).
+  if (isPasswordRecovery) {
+    return <ResetPasswordPage onDone={() => setIsPasswordRecovery(false)} />;
+  }
 
   if (!isLoggedIn) {
     return (
