@@ -20,7 +20,7 @@ import ResetPasswordPage from './components/ResetPasswordPage';
 import ProfitabilityPage from './pages/Profitability';
 import { UserProfile, Language, Parcel } from './types';
 import { fetchParcels, upsertParcel, deleteParcel, migrateLocalStorageToSupabase } from './services/db';
-import { getCurrentSession, onAuthChange, onPasswordRecovery, signOut as authSignOut } from './services/auth';
+import { getCurrentSession, onAuthChange, signOut as authSignOut } from './services/auth';
 
 /**
  * Detect a Supabase recovery URL synchronously — used as the initial state
@@ -150,23 +150,27 @@ const App: React.FC = () => {
         setIsLoggedIn(true);
       });
     }
-    const unsubscribe = onAuthChange(result => {
-      if (cancelled) return;
-      if (result) {
-        setUser(result.user);
-        setIsAdmin(result.isAdmin);
-        setIsLoggedIn(true);
-        setShowLogin(false);
-      } else {
-        setIsLoggedIn(false);
-        setIsAdmin(false);
-      }
-    });
-    const unsubRecovery = onPasswordRecovery(() => {
-      if (cancelled) return;
-      setIsPasswordRecovery(true);
-    });
-    return () => { cancelled = true; unsubscribe(); unsubRecovery(); };
+    // Single shared subscription for both sign-in/out and PASSWORD_RECOVERY —
+    // see auth.ts for why this matters (gotrue lock contention).
+    const unsubscribe = onAuthChange(
+      result => {
+        if (cancelled) return;
+        if (result) {
+          setUser(result.user);
+          setIsAdmin(result.isAdmin);
+          setIsLoggedIn(true);
+          setShowLogin(false);
+        } else {
+          setIsLoggedIn(false);
+          setIsAdmin(false);
+        }
+      },
+      () => {
+        if (cancelled) return;
+        setIsPasswordRecovery(true);
+      },
+    );
+    return () => { cancelled = true; unsubscribe(); };
   }, []);
 
   const handleLoginSuccess = (storedUser: StoredUser, admin: boolean) => {
