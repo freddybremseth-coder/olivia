@@ -232,7 +232,21 @@ export async function sendPasswordReset(email: string, redirectTo?: string): Pro
 }
 
 export async function getCurrentSession(): Promise<AuthResult | null> {
-  const { data, error } = await supabase.auth.getSession();
+  // Wrap getSession in a timeout — if the gotrue lock is contended (e.g. under
+  // React StrictMode double-mount, or from a stuck previous tab) it can hang
+  // for 5+ seconds and leave the dashboard in a loading state.
+  let result: Awaited<ReturnType<typeof supabase.auth.getSession>>;
+  try {
+    result = await withTimeout(
+      supabase.auth.getSession(),
+      8000,
+      'Henting av økt',
+    );
+  } catch (e) {
+    console.warn('[auth] getSession timed out or failed:', e);
+    return null;
+  }
+  const { data, error } = result;
   if (error || !data.session) return null;
   const userId = data.session.user.id;
   const email = data.session.user.email ?? '';
@@ -252,25 +266,28 @@ export async function getCurrentSession(): Promise<AuthResult | null> {
   return { user: profile, isAdmin: profile.role === 'super_admin' };
 }
 
+export type AuthChangeHandler = (result: AuthResult | null) => void;
+
 /**
- * Subscribe specifically to Supabase's PASSWORD_RECOVERY event, which fires
- * when the client detects a recovery link in the URL and exchanges it for a
- * session. Used by App.tsx to switch to the ResetPasswordPage view.
+ * Subscribe to sign-in / sign-out events, optionally also reacting to
+ * PASSWORD_RECOVERY. Both handlers share a single `onAuthStateChange`
+ * subscription — registering two separate listeners caused the gotrue
+ * client's named lock to be contended under React StrictMode (the
+ * "Lock 'lock:sb-...-auth-token' was not released within 5000ms" warning).
  *
  * Returns an unsubscribe fn.
  */
-export function onPasswordRecovery(handler: () => void): () => void {
-  const { data } = supabase.auth.onAuthStateChange((event) => {
-    if (event === 'PASSWORD_RECOVERY') handler();
-  });
-  return () => data.subscription.unsubscribe();
-}
-
-export type AuthChangeHandler = (result: AuthResult | null) => void;
-
-/** Subscribe to sign-in / sign-out events. Returns an unsubscribe fn. */
-export function onAuthChange(handler: AuthChangeHandler): () => void {
+export function onAuthChange(
+  handler: AuthChangeHandler,
+  onRecovery?: () => void,
+): () => void {
   const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      onRecovery?.();
+      // Don't fall through — the recovery session shouldn't trigger a normal
+      // sign-in transition (App.tsx routes to ResetPasswordPage instead).
+      return;
+    }
     if (!session) {
       handler(null);
       return;
@@ -291,6 +308,18 @@ export function onAuthChange(handler: AuthChangeHandler): () => void {
       return;
     }
     handler({ user: profile, isAdmin: profile.role === 'super_admin' });
+  });
+  return () => data.subscription.unsubscribe();
+}
+
+/**
+ * @deprecated Pass `onRecovery` to `onAuthChange` instead — sharing one
+ * subscription avoids the gotrue lock contention warning. Kept for any
+ * external callers that haven't migrated.
+ */
+export function onPasswordRecovery(handler: () => void): () => void {
+  const { data } = supabase.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') handler();
   });
   return () => data.subscription.unsubscribe();
 }
