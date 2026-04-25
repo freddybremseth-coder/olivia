@@ -94,32 +94,70 @@ const ProfitabilityDashboard: React.FC<Props> = ({ language, parcels }) => {
     return [...all].sort((a,b) => b.localeCompare(a));
   }, [harvests, expenses, subsidies]);
 
+  // Save state for the two forms — surfaces the actual Supabase error so the
+  // user knows why a row didn't save (used to fail silently).
+  const [saveError, setSaveError] = useState<string>('');
+  const [saving, setSaving]       = useState(false);
+
   const [newExp, setNewExp] = useState<Partial<FarmExpense>>({ season: currentSeason(), date: new Date().toISOString().slice(0,10), category: 'innhøsting', scope: 'parcel', amount: 0, description: '' });
   const addExpense = async () => {
-    if (!newExp.amount || newExp.amount <= 0 || !newExp.description) return;
+    setSaveError('');
+    if (!newExp.amount || newExp.amount <= 0 || !newExp.description) {
+      setSaveError('Beløp og beskrivelse må fylles ut.');
+      return;
+    }
     const rec: FarmExpense = { id: `E${Date.now()}`, date: newExp.date!, season: newExp.season!, category: newExp.category as ExpenseCategory, description: newExp.description, amount: newExp.amount, scope: newExp.scope as 'farm'|'parcel', parcelId: newExp.scope==='parcel' ? newExp.parcelId : undefined };
-    await upsertExpense(rec);
-    setExpenses(prev => [rec, ...prev]);
-    setNewExp(p => ({...p, amount: 0, description: ''}));
-    setShowExpenseForm(false);
+    setSaving(true);
+    try {
+      await upsertExpense(rec);
+      // Only update local state AFTER the save succeeds — otherwise the row
+      // appears in the list but disappears on refresh, which is exactly what
+      // confused users into thinking saves were silently failing.
+      setExpenses(prev => [rec, ...prev]);
+      setNewExp(p => ({...p, amount: 0, description: ''}));
+      setShowExpenseForm(false);
+    } catch (e: any) {
+      setSaveError(e?.message || 'Lagring feilet — sjekk DevTools-konsollen for detaljer.');
+    } finally {
+      setSaving(false);
+    }
   };
   const removeExpense = async (id: string) => {
-    await dbDeleteExpense(id);
-    setExpenses(prev => prev.filter(e => e.id !== id));
+    try {
+      await dbDeleteExpense(id);
+      setExpenses(prev => prev.filter(e => e.id !== id));
+    } catch (e: any) {
+      alert(e?.message || 'Sletting feilet.');
+    }
   };
 
   const [newSub, setNewSub] = useState<Partial<SubsidyIncome>>({ season: currentSeason(), date: new Date().toISOString().slice(0,10), type: 'eu_okologisk', amount: 0, description: '' });
   const addSubsidy = async () => {
-    if (!newSub.amount || newSub.amount <= 0) return;
+    setSaveError('');
+    if (!newSub.amount || newSub.amount <= 0) {
+      setSaveError('Beløp må fylles ut.');
+      return;
+    }
     const rec: SubsidyIncome = { id: `S${Date.now()}`, date: newSub.date!, season: newSub.season!, type: newSub.type as SubsidyType, amount: newSub.amount, description: newSub.description || SUBSIDY_LABELS[newSub.type as SubsidyType] };
-    await upsertSubsidy(rec);
-    setSubsidies(prev => [rec, ...prev]);
-    setNewSub(p => ({...p, amount: 0, description: ''}));
-    setShowSubsidyForm(false);
+    setSaving(true);
+    try {
+      await upsertSubsidy(rec);
+      setSubsidies(prev => [rec, ...prev]);
+      setNewSub(p => ({...p, amount: 0, description: ''}));
+      setShowSubsidyForm(false);
+    } catch (e: any) {
+      setSaveError(e?.message || 'Lagring feilet — sjekk DevTools-konsollen for detaljer.');
+    } finally {
+      setSaving(false);
+    }
   };
   const removeSubsidy = async (id: string) => {
-    await dbDeleteSubsidy(id);
-    setSubsidies(prev => prev.filter(s => s.id !== id));
+    try {
+      await dbDeleteSubsidy(id);
+      setSubsidies(prev => prev.filter(s => s.id !== id));
+    } catch (e: any) {
+      alert(e?.message || 'Sletting feilet.');
+    }
   };
 
   const sHarvests  = harvests.filter(h => h.season === season);
@@ -253,7 +291,14 @@ const ProfitabilityDashboard: React.FC<Props> = ({ language, parcels }) => {
                 {newExp.scope==='parcel' && <div><label className="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-1">Parsell</label><select value={newExp.parcelId||''} onChange={e=>setNewExp(p=>({...p,parcelId:e.target.value}))} className={ic}><option value="">Velg parsell...</option>{parcels.map(p=><option key={p.id} value={p.id} className="bg-slate-800">{p.name}</option>)}</select></div>}
                 <div><label className="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-1">Beskrivelse</label><input type="text" value={newExp.description} onChange={e=>setNewExp(p=>({...p,description:e.target.value}))} className={ic} placeholder="Beskriv utgiften..."/></div>
                 <div><label className="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-1">Beløp (€)</label><input type="number" min="0" step="10" value={newExp.amount||''} onChange={e=>setNewExp(p=>({...p,amount:+e.target.value}))} className={`${ic} text-xl font-black`} placeholder="0"/></div>
-                <button onClick={addExpense} disabled={!newExp.amount||!newExp.description} className="w-full bg-red-500 hover:bg-red-400 disabled:opacity-40 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all"><Save size={16}/> Lagre utgift</button>
+                {saveError && (
+                  <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-xs rounded-xl px-3 py-2.5">
+                    {saveError}
+                  </div>
+                )}
+                <button onClick={addExpense} disabled={saving||!newExp.amount||!newExp.description} className="w-full bg-red-500 hover:bg-red-400 disabled:opacity-40 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all">
+                  <Save size={16}/> {saving ? 'Lagrer...' : 'Lagre utgift'}
+                </button>
               </div>
             </div>
           )}
@@ -330,7 +375,12 @@ const ProfitabilityDashboard: React.FC<Props> = ({ language, parcels }) => {
                 <div><label className="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-1">Type tilskudd</label><select value={newSub.type} onChange={e=>setNewSub(p=>({...p,type:e.target.value as SubsidyType}))} className={ic}>{Object.entries(SUBSIDY_LABELS).map(([k,v])=><option key={k} value={k} className="bg-slate-800">{v}</option>)}</select></div>
                 <div><label className="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-1">Beskrivelse (valgfritt)</label><input type="text" value={newSub.description} onChange={e=>setNewSub(p=>({...p,description:e.target.value}))} className={ic} placeholder="Tilleggsinfo..."/></div>
                 <div><label className="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-1">Beløp (€)</label><input type="number" min="0" step="100" value={newSub.amount||''} onChange={e=>setNewSub(p=>({...p,amount:+e.target.value}))} className={`${ic} text-xl font-black`} placeholder="0"/></div>
-                <div className="flex gap-3"><button onClick={addSubsidy} disabled={!newSub.amount} className="flex-1 bg-blue-500 hover:bg-blue-400 disabled:opacity-40 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2"><Save size={14}/> Lagre tilskudd</button><button onClick={()=>setShowSubsidyForm(false)} className="px-4 py-3 bg-white/5 rounded-xl text-slate-400 hover:text-white text-sm font-bold">Avbryt</button></div>
+                {saveError && (
+                  <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-xs rounded-xl px-3 py-2.5">
+                    {saveError}
+                  </div>
+                )}
+                <div className="flex gap-3"><button onClick={addSubsidy} disabled={saving||!newSub.amount} className="flex-1 bg-blue-500 hover:bg-blue-400 disabled:opacity-40 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2"><Save size={14}/> {saving ? 'Lagrer...' : 'Lagre tilskudd'}</button><button onClick={()=>setShowSubsidyForm(false)} className="px-4 py-3 bg-white/5 rounded-xl text-slate-400 hover:text-white text-sm font-bold">Avbryt</button></div>
               </div>
             )}
             {sSubsidies.length===0&&!showSubsidyForm?<p className="text-sm text-slate-500">Ingen tilskudd registrert. EU-støtte for økologisk landbruk (PAC/PAO) legges inn her.</p>:sSubsidies.map(s=>(

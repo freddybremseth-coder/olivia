@@ -4,6 +4,13 @@
  * Tables (created via SQL migration in Supabase dashboard):
  *   parcels, harvest_records, farm_expenses, subsidy_income, farm_settings,
  *   batches, recipes, tasks, pruning_history
+ *
+ * Error handling: read functions log + return empty so the UI can render an
+ * "ingen data"-state. Write functions THROW so the caller can show a real
+ * error toast — this is what was broken before: silent console.error meant
+ * the user clicked "Lagre", saw the modal close, and assumed the row was
+ * saved when in reality the upsert failed (typically: table missing on a
+ * fresh Supabase project, or RLS policy denying the request).
  */
 
 import { supabase } from './supabaseClient';
@@ -11,6 +18,45 @@ import type {
   Parcel, HarvestRecord, FarmExpense, SubsidyIncome,
   Batch, Recipe, Task, PruningHistoryItem,
 } from '../types';
+import type { PostgrestError } from '@supabase/supabase-js';
+
+/**
+ * Translate a PostgrestError into a friendly Norwegian message and throw.
+ * `label` is the operation name for logging context (e.g. "upsertExpense").
+ */
+function throwDbError(label: string, error: PostgrestError | { message: string; code?: string; details?: string; hint?: string }): never {
+  console.error(`[db] ${label}`, error);
+  const code = (error as any).code || '';
+  const msg = error.message || '';
+
+  // Common Postgres / PostgREST codes
+  if (code === '42P01' || /relation .* does not exist/i.test(msg)) {
+    throw new Error(
+      `Tabellen mangler i Supabase. Kjør SQL-migrasjonen fra ` +
+      `supabase_schema.sql i Supabase Dashboard → SQL Editor og prøv igjen.`
+    );
+  }
+  if (code === '42501' || /permission denied|rls/i.test(msg)) {
+    throw new Error(
+      `Tilgang nektet av Supabase RLS. Sjekk at "allow all"-policyen ` +
+      `for denne tabellen er aktivert (se supabase_schema.sql).`
+    );
+  }
+  if (code === '23505') {
+    throw new Error(`Duplikat: en rad med samme ID finnes allerede.`);
+  }
+  if (code === '23503') {
+    throw new Error(`Referansefeil: en relatert rad mangler (parsell, batch, etc.).`);
+  }
+  if (/jwt|token/i.test(msg)) {
+    throw new Error(`Innloggingen er utløpt — last inn siden på nytt og logg inn igjen.`);
+  }
+  if (/failed to fetch|networkerror/i.test(msg)) {
+    throw new Error(`Mistet kontakt med Supabase. Sjekk internett og prøv igjen.`);
+  }
+  // Fallback: raw Supabase message (still helpful in DevTools)
+  throw new Error(`Lagring feilet: ${msg || 'ukjent feil fra Supabase'}`);
+}
 
 // ── PARCELS ──────────────────────────────────────────────────────────────────
 
@@ -27,12 +73,12 @@ export async function upsertParcel(parcel: Parcel): Promise<void> {
   const { error } = await supabase
     .from('parcels')
     .upsert(parcelToRow(parcel), { onConflict: 'id' });
-  if (error) console.error('upsertParcel', error);
+  if (error) throwDbError('upsertParcel', error);
 }
 
 export async function deleteParcel(id: string): Promise<void> {
   const { error } = await supabase.from('parcels').delete().eq('id', id);
-  if (error) console.error('deleteParcel', error);
+  if (error) throwDbError('deleteParcel', error);
 }
 
 // ── HARVEST RECORDS ──────────────────────────────────────────────────────────
@@ -50,12 +96,12 @@ export async function upsertHarvest(h: HarvestRecord): Promise<void> {
   const { error } = await supabase
     .from('harvest_records')
     .upsert(harvestToRow(h), { onConflict: 'id' });
-  if (error) console.error('upsertHarvest', error);
+  if (error) throwDbError('upsertHarvest', error);
 }
 
 export async function deleteHarvest(id: string): Promise<void> {
   const { error } = await supabase.from('harvest_records').delete().eq('id', id);
-  if (error) console.error('deleteHarvest', error);
+  if (error) throwDbError('deleteHarvest', error);
 }
 
 // ── FARM EXPENSES ─────────────────────────────────────────────────────────────
@@ -73,12 +119,12 @@ export async function upsertExpense(e: FarmExpense): Promise<void> {
   const { error } = await supabase
     .from('farm_expenses')
     .upsert(expenseToRow(e), { onConflict: 'id' });
-  if (error) console.error('upsertExpense', error);
+  if (error) throwDbError('upsertExpense', error);
 }
 
 export async function deleteExpense(id: string): Promise<void> {
   const { error } = await supabase.from('farm_expenses').delete().eq('id', id);
-  if (error) console.error('deleteExpense', error);
+  if (error) throwDbError('deleteExpense', error);
 }
 
 // ── SUBSIDY INCOME ────────────────────────────────────────────────────────────
@@ -96,12 +142,12 @@ export async function upsertSubsidy(s: SubsidyIncome): Promise<void> {
   const { error } = await supabase
     .from('subsidy_income')
     .upsert(subsidyToRow(s), { onConflict: 'id' });
-  if (error) console.error('upsertSubsidy', error);
+  if (error) throwDbError('upsertSubsidy', error);
 }
 
 export async function deleteSubsidy(id: string): Promise<void> {
   const { error } = await supabase.from('subsidy_income').delete().eq('id', id);
-  if (error) console.error('deleteSubsidy', error);
+  if (error) throwDbError('deleteSubsidy', error);
 }
 
 // ── FARM SETTINGS ─────────────────────────────────────────────────────────────
@@ -129,7 +175,7 @@ export async function saveSettings(settings: FarmSettings): Promise<void> {
   const { error } = await supabase
     .from('farm_settings')
     .upsert({ id: 'default', ...settings }, { onConflict: 'id' });
-  if (error) console.error('saveSettings', error);
+  if (error) throwDbError('saveSettings', error);
 }
 
 // ── Row mappers ───────────────────────────────────────────────────────────────
@@ -271,12 +317,12 @@ export async function upsertBatch(b: Batch): Promise<void> {
   const { error } = await supabase
     .from('batches')
     .upsert(batchToRow(b), { onConflict: 'id' });
-  if (error) console.error('upsertBatch', error);
+  if (error) throwDbError('upsertBatch', error);
 }
 
 export async function deleteBatch(id: string): Promise<void> {
   const { error } = await supabase.from('batches').delete().eq('id', id);
-  if (error) console.error('deleteBatch', error);
+  if (error) throwDbError('deleteBatch', error);
 }
 
 // ── RECIPES ──────────────────────────────────────────────────────────────────
@@ -294,7 +340,7 @@ export async function upsertRecipe(r: Recipe): Promise<void> {
   const { error } = await supabase
     .from('recipes')
     .upsert(recipeToRow(r), { onConflict: 'id' });
-  if (error) console.error('upsertRecipe', error);
+  if (error) throwDbError('upsertRecipe', error);
 }
 
 export async function upsertRecipes(list: Recipe[]): Promise<void> {
@@ -302,12 +348,12 @@ export async function upsertRecipes(list: Recipe[]): Promise<void> {
   const { error } = await supabase
     .from('recipes')
     .upsert(list.map(recipeToRow), { onConflict: 'id' });
-  if (error) console.error('upsertRecipes', error);
+  if (error) throwDbError('upsertRecipes', error);
 }
 
 export async function deleteRecipe(id: string): Promise<void> {
   const { error } = await supabase.from('recipes').delete().eq('id', id);
-  if (error) console.error('deleteRecipe', error);
+  if (error) throwDbError('deleteRecipe', error);
 }
 
 // ── TASKS ────────────────────────────────────────────────────────────────────
@@ -325,12 +371,12 @@ export async function upsertTask(t: Task): Promise<void> {
   const { error } = await supabase
     .from('tasks')
     .upsert(taskToRow(t), { onConflict: 'id' });
-  if (error) console.error('upsertTask', error);
+  if (error) throwDbError('upsertTask', error);
 }
 
 export async function deleteTask(id: string): Promise<void> {
   const { error } = await supabase.from('tasks').delete().eq('id', id);
-  if (error) console.error('deleteTask', error);
+  if (error) throwDbError('deleteTask', error);
 }
 
 // ── PRUNING HISTORY ──────────────────────────────────────────────────────────
@@ -348,12 +394,12 @@ export async function upsertPruningItem(p: PruningHistoryItem): Promise<void> {
   const { error } = await supabase
     .from('pruning_history')
     .upsert(pruningToRow(p), { onConflict: 'id' });
-  if (error) console.error('upsertPruningItem', error);
+  if (error) throwDbError('upsertPruningItem', error);
 }
 
 export async function deletePruningItem(id: string): Promise<void> {
   const { error } = await supabase.from('pruning_history').delete().eq('id', id);
-  if (error) console.error('deletePruningItem', error);
+  if (error) throwDbError('deletePruningItem', error);
 }
 
 // ── Row mappers (new tables) ─────────────────────────────────────────────────
