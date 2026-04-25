@@ -97,7 +97,16 @@ export interface CadastralDetails {
  *    sees the production key.
  */
 
-const GEMINI_PROXY_BASE      = '/api/ai/gemini';
+/**
+ * The Google GenAI SDK runs `new URL(baseUrl)` internally and throws
+ * `TypeError: Failed to construct 'URL': Invalid URL` on a bare path like
+ * `/api/ai/gemini`. We resolve to an absolute URL at runtime so the SDK is
+ * happy in the browser; on the server (SSR / build) we fall back to the
+ * relative path which is fine since the SDK isn't invoked there.
+ */
+const GEMINI_PROXY_BASE      = typeof window !== 'undefined'
+  ? `${window.location.origin}/api/ai/gemini`
+  : '/api/ai/gemini';
 const ANTHROPIC_PROXY_URL    = '/api/ai/anthropic/v1/messages';
 const OPENAI_PROXY_URL       = '/api/ai/openai/v1/chat/completions';
 // Placeholder accepted by the SDK when we'll proxy and inject the real key

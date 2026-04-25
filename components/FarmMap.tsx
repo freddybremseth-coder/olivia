@@ -3,7 +3,8 @@ import {
   Search, MapPin, Layers, X, CheckCircle2, Loader2, Brain, Undo2, Save,
   ChevronRight, Trash2, Globe, Locate, Building, Zap, Droplets,
   Eye, EyeOff, Navigation, Target, Radar, SearchCode, ArrowRight,
-  ShieldCheck, AlertTriangle, Map as MapTypeIcon, MousePointerClick
+  ShieldCheck, AlertTriangle, Map as MapTypeIcon, MousePointerClick,
+  Pencil
 } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { Parcel, Language } from '../types';
@@ -65,6 +66,11 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
   const [editName, setEditName] = useState('');
   const [editTreeCount, setEditTreeCount] = useState<number>(0);
   const [editVariety, setEditVariety] = useState('Picual');
+
+  // Inline edit-mode for an EXISTING parcel (separate from the post-verification
+  // form which uses analyzedDetails). When set, the parcel card in the right
+  // panel shows editable inputs for name / tree count / variety.
+  const [editingParcelId, setEditingParcelId] = useState<string | null>(null);
 
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -555,6 +561,35 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     }
   };
 
+  /**
+   * Begin inline-edit on an existing parcel — reuses the same `editName`,
+   * `editTreeCount`, `editVariety` state as the new-parcel verification form.
+   * Only one of {analyzedDetails, editingParcelId} is ever set at a time.
+   */
+  const startEditParcel = (p: Parcel, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingParcelId(p.id);
+    setEditName(p.name || '');
+    setEditTreeCount(p.treeCount || 0);
+    setEditVariety(p.treeVariety || 'Picual');
+  };
+
+  const cancelEditParcel = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingParcelId(null);
+  };
+
+  const saveEditedParcel = (p: Parcel, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    onParcelSave({
+      ...p,
+      name: editName.trim() || p.name,
+      treeCount: Number.isFinite(editTreeCount) ? editTreeCount : p.treeCount,
+      treeVariety: editVariety,
+    });
+    setEditingParcelId(null);
+  };
+
   const handleZoomToParcel = (p: Parcel) => {
     if (!mapRef.current) return;
     drawingLayerRef.current.clearLayers();
@@ -881,23 +916,102 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
                     <p className="text-[9px] text-slate-500 font-mono truncate">{p.cadastralId || `${p.lat?.toFixed(4)}, ${p.lon?.toFixed(4)}`}</p>
                   </div>
                 </div>
-                {selectedParcel?.id === p.id && (
-                  <div className="flex gap-2">
-                    {p.cadastralId && (
+                {selectedParcel?.id === p.id && editingParcelId !== p.id && (
+                  <>
+                    {/* Quick-glance current values so the user can see what they'd be editing */}
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div className="bg-white/5 rounded-xl px-3 py-2 border border-white/5">
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Trær</p>
+                        <p className="text-xs text-white font-bold">{p.treeCount ?? '—'}</p>
+                      </div>
+                      <div className="bg-white/5 rounded-xl px-3 py-2 border border-white/5">
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Sort</p>
+                        <p className="text-xs text-white font-bold truncate">{p.treeVariety || '—'}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
                       <button
-                        onClick={(e) => { e.stopPropagation(); verifySelectedParcel(); }}
-                        disabled={isVerifying}
-                        className="flex-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[10px] font-bold py-2 rounded-xl border border-blue-500/20 flex items-center justify-center gap-2"
+                        onClick={(e) => startEditParcel(p, e)}
+                        className="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[10px] font-bold py-2 rounded-xl border border-amber-500/20 flex items-center justify-center gap-2"
                       >
-                        {isVerifying ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />} VERIFISER DATA
+                        <Pencil size={12} /> REDIGER
                       </button>
-                    )}
-                    <button
-                      onClick={(e) => deleteParcel(p.id, e)}
-                      className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl border border-red-500/20"
-                    >
-                      <Trash2 size={12} />
-                    </button>
+                      {p.cadastralId && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); verifySelectedParcel(); }}
+                          disabled={isVerifying}
+                          className="flex-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[10px] font-bold py-2 rounded-xl border border-blue-500/20 flex items-center justify-center gap-2"
+                        >
+                          {isVerifying ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />} VERIFISER
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => deleteParcel(p.id, e)}
+                        className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl border border-red-500/20"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </>
+                )}
+                {editingParcelId === p.id && (
+                  <div className="space-y-3 mt-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="space-y-1">
+                      <label className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Navn</label>
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-500/50"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Antall trær</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={editTreeCount}
+                          onChange={(e) => setEditTreeCount(Number(e.target.value))}
+                          className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-500/50"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Sort</label>
+                        <select
+                          value={editVariety}
+                          onChange={(e) => setEditVariety(e.target.value)}
+                          className="w-full bg-black/50 border border-white/10 rounded-xl px-2 py-2 text-xs text-white outline-none focus:border-amber-500/50"
+                        >
+                          <option value="Gordal">Gordal</option>
+                          <option value="Changlot Real">Changlot Real</option>
+                          <option value="Genoesa">Genoesa</option>
+                          <option value="Picual">Picual</option>
+                          <option value="Arbequina">Arbequina</option>
+                          <option value="Hojiblanca">Hojiblanca</option>
+                          <option value="Manzanilla">Manzanilla</option>
+                          <option value="Lechin">Lechin</option>
+                          <option value="Cornicabra">Cornicabra</option>
+                          <option value="Frantoio">Frantoio</option>
+                          <option value="Leccino">Leccino</option>
+                          <option value="Annen">Annen</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={(e) => saveEditedParcel(p, e)}
+                        className="flex-1 bg-green-500 hover:bg-green-400 text-black text-[10px] font-bold py-2 rounded-xl flex items-center justify-center gap-2"
+                      >
+                        <Save size={12} /> LAGRE
+                      </button>
+                      <button
+                        onClick={cancelEditParcel}
+                        className="px-3 bg-white/5 hover:bg-white/10 text-slate-400 text-[10px] font-bold py-2 rounded-xl border border-white/10"
+                      >
+                        AVBRYT
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
