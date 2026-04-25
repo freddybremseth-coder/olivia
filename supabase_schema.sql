@@ -82,6 +82,13 @@ alter table subsidy_income  enable row level security;
 alter table farm_settings   enable row level security;
 
 -- Permissive policies (open read/write for now)
+-- `drop policy if exists` first so this file is safe to re-run when bringing
+-- a fresh project up to date or fixing a partial migration.
+drop policy if exists "allow all parcels"         on parcels;
+drop policy if exists "allow all harvest_records" on harvest_records;
+drop policy if exists "allow all farm_expenses"   on farm_expenses;
+drop policy if exists "allow all subsidy_income"  on subsidy_income;
+drop policy if exists "allow all farm_settings"   on farm_settings;
 create policy "allow all parcels"         on parcels         for all using (true) with check (true);
 create policy "allow all harvest_records" on harvest_records for all using (true) with check (true);
 create policy "allow all farm_expenses"   on farm_expenses   for all using (true) with check (true);
@@ -173,6 +180,10 @@ alter table recipes         enable row level security;
 alter table tasks           enable row level security;
 alter table pruning_history enable row level security;
 
+drop policy if exists "allow all batches"         on batches;
+drop policy if exists "allow all recipes"         on recipes;
+drop policy if exists "allow all tasks"           on tasks;
+drop policy if exists "allow all pruning_history" on pruning_history;
 create policy "allow all batches"         on batches         for all using (true) with check (true);
 create policy "allow all recipes"         on recipes         for all using (true) with check (true);
 create policy "allow all tasks"           on tasks           for all using (true) with check (true);
@@ -218,6 +229,9 @@ create index if not exists user_profiles_email_idx on user_profiles(email);
 
 alter table user_profiles enable row level security;
 
+drop policy if exists "self read"   on user_profiles;
+drop policy if exists "self update" on user_profiles;
+drop policy if exists "self insert" on user_profiles;
 create policy "self read" on user_profiles for select
   using (auth.uid() = id or exists (
     select 1 from user_profiles p where p.id = auth.uid() and p.role = 'super_admin'
