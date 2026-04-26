@@ -158,6 +158,26 @@ function isQuotaError(err: unknown): boolean {
   );
 }
 
+/**
+ * "Provider failed in a way the user shouldn't have to debug — try the next
+ * provider." Includes: quota/billing, model deprecated/renamed (404, not
+ * found), and transient 5xx server errors. Auth issues (401/403) and
+ * malformed requests (400) are NOT here — those need to surface so we can
+ * fix the bug or the key.
+ */
+function shouldFallback(err: unknown): boolean {
+  if (isQuotaError(err) || isModelError(err)) return true;
+  const msg = String((err as any)?.message || err || '').toLowerCase();
+  return (
+    msg.includes('http 404') ||
+    msg.includes('http 500') ||
+    msg.includes('http 502') ||
+    msg.includes('http 503') ||
+    msg.includes('http 504') ||
+    msg.includes('overloaded')
+  );
+}
+
 export class GeminiService {
   private cache = new Map<string, CadastralDetails>();
 
@@ -215,8 +235,8 @@ export class GeminiService {
         };
 
         const url = this.useGeminiProxy()
-          ? `${GEMINI_PROXY_BASE}/v1beta/models/gemini-2.0-flash:generateContent`
-          : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.getGeminiKey()}`;
+          ? `${GEMINI_PROXY_BASE}/v1beta/models/gemini-2.5-flash:generateContent`
+          : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.getGeminiKey()}`;
 
         const response = await fetch(url, {
           method: 'POST',
@@ -446,8 +466,8 @@ export class GeminiService {
       return await geminiFn();
     } catch (e: any) {
       geminiErrMsg = e?.message || String(e);
-      if (!isQuotaError(e)) throw e;
-      console.warn('[geminiService] Gemini quota/rate-limit hit, attempting Claude fallback…', geminiErrMsg);
+      if (!shouldFallback(e)) throw e;
+      console.warn('[geminiService] Gemini failed (quota/model/server), attempting Claude fallback…', geminiErrMsg);
     }
 
     const promptForFallback = opts.json
