@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1120" viewBox="0 0 1800 1120">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2b2a25"/>
+      <stop offset=".42" stop-color="#111111"/>
+      <stop offset="1" stop-color="#050505"/>
+    </linearGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#d8bd86"/>
+      <stop offset=".48" stop-color="#f3dfb5"/>
+      <stop offset="1" stop-color="#9b7840"/>
+    </linearGradient>
+    <linearGradient id="bottle" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#040404"/>
+      <stop offset=".18" stop-color="#171717"/>
+      <stop offset=".5" stop-color="#0b0b0b"/>
+      <stop offset=".76" stop-color="#242424"/>
+      <stop offset="1" stop-color="#040404"/>
+    </linearGradient>
+    <linearGradient id="jar" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#060606"/>
+      <stop offset=".3" stop-color="#161611"/>
+      <stop offset=".62" stop-color="#0b0b0b"/>
+      <stop offset="1" stop-color="#25231a"/>
+    </linearGradient>
+    <filter id="shadow" x="-40%" y="-30%" width="180%" height="170%">
+      <feDropShadow dx="0" dy="32" stdDeviation="26" flood-color="#000" flood-opacity=".55"/>
+    </filter>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+
+  <rect width="1800" height="1120" fill="url(#bg)"/>
+  <path d="M0 740 C320 660 610 720 930 662 C1250 603 1490 570 1800 622 V1120 H0Z" fill="#080808"/>
+  <path d="M0 792 C315 715 602 766 923 712 C1245 657 1510 628 1800 682 V1120 H0Z" fill="#15110c"/>
+  <rect x="-70" y="842" width="1940" height="292" fill="url(#wood)" opacity=".82"/>
+  <path d="M120 890 C420 845 670 902 945 868 C1205 835 1480 805 1740 860" fill="none" stroke="#79572a" stroke-width="7" opacity=".28"/>
+  <path d="M20 990 C345 940 705 1008 1030 970 C1345 932 1540 918 1810 960" fill="none" stroke="#fff4d2" stroke-width="5" opacity=".18"/>
+  <circle cx="1450" cy="170" r="290" fill="#d7a84a" opacity=".15" filter="url(#soft)"/>
+
+  <g transform="translate(945 155)" opacity=".9" filter="url(#shadow)">
+    <rect x="0" y="0" width="610" height="500" rx="32" fill="#0c0c0c" stroke="#b8943d" stroke-width="3"/>
+    <rect x="28" y="34" width="554" height="58" rx="29" fill="#141414" stroke="#ffffff" stroke-opacity=".08"/>
+    <text x="66" y="72" font-family="Arial, sans-serif" font-size="15" fill="#e8d5a4" letter-spacing="5">DOÑA ANNA</text>
+    <text x="514" y="72" font-family="Arial, sans-serif" font-size="12" fill="#f8f5ea" letter-spacing="4">B2B</text>
+    <g transform="translate(215 140)">
+      <path d="M72 0 C32 0 0 41 0 103 C0 165 32 206 72 206 C121 206 154 164 154 103 C154 42 121 0 72 0ZM72 28 C101 28 124 58 124 103 C124 148 101 178 72 178 H42 V28Z" fill="none" stroke="#d4af37" stroke-width="11"/>
+      <path d="M205 206 L281 2 H315 L392 206 H358 L342 160 H254 L238 206Z" fill="none" stroke="#d4af37" stroke-width="11" stroke-linejoin="round"/>
+      <path d="M274 130 H323" stroke="#d4af37" stroke-width="11" stroke-linecap="round"/>
+      <circle cx="306" cy="103" r="11" fill="#d4af37"/>
+    </g>
+    <text x="305" y="414" text-anchor="middle" font-family="Georgia, serif" font-size="40" fill="#f8f5ea">Ultra-Premium Økologisk Olivenolje</text>
+    <text x="305" y="458" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#d4af37" letter-spacing="5">SKAPT FOR KOMPROMISSLØSE KOKKER</text>
+  </g>
+
+  <g transform="translate(405 74)" filter="url(#shadow)">
+    <ellipse cx="238" cy="905" rx="205" ry="36" fill="#000" opacity=".44"/>
+    <path d="M159 10 H317 L302 203 C383 249 429 337 429 455 V848 C429 903 384 948 329 948 H147 C92 948 47 903 47 848 V455 C47 337 93 249 174 203Z" fill="url(#bottle)" stroke="#303030" stroke-width="7"/>
+    <rect x="166" y="-20" width="144" height="82" rx="5" fill="#050505" stroke="#d4af37" stroke-width="5"/>
+    <path d="M151 58 H325 L314 192 H162Z" fill="#070707"/>
+    <path d="M168 64 C204 94 272 94 308 64" fill="none" stroke="#111" stroke-width="17"/>
+    <rect x="139" y="380" width="198" height="414" fill="#f8f5ea"/>
+    <rect x="139" y="380" width="198" height="45" fill="#111"/>
+    <rect x="139" y="749" width="198" height="45" fill="#111"/>
+    <path d="M241 468 C212 466 195 486 198 511 C200 538 226 548 240 562 C253 546 282 537 281 508 C280 484 263 467 241 468Z" fill="none" stroke="#d4af37" stroke-width="5"/>
+    <path d="M240 458 C234 430 255 407 284 406" fill="none" stroke="#d4af37" stroke-width="4" stroke-linecap="round"/>
+    <text x="238" y="623" text-anchor="middle" font-family="Georgia, serif" font-size="31" fill="#111" letter-spacing="5">DOÑA ANNA</text>
+    <text x="238" y="691" text-anchor="middle" font-family="Arial, sans-serif" font-size="31" fill="#111" letter-spacing="8">VERDE VIVO</text>
+    <text x="238" y="834" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#d4af37" letter-spacing="4">COSECHA TEMPRANA</text>
+    <text x="238" y="866" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#f8f5ea" letter-spacing="4">MONOVARIETAL CHANGLOT REAL</text>
+    <text x="238" y="896" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#f8f5ea" letter-spacing="4">BIAR | ALICANTE</text>
+  </g>
+
+  <g transform="translate(230 398)" filter="url(#shadow)">
+    <ellipse cx="162" cy="590" rx="155" ry="30" fill="#000" opacity=".35"/>
+    <rect x="76" y="0" width="172" height="80" rx="18" fill="#070707" stroke="#d4af37" stroke-width="4"/>
+    <path d="M63 76 H261 L296 255 V520 C296 574 253 618 199 618 H125 C71 618 28 574 28 520 V255Z" fill="url(#jar)" stroke="#222" stroke-width="6"/>
+    <path d="M58 184 C112 213 215 212 267 184" fill="none" stroke="#d4af37" stroke-opacity=".18" stroke-width="18"/>
+    <rect x="73" y="277" width="178" height="210" fill="#efe1c2"/>
+    <text x="162" y="340" text-anchor="middle" font-family="Georgia, serif" font-size="24" fill="#111" letter-spacing="4">DOÑA ANNA</text>
+    <text x="162" y="403" text-anchor="middle" font-family="Georgia, serif" font-size="58" fill="#111">Mesa</text>
+    <text x="162" y="454" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#6e2430" letter-spacing="4">ACEITUNAS ECOLÓGICAS</text>
+    <circle cx="162" cy="532" r="35" fill="#1e271a"/>
+    <circle cx="135" cy="540" r="24" fill="#596627"/>
+    <circle cx="188" cy="542" r="23" fill="#6c742c"/>
+  </g>
+
+  <g transform="translate(1130 675)" filter="url(#shadow)">
+    <ellipse cx="144" cy="270" rx="132" ry="28" fill="#000" opacity=".35"/>
+    <rect x="16" y="0" width="256" height="278" rx="20" fill="#191919" stroke="#c8a94a" stroke-width="5"/>
+    <rect x="55" y="-54" width="178" height="88" rx="18" fill="#111" stroke="#555" stroke-width="5"/>
+    <rect x="47" y="58" width="194" height="174" fill="none" stroke="#4a4a4a" stroke-width="2"/>
+    <text x="144" y="92" text-anchor="middle" font-family="Georgia, serif" font-size="22" fill="#f8f5ea" letter-spacing="4">DOÑA ANNA</text>
+    <text x="144" y="154" text-anchor="middle" font-family="Georgia, serif" font-size="42" fill="#f8f5ea">Cocina</text>
+    <text x="144" y="204" text-anchor="middle" font-family="Georgia, serif" font-size="42" fill="#c8a94a">Viva</text>
+    <text x="144" y="252" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#c8a94a" letter-spacing="4">CHEF FORMAT · 5 L</text>
+  </g>
+
+  <g transform="translate(82 96)">
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="14" fill="#d4af37" letter-spacing="7">BRAND PRESENTATION</text>
+    <text x="0" y="62" font-family="Georgia, serif" font-size="58" fill="#f8f5ea">Doña Anna</text>
+    <text x="0" y="106" font-family="Arial, sans-serif" font-size="18" fill="#f8f5ea" opacity=".62" letter-spacing="3">MATT BLACK · TEXTURED PAPER · BRUSHED GOLD</text>
+  </g>
+</svg>

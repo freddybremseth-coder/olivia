@@ -65,14 +65,14 @@ const copy = {
 const portfolio = [
   {
     name: 'Verde Vivo',
-    format: '250 ml · first early harvest',
+    format: '500 ml · Cosecha Temprana I',
     role: 'Finishing oil for fine dining',
     label: '/labels/mockups/verde-vivo-bottle.svg',
     text: 'Høyeste polyfenolnivå, lavt utbytte, kraftig grønn fruktighet og lang pepperfinish.',
   },
   {
     name: 'Verde Alto',
-    format: '250 ml / 500 ml · second early harvest',
+    format: '500 ml · Cosecha Temprana II',
     role: 'Premium daily finishing',
     label: '/labels/mockups/verde-alto-bottle.svg',
     text: 'Tidlig høstet og polyfenolsterk, men rundere. Den mest skalerbare premiumlinjen.',
@@ -113,7 +113,7 @@ const specs = [
   ['Acidity target', '<0.2% for premium batches'],
   ['Polyphenols', 'Lab measured · QR-linked certificate'],
   ['Varieties', 'Genovesa · Gordal · Changlot Real · Picual'],
-  ['Formats', '250 ml · 500 ml · 2 L · 5 L · Mesa jars'],
+  ['Formats', '500 ml · 2 L · 5 L · Mesa jars'],
 ];
 
 const estateMoments = [
@@ -323,6 +323,36 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
+        <section className="border-y border-white/10 bg-[#080808] px-5 py-20 md:px-8">
+          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.12fr_0.88fr] lg:items-center">
+            <div className="overflow-hidden border border-[#d4af37]/24 bg-black">
+              <img src="/labels/mockups/dona-anna-brand-presentation.svg" alt="Doña Anna produktfoto med Verde Vivo, Mesa, Cocina Viva og DA monogram" className="w-full" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Brand system</p>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Mørk skifer, lyst tre og dempet middelhavslys.</h2>
+              <p className="mt-6 text-lg leading-8 text-white/66">
+                Produktene bør fotograferes som high-end kosmetikk eller parfyme: matt svart glass, smal teksturert etikett, gullfolie og mye negativ plass. Det gir premiumfølelse før kunden smaker.
+              </p>
+              <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                {[
+                  ['Verde Vivo', '500 ml finishing'],
+                  ['Mesa', 'Bordoliven'],
+                  ['Cocina Viva', '2 L / 5 L chef'],
+                ].map(([title, text]) => (
+                  <div key={title} className="border border-white/10 bg-white/[0.035] p-4">
+                    <p className="font-serif text-xl">{title}</p>
+                    <p className="mt-2 text-xs uppercase tracking-[0.18em] text-[#d4af37]">{text}</p>
+                  </div>
+                ))}
+              </div>
+              <a href="#portfolio" className="mt-8 inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
+                Se porteføljen <ArrowRight size={17} />
+              </a>
+            </div>
+          </div>
+        </section>
+
         <section id="portfolio" className="mx-auto max-w-7xl px-5 py-24 md:px-8">
           <div className="mb-12 grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
             <div>
@@ -330,7 +360,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Olje og bordoliven bygget som en kolleksjon.</h2>
             </div>
             <p className="self-end text-lg leading-8 text-white/66">
-              Verde Vivo og Verde Alto brukes som finishing oils for bord og kjøkken. Cocina Viva gir kokker større format. Mesa gjør Doña Anna synlig i spanske markeder, restauranter og aperitivo-servering.
+              Verde Vivo og Verde Alto er 500 ml finishing oils for bord og kjøkken. Cocina Viva gir kokker større format i mørk metallkanne eller bag-in-box. Mesa gjør Doña Anna synlig i spanske markeder, restauranter og aperitivo-servering.
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
