@@ -1,27 +1,28 @@
 
-import React, { useState, useEffect } from 'react';
-import Layout from './components/Layout';
-import Dashboard from './components/Dashboard';
-import FarmOverview from './components/FarmOverview';
-import FarmMap from './components/FarmMap';
-import WeatherView from './components/WeatherView';
-import ProductionView from './components/ProductionView';
-import FleetView from './components/FleetView';
-import IrrigationView from './components/IrrigationView';
-import TasksView from './components/TasksView';
-import SettingsView from './components/SettingsView';
-import FieldConsultantView from './components/FieldConsultantView';
-import PruningAdvisorView from './components/PruningAdvisorView';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import LandingPage from './components/LandingPage';
-import AdminDashboard from './components/AdminDashboard';
-import IoTDashboard from './components/IoTDashboard';
-import CommerceHub from './components/CommerceHub';
 import LoginModal, { StoredUser } from './components/LoginModal';
 import ResetPasswordPage from './components/ResetPasswordPage';
-import ProfitabilityPage from './pages/Profitability';
 import { UserProfile, Language, Parcel } from './types';
 import { fetchParcels, upsertParcel, deleteParcel, migrateLocalStorageToSupabase } from './services/db';
 import { getCurrentSession, onAuthChange, signOut as authSignOut } from './services/auth';
+
+const Layout = lazy(() => import('./components/Layout'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const FarmOverview = lazy(() => import('./components/FarmOverview'));
+const FarmMap = lazy(() => import('./components/FarmMap'));
+const WeatherView = lazy(() => import('./components/WeatherView'));
+const ProductionView = lazy(() => import('./components/ProductionView'));
+const FleetView = lazy(() => import('./components/FleetView'));
+const IrrigationView = lazy(() => import('./components/IrrigationView'));
+const TasksView = lazy(() => import('./components/TasksView'));
+const SettingsView = lazy(() => import('./components/SettingsView'));
+const FieldConsultantView = lazy(() => import('./components/FieldConsultantView'));
+const PruningAdvisorView = lazy(() => import('./components/PruningAdvisorView'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+const IoTDashboard = lazy(() => import('./components/IoTDashboard'));
+const CommerceHub = lazy(() => import('./components/CommerceHub'));
+const ProfitabilityPage = lazy(() => import('./pages/Profitability'));
 
 /**
  * Detect a Supabase recovery URL synchronously — used as the initial state
@@ -295,15 +296,19 @@ const App: React.FC = () => {
   };
 
   return (
-    <Layout
-      user={user}
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      onLogout={handleLogout}
-      language={language}
-    >
-      {renderContent()}
-    </Layout>
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0b] p-8 text-slate-300">Laster Olivia OS...</div>}>
+      <Layout
+        user={user}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onLogout={handleLogout}
+        language={language}
+      >
+        <Suspense fallback={<div className="p-8 text-slate-400">Laster modul...</div>}>
+          {renderContent()}
+        </Suspense>
+      </Layout>
+    </Suspense>
   );
 };
 

@@ -2,18 +2,16 @@ import React, { useEffect, useState } from 'react';
 import {
   ArrowRight,
   BadgeCheck,
-  BookOpen,
-  Bot,
-  Droplets,
-  Leaf,
-  LineChart,
+  Building2,
+  FileText,
+  Languages,
   LockKeyhole,
   Menu,
+  Package,
   QrCode,
+  ScanLine,
   ShieldCheck,
   Sparkles,
-  Sprout,
-  ThermometerSun,
   X,
 } from 'lucide-react';
 import { fetchPublicEstateSignal, PublicEstateSignal } from '../services/publicEstate';
@@ -24,98 +22,100 @@ interface LandingPageProps {
   onRegister: () => void;
 }
 
-const products = [
-  {
-    name: 'Doña Anna Verde Vivo',
-    role: 'Første tidlige høsting · høyest polyfenol',
-    image: '/donaanna/primera-cosecha.jpg',
-    text: 'Den mest intense oljen. Lavt utbytte, tidlig grønn frukt, tydelig bitterhet og lang pepperfinish. Nummerert batch med laboratoriemålt polyfenolnivå.',
-    detail: '250 ml · begrenset batch',
-  },
-  {
-    name: 'Doña Anna Verde Alto',
-    role: 'Andre tidlige høsting · høy polyfenol',
-    image: '/donaanna/centenario.jpg',
-    text: 'Fortsatt tidlig og polyfenolsterk, men rundere og mer anvendelig. Flaggskipet for daglig premiumbruk, restauranter og abonnement.',
-    detail: '250 ml og 500 ml',
-  },
-  {
-    name: 'Doña Anna Raíz Antigua',
-    role: 'Gamle trær · begrenset estate selection',
-    image: '/donaanna/genovesa-pura.jpg',
-    text: 'En liten batch fra de eldste trærne. Bør bare være sortsspesifikk hvis sensorikk eller analyse faktisk skiller seg tydelig ut.',
-    detail: '250 ml og 500 ml',
-  },
-  {
-    name: 'Doña Anna Changlot Real',
-    role: 'Monovarietal · lokal signatur',
-    image: '/donaanna/changlot-real.jpg',
-    text: 'Sortsolje for nysgjerrige kunder og smakinger. Genovesa, Gordal/Gordial, Changlot Real og Picual bør få egne batcher først etter testpressing.',
-    detail: '250 ml og 500 ml',
-  },
-];
+type Locale = 'no' | 'es' | 'en';
 
-const labelConcepts = [
+const copy = {
+  no: {
+    eyebrow: 'Ultra-premium estate oil · Biar, Alicante',
+    headline: 'Doña Anna for kompromissløse kokker.',
+    subhead: 'Økologisk olivenolje og bordoliven fra Biar. Tidlig høstet, batchsporet og laget for restauranter, distributører og spesialbutikker som trenger en historie de kan servere.',
+    cta: 'Bestill tasting kit',
+    portal: 'B2B portal',
+    specTitle: 'Tekniske data for innkjøpere',
+    traceTitle: 'Transparencia Total',
+    traceText: 'Hver flaske kan kobles til batch, høstedato, parsell, sort, sensorisk profil og analyseverdier i Olivia OS.',
+  },
+  es: {
+    eyebrow: 'Aceite de alta gama · Biar, Alicante',
+    headline: 'Doña Anna para chefs exigentes.',
+    subhead: 'Aceite ecológico y aceitunas de mesa de Biar. Cosecha temprana, trazabilidad por lote y una historia clara para restaurantes, distribuidores y tiendas gourmet.',
+    cta: 'Solicitar tasting kit',
+    portal: 'Portal B2B',
+    specTitle: 'Datos técnicos para compradores',
+    traceTitle: 'Transparencia Total',
+    traceText: 'Cada botella puede mostrar lote, fecha de cosecha, parcela, variedad, perfil sensorial y análisis desde Olivia OS.',
+  },
+  en: {
+    eyebrow: 'Ultra-premium estate oil · Biar, Alicante',
+    headline: 'Doña Anna for uncompromising chefs.',
+    subhead: 'Organic olive oil and table olives from Biar. Early harvested, batch-traceable and built for restaurants, distributors and specialty buyers who need a story worth serving.',
+    cta: 'Request tasting kit',
+    portal: 'B2B portal',
+    specTitle: 'Technical specs for buyers',
+    traceTitle: 'Total Transparency',
+    traceText: 'Every bottle can connect to batch, harvest date, parcel, variety, sensory profile and lab data in Olivia OS.',
+  },
+};
+
+const portfolio = [
   {
     name: 'Verde Vivo',
-    strategy: 'Topplinjen. Første tidlige høsting, lavt utbytte, høy pris og tydelig laboratorietall via QR.',
-    palette: 'Matt sort, kritthvitt, børstet gull',
-    bottle: 'Matt sort 250 ml flaske med smal bomullspapir-etikett',
+    format: '250 ml · first early harvest',
+    role: 'Finishing oil for fine dining',
+    label: '/labels/luxury/verde-vivo-luxury-label.svg',
+    text: 'Høyeste polyfenolnivå, lavt utbytte, kraftig grønn fruktighet og lang pepperfinish.',
   },
   {
     name: 'Verde Alto',
-    strategy: 'Den kommersielle high-polyphenol-linjen. Fortsatt tidlig, men rundere, større volum og enklere å bruke daglig.',
-    palette: 'Nesten sort olivengrønn, elfenben, champagnegull',
-    bottle: '250 ml og 500 ml mørkt UV-glass',
+    format: '250 ml / 500 ml · second early harvest',
+    role: 'Premium daily finishing',
+    label: '/labels/finished/verde-alto-finished.svg',
+    text: 'Tidlig høstet og polyfenolsterk, men rundere. Den mest skalerbare premiumlinjen.',
   },
   {
     name: 'Raíz Antigua',
-    strategy: 'Gamle trær som knapphetsprodukt. Bruk som estate selection, ikke nødvendigvis per sort før dere ser reell sensorisk verdi.',
-    palette: 'Sort, varm krem, antikk gull',
-    bottle: '500 ml premium glass med trehette eller sort voksforsegling',
+    format: '500 ml · old-tree estate selection',
+    role: 'Limited allocation',
+    label: '/labels/luxury/raiz-antigua-luxury-label.svg',
+    text: 'Gamle trær, nummerert batch og høy gave-/restaurantverdi. Sortsdeles bare hvis data støtter det.',
+  },
+  {
+    name: 'Monovarietal Collection',
+    format: 'Genovesa · Gordal · Changlot Real · Picual',
+    role: 'Tasting flight / sommelier set',
+    label: '/labels/finished/monovarietal-collection.svg',
+    text: 'Små batcher for smaking, opplæring og restauranter som vil fortelle sortshistorien.',
+  },
+  {
+    name: 'Cocina Viva',
+    format: '2 L / 5 L · chef format',
+    role: 'Kitchen service',
+    label: '/labels/finished/cocina-viva.svg',
+    text: 'Mørk metallkanne eller bag-in-box for profesjonelle kjøkken. Estate traceable, praktisk format.',
+  },
+  {
+    name: 'Mesa',
+    format: 'Aceitunas de mesa',
+    role: 'Spanish markets / restaurants',
+    label: '/labels/finished/mesa-aceitunas.svg',
+    text: 'Bordoliven for grønnsaksmarkeder, barer og restauranter. Varmere markedsspråk, samme Doña Anna-kvalitet.',
   },
 ];
 
-const luxuryMarks = [
-  {
-    name: 'Anna Line Art',
-    image: '/labels/luxury/dona-anna-line-anna.svg',
-    use: 'Kunstnerisk, feminin og boutique. Sterk som hovedsymbol for premium olje.',
-  },
-  {
-    name: 'DA Monogram',
-    image: '/labels/luxury/dona-anna-monogram-da.svg',
-    use: 'Arkitektonisk luksus. Best for kork, voks, gullfolie og små flater.',
-  },
-  {
-    name: 'Pure Wordmark',
-    image: '/labels/luxury/dona-anna-tom-ford-wordmark.svg',
-    use: 'Mest selvsikker. Fungerer når flasken og negativt rom får gjøre jobben.',
-  },
-];
-
-const knowledge = [
-  {
-    title: 'Polyfenoler som kvalitetsbevis',
-    image: '/donaanna/polyphenols.jpg',
-    text: 'Tidlig høsting gir kraftigere smak, høyere bitterhet og mer av de antioksidantene premium-kunder faktisk leter etter.',
-  },
-  {
-    title: 'Regenerativ drift i praksis',
-    image: '/donaanna/regenerative-farming.jpg',
-    text: 'Dekkvekster, kompost, biodiversitet og smart vannforvaltning gjør gården mer robust i Alicantes tørre klima.',
-  },
-  {
-    title: 'Fra håndplukk til batch',
-    image: '/donaanna/early-harvest.jpg',
-    text: 'Hver batch kan dokumenteres fra parsell til flaske med Olivia: høstedato, kvalitet, oppskrift, sensorikk og QR-sporing.',
-  },
+const specs = [
+  ['Harvest', 'Cosecha temprana · two early passes'],
+  ['Extraction', 'Mechanical cold extraction · <27°C'],
+  ['Acidity target', '<0.2% for premium batches'],
+  ['Polyphenols', 'Lab measured · QR-linked certificate'],
+  ['Varieties', 'Genovesa · Gordal · Changlot Real · Picual'],
+  ['Formats', '250 ml · 500 ml · 2 L · 5 L · Mesa jars'],
 ];
 
 const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(value);
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [locale, setLocale] = useState<Locale>('no');
   const [signal, setSignal] = useState<PublicEstateSignal>({
     isLive: false,
     parcelCount: 2,
@@ -125,43 +125,49 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     nextTask: 'Sensorisk evaluering og batch-dokumentasjon',
     heroMetric: 'Biar, Alicante',
   });
+  const t = copy[locale];
 
   useEffect(() => {
     fetchPublicEstateSignal().then(setSignal);
   }, []);
 
   const navLinks = [
-    ['Oljen', '#oljen'],
-    ['Gården', '#garden'],
-    ['Sporbarhet', '#sporbarhet'],
-    ['Etiketter', '#etiketter'],
-    ['Kontakt', '#kontakt'],
+    ['Portfolio', '#portfolio'],
+    ['Traceability', '#traceability'],
+    ['Specs', '#specs'],
+    ['Tasting kit', '#tasting'],
   ];
 
   return (
-    <div className="min-h-screen bg-[#fbf8ef] text-[#171812] selection:bg-[#bfdc71]/50">
-      <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/20 bg-[#171812]/82 px-4 text-white backdrop-blur-xl">
+    <div className="min-h-screen bg-[#0d0d0d] text-[#f7f1df] selection:bg-[#d4af37]/30">
+      <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#0d0d0d]/82 px-4 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between">
           <a href="#top" className="flex items-center gap-3">
-            <img src="/donaanna/donaanna-logo.png" alt="Doña Anna" className="h-10 w-10 object-contain" />
+            <img src="/labels/luxury/dona-anna-monogram-da.svg" alt="Doña Anna DA monogram" className="h-10 w-10 object-contain" />
             <div>
-              <p className="text-sm font-semibold leading-none tracking-[0.28em]">DOÑA ANNA</p>
-              <p className="text-[11px] text-[#d7c89b]">Olive Estate · Biar</p>
+              <p className="font-serif text-sm font-semibold leading-none tracking-[0.38em]">DOÑA ANNA</p>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-[#d4af37]">Biar · Alicante</p>
             </div>
           </a>
           <div className="hidden items-center gap-7 md:flex">
             {navLinks.map(([label, href]) => (
-              <a key={href} href={href} className="text-sm text-white/78 transition hover:text-white">
+              <a key={href} href={href} className="text-xs uppercase tracking-[0.2em] text-white/62 transition hover:text-white">
                 {label}
               </a>
             ))}
           </div>
           <div className="hidden items-center gap-2 md:flex">
-            <button onClick={onAdminLogin} className="inline-flex h-10 items-center gap-2 border border-white/14 px-3 text-sm text-white/72 transition hover:bg-white/10">
+            <button
+              onClick={() => setLocale(locale === 'no' ? 'es' : locale === 'es' ? 'en' : 'no')}
+              className="inline-flex h-10 items-center gap-2 border border-white/12 px-3 text-xs uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/8"
+            >
+              <Languages size={15} /> {locale.toUpperCase()}
+            </button>
+            <button onClick={onAdminLogin} className="inline-flex h-10 items-center gap-2 border border-white/12 px-3 text-xs uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/8">
               <LockKeyhole size={15} /> Admin
             </button>
-            <button onClick={onLogin} className="inline-flex h-10 items-center gap-2 border border-white/14 px-4 text-sm font-semibold transition hover:bg-white/10">
-              Olivia OS
+            <button onClick={onLogin} className="inline-flex h-10 items-center gap-2 bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-[#d4af37]">
+              {t.portal}
             </button>
           </div>
           <button className="md:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="Meny">
@@ -171,51 +177,45 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
         {menuOpen && (
           <div className="mx-auto max-w-7xl border-t border-white/10 py-4 md:hidden">
             {navLinks.map(([label, href]) => (
-              <a key={href} href={href} onClick={() => setMenuOpen(false)} className="block py-3 text-white/85">
+              <a key={href} href={href} onClick={() => setMenuOpen(false)} className="block py-3 text-sm uppercase tracking-[0.2em] text-white/78">
                 {label}
               </a>
             ))}
-            <button onClick={onLogin} className="mt-3 w-full border border-white/18 px-4 py-3 text-left font-semibold">
-              Åpne Olivia OS
+            <button onClick={onLogin} className="mt-3 w-full bg-white px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-black">
+              {t.portal}
             </button>
           </div>
         )}
       </nav>
 
-      <header id="top" className="relative min-h-[92vh] overflow-hidden bg-[#171812] text-white">
-        <img src="/donaanna/hero-image.jpg" alt="Olivenlunden i Biar" className="absolute inset-0 h-full w-full object-cover opacity-78" />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(10,12,8,.92),rgba(10,12,8,.54),rgba(10,12,8,.18))]" />
-        <div className="relative mx-auto flex min-h-[92vh] max-w-7xl flex-col justify-end px-5 pb-14 pt-28 md:px-8">
-          <div className="max-w-4xl">
-            <div className="mb-5 inline-flex items-center gap-2 border border-[#d8c071]/40 bg-black/22 px-3 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-[#e9d98e]">
-              <Sparkles size={15} /> Estate oil powered by Olivia AI
-            </div>
-            <h1 className="max-w-4xl text-5xl font-semibold leading-[0.96] md:text-7xl">
-              Doña Anna
-              <span className="block text-[#f2df91]">olivenolje med levende sporbarhet.</span>
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/82 md:text-xl">
-              Premium økologisk extra virgin olivenolje fra Biar, Alicante. Håndplukket, kaldpresset og dokumentert fra parsell til flaske i samme driftssystem som styrer gården.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a href="#oljen" className="inline-flex h-12 items-center justify-center gap-2 bg-[#f2df91] px-5 font-semibold text-[#171812] transition hover:bg-white">
-                Utforsk oljen <ArrowRight size={18} />
+      <header id="top" className="relative min-h-screen overflow-hidden">
+        <img src="/donaanna/hero-image.jpg" alt="Oliven fra Doña Anna" className="absolute inset-0 h-full w-full object-cover opacity-42" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_42%,rgba(212,175,55,.16),transparent_34%),linear-gradient(90deg,rgba(13,13,13,.98),rgba(13,13,13,.78),rgba(13,13,13,.42))]" />
+        <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col justify-end px-5 pb-12 pt-28 md:px-8">
+          <div className="max-w-4xl animate-in fade-in duration-700">
+            <img src="/labels/luxury/dona-anna-tom-ford-wordmark.svg" alt="Doña Anna wordmark" className="mb-10 h-24 w-full max-w-xl object-contain object-left" />
+            <p className="mb-5 text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">{t.eyebrow}</p>
+            <h1 className="font-serif text-5xl leading-[0.95] tracking-normal md:text-7xl">{t.headline}</h1>
+            <p className="mt-7 max-w-2xl text-lg leading-8 text-white/72 md:text-xl">{t.subhead}</p>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
+                {t.cta} <ArrowRight size={17} />
               </a>
-              <button onClick={onRegister} className="inline-flex h-12 items-center justify-center gap-2 border border-white/26 px-5 font-semibold text-white transition hover:bg-white/10">
-                Koble deg til gården
-              </button>
+              <a href="#portfolio" className="inline-flex h-12 items-center justify-center gap-2 border border-white/18 px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-white/8">
+                Se kolleksjonen
+              </a>
             </div>
           </div>
-          <div className="mt-12 grid max-w-5xl grid-cols-2 border border-white/16 bg-black/20 backdrop-blur md:grid-cols-4">
+          <div className="mt-12 grid max-w-5xl grid-cols-2 border border-white/12 bg-black/22 backdrop-blur md:grid-cols-4">
             {[
-              ['Lokasjon', signal.heroMetric],
-              ['Parseller', formatNumber(signal.parcelCount)],
-              ['Trær registrert', formatNumber(signal.treeCount)],
-              ['Batch-status', signal.isLive ? `${signal.activeBatches} aktive` : 'Klar for live-data'],
+              ['Estate', signal.heroMetric],
+              ['Parcels', formatNumber(signal.parcelCount)],
+              ['Trees', formatNumber(signal.treeCount)],
+              ['Trace', signal.isLive ? `${signal.activeBatches} active batches` : 'QR-ready'],
             ].map(([label, value]) => (
               <div key={label} className="border-white/12 p-4 odd:border-r md:border-r md:last:border-r-0">
-                <p className="text-xs uppercase tracking-[0.18em] text-[#d8c071]">{label}</p>
-                <p className="mt-2 text-xl font-semibold">{value}</p>
+                <p className="text-[10px] uppercase tracking-[0.24em] text-[#d4af37]">{label}</p>
+                <p className="mt-2 font-serif text-xl">{value}</p>
               </div>
             ))}
           </div>
@@ -223,196 +223,144 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       </header>
 
       <main>
-        <section id="oljen" className="mx-auto grid max-w-7xl gap-10 px-5 py-20 md:grid-cols-[0.9fr_1.4fr] md:px-8">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#7a8e24]">Produktarkitektur</p>
-            <h2 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">En portefølje som kan selge både smak, helse og opprinnelse.</h2>
-            <p className="mt-5 text-lg leading-8 text-[#575849]">
-              Den gamle siden hadde sterke produktnavn. Jeg har strammet dem inn i en tydeligere premium-logikk: en toppserie, en arv-serie, sortsoljer og en bred signaturlinje.
+        <section id="portfolio" className="mx-auto max-w-7xl px-5 py-24 md:px-8">
+          <div className="mb-12 grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Exclusive portfolio</p>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Olje og bordoliven bygget som en kolleksjon.</h2>
+            </div>
+            <p className="self-end text-lg leading-8 text-white/66">
+              Verde Vivo og Verde Alto brukes som finishing oils for bord og kjøkken. Cocina Viva gir kokker større format. Mesa gjør Doña Anna synlig i spanske markeder, restauranter og aperitivo-servering.
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {products.map(product => (
-              <article key={product.name} className="overflow-hidden border border-[#ddd1aa] bg-white">
-                <img src={product.image} alt={product.name} className="h-52 w-full object-cover" />
-                <div className="p-5">
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#9f7b20]">{product.role}</p>
-                  <h3 className="mt-2 text-2xl font-semibold">{product.name}</h3>
-                  <p className="mt-3 leading-7 text-[#575849]">{product.text}</p>
-                  <p className="mt-4 text-sm font-semibold text-[#171812]">{product.detail}</p>
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {portfolio.map(item => (
+              <article key={item.name} className="group border border-white/10 bg-white/[0.035] p-4 transition hover:border-[#d4af37]/50">
+                <div className="flex min-h-[360px] items-center justify-center bg-[#080808] p-5">
+                  <img src={item.label} alt={`${item.name} label`} className="max-h-[320px] w-full object-contain transition duration-500 group-hover:scale-[1.03]" />
+                </div>
+                <div className="p-2 pt-5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#d4af37]">{item.role}</p>
+                  <h3 className="mt-2 font-serif text-3xl">{item.name}</h3>
+                  <p className="mt-1 text-xs uppercase tracking-[0.2em] text-white/48">{item.format}</p>
+                  <p className="mt-4 leading-7 text-white/64">{item.text}</p>
                 </div>
               </article>
             ))}
           </div>
         </section>
 
-        <section id="garden" className="bg-[#172015] py-20 text-white">
-          <div className="mx-auto grid max-w-7xl gap-10 px-5 md:grid-cols-[1.15fr_0.85fr] md:px-8">
-            <div className="grid grid-cols-2 gap-3">
-              <img src="/donaanna/farming-1.jpg" alt="Økologisk olivendyrking" className="h-72 w-full object-cover" />
-              <img src="/donaanna/farming-2.jpg" alt="Biodiversitet i olivenlunden" className="mt-12 h-72 w-full object-cover" />
-              <img src="/donaanna/farming-3.jpg" alt="Vannforvaltning" className="h-64 w-full object-cover" />
-              <img src="/donaanna/farming-4.jpg" alt="Dyr og jordliv i lunden" className="mt-[-2rem] h-64 w-full object-cover" />
-            </div>
-            <div className="self-center">
-              <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#bfdc71]">Regenerativ drift</p>
-              <h2 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">Troverdighet må kunne måles, ikke bare fortelles.</h2>
-              <p className="mt-5 text-lg leading-8 text-white/76">
-                Doña Anna bør bruke Olivia-data som bevisføring: parsellkart, vannstatus, oppgaver, høstedatoer, batcher og kvalitetstester. Det gjør siden mer moderne enn en vanlig gårdsfortelling.
-              </p>
+        <section id="traceability" className="border-y border-white/10 bg-[#111111] py-24">
+          <div className="mx-auto grid max-w-7xl gap-10 px-5 md:grid-cols-[0.95fr_1.05fr] md:px-8">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">{t.traceTitle}</p>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Fra jord til bord, dokumentert på flasken.</h2>
+              <p className="mt-6 text-lg leading-8 text-white/66">{t.traceText}</p>
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
                 {[
-                  [Sprout, 'Økologisk dyrking'],
-                  [Leaf, 'Biodiversitet'],
-                  [Droplets, 'Vannforvaltning'],
-                  [ThermometerSun, 'Klima og sensorikk'],
+                  [ScanLine, 'QR batch page'],
+                  [ShieldCheck, 'Lab certificate'],
+                  [BadgeCheck, 'Harvest window'],
+                  [Building2, 'Chef-ready story'],
                 ].map(([Icon, label]) => (
-                  <div key={label as string} className="flex items-center gap-3 border border-white/14 bg-white/6 p-4">
-                    <Icon size={22} className="text-[#bfdc71]" />
-                    <span className="font-semibold">{label as string}</span>
+                  <div key={label as string} className="flex items-center gap-3 border border-white/10 bg-black/24 p-4">
+                    <Icon size={20} className="text-[#d4af37]" />
+                    <span className="text-sm uppercase tracking-[0.16em] text-white/72">{label as string}</span>
                   </div>
                 ))}
               </div>
             </div>
+            <div className="border border-[#d4af37]/30 bg-black p-6">
+              <div className="flex items-center justify-between border-b border-white/10 pb-5">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#d4af37]">Bottle scan preview</p>
+                  <h3 className="mt-1 font-serif text-3xl">Verde Vivo · Batch 01</h3>
+                </div>
+                <QrCode className="text-[#d4af37]" size={34} />
+              </div>
+              <div className="grid gap-3 py-6 sm:grid-cols-2">
+                {[
+                  ['Parcel', signal.heroMetric],
+                  ['Harvest', signal.latestHarvestDate || 'October'],
+                  ['Variety', 'Changlot Real / estate blend'],
+                  ['Polyphenols', 'Lab value via QR'],
+                  ['Extraction', '<27°C mechanical'],
+                  ['Status', signal.isLive ? 'Live data' : 'Demo-ready'],
+                ].map(([label, value]) => (
+                  <div key={label} className="border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-[10px] uppercase tracking-[0.24em] text-[#d4af37]">{label}</p>
+                    <p className="mt-2 text-sm text-white/78">{value}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="border-t border-white/10 pt-5 text-sm leading-6 text-white/52">
+                Dette er salgsargumentet som forsvarer pris: en kokk kan vise gjesten nøyaktig hvor oljen kommer fra.
+              </p>
+            </div>
           </div>
         </section>
 
-        <section id="sporbarhet" className="mx-auto grid max-w-7xl gap-8 px-5 py-20 md:grid-cols-[0.95fr_1.05fr] md:px-8">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#7a8e24]">Webside + app</p>
-            <h2 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">Slik snakker donaanna.com og Olivia sammen.</h2>
-            <p className="mt-5 text-lg leading-8 text-[#575849]">
-              Nettsiden ligger nå som offentlig front i React-appen. Når Supabase er konfigurert, kan den hente nøkkeltall fra Olivia og vise dem som offentlig tillit: siste høst, aktive batcher og kommende arbeid.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <button onClick={onLogin} className="inline-flex h-12 items-center gap-2 bg-[#171812] px-5 font-semibold text-white">
-                Åpne Olivia OS <ArrowRight size={18} />
-              </button>
-              <a href="#kontakt" className="inline-flex h-12 items-center gap-2 border border-[#cbbd90] px-5 font-semibold">
-                B2B og kontakt
-              </a>
+        <section id="specs" className="mx-auto max-w-7xl px-5 py-24 md:px-8">
+          <div className="grid gap-10 md:grid-cols-[0.8fr_1.2fr]">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">B2B data</p>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">{t.specTitle}</h2>
+              <p className="mt-6 text-lg leading-8 text-white/60">
+                Kokker og distributører trenger fakta. Derfor bør hvert produkt ha teknisk ark, smaksnotater, format, prisnivå, batchnummer og labanalyse.
+              </p>
             </div>
-          </div>
-          <div className="border border-[#d8caa2] bg-[#fffdf5] p-5">
-            <div className="flex items-center justify-between border-b border-[#ded2ac] pb-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#9f7b20]">Live estate signal</p>
-                <h3 className="mt-1 text-2xl font-semibold">Doña Anna Trace</h3>
-              </div>
-              <QrCode className="text-[#171812]" />
-            </div>
-            <div className="grid gap-3 py-5 sm:grid-cols-2">
-              {[
-                [LineChart, 'Parseller i Olivia', formatNumber(signal.parcelCount)],
-                [BadgeCheck, 'Siste høst', signal.latestHarvestDate || 'Kommer'],
-                [Bot, 'Neste gårdsoppgave', signal.nextTask || 'Kommer'],
-                [ShieldCheck, 'Datakilde', signal.isLive ? 'Supabase live' : 'Demo/fallback'],
-              ].map(([Icon, label, value]) => (
-                <div key={label as string} className="border border-[#e5d9b4] bg-white p-4">
-                  <Icon size={20} className="text-[#7a8e24]" />
-                  <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-[#9f7b20]">{label as string}</p>
-                  <p className="mt-2 font-semibold">{value as string}</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {specs.map(([label, value]) => (
+                <div key={label} className="border border-white/10 bg-white/[0.035] p-5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#d4af37]">{label}</p>
+                  <p className="mt-3 text-white/76">{value}</p>
                 </div>
               ))}
             </div>
-            <p className="border-t border-[#ded2ac] pt-4 text-sm leading-6 text-[#626350]">
-              Neste steg er å la hver flaske få QR-kode til en offentlig batch-side: parsell, sort, høstedato, pressevindu, sensorisk profil og analyseverdier.
-            </p>
           </div>
         </section>
 
-        <section className="bg-[#efe7cf] py-20">
-          <div className="mx-auto max-w-7xl px-5 md:px-8">
-            <div className="max-w-3xl">
-              <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#7a8e24]">Kunnskapssenter</p>
-              <h2 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">Informasjon fra den gamle siden, pakket mer redaksjonelt.</h2>
-            </div>
-            <div className="mt-10 grid gap-5 md:grid-cols-3">
-              {knowledge.map(item => (
-                <article key={item.title} className="border border-[#d0c094] bg-[#fbf8ef]">
-                  <img src={item.image} alt={item.title} className="h-60 w-full object-cover" />
-                  <div className="p-5">
-                    <BookOpen size={20} className="text-[#9f7b20]" />
-                    <h3 className="mt-4 text-2xl font-semibold">{item.title}</h3>
-                    <p className="mt-3 leading-7 text-[#575849]">{item.text}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="etiketter" className="mx-auto max-w-7xl px-5 py-20 md:px-8">
-          <div className="grid gap-10 md:grid-cols-[0.8fr_1.2fr]">
-            <div>
-              <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#7a8e24]">Navn og etiketter</p>
-              <h2 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">Premium olje bør føles mer som parfyme enn gårdsbutikk.</h2>
-              <p className="mt-5 text-lg leading-8 text-[#575849]">
-                For Verde Vivo og Verde Alto går vi mot matt sort flaske, smal hvit bomullspapir-etikett, gullfolie, mye tomrom og QR-sporbarhet. Bordoliven kan samtidig få en varmere markedsidentitet.
-              </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {labelConcepts.map((concept, index) => (
-                <article key={concept.name} className="border border-[#d8caa2] bg-white p-4">
-                  <div className={`mx-auto flex h-72 max-w-[170px] flex-col justify-between border p-5 text-center ${index === 0 ? 'border-[#a9c23a] bg-[#172015] text-[#f2df91]' : index === 1 ? 'border-[#7d1f2c] bg-[#f7f0df] text-[#371519]' : 'border-[#e0b43d] bg-[#ffe49a] text-[#171812]'}`}>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.28em]">Doña Anna</p>
-                    <div>
-                      <p className="text-3xl font-semibold leading-none">{concept.name.split(' ')[0]}</p>
-                      <p className="mt-2 text-sm font-semibold">{concept.name.replace(concept.name.split(' ')[0], '').trim()}</p>
-                    </div>
-                    <p className="text-[10px] uppercase tracking-[0.2em]">Biar · Alicante · EVOO</p>
-                  </div>
-                  <h3 className="mt-5 text-xl font-semibold">{concept.name}</h3>
-                  <p className="mt-3 text-sm leading-6 text-[#575849]">{concept.strategy}</p>
-                  <p className="mt-3 text-sm"><strong>Palett:</strong> {concept.palette}</p>
-                  <p className="mt-1 text-sm"><strong>Flaske:</strong> {concept.bottle}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {luxuryMarks.map(mark => (
-              <article key={mark.name} className="border border-[#d8caa2] bg-white p-4">
-                <img src={mark.image} alt={mark.name} className="aspect-[3/2] w-full bg-[#0d100d] object-contain" />
-                <h3 className="mt-4 text-xl font-semibold">{mark.name}</h3>
-                <p className="mt-2 text-sm leading-6 text-[#575849]">{mark.use}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section id="kontakt" className="bg-[#171812] px-5 py-20 text-white md:px-8">
+        <section id="tasting" className="bg-[#f8f5ea] px-5 py-24 text-black md:px-8">
           <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[1fr_0.9fr]">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#f2df91]">B2B, presse og besøk</p>
-              <h2 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">Premium olje fra Alicante, med driftssystemet synlig bak kvaliteten.</h2>
-              <p className="mt-5 max-w-2xl text-lg leading-8 text-white/74">
-                Kontakt Doña Anna for forhandlerdialog, lansering, gårdsbesøk eller samarbeid. Kundeportal, B2B og batchsporing kan kobles videre mot Olivia når dere er klare.
+              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">Lead generation</p>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Bestill en eksklusiv smaksprøve for din restaurant.</h2>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-black/66">
+                Tasting kit bør inneholde Verde Vivo, Verde Alto, Mesa-bordoliven, produktark og QR-demo. Målet er ikke “kontakt oss”, men å få kokken til å smake.
               </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <a href="/labels/luxury/verde-vivo-luxury-label.svg" className="inline-flex items-center gap-2 border border-black/15 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em]">
+                  <FileText size={16} /> Produktark
+                </a>
+                <button onClick={onLogin} className="inline-flex items-center gap-2 border border-black/15 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em]">
+                  <Package size={16} /> B2B-login
+                </button>
+              </div>
             </div>
-            <form className="border border-white/14 bg-white/6 p-5" onSubmit={(event) => event.preventDefault()}>
-              <label className="block text-sm font-semibold text-white/78">Navn</label>
-              <input className="mt-2 h-12 w-full border border-white/14 bg-black/20 px-3 outline-none focus:border-[#f2df91]" />
-              <label className="mt-4 block text-sm font-semibold text-white/78">E-post</label>
-              <input type="email" className="mt-2 h-12 w-full border border-white/14 bg-black/20 px-3 outline-none focus:border-[#f2df91]" />
-              <label className="mt-4 block text-sm font-semibold text-white/78">Melding</label>
-              <textarea className="mt-2 h-28 w-full border border-white/14 bg-black/20 p-3 outline-none focus:border-[#f2df91]" />
-              <button className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-[#f2df91] px-5 font-semibold text-[#171812]">
-                Send forespørsel <ArrowRight size={18} />
+            <form className="border border-black/12 bg-white p-5 shadow-2xl shadow-black/10" onSubmit={(event) => event.preventDefault()}>
+              <label className="block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Restaurant / Company</label>
+              <input className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
+              <label className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Role</label>
+              <input placeholder="Chef / Buyer / Distributor" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
+              <label className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Email</label>
+              <input type="email" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
+              <label className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Delivery address</label>
+              <textarea className="mt-2 h-24 w-full border border-black/12 p-3 outline-none focus:border-[#d4af37]" />
+              <button className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-black px-5 text-xs font-bold uppercase tracking-[0.2em] text-white">
+                {t.cta} <ArrowRight size={17} />
               </button>
-              <p className="mt-4 text-sm text-white/58">info@donaanna.com · Biar, Alicante · donaanna.com</p>
             </form>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-[#ded2ac] bg-[#fbf8ef] px-5 py-8 md:px-8">
+      <footer className="border-t border-white/10 bg-[#0d0d0d] px-5 py-8 md:px-8">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <p className="font-semibold">Doña Anna · Premium økologisk olivenolje fra Biar</p>
-          <div className="flex gap-4 text-sm text-[#575849]">
-            <button onClick={onLogin}>Olivia OS</button>
-            <a href="https://b2b.donaanna.com">B2B Portal</a>
-            <a href="mailto:info@donaanna.com">Kontakt</a>
+          <p className="font-serif text-lg tracking-[0.18em]">DOÑA ANNA</p>
+          <div className="flex flex-wrap gap-4 text-xs uppercase tracking-[0.18em] text-white/54">
+            <button onClick={onLogin}>B2B Portal</button>
+            <button onClick={onAdminLogin}>Olivia OS</button>
+            <a href="mailto:info@donaanna.com">info@donaanna.com</a>
           </div>
         </div>
       </footer>
