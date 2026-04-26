@@ -67,42 +67,42 @@ const portfolio = [
     name: 'Verde Vivo',
     format: '250 ml · first early harvest',
     role: 'Finishing oil for fine dining',
-    label: '/labels/luxury/verde-vivo-luxury-label.svg',
+    label: '/labels/mockups/verde-vivo-bottle.svg',
     text: 'Høyeste polyfenolnivå, lavt utbytte, kraftig grønn fruktighet og lang pepperfinish.',
   },
   {
     name: 'Verde Alto',
     format: '250 ml / 500 ml · second early harvest',
     role: 'Premium daily finishing',
-    label: '/labels/finished/verde-alto-finished.svg',
+    label: '/labels/mockups/verde-alto-bottle.svg',
     text: 'Tidlig høstet og polyfenolsterk, men rundere. Den mest skalerbare premiumlinjen.',
   },
   {
     name: 'Raíz Antigua',
     format: '500 ml · old-tree estate selection',
     role: 'Limited allocation',
-    label: '/labels/luxury/raiz-antigua-luxury-label.svg',
+    label: '/labels/mockups/raiz-antigua-bottle.svg',
     text: 'Gamle trær, nummerert batch og høy gave-/restaurantverdi. Sortsdeles bare hvis data støtter det.',
   },
   {
     name: 'Monovarietal Collection',
     format: 'Genovesa · Gordal · Changlot Real · Picual',
     role: 'Tasting flight / sommelier set',
-    label: '/labels/finished/monovarietal-collection.svg',
+    label: '/labels/mockups/monovarietal-bottle.svg',
     text: 'Små batcher for smaking, opplæring og restauranter som vil fortelle sortshistorien.',
   },
   {
     name: 'Cocina Viva',
     format: '2 L / 5 L · chef format',
     role: 'Kitchen service',
-    label: '/labels/finished/cocina-viva.svg',
+    label: '/labels/mockups/cocina-viva-tin.svg',
     text: 'Mørk metallkanne eller bag-in-box for profesjonelle kjøkken. Estate traceable, praktisk format.',
   },
   {
     name: 'Mesa',
     format: 'Aceitunas de mesa',
     role: 'Spanish markets / restaurants',
-    label: '/labels/finished/mesa-aceitunas.svg',
+    label: '/labels/mockups/mesa-jar.svg',
     text: 'Bordoliven for grønnsaksmarkeder, barer og restauranter. Varmere markedsspråk, samme Doña Anna-kvalitet.',
   },
 ];
@@ -147,6 +147,34 @@ const livingTimeline = [
   ['18:00', 'QR-siden for flasken bygges: fra jord til bord, klar for kokken og gjesten.'],
 ];
 
+const knowledgeCards = [
+  {
+    title: 'Polyfenolens kraft',
+    kicker: 'Health position',
+    image: '/donaanna/polyphenols.jpg',
+    text: 'Tidlig høstet ekstra virgin olivenolje kan ha høyt innhold av polyfenoler som oleuropein og hydroksytyrosol. Det gir bitterhet, pepperfølelse og et tydeligere helseargument.',
+  },
+  {
+    title: 'Regenerativ drift',
+    kicker: 'Estate practice',
+    image: '/donaanna/regenerative-farming.jpg',
+    text: 'Dekkvekster, biodiversitet, jordliv og mer presis vannforvaltning bygger en gårdsfortelling som kokker og distributører faktisk kan bruke videre.',
+  },
+  {
+    title: 'Tidlig høsting',
+    kicker: 'Cosecha temprana',
+    image: '/donaanna/early-harvest.jpg',
+    text: 'Oktober-november gir lavere utbytte, høyere intensitet og en dyrere olje. Derfor blir Verde Vivo og Verde Alto tydelig delt i to styrkenivåer.',
+  },
+];
+
+const qualitySteps = [
+  ['01', 'Skånsom høsting', 'Oliven høstes når aromatikk, bitterhet og polyfenolpotensial er på sitt beste.'],
+  ['02', 'Rask pressing', 'Målet er kort vei fra tre til mølle, slik at friskhet, næringsstoffer og aroma bevares.'],
+  ['03', 'Kald ekstraksjon', 'Mekanisk ekstraksjon under 27°C beskytter polyfenoler og den grønne fruktigheten.'],
+  ['04', 'Sensorisk kontroll', 'Fruktighet, bitterhet, skarphet og balanse vurderes før batchen får sin rolle i porteføljen.'],
+];
+
 const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(value);
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
@@ -170,6 +198,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   const navLinks = [
     ['Estate', '#estate'],
     ['Portfolio', '#portfolio'],
+    ['Knowledge', '#knowledge'],
     ['Traceability', '#traceability'],
     ['Specs', '#specs'],
     ['Tasting kit', '#tasting'],
@@ -308,7 +337,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             {portfolio.map(item => (
               <article key={item.name} className="group border border-white/10 bg-white/[0.035] p-4 transition hover:border-[#d4af37]/50">
                 <div className="flex min-h-[360px] items-center justify-center bg-[#080808] p-5">
-                  <img src={item.label} alt={`${item.name} label`} className="max-h-[320px] w-full object-contain transition duration-500 group-hover:scale-[1.03]" />
+                  <img src={item.label} alt={`${item.name} produktmockup`} className="max-h-[320px] w-full object-contain transition duration-500 group-hover:scale-[1.03]" />
                 </div>
                 <div className="p-2 pt-5">
                   <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#d4af37]">{item.role}</p>
@@ -318,6 +347,57 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 </div>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section id="knowledge" className="border-y border-white/10 bg-[#f8f5ea] px-5 py-24 text-black md:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-12 grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">Knowledge center</p>
+                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Mer substans fra den gamle siden, løftet til 2026.</h2>
+              </div>
+              <p className="self-end text-lg leading-8 text-black/66">
+                Den gamle donaanna.com hadde sterke temaer: polyfenoler, regenerativ dyrking, tidlig høsting og kvalitetstesting. Nå blir dette en mer premium, B2B-vennlig del som forklarer hvorfor oljen kan prises høyere.
+              </p>
+            </div>
+            <div className="grid gap-5 lg:grid-cols-3">
+              {knowledgeCards.map(card => (
+                <article key={card.title} className="group overflow-hidden border border-black/10 bg-white">
+                  <div className="h-56 overflow-hidden bg-black">
+                    <img src={card.image} alt={card.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                  </div>
+                  <div className="p-6">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#8a6a19]">{card.kicker}</p>
+                    <h3 className="mt-3 font-serif text-3xl">{card.title}</h3>
+                    <p className="mt-4 leading-7 text-black/64">{card.text}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className="mt-10 grid gap-5 border border-black/10 bg-[#111111] p-5 text-white lg:grid-cols-[0.82fr_1.18fr]">
+              <div className="relative min-h-[360px] overflow-hidden">
+                <img src="/donaanna/testing.jpg" alt="Kvalitetstesting av olivenolje" className="absolute inset-0 h-full w-full object-cover opacity-72" />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.78))]" />
+                <div className="absolute bottom-0 p-6">
+                  <Sparkles className="text-[#d4af37]" size={26} />
+                  <h3 className="mt-4 font-serif text-4xl">Kvalitetsforskjellen</h3>
+                  <p className="mt-3 max-w-md leading-7 text-white/68">Fra gammel side: håndverk, rask pressing, kald ekstraksjon og sensorisk evaluering. Her gjort mer presist for restauranter og innkjøpere.</p>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {qualitySteps.map(([number, title, text], index) => (
+                  <div key={title} className="border border-white/10 bg-white/[0.04] p-5">
+                    <div className="flex items-center justify-between">
+                      <p className="font-serif text-3xl text-[#d4af37]">{number}</p>
+                      {index === 1 ? <Droplets size={22} className="text-[#d4af37]" /> : <BadgeCheck size={22} className="text-[#d4af37]" />}
+                    </div>
+                    <h4 className="mt-6 font-serif text-2xl">{title}</h4>
+                    <p className="mt-3 text-sm leading-6 text-white/62">{text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 

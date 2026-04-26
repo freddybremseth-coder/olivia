@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1300" viewBox="0 0 900 1300">
+  <rect width="900" height="1300" fill="#f8f0d7"/>
+  <ellipse cx="450" cy="1190" rx="250" ry="38" fill="#000" opacity=".18"/>
+  <rect x="310" y="110" width="280" height="120" rx="20" fill="#111"/>
+  <path d="M300 230 H600 L642 520 V1100 C642 1150 602 1190 552 1190 H348 C298 1190 258 1150 258 1100 V520Z" fill="#c2b56b" opacity=".32" stroke="#111" stroke-width="6"/>
+  <circle cx="450" cy="560" r="148" fill="#f8f0d7" stroke="#111" stroke-width="10"/>
+  <path d="M382 585 C352 535 388 490 450 482 C512 490 548 535 518 585 C488 632 412 632 382 585Z" fill="#111"/>
+  <text x="450" y="795" text-anchor="middle" font-family="Georgia, serif" font-size="36" fill="#111" letter-spacing="5">DOÑA ANNA</text>
+  <text x="450" y="925" text-anchor="middle" font-family="Georgia, serif" font-size="76" fill="#111">Mesa</text>
+  <text x="450" y="1015" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#5a4f36" letter-spacing="6">ACEITUNAS DE MESA</text>
+</svg>

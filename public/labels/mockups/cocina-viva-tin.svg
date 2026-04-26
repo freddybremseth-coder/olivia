@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1300" viewBox="0 0 900 1300">
+  <rect width="900" height="1300" fill="#0d0d0d"/>
+  <ellipse cx="450" cy="1190" rx="260" ry="38" fill="#000" opacity=".55"/>
+  <rect x="260" y="190" width="380" height="965" rx="30" fill="#202020" stroke="#c8a94a" stroke-width="8"/>
+  <rect x="320" y="90" width="260" height="140" rx="26" fill="#191919" stroke="#555" stroke-width="6"/>
+  <rect x="305" y="320" width="290" height="640" fill="none" stroke="#555" stroke-width="3"/>
+  <text x="450" y="410" text-anchor="middle" font-family="Georgia, serif" font-size="34" fill="#f8f5ea" letter-spacing="5">DOÑA ANNA</text>
+  <text x="450" y="650" text-anchor="middle" font-family="Georgia, serif" font-size="70" fill="#f8f5ea">Cocina</text>
+  <text x="450" y="735" text-anchor="middle" font-family="Georgia, serif" font-size="70" fill="#c8a94a">Viva</text>
+  <text x="450" y="860" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#f8f5ea" letter-spacing="6">CHEF FORMAT</text>
+  <text x="450" y="1015" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#c8a94a" letter-spacing="7">5 L</text>
+</svg>
