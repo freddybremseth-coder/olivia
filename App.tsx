@@ -1,6 +1,6 @@
 
 import React, { Suspense, lazy, useState, useEffect } from 'react';
-import LandingPage from './components/LandingPage';
+import LandingPage from './components/PublicB2BLandingPage';
 import LoginModal, { StoredUser } from './components/LoginModal';
 import ResetPasswordPage from './components/ResetPasswordPage';
 import { UserProfile, Language, Parcel } from './types';

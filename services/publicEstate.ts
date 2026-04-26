@@ -1,6 +1,3 @@
-import { fetchBatches, fetchParcels, fetchTasks } from './db';
-import { isSupabaseConfigured } from './supabaseClient';
-
 export interface PublicEstateSignal {
   isLive: boolean;
   parcelCount: number;
@@ -10,6 +7,12 @@ export interface PublicEstateSignal {
   nextTask?: string;
   heroMetric: string;
 }
+
+const hasPublicSupabaseConfig = Boolean(
+  import.meta.env.VITE_SUPABASE_URL &&
+  import.meta.env.VITE_SUPABASE_ANON_KEY &&
+  String(import.meta.env.VITE_SUPABASE_URL).startsWith('http')
+);
 
 export async function fetchPublicEstateSignal(): Promise<PublicEstateSignal> {
   const fallback: PublicEstateSignal = {
@@ -22,9 +25,10 @@ export async function fetchPublicEstateSignal(): Promise<PublicEstateSignal> {
     heroMetric: 'Biar, Alicante',
   };
 
-  if (!isSupabaseConfigured) return fallback;
+  if (!hasPublicSupabaseConfig) return fallback;
 
   try {
+    const { fetchBatches, fetchParcels, fetchTasks } = await import('./db');
     const [parcels, batches, tasks] = await Promise.all([
       fetchParcels(),
       fetchBatches(),

@@ -17,10 +17,11 @@ import {
 type CommerceTab = 'overview' | 'products' | 'customers' | 'orders' | 'invoices' | 'content';
 
 const products = [
-  { sku: 'DA-PC-250', name: 'Primera Cosecha No. 01', size: '250 ml', channel: 'Premium/B2B', stock: 420, price: '€18.90', status: 'Klar for lansering' },
-  { sku: 'DA-CB-500', name: 'Centenario de Biar', size: '500 ml', channel: 'Restaurant/Gave', stock: 180, price: '€29.00', status: 'Begrenset volum' },
-  { sku: 'DA-LA-500', name: 'Luz de Anna', size: '500 ml', channel: 'Retail', stock: 760, price: '€13.50', status: 'Standardlinje' },
-  { sku: 'DA-GP-250', name: 'Genovesa Pura', size: '250 ml', channel: 'Sortsolje', stock: 240, price: '€16.50', status: 'Sortsspesifikk' },
+  { sku: 'DA-VV-250', name: 'Verde Vivo', size: '250 ml', channel: 'Fine dining finishing', stock: 420, price: '€24.90', status: 'First early harvest' },
+  { sku: 'DA-VA-500', name: 'Verde Alto', size: '500 ml', channel: 'Restaurant/Retail premium', stock: 760, price: '€19.50', status: 'Second early harvest' },
+  { sku: 'DA-RA-500', name: 'Raíz Antigua', size: '500 ml', channel: 'Limited allocation', stock: 180, price: '€34.00', status: 'Old-tree estate selection' },
+  { sku: 'DA-CV-5L', name: 'Cocina Viva', size: '5 L', channel: 'Chef kitchen format', stock: 90, price: 'B2B quote', status: 'Traceable chef format' },
+  { sku: 'DA-ME-750', name: 'Mesa Aceitunas', size: '750 g', channel: 'Spanish markets/restaurants', stock: 520, price: 'B2B quote', status: 'Table olives' },
 ];
 
 const customers = [
@@ -30,9 +31,9 @@ const customers = [
 ];
 
 const orders = [
-  { no: 'DA-2026-0018', customer: 'Biar Gastro S.L.', items: '24 x Centenario', amount: '€696.00', status: 'Pakkes', next: 'Send sporingslenke' },
-  { no: 'DA-2026-0017', customer: 'Nordic Deli AS', items: '72 x Luz de Anna', amount: '€972.00', status: 'Tilbud', next: 'Godkjenn B2B-pris' },
-  { no: 'DA-2026-0016', customer: 'Olive Club Norway', items: '12 x Primera Cosecha', amount: '€226.80', status: 'Fakturert', next: 'Avventer betaling' },
+  { no: 'DA-2026-0018', customer: 'Biar Gastro S.L.', items: '24 x Verde Alto · 6 x Mesa', amount: '€468.00', status: 'Pakkes', next: 'Send traceability-link' },
+  { no: 'DA-2026-0017', customer: 'Nordic Deli AS', items: '72 x Verde Alto · 12 x Verde Vivo', amount: '€1 702.80', status: 'Tilbud', next: 'Godkjenn B2B-pris' },
+  { no: 'DA-2026-0016', customer: 'Restaurante Alicante', items: '2 x Cocina Viva 5 L', amount: 'B2B quote', status: 'Tasting kit', next: 'Følg opp kjøkkensjef' },
 ];
 
 const invoices = [
