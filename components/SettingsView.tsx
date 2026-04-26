@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Save, MapPin, Globe, CheckCircle2, Building2, Key, Eye, EyeOff, ExternalLink, Crosshair } from 'lucide-react';
+import { Save, MapPin, Globe, CheckCircle2, Building2, Key, Eye, EyeOff, ExternalLink, Crosshair, Activity, AlertTriangle, Loader2, RefreshCcw } from 'lucide-react';
 import { useTranslation } from '../services/i18nService';
 import { Language } from '../types';
 import { fetchSettings, saveSettings as dbSaveSettings } from '../services/db';
@@ -25,6 +25,29 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
   const [saved, setSaved] = useState(false);
   const [apiSaved, setApiSaved] = useState(false);
 
+  // AI health-check (calls /api/ai/health). Lets the user verify which keys
+  // are set in Vercel without opening DevTools.
+  type Health = { configured: boolean; ok: boolean; status?: number; error?: string };
+  const [health, setHealth] = useState<{ gemini: Health; anthropic: Health; openai: Health } | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+  const [healthMode, setHealthMode] = useState<'env' | 'probe'>('env');
+
+  const checkHealth = async (mode: 'env' | 'probe' = 'env') => {
+    setHealthLoading(true);
+    setHealthMode(mode);
+    try {
+      const res = await fetch(`/api/ai/health${mode === 'probe' ? '?probe=1' : ''}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setHealth(await res.json());
+    } catch (err: any) {
+      // eslint-disable-next-line no-console
+      console.error('[SettingsView] health check failed', err);
+      setHealth(null);
+    } finally {
+      setHealthLoading(false);
+    }
+  };
+
   useEffect(() => {
     // Load from Supabase, fall back to localStorage during transition
     fetchSettings().then(remote => {
@@ -46,6 +69,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
       gemini: localStorage.getItem('olivia_gemini_api_key') || '',
       claude: localStorage.getItem('olivia_claude_api_key') || ''
     });
+    // Cheap env-only health check on mount; user can hit "Sjekk live" for a real probe.
+    checkHealth('env');
   }, []);
 
   const handleSave = async () => {
@@ -234,6 +259,109 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
               </select>
             </div>
           </div>
+        </div>
+
+        {/* AI helsesjekk — viser hvilke nøkler som er satt i Vercel og om
+            de faktisk fungerer. Når Feltkonsulent / Beskjæringsekspert
+            feiler kan brukeren her se hvorfor. */}
+        <div className="glass rounded-3xl p-8 border border-white/10">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Activity size={18} className="text-green-400" /> AI-helsesjekk
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Sjekker om Gemini, Claude og OpenAI er riktig konfigurert i Vercel.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => checkHealth('env')}
+                disabled={healthLoading}
+                className="px-3 py-2 bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold rounded-xl border border-white/10 flex items-center gap-2"
+              >
+                {healthLoading && healthMode === 'env'
+                  ? <Loader2 size={12} className="animate-spin" />
+                  : <RefreshCcw size={12} />}
+                Nøkler
+              </button>
+              <button
+                onClick={() => checkHealth('probe')}
+                disabled={healthLoading}
+                className="px-3 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 text-xs font-bold rounded-xl border border-green-500/20 flex items-center gap-2"
+              >
+                {healthLoading && healthMode === 'probe'
+                  ? <Loader2 size={12} className="animate-spin" />
+                  : <Activity size={12} />}
+                Sjekk live
+              </button>
+            </div>
+          </div>
+
+          {!health && !healthLoading && (
+            <p className="text-xs text-slate-500 italic">Ingen helsedata. Klikk en av knappene over.</p>
+          )}
+
+          {health && (
+            <div className="space-y-3">
+              {(['gemini', 'anthropic', 'openai'] as const).map(provider => {
+                const h = health[provider];
+                const label = provider === 'gemini' ? 'Gemini (Google)'
+                  : provider === 'anthropic' ? 'Claude (Anthropic)'
+                  : 'OpenAI (ChatGPT)';
+                const envName = provider === 'gemini' ? 'GEMINI_API_KEY'
+                  : provider === 'anthropic' ? 'ANTHROPIC_API_KEY'
+                  : 'OPENAI_API_KEY';
+                return (
+                  <div key={provider}
+                    className={`rounded-2xl border p-4 flex items-start gap-3 ${
+                      h.ok ? 'border-green-500/30 bg-green-500/5'
+                        : h.configured ? 'border-amber-500/30 bg-amber-500/5'
+                        : 'border-red-500/30 bg-red-500/5'
+                    }`}>
+                    {h.ok
+                      ? <CheckCircle2 size={18} className="text-green-400 flex-shrink-0 mt-0.5" />
+                      : <AlertTriangle size={18} className={`flex-shrink-0 mt-0.5 ${h.configured ? 'text-amber-400' : 'text-red-400'}`} />}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-0.5">
+                        <p className="text-sm font-bold text-white">{label}</p>
+                        <span className={`text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full ${
+                          h.ok ? 'bg-green-500/15 text-green-400'
+                            : h.configured ? 'bg-amber-500/15 text-amber-400'
+                            : 'bg-red-500/15 text-red-400'
+                        }`}>
+                          {h.ok ? 'OK'
+                            : h.configured ? (healthMode === 'probe' ? 'FEIL' : 'KONFIGURERT')
+                            : 'MANGLER'}
+                        </span>
+                      </div>
+                      {!h.configured && (
+                        <p className="text-xs text-red-300">
+                          Sett <code className="bg-black/30 px-1.5 py-0.5 rounded text-red-200">{envName}</code> i
+                          Vercel → Settings → Environment Variables, og redeploy.
+                        </p>
+                      )}
+                      {h.configured && h.error && (
+                        <p className="text-xs text-amber-200 break-all">
+                          Status {h.status ?? '—'} · {h.error.slice(0, 200)}
+                        </p>
+                      )}
+                      {h.configured && h.ok && healthMode === 'probe' && (
+                        <p className="text-xs text-green-300">Nøkkelen er gyldig og kontoen svarer (HTTP {h.status}).</p>
+                      )}
+                      {h.configured && h.ok && healthMode === 'env' && (
+                        <p className="text-xs text-slate-400">Nøkkel funnet. Klikk "Sjekk live" for å bekrefte at den fungerer.</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              <p className="text-[10px] text-slate-500 italic mt-2">
+                Tips: "Sjekk live" sender 1 mini-forespørsel per leverandør (~$0.000003).
+                Hvis Claude/OpenAI er KONFIGURERT men gir FEIL, sjekk om kontoen har kreditt.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
