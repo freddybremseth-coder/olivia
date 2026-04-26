@@ -16,14 +16,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Sprout, TreePine, Layers, ListChecks, Wind, Thermometer, Droplets,
-  Brain, RefreshCcw, AlertCircle, MapPin, Wheat, TrendingUp, ChevronRight
+  Brain, RefreshCcw, AlertCircle, MapPin, Wheat, TrendingUp, ChevronRight,
+  TrendingDown, Coins, Wallet
 } from 'lucide-react';
-import { Batch, Parcel, Recipe, Task, HarvestRecord, Language } from '../types';
+import { Batch, Parcel, Recipe, Task, HarvestRecord, Language, FarmExpense, SubsidyIncome } from '../types';
 import {
   fetchBatches, upsertBatch,
   fetchTasks,
   fetchHarvests,
   fetchRecipes,
+  fetchExpenses,
+  fetchSubsidies,
 } from '../services/db';
 import { geminiService, FarmInsight } from '../services/geminiService';
 import { useTranslation } from '../services/i18nService';
@@ -51,6 +54,8 @@ const FarmOverview: React.FC<Props> = ({ language, weatherData, locationName, pa
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [harvests, setHarvests] = useState<HarvestRecord[]>([]);
+  const [expenses, setExpenses] = useState<FarmExpense[]>([]);
+  const [subsidies, setSubsidies] = useState<SubsidyIncome[]>([]);
   const [insights, setInsights] = useState<FarmInsight[]>([]);
   const [insightsLoading, setInsightsLoading] = useState(true);
 
@@ -62,12 +67,16 @@ const FarmOverview: React.FC<Props> = ({ language, weatherData, locationName, pa
       fetchRecipes(),
       fetchTasks(),
       fetchHarvests(),
-    ]).then(([b, r, ta, h]) => {
+      fetchExpenses(),
+      fetchSubsidies(),
+    ]).then(([b, r, ta, h, ex, su]) => {
       if (cancelled) return;
       setBatches(b);
       setRecipes(r);
       setTasks(ta);
       setHarvests(h);
+      setExpenses(ex);
+      setSubsidies(su);
     });
     return () => { cancelled = true; };
   }, []);
@@ -109,6 +118,19 @@ const FarmOverview: React.FC<Props> = ({ language, weatherData, locationName, pa
     const seasonKg = seasonHarvests.reduce((s, h) => s + h.kg, 0);
     const seasonRevenue = seasonHarvests.reduce((s, h) => s + h.kg * h.pricePerKg, 0);
 
+    // Resultat: Inntekter (salg + tilskudd) − Kostnader. Same season-filter
+    // semantics as harvests so the dashboard tells one consistent story.
+    const seasonExpenses = expenses
+      .filter(e => e.season === currentSeason)
+      .reduce((s, e) => s + e.amount, 0);
+    const seasonSubsidies = subsidies
+      .filter(su => su.season === currentSeason)
+      .reduce((s, su) => s + su.amount, 0);
+    const seasonNet = seasonRevenue + seasonSubsidies - seasonExpenses;
+    const profitMargin = (seasonRevenue + seasonSubsidies) > 0
+      ? (seasonNet / (seasonRevenue + seasonSubsidies)) * 100
+      : 0;
+
     const stageCounts = STAGES.map(stage => ({
       stage,
       count: activeBatches.filter(b => (b.currentStage ?? 'PLUKKING') === stage).length,
@@ -120,10 +142,11 @@ const FarmOverview: React.FC<Props> = ({ language, weatherData, locationName, pa
       openTasks: openTasks.length,
       overdueTasks: overdueTasks.length,
       seasonKg, seasonRevenue,
+      seasonExpenses, seasonSubsidies, seasonNet, profitMargin,
       stageCounts,
       currentSeason,
     };
-  }, [parcels, batches, tasks, harvests]);
+  }, [parcels, batches, tasks, harvests, expenses, subsidies]);
 
   const isSprayingSafe = weatherData?.current?.wind_speed_10m < 15;
 
@@ -216,6 +239,105 @@ const FarmOverview: React.FC<Props> = ({ language, weatherData, locationName, pa
         />
       </div>
 
+      {/* ── Resultat sesong (P&L) ─────────────────────────────────────── */}
+      <div className="glass rounded-3xl p-6 border border-white/10">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <Wallet size={18} className="text-green-400" /> Resultat sesong {kpi.currentSeason}
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Inntekter − kostnader basert på registrerte data
+            </p>
+          </div>
+          {onNavigate && (
+            <button onClick={() => onNavigate('economy')}
+              className="text-xs text-green-400 hover:text-green-300 flex items-center gap-1">
+              Detaljer <ChevronRight size={12} />
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div className="rounded-2xl bg-green-500/5 border border-green-500/20 p-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <TrendingUp size={14} className="text-green-400" />
+              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Salgsinntekt</p>
+            </div>
+            <p className="text-xl font-bold text-green-400">€{formatEur(kpi.seasonRevenue)}</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">{formatEur(kpi.seasonKg)} kg solgt</p>
+          </div>
+
+          <div className="rounded-2xl bg-blue-500/5 border border-blue-500/20 p-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Coins size={14} className="text-blue-400" />
+              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Tilskudd</p>
+            </div>
+            <p className="text-xl font-bold text-blue-400">€{formatEur(kpi.seasonSubsidies)}</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">PAC + andre</p>
+          </div>
+
+          <div className="rounded-2xl bg-red-500/5 border border-red-500/20 p-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <TrendingDown size={14} className="text-red-400" />
+              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Kostnader</p>
+            </div>
+            <p className="text-xl font-bold text-red-400">€{formatEur(kpi.seasonExpenses)}</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">Drift, lønn, materialer</p>
+          </div>
+
+          <div className={`rounded-2xl p-4 border ${
+            kpi.seasonNet >= 0
+              ? 'bg-emerald-500/10 border-emerald-500/30'
+              : 'bg-rose-500/10 border-rose-500/30'
+          }`}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Wallet size={14} className={kpi.seasonNet >= 0 ? 'text-emerald-400' : 'text-rose-400'} />
+              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Netto resultat</p>
+            </div>
+            <p className={`text-xl font-bold ${kpi.seasonNet >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+              {kpi.seasonNet >= 0 ? '+' : ''}€{formatEur(kpi.seasonNet)}
+            </p>
+            <p className="text-[10px] text-slate-500 mt-0.5">
+              Margin {kpi.profitMargin.toFixed(1)}%
+            </p>
+          </div>
+        </div>
+
+        {/* Visual P&L bar — green for income/subsidies, red for costs */}
+        {(kpi.seasonRevenue + kpi.seasonSubsidies + kpi.seasonExpenses) > 0 && (() => {
+          const total = kpi.seasonRevenue + kpi.seasonSubsidies + kpi.seasonExpenses;
+          const pctRev = (kpi.seasonRevenue / total) * 100;
+          const pctSub = (kpi.seasonSubsidies / total) * 100;
+          const pctCost = (kpi.seasonExpenses / total) * 100;
+          return (
+            <div className="space-y-1.5">
+              <div className="flex h-2 rounded-full overflow-hidden bg-white/5">
+                <div className="bg-green-500" style={{ width: `${pctRev}%` }} />
+                <div className="bg-blue-500" style={{ width: `${pctSub}%` }} />
+                <div className="bg-red-500" style={{ width: `${pctCost}%` }} />
+              </div>
+              <div className="flex justify-between text-[10px] text-slate-500">
+                <span>Salg {pctRev.toFixed(0)}%</span>
+                <span>Tilskudd {pctSub.toFixed(0)}%</span>
+                <span>Kostnader {pctCost.toFixed(0)}%</span>
+              </div>
+            </div>
+          );
+        })()}
+
+        {kpi.seasonRevenue === 0 && kpi.seasonExpenses === 0 && kpi.seasonSubsidies === 0 && (
+          <p className="text-xs text-slate-500 italic text-center py-2">
+            Ingen registrert økonomi-data for sesong {kpi.currentSeason} ennå.
+            {onNavigate && (
+              <button onClick={() => onNavigate('economy')} className="ml-1 text-green-400 hover:underline">
+                Legg inn under Økonomi.
+              </button>
+            )}
+          </p>
+        )}
+      </div>
+
       {/* ── Pipeline timeline (full width on mobile) ───────────────────── */}
       <BatchTimeline
         batches={batches}
@@ -227,7 +349,13 @@ const FarmOverview: React.FC<Props> = ({ language, weatherData, locationName, pa
 
       {/* ── Sesonghjul + Recent harvests + Weather ──────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Sesonghjul tasks={tasks} language={language} />
+        <Sesonghjul
+          tasks={tasks}
+          language={language}
+          lat={parcels[0]?.lat}
+          lon={parcels[0]?.lon}
+          locationName={locationName}
+        />
 
         {/* Recent harvests */}
         <div className="glass rounded-3xl p-6 border border-white/10">

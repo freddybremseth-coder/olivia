@@ -164,19 +164,32 @@ export class GeminiService {
     return new GoogleGenAI({ apiKey: this.getGeminiKey() });
   }
 
+  /**
+   * Vision call that returns the raw model text.
+   *
+   * Two important quirks that broke production previously:
+   *  - The Google REST API expects camelCase (`inlineData`, `mimeType`,
+   *    `responseMimeType`). Snake-case sometimes works, sometimes silently
+   *    returns empty content. Always send camelCase.
+   *  - Callers used to do `JSON.parse(text)` directly on the return. That
+   *    works for Gemini (clean JSON via `responseMimeType`) but blows up on
+   *    the Claude/OpenAI fallback because they often wrap output in
+   *    ```json fences. Use {@link callVisionJson} instead so `extractJson`
+   *    runs uniformly across all three providers.
+   */
   private async callGeminiVision(imagesBase64: string[], prompt: string): Promise<string> {
     return this.runWithFallback(
       async () => {
         const imageParts = imagesBase64.map(data => ({
-          inline_data: {
-            mime_type: data.startsWith('iVBOR') ? 'image/png' : 'image/jpeg',
+          inlineData: {
+            mimeType: data.startsWith('iVBOR') ? 'image/png' : 'image/jpeg',
             data,
           },
         }));
 
         const body = {
           contents: [{ parts: [...imageParts, { text: prompt }] }],
-          generationConfig: { response_mime_type: 'application/json' },
+          generationConfig: { responseMimeType: 'application/json' },
         };
 
         const url = this.useGeminiProxy()
@@ -201,10 +214,21 @@ export class GeminiService {
         return text;
       },
       prompt,
-      // Fallback returns raw text — callers of callGeminiVision parse JSON themselves.
+      // Fallback returns raw text — caller is responsible for tolerant JSON
+      // parsing (or use `callVisionJson` which does it for them).
       (text) => text,
       { json: true, images: imagesBase64 },
     );
+  }
+
+  /**
+   * Vision call that returns parsed JSON. Use this for any vision endpoint
+   * that expects a structured response — it tolerates markdown-wrapped
+   * fallback output from Claude/OpenAI.
+   */
+  private async callVisionJson<T>(imagesBase64: string[], prompt: string, fallback: T): Promise<T> {
+    const text = await this.callGeminiVision(imagesBase64, prompt);
+    return this.extractJson<T>(text, fallback);
   }
 
   async callClaude(prompt: string, model: string = DEFAULT_CLAUDE_MODEL): Promise<string> {
@@ -643,8 +667,7 @@ Bruk faglig ekspertise:
 - urgencyScore: 0=perfekt, 10=krev tiltak i dag
 - priority-felt: kun verdiene HØY, MIDDELS eller LAV
 - x/y: koordinater 0–100 i bildet`;
-    const text = await this.callGeminiVision(imagesBase64, prompt);
-    return JSON.parse(text);
+    return this.callVisionJson<ComprehensiveAnalysisResult>(imagesBase64, prompt, {} as ComprehensiveAnalysisResult);
   }
 
   async analyzeDrone(imagesBase64: string[], lang: string): Promise<DroneAnalysisResult> {
@@ -699,8 +722,7 @@ Regler:
 - x/y: koordinater 0–100 der kuttet er i bildet
 - Gi minst 3 og maks 8 kuttpunkter
 - recommendedDate: en dato i YYYY-MM-DD format`;
-    const text = await this.callGeminiVision([image], prompt);
-    return JSON.parse(text);
+    return this.callVisionJson<PruningPlan>([image], prompt, {} as PruningPlan);
   }
 
   async analyzeReceipt(base64Image: string): Promise<any> {
