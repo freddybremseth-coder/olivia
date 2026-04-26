@@ -112,10 +112,32 @@ const OPENAI_PROXY_URL       = '/api/ai/openai/v1/chat/completions';
 // Placeholder accepted by the SDK when we'll proxy and inject the real key
 const PROXY_PLACEHOLDER_KEY  = 'proxied';
 
-// Default fallback models — overridable per-call.
-const DEFAULT_CLAUDE_MODEL   = 'claude-sonnet-4-5-20250929';
+// Default fallback models — overridable per-call. Claude is tried in order:
+// if the first model is unavailable to the configured key (model-not-found,
+// permission_denied, etc.) the next is tried. This protects against model
+// renames/deprecations breaking production silently.
+const CLAUDE_MODEL_CHAIN     = [
+  'claude-sonnet-4-5-20250929',
+  'claude-3-5-sonnet-20241022',
+  'claude-3-5-haiku-20241022',
+];
+const DEFAULT_CLAUDE_MODEL   = CLAUDE_MODEL_CHAIN[0];
 const DEFAULT_OPENAI_MODEL   = 'gpt-4o-mini';
 const DEFAULT_OPENAI_VISION_MODEL = 'gpt-4o-mini';
+
+/**
+ * True when the error suggests the model itself is the problem (renamed,
+ * deprecated, not enabled for this key) rather than a transient network/auth
+ * issue. Used to drive automatic fallback through CLAUDE_MODEL_CHAIN.
+ */
+function isModelError(err: unknown): boolean {
+  const m = String((err as any)?.message || err || '').toLowerCase();
+  return m.includes('not_found_error')
+    || m.includes('model not found')
+    || m.includes('does not exist')
+    || m.includes('not available')
+    || m.includes('permission_denied');
+}
 
 /**
  * Detects "quota exhausted / rate limited / billing" responses across all
@@ -231,68 +253,97 @@ export class GeminiService {
     return this.extractJson<T>(text, fallback);
   }
 
-  async callClaude(prompt: string, model: string = DEFAULT_CLAUDE_MODEL): Promise<string> {
-    const useProxy = this.useClaudeProxy();
-    const url = useProxy ? ANTHROPIC_PROXY_URL : 'https://api.anthropic.com/v1/messages';
+  async callClaude(prompt: string, model?: string): Promise<string> {
+    const tryModel = async (m: string): Promise<string> => {
+      const useProxy = this.useClaudeProxy();
+      const url = useProxy ? ANTHROPIC_PROXY_URL : 'https://api.anthropic.com/v1/messages';
 
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01',
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+      };
+      if (!useProxy) {
+        headers['x-api-key'] = this.getClaudeKey()!;
+        headers['anthropic-dangerous-direct-browser-access'] = 'true';
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: m,
+          max_tokens: 4096,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error((err as { error?: { message?: string } }).error?.message || `Claude API feil: ${response.status}`);
+      }
+      const data = await response.json() as { content: Array<{ type: string; text: string }> };
+      return data.content[0]?.text || '';
     };
-    if (!useProxy) {
-      headers['x-api-key'] = this.getClaudeKey()!;
-      headers['anthropic-dangerous-direct-browser-access'] = 'true';
-    }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model,
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error((err as { error?: { message?: string } }).error?.message || `Claude API feil: ${response.status}`);
+    // If caller pinned a specific model, honour it. Otherwise walk the chain.
+    if (model) return tryModel(model);
+    let lastErr: any;
+    for (const m of CLAUDE_MODEL_CHAIN) {
+      try { return await tryModel(m); }
+      catch (e: any) {
+        lastErr = e;
+        if (!isModelError(e)) throw e; // auth/quota etc. — don't try more models
+        console.warn(`[geminiService] Claude model ${m} unavailable, trying next…`, e?.message);
+      }
     }
-    const data = await response.json() as { content: Array<{ type: string; text: string }> };
-    return data.content[0]?.text || '';
+    throw lastErr ?? new Error('Ingen Claude-modeller var tilgjengelige');
   }
 
   /** Vision call to Claude — used as fallback when Gemini quota is hit. */
-  private async callClaudeVision(imagesBase64: string[], prompt: string, model: string = DEFAULT_CLAUDE_MODEL): Promise<string> {
-    const useProxy = this.useClaudeProxy();
-    const url = useProxy ? ANTHROPIC_PROXY_URL : 'https://api.anthropic.com/v1/messages';
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01',
+  private async callClaudeVision(imagesBase64: string[], prompt: string, model?: string): Promise<string> {
+    const tryModel = async (m: string): Promise<string> => {
+      const useProxy = this.useClaudeProxy();
+      const url = useProxy ? ANTHROPIC_PROXY_URL : 'https://api.anthropic.com/v1/messages';
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+      };
+      if (!useProxy) {
+        headers['x-api-key'] = this.getClaudeKey()!;
+        headers['anthropic-dangerous-direct-browser-access'] = 'true';
+      }
+      const content: any[] = imagesBase64.map(data => ({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: data.startsWith('iVBOR') ? 'image/png' : 'image/jpeg',
+          data,
+        },
+      }));
+      content.push({ type: 'text', text: prompt });
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ model: m, max_tokens: 4096, messages: [{ role: 'user', content }] }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error((err as { error?: { message?: string } }).error?.message || `Claude vision: HTTP ${response.status}`);
+      }
+      const data = await response.json() as { content: Array<{ type: string; text: string }> };
+      return data.content[0]?.text || '';
     };
-    if (!useProxy) {
-      headers['x-api-key'] = this.getClaudeKey()!;
-      headers['anthropic-dangerous-direct-browser-access'] = 'true';
+
+    if (model) return tryModel(model);
+    let lastErr: any;
+    for (const m of CLAUDE_MODEL_CHAIN) {
+      try { return await tryModel(m); }
+      catch (e: any) {
+        lastErr = e;
+        if (!isModelError(e)) throw e;
+        console.warn(`[geminiService] Claude vision model ${m} unavailable, trying next…`, e?.message);
+      }
     }
-    const content: any[] = imagesBase64.map(data => ({
-      type: 'image',
-      source: {
-        type: 'base64',
-        media_type: data.startsWith('iVBOR') ? 'image/png' : 'image/jpeg',
-        data,
-      },
-    }));
-    content.push({ type: 'text', text: prompt });
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ model, max_tokens: 4096, messages: [{ role: 'user', content }] }),
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error((err as { error?: { message?: string } }).error?.message || `Claude vision: HTTP ${response.status}`);
-    }
-    const data = await response.json() as { content: Array<{ type: string; text: string }> };
-    return data.content[0]?.text || '';
+    throw lastErr ?? new Error('Ingen Claude-vision-modeller var tilgjengelige');
   }
 
   /** Text call to OpenAI Chat Completions — second-tier fallback. */
@@ -372,6 +423,12 @@ export class GeminiService {
    * Run a Gemini call; on quota errors, fall back to Claude, then OpenAI.
    * Real errors (auth, bad request) are re-thrown unchanged.
    *
+   * Captures the *specific* failure reason from each provider so the final
+   * error message can tell the user (or admin) exactly what to fix — e.g.
+   * "ANTHROPIC_API_KEY is not configured" vs "credit balance too low" vs
+   * "model not found". Generic "all three failed" messages were unhelpful
+   * because they hid the real problem.
+   *
    * @param geminiFn      The original Gemini call. Returns parsed result T.
    * @param fallbackPrompt Plain-text prompt for the fallback LLMs (no Gemini schemas).
    * @param parser        Parses the fallback LLM's text response into T.
@@ -384,38 +441,62 @@ export class GeminiService {
     parser: (text: string) => T,
     opts: { json?: boolean; images?: string[] } = {},
   ): Promise<T> {
+    let geminiErrMsg = '';
     try {
       return await geminiFn();
     } catch (e: any) {
+      geminiErrMsg = e?.message || String(e);
       if (!isQuotaError(e)) throw e;
-      console.warn('[geminiService] Gemini quota/rate-limit hit, attempting Claude fallback…', e?.message);
-
-      const promptForFallback = opts.json
-        ? `${fallbackPrompt}\n\nVIKTIG: Returner KUN gyldig JSON, uten markdown-koding eller annen tekst rundt.`
-        : fallbackPrompt;
-
-      // Tier 1: Claude
-      try {
-        const text = opts.images?.length
-          ? await this.callClaudeVision(opts.images, promptForFallback)
-          : await this.callClaude(promptForFallback);
-        return parser(text);
-      } catch (claudeErr: any) {
-        console.warn('[geminiService] Claude fallback failed, trying OpenAI…', claudeErr?.message);
-      }
-
-      // Tier 2: OpenAI
-      try {
-        const text = opts.images?.length
-          ? await this.callOpenAIVision(opts.images, promptForFallback)
-          : await this.callOpenAI(promptForFallback, DEFAULT_OPENAI_MODEL, !!opts.json);
-        return parser(text);
-      } catch (openaiErr: any) {
-        console.error('[geminiService] OpenAI fallback also failed', openaiErr?.message);
-      }
-
-      throw new Error('AI-tjenester er midlertidig utilgjengelige (Gemini-kvote oppbrukt, og både Claude og OpenAI feilet). Prøv igjen senere eller kontakt administrator.');
+      console.warn('[geminiService] Gemini quota/rate-limit hit, attempting Claude fallback…', geminiErrMsg);
     }
+
+    const promptForFallback = opts.json
+      ? `${fallbackPrompt}\n\nVIKTIG: Returner KUN gyldig JSON, uten markdown-koding eller annen tekst rundt.`
+      : fallbackPrompt;
+
+    // Tier 1: Claude
+    let claudeErrMsg = '';
+    try {
+      const text = opts.images?.length
+        ? await this.callClaudeVision(opts.images, promptForFallback)
+        : await this.callClaude(promptForFallback);
+      return parser(text);
+    } catch (claudeErr: any) {
+      claudeErrMsg = claudeErr?.message || String(claudeErr);
+      console.warn('[geminiService] Claude fallback failed, trying OpenAI…', claudeErrMsg);
+    }
+
+    // Tier 2: OpenAI
+    let openaiErrMsg = '';
+    try {
+      const text = opts.images?.length
+        ? await this.callOpenAIVision(opts.images, promptForFallback)
+        : await this.callOpenAI(promptForFallback, DEFAULT_OPENAI_MODEL, !!opts.json);
+      return parser(text);
+    } catch (openaiErr: any) {
+      openaiErrMsg = openaiErr?.message || String(openaiErr);
+      console.error('[geminiService] OpenAI fallback also failed', openaiErrMsg);
+    }
+
+    // Build a user-actionable error. Translate the most common known causes
+    // into Norwegian so the user knows what to do without opening DevTools.
+    const explain = (msg: string): string => {
+      const m = msg.toLowerCase();
+      if (m.includes('not configured')) return `Mangler API-nøkkel i Vercel (${msg})`;
+      if (m.includes('insufficient') || m.includes('credit') || m.includes('billing')) return `Kontoen er tom eller uten kreditt (${msg})`;
+      if (m.includes('quota') || m.includes('exhausted') || m.includes('429') || m.includes('rate')) return `Kvote/rate-limit nådd (${msg})`;
+      if (m.includes('not_found_error') || m.includes('model')) return `Ugyldig modell-navn (${msg})`;
+      if (m.includes('401') || m.includes('unauthor')) return `Ugyldig API-nøkkel (${msg})`;
+      return msg || 'ukjent feil';
+    };
+
+    throw new Error(
+      'AI-analyse feilet for alle tre leverandører:\n' +
+      `• Gemini: ${explain(geminiErrMsg)}\n` +
+      `• Claude: ${explain(claudeErrMsg)}\n` +
+      `• OpenAI: ${explain(openaiErrMsg)}\n\n` +
+      'Sjekk /api/ai/health for status, eller åpne Innstillinger → AI-helsesjekk.',
+    );
   }
 
   private async generateText(prompt: string): Promise<string> {
