@@ -18,6 +18,13 @@ interface Props {
   tasks: Task[];
   language: Language;
   size?: number;
+  /** Lat/lon for the user's farm. Used to pick a region-specific harvest
+   *  calendar. Defaults to Biar (inland Alicante) which is the app's current
+   *  primary user. Andalucía and northern regions get their own calendars. */
+  lat?: number;
+  lon?: number;
+  /** Optional explicit region label for the panel header (e.g. "Biar, Spain"). */
+  locationName?: string;
 }
 
 interface MonthInfo {
@@ -29,32 +36,153 @@ interface MonthInfo {
   bg: string;             // hex for SVG fill
 }
 
-const MONTHS_NO: MonthInfo[] = [
-  { index: 0,  label: 'Jan', full: 'Januar',    color: 'text-sky-300',     bg: '#0ea5e9',
-    activities: ['Vinterbeskjæring', 'Verktøy-vedlikehold', 'Planlegging av sesong'] },
-  { index: 1,  label: 'Feb', full: 'Februar',   color: 'text-sky-200',     bg: '#38bdf8',
-    activities: ['Beskjæring av eldre trær', 'Kalking', 'Bestilling av planter'] },
-  { index: 2,  label: 'Mar', full: 'Mars',      color: 'text-emerald-300', bg: '#10b981',
-    activities: ['Avslutt beskjæring', 'Første gjødsling', 'Plantingsvindu'] },
-  { index: 3,  label: 'Apr', full: 'April',     color: 'text-emerald-300', bg: '#22c55e',
-    activities: ['Knoppdannelse', 'Sjekk vanning', 'Forebygg flueangrep'] },
-  { index: 4,  label: 'Mai', full: 'Mai',       color: 'text-lime-300',    bg: '#84cc16',
-    activities: ['Blomstring', 'Pollineringskontroll', 'Ugrasbekjempelse'] },
-  { index: 5,  label: 'Jun', full: 'Juni',      color: 'text-yellow-300',  bg: '#eab308',
-    activities: ['Frukt-set', 'Vanning ramper opp', 'Sommerbeskjæring (lett)'] },
-  { index: 6,  label: 'Jul', full: 'Juli',      color: 'text-amber-300',   bg: '#f59e0b',
-    activities: ['Vekstfase', 'Olivenflue-feller settes ut', 'Daglig vanning'] },
-  { index: 7,  label: 'Aug', full: 'August',    color: 'text-orange-300',  bg: '#f97316',
-    activities: ['Maks vannbehov', 'Sjekk for skadedyr', 'Forbered innhøstings­utstyr'] },
-  { index: 8,  label: 'Sep', full: 'September', color: 'text-orange-400',  bg: '#fb923c',
-    activities: ['Tidlig innhøsting (grønne oliven)', 'Forbered batch-tønner', 'Salt-innkjøp'] },
-  { index: 9,  label: 'Okt', full: 'Oktober',   color: 'text-rose-300',    bg: '#ef4444',
-    activities: ['Hovedinnhøsting starter', 'Lake-prosess for bordoliven', 'Press til olje'] },
-  { index: 10, label: 'Nov', full: 'November',  color: 'text-rose-400',    bg: '#dc2626',
-    activities: ['Sluttføring av innhøsting', 'Olje-tapping', 'Skattepapirer (Spania)'] },
-  { index: 11, label: 'Des', full: 'Desember',  color: 'text-purple-300',  bg: '#a855f7',
-    activities: ['Avslutning av sesong', 'Salgskampanjer', 'Start vinterbeskjæring'] },
+type RegionId = 'alicante_inland' | 'andalucia' | 'italy_north' | 'generic_med';
+
+interface RegionProfile {
+  id: RegionId;
+  label: string;
+  /** Months that count as "main harvest" — used for the panel subtitle. */
+  harvestMonths: number[];
+  /** Activities indexed by month (0–11). */
+  months: string[][];
+}
+
+/**
+ * Region detection. Olives have wildly different harvest windows:
+ *  - Inland Alicante / Murcia (Biar etc.):  late Nov → end of Jan
+ *  - Andalucía (Jaén, Córdoba):              late Oct → mid Dec
+ *  - Italy (Toscana, Puglia):                Oct → mid Dec
+ *
+ * The app's primary user farms in Biar (38.6°N, -0.77°E) so that's the
+ * default when lat/lon are missing.
+ */
+function detectRegion(lat?: number, lon?: number): RegionId {
+  if (lat == null || lon == null) return 'alicante_inland';
+  // Andalucía: roughly south-west Spain
+  if (lat < 38.3 && lon < -2.5) return 'andalucia';
+  // Italy: east of ~6°E and north of ~40°N
+  if (lon > 6 && lat > 40) return 'italy_north';
+  // Levante / Alicante / Murcia / inland Spain
+  if (lat >= 37.5 && lat <= 40 && lon >= -2 && lon <= 1) return 'alicante_inland';
+  return 'generic_med';
+}
+
+const MONTH_META: Pick<MonthInfo, 'label' | 'full' | 'color' | 'bg'>[] = [
+  { label: 'Jan', full: 'Januar',    color: 'text-sky-300',     bg: '#0ea5e9' },
+  { label: 'Feb', full: 'Februar',   color: 'text-sky-200',     bg: '#38bdf8' },
+  { label: 'Mar', full: 'Mars',      color: 'text-emerald-300', bg: '#10b981' },
+  { label: 'Apr', full: 'April',     color: 'text-emerald-300', bg: '#22c55e' },
+  { label: 'Mai', full: 'Mai',       color: 'text-lime-300',    bg: '#84cc16' },
+  { label: 'Jun', full: 'Juni',      color: 'text-yellow-300',  bg: '#eab308' },
+  { label: 'Jul', full: 'Juli',      color: 'text-amber-300',   bg: '#f59e0b' },
+  { label: 'Aug', full: 'August',    color: 'text-orange-300',  bg: '#f97316' },
+  { label: 'Sep', full: 'September', color: 'text-orange-400',  bg: '#fb923c' },
+  { label: 'Okt', full: 'Oktober',   color: 'text-rose-300',    bg: '#ef4444' },
+  { label: 'Nov', full: 'November',  color: 'text-rose-400',    bg: '#dc2626' },
+  { label: 'Des', full: 'Desember',  color: 'text-purple-300',  bg: '#a855f7' },
 ];
+
+const REGIONS: Record<RegionId, RegionProfile> = {
+  alicante_inland: {
+    id: 'alicante_inland',
+    label: 'Inland Alicante / Murcia',
+    harvestMonths: [10, 11, 0],
+    months: [
+      // Jan
+      ['HOVEDINNHØSTING avsluttes', 'Vinterbeskjæring starter', 'Olje-tapping'],
+      // Feb
+      ['Vinterbeskjæring fortsetter', 'Verktøy-vedlikehold', 'Planlegging av sesong'],
+      // Mar
+      ['Avslutt beskjæring', 'Første gjødsling', 'Plantingsvindu'],
+      // Apr
+      ['Knoppdannelse', 'Sjekk vanning', 'Forebygg flueangrep'],
+      // Mai
+      ['Blomstring', 'Pollineringskontroll', 'Ugrasbekjempelse'],
+      // Jun
+      ['Frukt-set', 'Vanning ramper opp', 'Lett sommerbeskjæring'],
+      // Jul
+      ['Vekstfase', 'Olivenflue-feller settes ut', 'Daglig vanning'],
+      // Aug
+      ['Maks vannbehov', 'Sjekk for skadedyr', 'Forbered innhøstings­utstyr'],
+      // Sep
+      ['Forbered batch-tønner', 'Salt-innkjøp', 'Inspeksjon og siste gjødsling'],
+      // Okt
+      ['Forbered innhøsting', 'Lake-prosess klargjøres', 'Test-modning av frukten'],
+      // Nov
+      ['HOVEDINNHØSTING starter (slutten av nov)', 'Bordoliven til lake', 'Press til olje'],
+      // Des
+      ['HOVEDINNHØSTING pågår', 'Olje-tapping', 'Skattepapirer (Spania)'],
+    ],
+  },
+  andalucia: {
+    id: 'andalucia',
+    label: 'Andalucía',
+    harvestMonths: [9, 10, 11],
+    months: [
+      ['Vinterbeskjæring', 'Verktøy-vedlikehold', 'Planlegging av sesong'],
+      ['Beskjæring av eldre trær', 'Kalking', 'Bestilling av planter'],
+      ['Avslutt beskjæring', 'Første gjødsling', 'Plantingsvindu'],
+      ['Knoppdannelse', 'Sjekk vanning', 'Forebygg flueangrep'],
+      ['Blomstring', 'Pollineringskontroll', 'Ugrasbekjempelse'],
+      ['Frukt-set', 'Vanning ramper opp', 'Lett sommerbeskjæring'],
+      ['Vekstfase', 'Olivenflue-feller settes ut', 'Daglig vanning'],
+      ['Maks vannbehov', 'Sjekk for skadedyr', 'Forbered innhøstings­utstyr'],
+      ['Tidlig innhøsting (grønne oliven)', 'Forbered batch-tønner', 'Salt-innkjøp'],
+      ['HOVEDINNHØSTING starter', 'Lake-prosess for bordoliven', 'Press til olje'],
+      ['Hovedinnhøsting fortsetter', 'Olje-tapping', 'Skattepapirer (Spania)'],
+      ['Sluttføring av innhøsting', 'Salgskampanjer', 'Start vinterbeskjæring'],
+    ],
+  },
+  italy_north: {
+    id: 'italy_north',
+    label: 'Italia (Toscana / nord)',
+    harvestMonths: [9, 10],
+    months: [
+      ['Vinterbeskjæring', 'Verktøy-vedlikehold', 'Planlegging av sesong'],
+      ['Beskjæring av eldre trær', 'Kalking', 'Bestilling av planter'],
+      ['Avslutt beskjæring', 'Første gjødsling', 'Plantingsvindu'],
+      ['Knoppdannelse', 'Sjekk vanning', 'Forebygg flueangrep'],
+      ['Blomstring (sent)', 'Pollineringskontroll', 'Ugrasbekjempelse'],
+      ['Frukt-set', 'Vanning starter', 'Lett sommerbeskjæring'],
+      ['Vekstfase', 'Olivenflue-feller', 'Vanning'],
+      ['Vekstfase fortsetter', 'Sjekk for skadedyr', 'Forbered innhøstings­utstyr'],
+      ['Tidlig innhøsting starter', 'Forbered tønner', 'Salt-innkjøp'],
+      ['HOVEDINNHØSTING (Toscana)', 'Press til ekstra virgin olje', 'Lake-prosess'],
+      ['Sluttføring av innhøsting', 'Olje-tapping', 'Salgskampanjer'],
+      ['Avslutning av sesong', 'Vinterbeskjæring starter', 'Skatt og papirarbeid'],
+    ],
+  },
+  generic_med: {
+    id: 'generic_med',
+    label: 'Middelhavet (generisk)',
+    harvestMonths: [9, 10, 11],
+    months: [
+      ['Vinterbeskjæring', 'Verktøy-vedlikehold', 'Planlegging av sesong'],
+      ['Beskjæring av eldre trær', 'Kalking', 'Bestilling av planter'],
+      ['Avslutt beskjæring', 'Første gjødsling', 'Plantingsvindu'],
+      ['Knoppdannelse', 'Sjekk vanning', 'Forebygg flueangrep'],
+      ['Blomstring', 'Pollineringskontroll', 'Ugrasbekjempelse'],
+      ['Frukt-set', 'Vanning ramper opp', 'Lett sommerbeskjæring'],
+      ['Vekstfase', 'Olivenflue-feller settes ut', 'Daglig vanning'],
+      ['Maks vannbehov', 'Sjekk for skadedyr', 'Forbered innhøstings­utstyr'],
+      ['Tidlig innhøsting', 'Forbered batch-tønner', 'Salt-innkjøp'],
+      ['HOVEDINNHØSTING', 'Lake-prosess for bordoliven', 'Press til olje'],
+      ['Sluttføring av innhøsting', 'Olje-tapping', 'Salgskampanjer'],
+      ['Avslutning av sesong', 'Vinterbeskjæring starter', 'Skatt og papirarbeid'],
+    ],
+  },
+};
+
+const HARVEST_LABEL: Record<RegionId, string> = {
+  alicante_inland: 'Hovedinnhøsting: slutten av nov → januar',
+  andalucia:       'Hovedinnhøsting: oktober → desember',
+  italy_north:     'Hovedinnhøsting: oktober → november',
+  generic_med:     'Hovedinnhøsting: oktober → desember',
+};
+
+function buildMonths(region: RegionProfile): MonthInfo[] {
+  return MONTH_META.map((meta, i) => ({ index: i, ...meta, activities: region.months[i] }));
+}
 
 const polar = (cx: number, cy: number, r: number, deg: number) => {
   const rad = (deg - 90) * Math.PI / 180;
@@ -76,13 +204,18 @@ const wedgePath = (cx: number, cy: number, rOuter: number, rInner: number, start
   ].join(' ');
 };
 
-const Sesonghjul: React.FC<Props> = ({ tasks, language, size = 320 }) => {
+const Sesonghjul: React.FC<Props> = ({ tasks, language, size = 320, lat, lon, locationName }) => {
   // Future: i18n the activity strings. For now Norwegian-only matches the rest of the app.
   void useTranslation(language);
 
   const today = useMemo(() => new Date(), []);
   const currentMonth = today.getMonth();
   const [selected, setSelected] = useState<number>(currentMonth);
+
+  // Region-aware activity calendar. Recomputed only when lat/lon change.
+  const region = useMemo(() => REGIONS[detectRegion(lat, lon)], [lat, lon]);
+  const MONTHS_NO = useMemo(() => buildMonths(region), [region]);
+  const harvestNote = HARVEST_LABEL[region.id];
 
   // Group tasks by month based on dueDate
   const tasksByMonth = useMemo(() => {
@@ -119,8 +252,11 @@ const Sesonghjul: React.FC<Props> = ({ tasks, language, size = 320 }) => {
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <CalendarDays size={18} className="text-green-400" /> Sesonghjul
           </h3>
+          <p className="text-[11px] text-green-300/80 mt-0.5">
+            {locationName ? `${locationName} · ` : ''}{harvestNote}
+          </p>
           <p className="text-xs text-slate-500 mt-0.5">
-            Olivenårets rytme · {totalOpenTasks} åpne oppgaver
+            {totalOpenTasks} åpne oppgaver
             {overdueTasks > 0 && (
               <span className="ml-2 text-red-400">· {overdueTasks} forfalt</span>
             )}
@@ -142,18 +278,27 @@ const Sesonghjul: React.FC<Props> = ({ tasks, language, size = 320 }) => {
             const end = start + wedgeDeg;
             const isCurrent = month.index === currentMonth;
             const isSelected = month.index === selected;
+            const isHarvest = region.harvestMonths.includes(month.index);
             const taskCount = (tasksByMonth[month.index] ?? []).length;
             const labelPos = polar(cx, cy, (rOuter + rInner) / 2, start + wedgeDeg / 2);
             const dotPos = polar(cx, cy, rOuter - 14, start + wedgeDeg / 2);
+            // Harvest months get a stronger fill so the user can see their
+            // harvest window at a glance regardless of which month is selected.
+            const baseOpacity = isSelected ? 0.55 : isCurrent ? 0.32 : isHarvest ? 0.28 : 0.14;
+            const strokeColor = isSelected
+              ? '#22c55e'
+              : isHarvest
+                ? 'rgba(251, 146, 60, 0.55)'
+                : 'rgba(255,255,255,0.08)';
 
             return (
               <g key={month.index} onClick={() => setSelected(month.index)} style={{ cursor: 'pointer' }}>
                 <path
                   d={wedgePath(cx, cy, rOuter, rInner, start, end)}
                   fill={month.bg}
-                  fillOpacity={isSelected ? 0.55 : isCurrent ? 0.32 : 0.14}
-                  stroke={isSelected ? '#22c55e' : 'rgba(255,255,255,0.08)'}
-                  strokeWidth={isSelected ? 2 : 1}
+                  fillOpacity={baseOpacity}
+                  stroke={strokeColor}
+                  strokeWidth={isSelected ? 2 : isHarvest ? 1.5 : 1}
                   className="transition-all"
                 />
                 <text
@@ -162,8 +307,8 @@ const Sesonghjul: React.FC<Props> = ({ tasks, language, size = 320 }) => {
                   textAnchor="middle"
                   dominantBaseline="middle"
                   fontSize={11}
-                  fontWeight={isCurrent || isSelected ? 700 : 500}
-                  fill={isSelected ? '#fff' : isCurrent ? '#fff' : 'rgba(226,232,240,0.85)'}
+                  fontWeight={isCurrent || isSelected || isHarvest ? 700 : 500}
+                  fill={isSelected ? '#fff' : isCurrent ? '#fff' : isHarvest ? '#fef3c7' : 'rgba(226,232,240,0.85)'}
                   style={{ pointerEvents: 'none' }}
                 >
                   {month.label}
