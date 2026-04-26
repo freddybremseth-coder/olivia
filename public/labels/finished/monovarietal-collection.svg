@@ -1,10 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="1500" viewBox="0 0 760 1500">
   <rect width="760" height="1500" fill="#0b0d0b"/>
   <rect x="145" y="70" width="470" height="1360" fill="#f8f5ea"/>
+  <rect x="145" y="70" width="118" height="1360" fill="#172018"/>
+  <rect x="263" y="70" width="118" height="1360" fill="#6e2430"/>
+  <rect x="381" y="70" width="118" height="1360" fill="#c8a94a"/>
+  <rect x="499" y="70" width="116" height="1360" fill="#f8f5ea"/>
+  <rect x="175" y="100" width="410" height="1300" fill="#f8f5ea"/>
   <text x="380" y="210" text-anchor="middle" font-family="Georgia, serif" font-size="48" fill="#0b0d0b" letter-spacing="8">DOÑA ANNA</text>
-  <text x="380" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#c8a94a" letter-spacing="8">MONOVARIETAL</text>
+  <text x="380" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#6e2430" letter-spacing="8">MONOVARIETAL</text>
   <text x="380" y="565" text-anchor="middle" font-family="Georgia, serif" font-size="68" fill="#0b0d0b">Collection</text>
-  <line x1="270" y1="650" x2="490" y2="650" stroke="#c8a94a" stroke-width="4"/>
+  <line x1="270" y1="650" x2="490" y2="650" stroke="#6e2430" stroke-width="4"/>
   <text x="380" y="750" text-anchor="middle" font-family="Arial, sans-serif" font-size="23" fill="#0b0d0b" letter-spacing="5">GENOVESA</text>
   <text x="380" y="815" text-anchor="middle" font-family="Arial, sans-serif" font-size="23" fill="#0b0d0b" letter-spacing="5">GORDAL</text>
   <text x="380" y="880" text-anchor="middle" font-family="Arial, sans-serif" font-size="23" fill="#0b0d0b" letter-spacing="5">CHANGLOT REAL</text>

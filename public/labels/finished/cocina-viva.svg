@@ -1,13 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="1500" viewBox="0 0 760 1500">
-  <rect width="760" height="1500" fill="#111"/>
-  <rect x="95" y="95" width="570" height="1310" fill="none" stroke="#c8a94a" stroke-width="8"/>
+  <rect width="760" height="1500" fill="#161616"/>
+  <rect x="70" y="70" width="620" height="1360" rx="34" fill="#202020" stroke="#c8a94a" stroke-width="8"/>
+  <rect x="105" y="160" width="550" height="1160" fill="none" stroke="#555" stroke-width="3"/>
+  <circle cx="380" cy="1180" r="72" fill="none" stroke="#c8a94a" stroke-width="8"/>
   <text x="380" y="230" text-anchor="middle" font-family="Georgia, serif" font-size="52" fill="#f8f5ea" letter-spacing="8">DOÑA ANNA</text>
-  <text x="380" y="620" text-anchor="middle" font-family="Georgia, serif" font-size="86" fill="#f8f5ea">Cocina</text>
-  <text x="380" y="735" text-anchor="middle" font-family="Georgia, serif" font-size="86" fill="#c8a94a">Viva</text>
+  <text x="380" y="600" text-anchor="middle" font-family="Georgia, serif" font-size="92" fill="#f8f5ea">Cocina</text>
+  <text x="380" y="725" text-anchor="middle" font-family="Georgia, serif" font-size="92" fill="#c8a94a">Viva</text>
   <text x="380" y="875" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#f8f5ea" letter-spacing="6">CHEF FORMAT</text>
   <text x="380" y="955" text-anchor="middle" font-family="Arial, sans-serif" font-size="19" fill="#b8af98" letter-spacing="4">ESTATE TRACEABLE · PROFESSIONAL KITCHEN</text>
-  <text x="380" y="1040" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#b8af98" letter-spacing="5">2 L / 5 L</text>
-  <rect x="320" y="1180" width="120" height="120" fill="none" stroke="#c8a94a" stroke-width="4"/>
-  <text x="380" y="1248" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#c8a94a">QR</text>
+  <text x="380" y="1040" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" fill="#c8a94a" letter-spacing="7">2 L / 5 L</text>
+  <text x="380" y="1188" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#c8a94a">QR</text>
   <text x="380" y="1360" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#f8f5ea" letter-spacing="6">BIAR · ALICANTE</text>
 </svg>
