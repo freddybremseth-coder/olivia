@@ -11,6 +11,7 @@ import { geminiService, ComprehensiveAnalysisResult, DroneAnalysisResult } from 
 import { Task, PruningHistoryItem, Parcel } from '../types';
 import { Language } from '../services/i18nService';
 import { filesToResizedDataUrls } from '../lib/imageUpload';
+import { fetchParcels } from '../services/db';
 import GlossaryText from './GlossaryText';
 
 type ResultTab = 'health' | 'pruning' | 'drone';
@@ -53,13 +54,21 @@ const FieldConsultantView: React.FC = () => {
     const savedHistory = localStorage.getItem('olivia_consultant_history');
     if (savedHistory) setHistory(JSON.parse(savedHistory));
 
-    const savedParcels = localStorage.getItem('olivia_parcels');
-    if (savedParcels) {
-      const parsed = JSON.parse(savedParcels);
-      setParcels(parsed);
-      if (parsed.length > 0) setSelectedParcelId(parsed[0].id);
-    }
-    
+    // Parcels live in Supabase (not localStorage). Older versions cached them
+    // in `olivia_parcels`, but that key is empty for users created after the
+    // Supabase migration → "Ingen parseller funnet" even when parcels exist.
+    (async () => {
+      try {
+        const prc = await fetchParcels();
+        if (prc.length > 0) {
+          setParcels(prc);
+          setSelectedParcelId(prev => prev || prc[0].id);
+        }
+      } catch (err) {
+        console.error('FieldConsultant: kunne ikke hente parseller', err);
+      }
+    })();
+
     startCamera();
     return () => stopCamera();
   }, []);
