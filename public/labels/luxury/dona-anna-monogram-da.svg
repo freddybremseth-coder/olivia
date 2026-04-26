@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#0b0d0b"/>
+  <g transform="translate(600 325)" fill="none" stroke="#d5b35a" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-170-170 V170 H-82 C25 170 96 100 96 0 C96-100 25-170-82-170 H-170Z" stroke-width="14"/>
+    <path d="M36 170 L170-170 L304 170" stroke-width="14"/>
+    <path d="M95 32 H245" stroke-width="10"/>
+    <path d="M170-22 C151 2 152 33 170 54 C188 33 189 2 170-22Z" fill="#d5b35a" stroke="none"/>
+  </g>
+  <text x="600" y="650" text-anchor="middle" font-family="Georgia, serif" font-size="76" fill="#f6f0dc" letter-spacing="12">DOÑA ANNA</text>
+  <text x="600" y="705" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#d5b35a" letter-spacing="10">BIAR · ALICANTE</text>
+</svg>

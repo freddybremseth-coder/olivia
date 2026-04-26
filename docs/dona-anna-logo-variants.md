@@ -24,3 +24,25 @@ Use a flexible identity system:
 - Restaurant/B2B: Branch
 
 This lets Doña Anna feel like one brand while adapting to oil, table olives, markets and restaurants.
+
+## Luxury Direction From Gemini
+
+The premium olive oil line should move away from rustic farm visuals and closer to perfume, niche cosmetics and high-end wine:
+
+- matte black or almost-black olive green
+- chalk white
+- brushed gold or copper accents
+- generous negative space
+- thin elegant serif typography for Doña Anna
+- minimal sans-serif tracking for product names like Verde Vivo
+- black UV-protective glass, square or cylindrical
+- narrow label on thick textured white cotton paper
+- optional wax seal or elegant wood cap
+
+Recommended hierarchy:
+
+1. **Premium oil:** Typographic / monogram / line-art identity.
+2. **Table olives:** Market Seal or Sun Terrace for Spanish markets and restaurants.
+3. **B2B restaurant material:** Branch or a simplified monogram.
+
+The brand can therefore have a high-luxury parent expression and a warmer market expression for aceitunas de mesa.

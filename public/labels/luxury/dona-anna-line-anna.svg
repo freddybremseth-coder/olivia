@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#0d100d"/>
+  <path d="M642 168 C570 176 526 221 522 282 C519 338 552 366 603 370 C652 374 684 338 680 295 C676 244 618 237 594 275 C566 319 601 364 655 399 C705 432 722 475 694 525 C666 575 598 586 545 553 C500 525 493 474 525 437 C563 393 628 409 656 462 C672 493 669 527 647 556 C633 575 618 591 606 616 C591 646 605 675 637 682 C672 690 702 666 700 631" fill="none" stroke="#f3e7bd" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M692 525 C724 510 756 511 792 533 C759 557 725 556 692 525Z" fill="none" stroke="#c8a94a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="600" y="665" text-anchor="middle" font-family="Georgia, serif" font-size="78" fill="#f3e7bd" letter-spacing="12">DOÑA ANNA</text>
+  <text x="600" y="720" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#c8a94a" letter-spacing="10">ESTATE OLIVE OIL</text>
+</svg>

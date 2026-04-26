@@ -58,21 +58,39 @@ const products = [
 const labelConcepts = [
   {
     name: 'Verde Vivo',
-    strategy: 'Topplinjen. Første tidlige høsting, lavt utbytte, høy pris og tydelig laboratorietall på etiketten.',
-    palette: 'Klorofyllgrønn, sort glass, varm gullfolie',
-    bottle: 'Mørk 250 ml Dorica eller Marasca',
+    strategy: 'Topplinjen. Første tidlige høsting, lavt utbytte, høy pris og tydelig laboratorietall via QR.',
+    palette: 'Matt sort, kritthvitt, børstet gull',
+    bottle: 'Matt sort 250 ml flaske med smal bomullspapir-etikett',
   },
   {
     name: 'Verde Alto',
     strategy: 'Den kommersielle high-polyphenol-linjen. Fortsatt tidlig, men rundere, større volum og enklere å bruke daglig.',
-    palette: 'Dyp olivengrønn, elfenben, sort',
-    bottle: '250 ml og 500 ml mørkt glass',
+    palette: 'Nesten sort olivengrønn, elfenben, champagnegull',
+    bottle: '250 ml og 500 ml mørkt UV-glass',
   },
   {
     name: 'Raíz Antigua',
     strategy: 'Gamle trær som knapphetsprodukt. Bruk som estate selection, ikke nødvendigvis per sort før dere ser reell sensorisk verdi.',
-    palette: 'Dyp vinrød, kalkstein, olivengrønn',
-    bottle: '500 ml premium glass med trehette',
+    palette: 'Sort, varm krem, antikk gull',
+    bottle: '500 ml premium glass med trehette eller sort voksforsegling',
+  },
+];
+
+const luxuryMarks = [
+  {
+    name: 'Anna Line Art',
+    image: '/labels/luxury/dona-anna-line-anna.svg',
+    use: 'Kunstnerisk, feminin og boutique. Sterk som hovedsymbol for premium olje.',
+  },
+  {
+    name: 'DA Monogram',
+    image: '/labels/luxury/dona-anna-monogram-da.svg',
+    use: 'Arkitektonisk luksus. Best for kork, voks, gullfolie og små flater.',
+  },
+  {
+    name: 'Pure Wordmark',
+    image: '/labels/luxury/dona-anna-tom-ford-wordmark.svg',
+    use: 'Mest selvsikker. Fungerer når flasken og negativt rom får gjøre jobben.',
   },
 ];
 
@@ -328,9 +346,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="grid gap-10 md:grid-cols-[0.8fr_1.2fr]">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#7a8e24]">Navn og etiketter</p>
-              <h2 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">Tre kommersielle retninger, ikke bare tre pene flasker.</h2>
+              <h2 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">Premium olje bør føles mer som parfyme enn gårdsbutikk.</h2>
               <p className="mt-5 text-lg leading-8 text-[#575849]">
-                For 2026 bør etikettene føles som vin, vitenskap og landbruk på samme tid: tydelig opprinnelse, nummerering, QR-sporbarhet og stor nok ro til å virke dyr.
+                For Verde Vivo og Verde Alto går vi mot matt sort flaske, smal hvit bomullspapir-etikett, gullfolie, mye tomrom og QR-sporbarhet. Bordoliven kan samtidig få en varmere markedsidentitet.
               </p>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
@@ -351,6 +369,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 </article>
               ))}
             </div>
+          </div>
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {luxuryMarks.map(mark => (
+              <article key={mark.name} className="border border-[#d8caa2] bg-white p-4">
+                <img src={mark.image} alt={mark.name} className="aspect-[3/2] w-full bg-[#0d100d] object-contain" />
+                <h3 className="mt-4 text-xl font-semibold">{mark.name}</h3>
+                <p className="mt-2 text-sm leading-6 text-[#575849]">{mark.use}</p>
+              </article>
+            ))}
           </div>
         </section>
 
