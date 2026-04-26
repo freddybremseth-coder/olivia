@@ -46,6 +46,7 @@ const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>('no');
   const [showLogin, setShowLogin] = useState(false);
   const [loginDefaultMode, setLoginDefaultMode] = useState<'login' | 'register'>('login');
+  const [postLoginTab, setPostLoginTab] = useState('dashboard');
   const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(isRecoveryUrl);
 
   const [weatherData, setWeatherData] = useState<any>(null);
@@ -185,6 +186,7 @@ const App: React.FC = () => {
     setUser(storedUser);
     setIsAdmin(admin);
     setIsLoggedIn(true);
+    setActiveTab(postLoginTab === 'admin' && !admin ? 'commerce' : postLoginTab);
     setShowLogin(false);
   };
 
@@ -203,21 +205,27 @@ const App: React.FC = () => {
     localStorage.setItem('olivia_settings', JSON.stringify({ ...settings, language: newLang }));
   };
 
-  const openLogin = (mode: 'login' | 'register' = 'login') => {
+  const openLogin = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => {
     setShowPublicSite(false);
     if (typeof window !== 'undefined' && window.location.pathname !== '/app') {
       window.history.pushState({}, '', '/app');
     }
+    setPostLoginTab(targetTab);
     setLoginDefaultMode(mode);
     setShowLogin(true);
   };
 
-  const openApp = (mode: 'login' | 'register' = 'login') => {
+  const openApp = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => {
     setShowPublicSite(false);
     if (typeof window !== 'undefined' && window.location.pathname !== '/app') {
       window.history.pushState({}, '', '/app');
     }
-    if (!isLoggedIn) openLogin(mode);
+    setPostLoginTab(targetTab);
+    if (isLoggedIn) {
+      setActiveTab(targetTab === 'admin' && !isAdmin ? 'commerce' : targetTab);
+      return;
+    }
+    openLogin(mode, targetTab);
   };
 
   // Password-recovery takes priority over everything else: the user arrived
@@ -230,7 +238,7 @@ const App: React.FC = () => {
   if (showPublicSite) {
     return (
       <>
-        <LandingPage onLogin={() => openApp('login')} onAdminLogin={() => openApp('login')} onRegister={() => openApp('register')} />
+        <LandingPage onLogin={() => openApp('login', 'commerce')} onAdminLogin={() => openApp('login', 'admin')} onRegister={() => openApp('register', 'commerce')} />
         {showLogin && (
           <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
         )}
@@ -241,7 +249,7 @@ const App: React.FC = () => {
   if (!isLoggedIn) {
     return (
       <>
-        <LandingPage onLogin={() => openLogin('login')} onAdminLogin={() => openLogin('login')} onRegister={() => openLogin('register')} />
+        <LandingPage onLogin={() => openLogin('login', 'commerce')} onAdminLogin={() => openLogin('login', 'admin')} onRegister={() => openLogin('register', 'commerce')} />
         {showLogin && (
           <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
         )}
