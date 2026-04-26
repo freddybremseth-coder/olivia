@@ -3,8 +3,10 @@ import {
   ArrowRight,
   BadgeCheck,
   Building2,
+  Droplets,
   FileText,
   Languages,
+  Leaf,
   LockKeyhole,
   Menu,
   Package,
@@ -12,6 +14,9 @@ import {
   ScanLine,
   ShieldCheck,
   Sparkles,
+  Sprout,
+  SunMedium,
+  Trees,
   X,
 } from 'lucide-react';
 import { fetchPublicEstateSignal, PublicEstateSignal } from '../services/publicEstate';
@@ -111,6 +116,37 @@ const specs = [
   ['Formats', '250 ml · 500 ml · 2 L · 5 L · Mesa jars'],
 ];
 
+const estateMoments = [
+  {
+    title: 'Biar-terroir',
+    text: 'Tørre somre, kalkholdig jord og høydeforskjeller gir oliven med konsentrert grønn fruktighet, bitterhet og struktur.',
+    icon: SunMedium,
+  },
+  {
+    title: 'Fire sorter',
+    text: 'Genovesa, Gordal, Changlot Real og Picual gir oss et bredt sensorisk register for både olje og bordoliven.',
+    icon: Leaf,
+  },
+  {
+    title: 'Tidlig høsting',
+    text: 'To tidlige høstinger gir to nivåer av intensitet: Verde Vivo som mest kompromissløs, Verde Alto som mer anvendelig.',
+    icon: Sprout,
+  },
+  {
+    title: 'Gamle trær',
+    text: 'Raíz Antigua reserveres til små batcher der gamle trær gir en historie, en struktur og en knapphet som faktisk merkes.',
+    icon: Trees,
+  },
+];
+
+const livingTimeline = [
+  ['05:42', 'Første lys i lunden. Sensorer sjekker temperatur og jordfuktighet før høstedagen starter.'],
+  ['08:10', 'Teamet velger trær og parseller etter modenhet, sort og ønsket polyfenolprofil.'],
+  ['11:35', 'Oliven transporteres raskt videre for mekanisk kald ekstraksjon under 27°C.'],
+  ['15:20', 'Batchen registreres i Olivia OS med høstevindu, sort, parsell, volum og kvalitet.'],
+  ['18:00', 'QR-siden for flasken bygges: fra jord til bord, klar for kokken og gjesten.'],
+];
+
 const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(value);
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
@@ -132,6 +168,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   }, []);
 
   const navLinks = [
+    ['Estate', '#estate'],
     ['Portfolio', '#portfolio'],
     ['Traceability', '#traceability'],
     ['Specs', '#specs'],
@@ -223,6 +260,41 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       </header>
 
       <main>
+        <section id="estate" className="relative overflow-hidden border-y border-white/10 bg-[#111111] py-24">
+          <div className="absolute inset-y-0 right-0 hidden w-1/2 md:block">
+            <img src="/donaanna/olive-trees.jpg" alt="Doña Anna olivenlund i Biar" className="h-full w-full object-cover opacity-38" />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,#111111,rgba(17,17,17,.42),rgba(17,17,17,.72))]" />
+          </div>
+          <div className="relative mx-auto max-w-7xl px-5 md:px-8">
+            <div className="grid gap-12 md:grid-cols-[0.9fr_1.1fr]">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">The estate</p>
+                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">En levende olivengård, ikke bare en etikett.</h2>
+                <p className="mt-6 text-lg leading-8 text-white/66">
+                  Doña Anna ligger i Biar i Alicante, med lunder som kombinerer tradisjon, gamle trær, regenerativ praksis og presis drift. Målet er å gi kokker en olje og bordoliven med en historie som tåler å bli fortalt ved bordet.
+                </p>
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
+                    Bestill tasting kit <ArrowRight size={17} />
+                  </a>
+                  <a href="#traceability" className="inline-flex h-12 items-center justify-center gap-2 border border-white/18 px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-white/8">
+                    Se sporbarhet
+                  </a>
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {estateMoments.map(item => (
+                  <article key={item.title} className="border border-white/10 bg-black/34 p-5 backdrop-blur">
+                    <item.icon className="text-[#d4af37]" size={24} />
+                    <h3 className="mt-5 font-serif text-2xl">{item.title}</h3>
+                    <p className="mt-3 text-sm leading-6 text-white/62">{item.text}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section id="portfolio" className="mx-auto max-w-7xl px-5 py-24 md:px-8">
           <div className="mb-12 grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
             <div>
@@ -247,6 +319,33 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 </div>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section className="relative overflow-hidden bg-[#0d0d0d] py-24">
+          <div className="absolute inset-0 opacity-24">
+            <img src="/donaanna/farming-3.jpg" alt="Vann og presisjonsdrift i olivenlunden" className="h-full w-full object-cover" />
+          </div>
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,#0d0d0d,rgba(13,13,13,.78),#0d0d0d)]" />
+          <div className="relative mx-auto grid max-w-7xl gap-10 px-5 md:grid-cols-[0.8fr_1.2fr] md:px-8">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">A day in the grove</p>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Hva som skjer før flasken når kjøkkenet.</h2>
+              <p className="mt-6 text-lg leading-8 text-white/62">
+                Den levende delen av merkevaren er ikke animasjon for animasjonens skyld. Det er rytmen i gården: målinger, valg, høsting, pressing, batch og dokumentasjon.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {livingTimeline.map(([time, text], index) => (
+                <div key={time} className="group grid grid-cols-[88px_1fr] border border-white/10 bg-white/[0.035] transition hover:border-[#d4af37]/60 hover:bg-white/[0.06]">
+                  <div className="flex items-center justify-center border-r border-white/10 bg-black/30 font-serif text-lg text-[#d4af37]">{time}</div>
+                  <div className="p-5">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/38">Moment {String(index + 1).padStart(2, '0')}</p>
+                    <p className="mt-2 leading-7 text-white/70">{text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -297,6 +396,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 Dette er salgsargumentet som forsvarer pris: en kokk kan vise gjesten nøyaktig hvor oljen kommer fra.
               </p>
             </div>
+          </div>
+        </section>
+
+        <section className="bg-[#17130d] px-5 py-16 md:px-8">
+          <div className="mx-auto flex max-w-7xl flex-col gap-6 border border-[#d4af37]/30 bg-black/24 p-6 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#d4af37]">For chefs and buyers</p>
+              <h2 className="mt-2 font-serif text-3xl md:text-4xl">Smak før du bestemmer deg.</h2>
+              <p className="mt-2 max-w-2xl text-white/62">Vi kan sette sammen en liten B2B-smakspakke med Verde Vivo, Verde Alto og Mesa-bordoliven.</p>
+            </div>
+            <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
+              Request tasting kit <ArrowRight size={17} />
+            </a>
           </div>
         </section>
 
