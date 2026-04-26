@@ -230,7 +230,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_42%,rgba(212,175,55,.16),transparent_34%),linear-gradient(90deg,rgba(13,13,13,.98),rgba(13,13,13,.78),rgba(13,13,13,.42))]" />
         <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col justify-end px-5 pb-12 pt-28 md:px-8">
           <div className="max-w-4xl animate-in fade-in duration-700">
-            <img src="/labels/luxury/dona-anna-tom-ford-wordmark.svg" alt="Doña Anna wordmark" className="mb-10 h-24 w-full max-w-xl object-contain object-left" />
             <p className="mb-5 text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">{t.eyebrow}</p>
             <h1 className="font-serif text-5xl leading-[0.95] tracking-normal md:text-7xl">{t.headline}</h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-white/72 md:text-xl">{t.subhead}</p>
