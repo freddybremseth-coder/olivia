@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#f7f0df"/>
+  <g transform="translate(600 300)">
+    <circle cx="0" cy="0" r="190" fill="none" stroke="#172015" stroke-width="16"/>
+    <circle cx="0" cy="0" r="150" fill="none" stroke="#d7b84f" stroke-width="8"/>
+    <path d="M-95 30 C-135-42-88-112 0-120 C88-112 135-42 95 30 C54 94-54 94-95 30Z" fill="#172015"/>
+    <path d="M0-112 V74" stroke="#f2df91" stroke-width="10" stroke-linecap="round"/>
+    <path d="M-135 112 H135" stroke="#7a8e24" stroke-width="14" stroke-linecap="round"/>
+    <text x="0" y="-205" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#172015" letter-spacing="6">ACEITUNAS DE MESA</text>
+    <text x="0" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#172015" letter-spacing="6">ACEITE DE OLIVA</text>
+  </g>
+  <text x="600" y="620" text-anchor="middle" font-family="Georgia, serif" font-size="86" fill="#172015" letter-spacing="10">DOÑA ANNA</text>
+  <text x="600" y="682" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#7a8e24" letter-spacing="7">MERCADO · RESTAURANTE · ESTATE</text>
+</svg>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#172015"/>
+  <g transform="translate(600 280)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-260 80 C-140 10-20-28 180-145" fill="none" stroke="#f2df91" stroke-width="16"/>
+    <path d="M-120 10 C-190-25-205-92-150-120 C-84-102-72-42-120 10Z" fill="#b6c84f"/>
+    <path d="M0-45 C-55-88-45-157 15-176 C74-145 75-76 0-45Z" fill="#b6c84f"/>
+    <path d="M115-105 C72-154 98-218 160-220 C207-177 185-118 115-105Z" fill="#b6c84f"/>
+    <ellipse cx="-190" cy="92" rx="34" ry="44" fill="#10100c" stroke="#f2df91" stroke-width="8"/>
+    <ellipse cx="-30" cy="12" rx="34" ry="44" fill="#10100c" stroke="#f2df91" stroke-width="8"/>
+    <ellipse cx="132" cy="-78" rx="34" ry="44" fill="#10100c" stroke="#f2df91" stroke-width="8"/>
+  </g>
+  <text x="600" y="560" text-anchor="middle" font-family="Georgia, serif" font-size="88" fill="#f2df91" letter-spacing="10">DOÑA ANNA</text>
+  <text x="600" y="625" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#b6c84f" letter-spacing="7">OLIVAR DE BIAR · MESA Y ACEITE</text>
+</svg>

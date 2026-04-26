@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#fbf8ef"/>
+  <g transform="translate(600 285)" fill="none" stroke="#172015" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-170 145 V-20 C-170-115-95-190 0-190 C95-190 170-115 170-20 V145" stroke-width="18"/>
+    <path d="M-105 145 V-15 C-105-72-57-120 0-120 C57-120 105-72 105-15 V145" stroke="#7a8e24" stroke-width="14"/>
+    <path d="M-220 145 H220" stroke="#d7b84f" stroke-width="14"/>
+    <path d="M-52 25 C-86-30-48-85 0-92 C49-85 86-30 52 25 C30 62-30 62-52 25Z" fill="#172015" stroke="none"/>
+    <path d="M0-88 V50" stroke="#f2df91" stroke-width="8"/>
+  </g>
+  <text x="600" y="565" text-anchor="middle" font-family="Georgia, serif" font-size="88" fill="#172015" letter-spacing="10">DOÑA ANNA</text>
+  <text x="600" y="630" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#7a8e24" letter-spacing="7">ACEITUNAS · ACEITE · BIAR</text>
+</svg>

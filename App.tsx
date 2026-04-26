@@ -15,6 +15,7 @@ import PruningAdvisorView from './components/PruningAdvisorView';
 import LandingPage from './components/LandingPage';
 import AdminDashboard from './components/AdminDashboard';
 import IoTDashboard from './components/IoTDashboard';
+import CommerceHub from './components/CommerceHub';
 import LoginModal, { StoredUser } from './components/LoginModal';
 import ResetPasswordPage from './components/ResetPasswordPage';
 import ProfitabilityPage from './pages/Profitability';
@@ -37,6 +38,10 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showPublicSite, setShowPublicSite] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.location.pathname !== '/app' && !isRecoveryUrl();
+  });
   const [language, setLanguage] = useState<Language>('no');
   const [showLogin, setShowLogin] = useState(false);
   const [loginDefaultMode, setLoginDefaultMode] = useState<'login' | 'register'>('login');
@@ -198,8 +203,20 @@ const App: React.FC = () => {
   };
 
   const openLogin = (mode: 'login' | 'register' = 'login') => {
+    setShowPublicSite(false);
+    if (typeof window !== 'undefined' && window.location.pathname !== '/app') {
+      window.history.pushState({}, '', '/app');
+    }
     setLoginDefaultMode(mode);
     setShowLogin(true);
+  };
+
+  const openApp = (mode: 'login' | 'register' = 'login') => {
+    setShowPublicSite(false);
+    if (typeof window !== 'undefined' && window.location.pathname !== '/app') {
+      window.history.pushState({}, '', '/app');
+    }
+    if (!isLoggedIn) openLogin(mode);
   };
 
   // Password-recovery takes priority over everything else: the user arrived
@@ -207,6 +224,17 @@ const App: React.FC = () => {
   // matters (dashboard, login modal, etc).
   if (isPasswordRecovery) {
     return <ResetPasswordPage onDone={() => setIsPasswordRecovery(false)} />;
+  }
+
+  if (showPublicSite) {
+    return (
+      <>
+        <LandingPage onLogin={() => openApp('login')} onAdminLogin={() => openApp('login')} onRegister={() => openApp('register')} />
+        {showLogin && (
+          <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
+        )}
+      </>
+    );
   }
 
   if (!isLoggedIn) {
@@ -249,6 +277,7 @@ const App: React.FC = () => {
         onParcelSelect={setSelectedParcel}
       />;
       case 'production': return <ProductionView parcels={parcels} language={language} />;
+      case 'commerce': return <CommerceHub />;
       case 'economy': return <ProfitabilityPage language={language} parcels={parcels} />;
       case 'fleet': return <FleetView />;
       case 'irrigation': return <IrrigationView />;

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#fff6d5"/>
+  <g transform="translate(600 270)">
+    <circle cx="0" cy="-55" r="122" fill="#e0b43d"/>
+    <path d="M-210 40 H210" stroke="#172015" stroke-width="14" stroke-linecap="round"/>
+    <path d="M-170 95 H170" stroke="#7a8e24" stroke-width="14" stroke-linecap="round"/>
+    <path d="M-120 150 H120" stroke="#172015" stroke-width="14" stroke-linecap="round"/>
+    <path d="M-70-42 C-35-96 35-96 70-42 C35-55-35-55-70-42Z" fill="#172015"/>
+    <ellipse cx="-72" cy="8" rx="25" ry="35" fill="#172015"/>
+    <ellipse cx="0" cy="-8" rx="25" ry="35" fill="#172015"/>
+    <ellipse cx="72" cy="8" rx="25" ry="35" fill="#172015"/>
+  </g>
+  <text x="600" y="560" text-anchor="middle" font-family="Georgia, serif" font-size="88" fill="#172015" letter-spacing="10">DOÑA ANNA</text>
+  <text x="600" y="625" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#7a8e24" letter-spacing="7">BIAR · ALICANTE · COSECHA TEMPRANA</text>
+</svg>

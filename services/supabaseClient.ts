@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const fallbackSupabaseUrl = 'http://127.0.0.1:54321';
+const fallbackSupabaseAnonKey = 'public-site-placeholder-key';
 
 /**
  * True when both env vars are present at build time. If false, the UI shows
@@ -16,7 +18,7 @@ if (!isSupabaseConfigured) {
   // Emit a single, very visible console error so the bug is easy to diagnose
   // from DevTools even when the UI banner is missed.
   // eslint-disable-next-line no-console
-  console.error(
+  console.warn(
     '[Olivia] Supabase er ikke konfigurert. Sett VITE_SUPABASE_URL og ' +
     'VITE_SUPABASE_ANON_KEY i Vercel (Environment Variables) og re-deploy ' +
     'uten build-cache.'
@@ -59,10 +61,13 @@ async function inMemoryLock<R>(
   }
 }
 
-// createClient tolerates empty strings — we pass '' fallbacks so module load
-// doesn't throw. The shimmed client's calls will fail fast because the URL
-// isn't reachable; auth.ts now wraps calls in a timeout + friendly error.
-export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '', {
+// Supabase v2 throws during module load if the URL is empty. The public
+// Doña Anna site must still render before Supabase is configured, so we create
+// a harmless placeholder client and guard real calls with isSupabaseConfigured.
+export const supabase = createClient(
+  isSupabaseConfigured ? supabaseUrl! : fallbackSupabaseUrl,
+  isSupabaseConfigured ? supabaseAnonKey! : fallbackSupabaseAnonKey,
+  {
   auth: {
     // Use the in-memory lock above instead of navigator.locks. See the
     // comment on `inMemoryLock` for why.

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1400" viewBox="0 0 900 1400">
+  <rect width="900" height="1400" fill="#172015"/>
+  <rect x="54" y="54" width="792" height="1292" fill="none" stroke="#d9c46d" stroke-width="8"/>
+  <rect x="94" y="94" width="712" height="1212" fill="none" stroke="#8ea83a" stroke-width="2"/>
+  <text x="450" y="180" text-anchor="middle" font-family="Georgia, serif" font-size="34" fill="#f2df91" letter-spacing="12">DOÑA ANNA</text>
+  <text x="450" y="520" text-anchor="middle" font-family="Georgia, serif" font-size="132" fill="#f2df91">Primera</text>
+  <text x="450" y="620" text-anchor="middle" font-family="Georgia, serif" font-size="78" fill="#f2df91">Cosecha</text>
+  <text x="450" y="705" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" fill="#bfdc71" letter-spacing="10">NO. 01</text>
+  <line x1="260" y1="790" x2="640" y2="790" stroke="#d9c46d" stroke-width="3"/>
+  <text x="450" y="875" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#f7efc0" letter-spacing="5">EARLY HARVEST EVOO</text>
+  <text x="450" y="965" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#f7efc0">Biar · Alicante · Organic Estate Oil</text>
+  <rect x="365" y="1078" width="170" height="170" fill="none" stroke="#f2df91" stroke-width="6"/>
+  <text x="450" y="1175" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#f2df91">QR</text>
+  <text x="450" y="1290" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#bfdc71" letter-spacing="5">250 ML · COLD EXTRACTED</text>
+</svg>

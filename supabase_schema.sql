@@ -1,5 +1,7 @@
 -- Olivia Farm OS – Supabase schema
 -- Run this in the Supabase SQL editor (Dashboard → SQL Editor → New query)
+-- For Doña Anna B2B/customer portal tables, also run:
+-- supabase_migrations/004_commerce_b2b.sql
 
 -- ── Parcels ──────────────────────────────────────────────────────────────────
 create table if not exists parcels (

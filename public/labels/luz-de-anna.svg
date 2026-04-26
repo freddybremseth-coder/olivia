@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1400" viewBox="0 0 900 1400">
+  <rect width="900" height="1400" fill="#ffe49a"/>
+  <rect x="58" y="58" width="784" height="1284" fill="#fff6ca" stroke="#171812" stroke-width="6"/>
+  <text x="450" y="185" text-anchor="middle" font-family="Georgia, serif" font-size="34" fill="#171812" letter-spacing="12">DOÑA ANNA</text>
+  <path d="M250 420 C330 275 570 275 650 420 C574 388 326 388 250 420Z" fill="#7a8e24"/>
+  <circle cx="450" cy="440" r="92" fill="#e0b43d"/>
+  <text x="450" y="620" text-anchor="middle" font-family="Georgia, serif" font-size="132" fill="#171812">Luz</text>
+  <text x="450" y="720" text-anchor="middle" font-family="Georgia, serif" font-size="76" fill="#171812">de Anna</text>
+  <text x="450" y="830" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#374025" letter-spacing="5">ORGANIC EXTRA VIRGIN OLIVE OIL</text>
+  <text x="450" y="930" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#374025">Fresh · balanced · Mediterranean</text>
+  <rect x="365" y="1085" width="170" height="170" fill="none" stroke="#171812" stroke-width="6"/>
+  <text x="450" y="1182" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#171812">QR</text>
+  <text x="450" y="1292" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#171812" letter-spacing="5">500 ML · COLD EXTRACTED</text>
+</svg>

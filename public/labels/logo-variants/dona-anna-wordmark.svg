@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#fbf8ef"/>
+  <text x="600" y="345" text-anchor="middle" font-family="Georgia, serif" font-size="122" fill="#172015" letter-spacing="7">Doña Anna</text>
+  <g transform="translate(600 430)">
+    <line x1="-310" y1="0" x2="-80" y2="0" stroke="#d7b84f" stroke-width="8" stroke-linecap="round"/>
+    <path d="M0-54 C-34-18-31 35 0 62 C31 35 34-18 0-54Z" fill="#7a8e24"/>
+    <line x1="80" y1="0" x2="310" y2="0" stroke="#d7b84f" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <text x="600" y="535" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#172015" letter-spacing="8">BIAR · ALICANTE</text>
+  <text x="600" y="590" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#7a8e24" letter-spacing="5">ACEITUNAS · ACEITE · OLIVAR</text>
+</svg>

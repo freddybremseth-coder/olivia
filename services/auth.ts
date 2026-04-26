@@ -183,6 +183,7 @@ export async function signUpWithPassword(
 }
 
 export async function signOut(): Promise<void> {
+  if (!isSupabaseConfigured) return;
   const { error } = await supabase.auth.signOut();
   if (error) console.warn('signOut', error);
 }
@@ -232,6 +233,7 @@ export async function sendPasswordReset(email: string, redirectTo?: string): Pro
 }
 
 export async function getCurrentSession(): Promise<AuthResult | null> {
+  if (!isSupabaseConfigured) return null;
   // Wrap getSession in a timeout — if the gotrue lock is contended (e.g. under
   // React StrictMode double-mount, or from a stuck previous tab) it can hang
   // for 5+ seconds and leave the dashboard in a loading state.
@@ -281,6 +283,7 @@ export function onAuthChange(
   handler: AuthChangeHandler,
   onRecovery?: () => void,
 ): () => void {
+  if (!isSupabaseConfigured) return () => {};
   const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
       onRecovery?.();
@@ -318,6 +321,7 @@ export function onAuthChange(
  * external callers that haven't migrated.
  */
 export function onPasswordRecovery(handler: () => void): () => void {
+  if (!isSupabaseConfigured) return () => {};
   const { data } = supabase.auth.onAuthStateChange((event) => {
     if (event === 'PASSWORD_RECOVERY') handler();
   });

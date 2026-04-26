@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1400" viewBox="0 0 900 1400">
+  <rect width="900" height="1400" fill="#f7f0df"/>
+  <rect x="58" y="58" width="784" height="1284" fill="#fffaf0" stroke="#172015" stroke-width="6"/>
+  <text x="450" y="175" text-anchor="middle" font-family="Georgia, serif" font-size="34" fill="#172015" letter-spacing="12">DOÑA ANNA</text>
+  <path d="M450 270 C366 350 365 475 450 560 C535 475 534 350 450 270Z" fill="#7a8e24"/>
+  <path d="M450 315 C408 375 407 457 450 510 C493 457 492 375 450 315Z" fill="#bfdc71"/>
+  <text x="450" y="715" text-anchor="middle" font-family="Georgia, serif" font-size="132" fill="#172015">Verde</text>
+  <text x="450" y="830" text-anchor="middle" font-family="Georgia, serif" font-size="116" fill="#7a8e24">Alto</text>
+  <text x="450" y="925" text-anchor="middle" font-family="Arial, sans-serif" font-size="29" fill="#172015" letter-spacing="5">SECOND EARLY HARVEST</text>
+  <text x="450" y="1005" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#374025">High polyphenol · rounder daily premium</text>
+  <rect x="365" y="1135" width="170" height="170" fill="none" stroke="#172015" stroke-width="6"/>
+  <text x="450" y="1232" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#172015">QR</text>
+  <text x="450" y="1340" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172015" letter-spacing="5">250 ML / 500 ML</text>
+</svg>

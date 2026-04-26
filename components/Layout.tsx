@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import {
   LayoutDashboard, Map as MapIcon, CloudSun, Sprout, TrendingUp, Truck, Droplets,
   ClipboardList, Settings, LogOut, ShieldCheck, Sparkles, Scissors, Menu, X, ChevronLeft, ChevronRight, User,
-  Activity
+  Activity, Store
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { useTranslation } from '../services/i18nService';
@@ -30,6 +30,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
     { id: 'map', icon: MapIcon, label: t('map') },
     { id: 'weather', icon: CloudSun, label: t('weather') },
     { id: 'production', icon: Sprout, label: t('production') },
+    { id: 'commerce', icon: Store, label: 'B2B & Commerce' },
     { id: 'economy', icon: TrendingUp, label: t('economy') },
     { id: 'fleet', icon: Truck, label: t('fleet') },
     { id: 'irrigation', icon: Droplets, label: t('irrigation') },
