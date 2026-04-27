@@ -420,6 +420,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               </article>
             ))}
           </div>
+          <div className="mx-auto mt-10 grid max-w-7xl gap-6 border border-white/10 bg-black/34 p-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+            <img src="/donaanna/social/dona-anna-youtube-channel-2560x1440.jpg" alt="Doña Anna YouTube kanalbanner" className="aspect-video w-full object-cover" />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Channel banner</p>
+              <h3 className="mt-3 font-serif text-3xl md:text-4xl">Klar for YouTube og kampanjeprofil.</h3>
+              <p className="mt-4 leading-7 text-white/62">
+                Banneret samler DA-monogram, Doña Anna-navnet, Biar/Alicante og produktfamilien i én tydelig flate. Brukes til YouTube, presentasjoner, distributørdekker og kampanjebilder.
+              </p>
+            </div>
+          </div>
         </section>
 
         <section className="bg-[#111111] px-5 py-24 md:px-8">
