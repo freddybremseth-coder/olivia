@@ -65,44 +65,56 @@ const copy = {
 const portfolio = [
   {
     name: 'Verde Vivo',
+    labelName: 'DOÑA ANNA · VERDE VIVO',
     format: '500 ml · Cosecha Temprana I',
     role: 'Finishing oil for fine dining',
     label: '/labels/mockups/verde-vivo-bottle.svg',
+    photo: '/donaanna/product-design/verde-vivo-breakfast-collage.jpg',
     text: 'Høyeste polyfenolnivå, lavt utbytte, kraftig grønn fruktighet og lang pepperfinish.',
   },
   {
     name: 'Verde Alto',
+    labelName: 'DOÑA ANNA · VERDE ALTO',
     format: '500 ml · Cosecha Temprana II',
     role: 'Premium daily finishing',
     label: '/labels/mockups/verde-alto-bottle.svg',
+    photo: '/donaanna/product-design/full-product-lineup.jpg',
     text: 'Tidlig høstet og polyfenolsterk, men rundere. Den mest skalerbare premiumlinjen.',
   },
   {
     name: 'Raíz Antigua',
+    labelName: 'DOÑA ANNA · RAÍZ ANTIGUA',
     format: '500 ml · old-tree estate selection',
     role: 'Limited allocation',
     label: '/labels/mockups/raiz-antigua-bottle.svg',
+    photo: '/donaanna/product-design/raiz-antigua-cellar.jpg',
     text: 'Gamle trær, nummerert batch og høy gave-/restaurantverdi. Sortsdeles bare hvis data støtter det.',
   },
   {
     name: 'Monovarietal Collection',
+    labelName: 'DOÑA ANNA · MONOVARIETAL COLLECTION',
     format: 'Genovesa · Gordal · Changlot Real · Picual',
     role: 'Tasting flight / sommelier set',
     label: '/labels/mockups/monovarietal-bottle.svg',
+    photo: '/donaanna/product-design/product-family-studio.jpg',
     text: 'Små batcher for smaking, opplæring og restauranter som vil fortelle sortshistorien.',
   },
   {
     name: 'Cocina Viva',
+    labelName: 'DOÑA ANNA · COCINA VIVA',
     format: '2 L / 5 L · chef format',
     role: 'Kitchen service',
     label: '/labels/mockups/cocina-viva-tin.svg',
+    photo: '/donaanna/product-design/cocina-viva-chef.jpg',
     text: 'Mørk metallkanne eller bag-in-box for profesjonelle kjøkken. Estate traceable, praktisk format.',
   },
   {
     name: 'Mesa',
+    labelName: 'DOÑA ANNA · MESA',
     format: 'Aceitunas de mesa',
     role: 'Spanish markets / restaurants',
     label: '/labels/mockups/mesa-jar.svg',
+    photo: '/donaanna/product-design/full-product-lineup.jpg',
     text: 'Bordoliven for grønnsaksmarkeder, barer og restauranter. Varmere markedsspråk, samme Doña Anna-kvalitet.',
   },
 ];
@@ -175,6 +187,29 @@ const qualitySteps = [
   ['04', 'Sensorisk kontroll', 'Fruktighet, bitterhet, skarphet og balanse vurderes før batchen får sin rolle i porteføljen.'],
 ];
 
+const visualDirections = [
+  {
+    title: 'Finishing ved bordet',
+    image: '/donaanna/product-design/verde-vivo-breakfast-collage.jpg',
+    text: 'Verde Vivo og Verde Alto skal fotograferes lyst, nært og appetittvekkende: brød, tomat, olivengren og tydelig helling av oljen.',
+  },
+  {
+    title: 'Restaurantkjøkken',
+    image: '/donaanna/product-design/cocina-viva-b2b-collage.jpg',
+    text: 'Cocina Viva må vises i arbeid: kokk, panne, kobber, QR/sporbarhet og større format som faktisk passer et profesjonelt kjøkken.',
+  },
+  {
+    title: 'Gammel rot og ild',
+    image: '/donaanna/product-design/raiz-antigua-paella.jpg',
+    text: 'Raíz Antigua bør få varme, røyk, gamle trestykker og mørk stein. Dette er den mest emosjonelle og gaveverdige linjen.',
+  },
+  {
+    title: 'Hele kolleksjonen',
+    image: '/donaanna/product-design/full-product-lineup.jpg',
+    text: 'Produktfamilien bør være konsekvent: svart emballasje, kremfarget etikett, Anna-line-art og tydelig produktnavn på hvert format.',
+  },
+];
+
 const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(value);
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
@@ -197,6 +232,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
   const navLinks = [
     ['Estate', '#estate'],
+    ['Design', '#design'],
     ['Portfolio', '#portfolio'],
     ['Knowledge', '#knowledge'],
     ['Traceability', '#traceability'],
@@ -323,10 +359,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section className="border-y border-white/10 bg-[#080808] px-5 py-20 md:px-8">
+        <section id="design" className="border-y border-white/10 bg-[#080808] px-5 py-20 md:px-8">
           <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.12fr_0.88fr] lg:items-center">
             <div className="overflow-hidden border border-[#d4af37]/24 bg-black">
-              <img src="/labels/mockups/dona-anna-brand-presentation.svg" alt="Doña Anna produktfoto med Verde Vivo, Mesa, Cocina Viva og DA monogram" className="w-full" />
+              <img src="/donaanna/product-design/full-product-lineup.jpg" alt="Doña Anna produktlinje med Cocina Viva, Mesa, Verde Alto, Raíz Antigua og Verde Vivo" className="aspect-[16/9] w-full object-cover" />
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Brand system</p>
@@ -351,6 +387,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               </a>
             </div>
           </div>
+          <div className="mx-auto mt-10 grid max-w-7xl gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {visualDirections.map(item => (
+              <article key={item.title} className="group overflow-hidden border border-white/10 bg-white/[0.035]">
+                <div className="h-56 overflow-hidden bg-black">
+                  <img src={item.image} alt={item.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                </div>
+                <div className="p-5">
+                  <p className="font-serif text-2xl">{item.title}</p>
+                  <p className="mt-3 text-sm leading-6 text-white/62">{item.text}</p>
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section id="portfolio" className="mx-auto max-w-7xl px-5 py-24 md:px-8">
@@ -366,12 +415,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {portfolio.map(item => (
               <article key={item.name} className="group border border-white/10 bg-white/[0.035] p-4 transition hover:border-[#d4af37]/50">
-                <div className="flex min-h-[360px] items-center justify-center bg-[#080808] p-5">
-                  <img src={item.label} alt={`${item.name} produktmockup`} className="max-h-[320px] w-full object-contain transition duration-500 group-hover:scale-[1.03]" />
+                <div className="grid gap-3">
+                  <div className="h-56 overflow-hidden bg-[#080808]">
+                    <img src={item.photo} alt={`${item.name} designfoto`} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                  </div>
+                  <div className="flex min-h-[250px] items-center justify-center bg-[#080808] p-5">
+                    <img src={item.label} alt={`${item.name} produktmockup`} className="max-h-[230px] w-full object-contain transition duration-500 group-hover:scale-[1.03]" />
+                  </div>
                 </div>
                 <div className="p-2 pt-5">
                   <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#d4af37]">{item.role}</p>
                   <h3 className="mt-2 font-serif text-3xl">{item.name}</h3>
+                  <p className="mt-3 border-y border-white/10 py-3 text-[10px] font-bold uppercase tracking-[0.24em] text-white/72">{item.labelName}</p>
                   <p className="mt-1 text-xs uppercase tracking-[0.2em] text-white/48">{item.format}</p>
                   <p className="mt-4 leading-7 text-white/64">{item.text}</p>
                 </div>
