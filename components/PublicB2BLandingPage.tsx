@@ -31,14 +31,14 @@ type Locale = 'no' | 'es' | 'en';
 
 const copy = {
   no: {
-    eyebrow: 'Ultra-premium estate oil · Biar, Alicante',
-    headline: 'Doña Anna for kompromissløse kokker.',
-    subhead: 'Økologisk olivenolje og bordoliven fra Biar. Tidlig høstet, batchsporet og laget for restauranter, distributører og spesialbutikker som trenger en historie de kan servere.',
+    eyebrow: 'Økologisk extra virgin olivenolje · Biar, Alicante',
+    headline: 'Doña Anna fra hjertet av Alicante.',
+    subhead: 'Tidlig høstet olivenolje og bordoliven fra våre lunder i Biar. Skapt for kjøkken som verdsetter smak, opprinnelse, sporbarhet og en historie gjestene kan kjenne igjen ved bordet.',
     cta: 'Bestill tasting kit',
     portal: 'B2B portal',
     specTitle: 'Tekniske data for innkjøpere',
     traceTitle: 'Transparencia Total',
-    traceText: 'Hver flaske kan kobles til batch, høstedato, parsell, sort, sensorisk profil og analyseverdier i Olivia OS.',
+    traceText: 'Hver batch dokumenteres med høstedato, parsell, sort, sensorisk profil og analyseverdier. QR-sporingen gjør opprinnelsen synlig for kokk, innkjøper og gjest.',
   },
   es: {
     eyebrow: 'Aceite de alta gama · Biar, Alicante',
@@ -54,7 +54,7 @@ const copy = {
     eyebrow: 'Ultra-premium estate oil · Biar, Alicante',
     headline: 'Doña Anna for uncompromising chefs.',
     subhead: 'Organic olive oil and table olives from Biar. Early harvested, batch-traceable and built for restaurants, distributors and specialty buyers who need a story worth serving.',
-    cta: 'Request tasting kit',
+    cta: 'Order tasting kit',
     portal: 'B2B portal',
     specTitle: 'Technical specs for buyers',
     traceTitle: 'Total Transparency',
@@ -67,65 +67,59 @@ const portfolio = [
     name: 'Verde Vivo',
     labelName: 'DOÑA ANNA · VERDE VIVO',
     format: '500 ml · Cosecha Temprana I',
-    role: 'Finishing oil for fine dining',
-    label: '/labels/mockups/verde-vivo-bottle.svg',
+    role: 'Intens finishing oil',
     photo: '/donaanna/product-design/verde-vivo-estate-arches.jpg',
-    text: 'Høyeste polyfenolnivå, lavt utbytte, kraftig grønn fruktighet og lang pepperfinish.',
+    text: 'Vår mest intense tidlig-høstede olje. Grønn fruktighet, tydelig bitterhet og lang pepperfinish gjør den sterk på grillet fisk, tomat, brød, salater og retter som trenger en frisk avslutning.',
   },
   {
     name: 'Verde Alto',
     labelName: 'DOÑA ANNA · VERDE ALTO',
     format: '500 ml · Cosecha Temprana II',
-    role: 'Premium daily finishing',
-    label: '/labels/mockups/verde-alto-bottle.svg',
+    role: 'Balanced finishing oil',
     photo: '/donaanna/product-design/verde-alto-rustic-room.jpg',
-    text: 'Tidlig høstet og polyfenolsterk, men rundere. Den mest skalerbare premiumlinjen.',
+    text: 'Tidlig høstet, men rundere i uttrykket enn Verde Vivo. En premium bord- og kjøkkenolje for restauranter som ønsker grønn karakter uten at oljen dominerer retten.',
   },
   {
     name: 'Raíz Antigua',
     labelName: 'DOÑA ANNA · RAÍZ ANTIGUA',
     format: '500 ml · old-tree estate selection',
-    role: 'Limited allocation',
-    label: '/labels/mockups/raiz-antigua-bottle.svg',
+    role: 'Old-tree selection',
     photo: '/donaanna/product-design/raiz-antigua-label-hero.jpg',
-    text: 'Gamle trær, nummerert batch og høy gave-/restaurantverdi. Sortsdeles bare hvis data støtter det.',
+    text: 'En begrenset seleksjon fra eldre trær på gården. Dypere, mer moden fruktighet og en roligere eleganse gjør den egnet for menyer, gavepakker og restauranter som vil fortelle historien om lunden.',
   },
   {
     name: 'Monovarietal Collection',
     labelName: 'DOÑA ANNA · MONOVARIETAL COLLECTION',
     format: 'Genovesa · Gordal · Changlot Real · Picual',
-    role: 'Tasting flight / sommelier set',
-    label: '/labels/mockups/monovarietal-bottle.svg',
+    role: 'Variety tasting',
     photo: '/donaanna/product-design/portfolio-slate-mesa.jpg',
-    text: 'Små batcher for smaking, opplæring og restauranter som vil fortelle sortshistorien.',
+    text: 'Små batcher som viser hvordan sort, jord og høstetidspunkt påvirker aroma og struktur. En naturlig smaksreise for sommelierer, kokker og spesialbutikker.',
   },
   {
     name: 'Cocina Viva',
     labelName: 'DOÑA ANNA · COCINA VIVA',
     format: '2 L / 5 L · chef format',
-    role: 'Kitchen service',
-    label: '/labels/mockups/cocina-viva-tin.svg',
+    role: 'Chef format',
     photo: '/donaanna/product-design/cocina-viva-chef-pour.jpg',
-    text: 'Mørk metallkanne eller bag-in-box for profesjonelle kjøkken. Estate traceable, praktisk format.',
+    text: 'Større format for profesjonelle kjøkken som bruker olivenolje hver dag, men fortsatt vil ha kontroll på kvalitet, opprinnelse og batch. Utviklet for service, mise en place og varme retter.',
   },
   {
     name: 'Mesa',
     labelName: 'DOÑA ANNA · MESA',
     format: 'Aceitunas de mesa',
-    role: 'Spanish markets / restaurants',
-    label: '/labels/mockups/mesa-jar.svg',
+    role: 'Table olives',
     photo: '/donaanna/product-design/portfolio-slate-mesa.jpg',
-    text: 'Bordoliven for grønnsaksmarkeder, barer og restauranter. Varmere markedsspråk, samme Doña Anna-kvalitet.',
+    text: 'Bordoliven for aperitivo, markeder, barer og restauranter. En mer uformell inngang til Doña Anna, med samme fokus på råvare, tekstur og opprinnelse.',
   },
 ];
 
 const specs = [
-  ['Harvest', 'Cosecha temprana · two early passes'],
-  ['Extraction', 'Mechanical cold extraction · <27°C'],
-  ['Acidity target', '<0.2% for premium batches'],
-  ['Polyphenols', 'Lab measured · QR-linked certificate'],
-  ['Varieties', 'Genovesa · Gordal · Changlot Real · Picual'],
-  ['Formats', '500 ml · 2 L · 5 L · Mesa jars'],
+  ['Høsting', 'Tidlig høsting i to passeringer for ulik intensitet og polyfenolprofil'],
+  ['Ekstraksjon', 'Mekanisk kald ekstraksjon under 27°C'],
+  ['Kvalitet', 'Extra virgin med sensorisk kontroll og analyse per batch'],
+  ['Polyfenoler', 'Måles per premiumbatch og knyttes til sporbar dokumentasjon'],
+  ['Sorter', 'Genovesa · Gordal · Changlot Real · Picual'],
+  ['Formater', '500 ml · 2 L · 5 L · bordoliven'],
 ];
 
 const estateMoments = [
@@ -152,37 +146,37 @@ const estateMoments = [
 ];
 
 const livingTimeline = [
-  ['05:42', 'Første lys i lunden. Sensorer sjekker temperatur og jordfuktighet før høstedagen starter.'],
-  ['08:10', 'Teamet velger trær og parseller etter modenhet, sort og ønsket polyfenolprofil.'],
-  ['11:35', 'Oliven transporteres raskt videre for mekanisk kald ekstraksjon under 27°C.'],
-  ['15:20', 'Batchen registreres i Olivia OS med høstevindu, sort, parsell, volum og kvalitet.'],
-  ['18:00', 'QR-siden for flasken bygges: fra jord til bord, klar for kokken og gjesten.'],
+  ['Soloppgang', 'Dagen starter i lunden med kontroll av temperatur, jordfuktighet og modenhet.'],
+  ['Utvalg', 'Trær og parseller velges etter sort, fruktens tilstand og ønsket sensorisk uttrykk.'],
+  ['Mølle', 'Oliven transporteres raskt videre for mekanisk kald ekstraksjon under 27°C.'],
+  ['Batch', 'Volum, høstevindu, sort og kvalitet registreres slik at hver produksjon kan følges tilbake til gården.'],
+  ['Bordet', 'Flasken får sin historie: høsting, analyse, smak og opprinnelse samlet i én sporbar batch.'],
 ];
 
 const knowledgeCards = [
   {
     title: 'Polyfenolens kraft',
-    kicker: 'Health position',
+    kicker: 'Naturlige antioksidanter',
     image: '/donaanna/polyphenols.jpg',
-    text: 'Tidlig høstet ekstra virgin olivenolje kan ha høyt innhold av polyfenoler som oleuropein og hydroksytyrosol. Det gir bitterhet, pepperfølelse og et tydeligere helseargument.',
+    text: 'Ekstra virgin olivenolje fra tidlig høsting kan inneholde et høyt nivå av polyfenoler. De gir bitterhet, pepperfølelse og er en viktig del av oljens ernæringsmessige profil.',
   },
   {
     title: 'Regenerativ drift',
-    kicker: 'Estate practice',
+    kicker: 'Jord og biodiversitet',
     image: '/donaanna/regenerative-farming.jpg',
-    text: 'Dekkvekster, biodiversitet, jordliv og mer presis vannforvaltning bygger en gårdsfortelling som kokker og distributører faktisk kan bruke videre.',
+    text: 'Dekkvekster, urter, blomster og mer presis vannforvaltning styrker jordlivet i et tørt middelhavsklima. Sunnere jord gir mer robuste trær og tydeligere opprinnelse.',
   },
   {
     title: 'Tidlig høsting',
     kicker: 'Cosecha temprana',
     image: '/donaanna/early-harvest.jpg',
-    text: 'Oktober-november gir lavere utbytte, høyere intensitet og en dyrere olje. Derfor blir Verde Vivo og Verde Alto tydelig delt i to styrkenivåer.',
+    text: 'Tidlig høsting gir lavere oljeutbytte, men mer intens aroma, friskere grønn fruktighet og høyere bitterhet og skarphet. Det er kjernen i Verde Vivo og Verde Alto.',
   },
 ];
 
 const qualitySteps = [
   ['01', 'Skånsom høsting', 'Oliven høstes når aromatikk, bitterhet og polyfenolpotensial er på sitt beste.'],
-  ['02', 'Rask pressing', 'Målet er kort vei fra tre til mølle, slik at friskhet, næringsstoffer og aroma bevares.'],
+  ['02', 'Rask pressing', 'Kort vei fra tre til mølle bevarer friskhet, næringsstoffer og aroma.'],
   ['03', 'Kald ekstraksjon', 'Mekanisk ekstraksjon under 27°C beskytter polyfenoler og den grønne fruktigheten.'],
   ['04', 'Sensorisk kontroll', 'Fruktighet, bitterhet, skarphet og balanse vurderes før batchen får sin rolle i porteføljen.'],
 ];
@@ -191,39 +185,39 @@ const visualDirections = [
   {
     title: 'Finishing ved bordet',
     image: '/donaanna/product-design/verde-vivo-terrace-close.jpg',
-    text: 'Verde Vivo og Verde Alto skal fotograferes lyst, nært og appetittvekkende: terrasse, olivengren, Biar-landskap og tydelig produktfront.',
+    text: 'Verde Vivo og Verde Alto møter gjesten på bordet: brød, tomat, fisk, grønnsaker og en tydelig grønn finish rett før servering.',
   },
   {
     title: 'Restaurantkjøkken',
     image: '/donaanna/product-design/cocina-viva-chef-pour.jpg',
-    text: 'Cocina Viva må vises i arbeid: kokk, panne, kobber, QR/sporbarhet og større format som faktisk passer et profesjonelt kjøkken.',
+    text: 'Cocina Viva er utviklet for arbeidstempoet i et profesjonelt kjøkken, med større format og samme sporbare kvalitet som flaskene ved bordet.',
   },
   {
     title: 'Gammel rot og ild',
     image: '/donaanna/product-design/raiz-antigua-paella.jpg',
-    text: 'Raíz Antigua bør få varme, røyk, gamle trestykker og mørk stein. Dette er den mest emosjonelle og gaveverdige linjen.',
+    text: 'Raíz Antigua bærer gårdens mest emosjonelle uttrykk: gamle trær, varme rom, røyk, treverk og en olje som fortjener langsom servering.',
   },
   {
     title: 'Hele kolleksjonen',
     image: '/donaanna/product-design/full-product-lineup.jpg',
-    text: 'Produktfamilien bør være konsekvent: svart emballasje, kremfarget etikett, Anna-line-art og tydelig produktnavn på hvert format.',
+    text: 'Kolleksjonen samler olje og bordoliven i et visuelt språk av mørkt glass, kremfarget etikett, DA-monogram og Doña Annas rolige signatur.',
   },
 ];
 
 const videoStories = [
   {
     title: 'Michelin-kjøkkenet',
-    eyebrow: 'Chef proof',
+    eyebrow: 'I bruk',
     src: '/donaanna/video/michelin-chef-uses-dona-anna.mp4',
     poster: '/donaanna/product-design/cocina-viva-chef-pour.jpg',
-    text: 'Brukes som B2B-bevis: oljen er ikke bare vakker på flaske, den tåler varme, tempo og presisjon i et profesjonelt kjøkken.',
+    text: 'Doña Anna er laget for kjøkken som arbeider presist. Filmen viser oljen i bruk, der aroma, varme og timing avgjør hvordan retten avsluttes.',
   },
   {
     title: 'Flasken klar',
-    eyebrow: 'Bottle film',
+    eyebrow: 'Produktfilm',
     src: '/donaanna/video/video-av-flasken-klar.mp4',
     poster: '/donaanna/product-design/verde-vivo-estate-arches.jpg',
-    text: 'Kort produktfilm for hero, kampanjer og distributørpresentasjon. Den viser hvordan flasken skal føles før man åpner den.',
+    text: 'En rolig produktfilm som viser flaske, materiale og uttrykk. Den bygger forventning før første dråpe treffer tallerkenen.',
   },
 ];
 
@@ -330,9 +324,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="mt-12 grid max-w-5xl grid-cols-2 border border-white/12 bg-black/22 backdrop-blur md:grid-cols-4">
             {[
               ['Estate', signal.heroMetric],
-              ['Parcels', formatNumber(signal.parcelCount)],
-              ['Trees', formatNumber(signal.treeCount)],
-              ['Trace', signal.isLive ? `${signal.activeBatches} active batches` : 'QR-ready'],
+              ['Parseller', formatNumber(signal.parcelCount)],
+              ['Trær', formatNumber(signal.treeCount)],
+              ['Sporbarhet', signal.isLive ? `${signal.activeBatches} aktive batcher` : 'Batchklar'],
             ].map(([label, value]) => (
               <div key={label} className="border-white/12 p-4 odd:border-r md:border-r md:last:border-r-0">
                 <p className="text-[10px] uppercase tracking-[0.24em] text-[#d4af37]">{label}</p>
@@ -352,10 +346,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="relative mx-auto max-w-7xl px-5 md:px-8">
             <div className="grid gap-12 md:grid-cols-[0.9fr_1.1fr]">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">The estate</p>
+                <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Gården</p>
                 <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">En levende olivengård, ikke bare en etikett.</h2>
                 <p className="mt-6 text-lg leading-8 text-white/66">
-                  Doña Anna ligger i Biar i Alicante, med lunder som kombinerer tradisjon, gamle trær, regenerativ praksis og presis drift. Målet er å gi kokker en olje og bordoliven med en historie som tåler å bli fortalt ved bordet.
+                  Doña Anna ligger i Biar i Alicante, der kalkholdig jord, tørre somre og kjølige netter gir oliven med frisk grønn fruktighet, bitterhet og struktur. Gården kombinerer tradisjon, gamle trær, regenerativ praksis og presis dokumentasjon.
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                   <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
@@ -385,10 +379,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <img src="/donaanna/product-design/full-product-lineup.jpg" alt="Doña Anna produktlinje med Cocina Viva, Mesa, Verde Alto, Raíz Antigua og Verde Vivo" className="aspect-[16/9] w-full object-cover" />
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Brand system</p>
+              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Merkevaren</p>
               <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Mørk skifer, lyst tre og dempet middelhavslys.</h2>
               <p className="mt-6 text-lg leading-8 text-white/66">
-                Produktene bør fotograferes som high-end kosmetikk eller parfyme: matt svart glass, smal teksturert etikett, gullfolie og mye negativ plass. Det gir premiumfølelse før kunden smaker.
+                Doña Anna uttrykker middelhavets varme med et rolig, moderne luksusspråk: mørkt glass, kremfarget etikett, gulltoner og mye luft. Resultatet er en flaske som passer like godt på et hvitt restaurantbord som i et travelt kjøkken.
               </p>
               <div className="mt-8 grid gap-3 sm:grid-cols-3">
                 {[
@@ -423,10 +417,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="mx-auto mt-10 grid max-w-7xl gap-6 border border-white/10 bg-black/34 p-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
             <img src="/donaanna/social/dona-anna-youtube-channel-2560x1440.jpg" alt="Doña Anna YouTube kanalbanner" className="aspect-video w-full object-cover" />
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Channel banner</p>
-              <h3 className="mt-3 font-serif text-3xl md:text-4xl">Klar for YouTube og kampanjeprofil.</h3>
+              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Doña Anna</p>
+              <h3 className="mt-3 font-serif text-3xl md:text-4xl">En samlet visuell identitet.</h3>
               <p className="mt-4 leading-7 text-white/62">
-                Banneret samler DA-monogram, Doña Anna-navnet, Biar/Alicante og produktfamilien i én tydelig flate. Brukes til YouTube, presentasjoner, distributørdekker og kampanjebilder.
+                DA-monogrammet, navnet, Biar/Alicante og produktfamilien danner én tydelig flate. Det gir gjenkjennelse på nettside, video, smaksprøver, presentasjoner og emballasje.
               </p>
             </div>
           </div>
@@ -436,11 +430,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="mx-auto max-w-7xl">
             <div className="mb-10 grid gap-8 md:grid-cols-[0.85fr_1.15fr]">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Motion assets</p>
+                <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">I bruk</p>
                 <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Video som selger produktet før smaking.</h2>
               </div>
               <p className="self-end text-lg leading-8 text-white/66">
-                De nye filmene bør brukes taktisk: én for flaskens premiumfølelse, én for kokkebruk og B2B-tillit. Begge kan senere kobles til QR, produktark og tasting-kit-flyten.
+                En god olje må sees i arbeid. Filmene viser Doña Anna i to situasjoner som betyr mest for kjøpere: flaskens premiumfølelse og kokkens praktiske bruk i et profesjonelt kjøkken.
               </p>
             </div>
             <div className="grid gap-5 lg:grid-cols-2">
@@ -463,7 +457,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
         <section id="portfolio" className="mx-auto max-w-7xl px-5 py-24 md:px-8">
           <div className="mb-12 grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Exclusive portfolio</p>
+              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Portefølje</p>
               <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Olje og bordoliven bygget som en kolleksjon.</h2>
             </div>
             <p className="self-end text-lg leading-8 text-white/66">
@@ -474,11 +468,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             {portfolio.map(item => (
               <article key={item.name} className="group border border-white/10 bg-white/[0.035] p-4 transition hover:border-[#d4af37]/50">
                 <div className="grid gap-3">
-                  <div className="h-56 overflow-hidden bg-[#080808]">
+                  <div className="h-72 overflow-hidden bg-[#080808]">
                     <img src={item.photo} alt={`${item.name} designfoto`} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
-                  </div>
-                  <div className="flex min-h-[250px] items-center justify-center bg-[#080808] p-5">
-                    <img src={item.label} alt={`${item.name} produktmockup`} className="max-h-[230px] w-full object-contain transition duration-500 group-hover:scale-[1.03]" />
                   </div>
                 </div>
                 <div className="p-2 pt-5">
@@ -497,11 +488,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="mx-auto max-w-7xl">
             <div className="mb-12 grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">Knowledge center</p>
-                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Mer substans fra den gamle siden, løftet til 2026.</h2>
+                <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">Kunnskap</p>
+                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Smak, helse og jord henger sammen.</h2>
               </div>
               <p className="self-end text-lg leading-8 text-black/66">
-                Den gamle donaanna.com hadde sterke temaer: polyfenoler, regenerativ dyrking, tidlig høsting og kvalitetstesting. Nå blir dette en mer premium, B2B-vennlig del som forklarer hvorfor oljen kan prises høyere.
+                Premium extra virgin olivenolje handler om mer enn en grønn flaske. Høstingstidspunkt, polyfenoler, jordliv, ekstraksjon og sensorisk kontroll avgjør både smaken, holdbarheten og opplevelsen ved bordet.
               </p>
             </div>
             <div className="grid gap-5 lg:grid-cols-3">
@@ -525,7 +516,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <div className="absolute bottom-0 p-6">
                   <Sparkles className="text-[#d4af37]" size={26} />
                   <h3 className="mt-4 font-serif text-4xl">Kvalitetsforskjellen</h3>
-                  <p className="mt-3 max-w-md leading-7 text-white/68">Fra gammel side: håndverk, rask pressing, kald ekstraksjon og sensorisk evaluering. Her gjort mer presist for restauranter og innkjøpere.</p>
+                  <p className="mt-3 max-w-md leading-7 text-white/68">Fruktighet, bitterhet, skarphet og balanse vurderes før en batch får sin plass i porteføljen. Det gir kokker en olje som oppfører seg forutsigbart på tallerkenen.</p>
                 </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -551,10 +542,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="absolute inset-0 bg-[linear-gradient(180deg,#0d0d0d,rgba(13,13,13,.78),#0d0d0d)]" />
           <div className="relative mx-auto grid max-w-7xl gap-10 px-5 md:grid-cols-[0.8fr_1.2fr] md:px-8">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">A day in the grove</p>
+              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Fra lund til kjøkken</p>
               <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Hva som skjer før flasken når kjøkkenet.</h2>
               <p className="mt-6 text-lg leading-8 text-white/62">
-                Den levende delen av merkevaren er ikke animasjon for animasjonens skyld. Det er rytmen i gården: målinger, valg, høsting, pressing, batch og dokumentasjon.
+                Rytmen i gården bestemmer kvaliteten i flasken. Hver beslutning, fra høstetidspunkt til ekstraksjon og lagring, påvirker aroma, bitterhet, skarphet og holdbarhet.
               </p>
             </div>
             <div className="space-y-3">
@@ -562,7 +553,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <div key={time} className="group grid grid-cols-[88px_1fr] border border-white/10 bg-white/[0.035] transition hover:border-[#d4af37]/60 hover:bg-white/[0.06]">
                   <div className="flex items-center justify-center border-r border-white/10 bg-black/30 font-serif text-lg text-[#d4af37]">{time}</div>
                   <div className="p-5">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/38">Moment {String(index + 1).padStart(2, '0')}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/38">Steg {String(index + 1).padStart(2, '0')}</p>
                     <p className="mt-2 leading-7 text-white/70">{text}</p>
                   </div>
                 </div>
@@ -594,19 +585,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             <div className="border border-[#d4af37]/30 bg-black p-6">
               <div className="flex items-center justify-between border-b border-white/10 pb-5">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#d4af37]">Bottle scan preview</p>
-                  <h3 className="mt-1 font-serif text-3xl">Verde Vivo · Batch 01</h3>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#d4af37]">Batchpass</p>
+                  <h3 className="mt-1 font-serif text-3xl">Verde Vivo · tidlig høst</h3>
                 </div>
                 <QrCode className="text-[#d4af37]" size={34} />
               </div>
               <div className="grid gap-3 py-6 sm:grid-cols-2">
                 {[
-                  ['Parcel', signal.heroMetric],
-                  ['Harvest', signal.latestHarvestDate || 'October'],
-                  ['Variety', 'Changlot Real / estate blend'],
-                  ['Polyphenols', 'Lab value via QR'],
-                  ['Extraction', '<27°C mechanical'],
-                  ['Status', signal.isLive ? 'Live data' : 'Demo-ready'],
+                  ['Parsell', signal.heroMetric],
+                  ['Høsting', signal.latestHarvestDate || 'Oktober-november'],
+                  ['Sort', 'Changlot Real / estate blend'],
+                  ['Polyfenoler', 'Analyseres per premiumbatch'],
+                  ['Ekstraksjon', 'Mekanisk · under 27°C'],
+                  ['Dokumentasjon', signal.isLive ? 'Aktiv batch' : 'Klar for QR'],
                 ].map(([label, value]) => (
                   <div key={label} className="border border-white/10 bg-white/[0.04] p-4">
                     <p className="text-[10px] uppercase tracking-[0.24em] text-[#d4af37]">{label}</p>
@@ -615,7 +606,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 ))}
               </div>
               <p className="border-t border-white/10 pt-5 text-sm leading-6 text-white/52">
-                Dette er salgsargumentet som forsvarer pris: en kokk kan vise gjesten nøyaktig hvor oljen kommer fra.
+                Sporbarhet gjør opprinnelsen konkret. Kokken kan vise gjesten hvor oljen kommer fra, når den ble høstet og hvilken sensorisk profil batchen har.
               </p>
             </div>
           </div>
@@ -624,12 +615,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
         <section className="bg-[#17130d] px-5 py-16 md:px-8">
           <div className="mx-auto flex max-w-7xl flex-col gap-6 border border-[#d4af37]/30 bg-black/24 p-6 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#d4af37]">For chefs and buyers</p>
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#d4af37]">For restauranter og innkjøpere</p>
               <h2 className="mt-2 font-serif text-3xl md:text-4xl">Smak før du bestemmer deg.</h2>
               <p className="mt-2 max-w-2xl text-white/62">Vi kan sette sammen en liten B2B-smakspakke med Verde Vivo, Verde Alto og Mesa-bordoliven.</p>
             </div>
             <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
-              Request tasting kit <ArrowRight size={17} />
+              Bestill tasting kit <ArrowRight size={17} />
             </a>
           </div>
         </section>
@@ -637,10 +628,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
         <section id="specs" className="mx-auto max-w-7xl px-5 py-24 md:px-8">
           <div className="grid gap-10 md:grid-cols-[0.8fr_1.2fr]">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">B2B data</p>
+              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Produktdata</p>
               <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">{t.specTitle}</h2>
               <p className="mt-6 text-lg leading-8 text-white/60">
-                Kokker og distributører trenger fakta. Derfor bør hvert produkt ha teknisk ark, smaksnotater, format, prisnivå, batchnummer og labanalyse.
+                Profesjonelle kjøpere trenger tydelige fakta. Doña Anna samler smaksnotater, format, høstedato, sort, batchnummer og analyseverdier slik at produktet er enkelt å vurdere, prise og servere.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -657,14 +648,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
         <section id="tasting" className="bg-[#f8f5ea] px-5 py-24 text-black md:px-8">
           <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[1fr_0.9fr]">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">Lead generation</p>
+              <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">Smaksprøve</p>
               <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Bestill en eksklusiv smaksprøve for din restaurant.</h2>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-black/66">
-                Tasting kit bør inneholde Verde Vivo, Verde Alto, Mesa-bordoliven, produktark og QR-demo. Målet er ikke “kontakt oss”, men å få kokken til å smake.
+                Tasting kit gir kjøkkensjefer og innkjøpere en konkret første opplevelse av Doña Anna: tidlig-høstet olje, bordoliven, smaksnotater, formatinformasjon og batchsporbarhet.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <a href="/labels/luxury/verde-vivo-luxury-label.svg" className="inline-flex items-center gap-2 border border-black/15 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em]">
-                  <FileText size={16} /> Produktark
+                <a href="mailto:info@donaanna.com?subject=Produktark%20Do%C3%B1a%20Anna" className="inline-flex items-center gap-2 border border-black/15 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em]">
+                  <FileText size={16} /> Be om produktark
                 </a>
                 <button onClick={onLogin} className="inline-flex items-center gap-2 border border-black/15 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em]">
                   <Package size={16} /> B2B-login
