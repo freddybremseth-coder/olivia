@@ -69,7 +69,7 @@ const portfolio = [
     format: '500 ml · Cosecha Temprana I',
     role: 'Finishing oil for fine dining',
     label: '/labels/mockups/verde-vivo-bottle.svg',
-    photo: '/donaanna/product-design/verde-vivo-breakfast-collage.jpg',
+    photo: '/donaanna/product-design/verde-vivo-estate-arches.jpg',
     text: 'Høyeste polyfenolnivå, lavt utbytte, kraftig grønn fruktighet og lang pepperfinish.',
   },
   {
@@ -78,7 +78,7 @@ const portfolio = [
     format: '500 ml · Cosecha Temprana II',
     role: 'Premium daily finishing',
     label: '/labels/mockups/verde-alto-bottle.svg',
-    photo: '/donaanna/product-design/full-product-lineup.jpg',
+    photo: '/donaanna/product-design/verde-alto-rustic-room.jpg',
     text: 'Tidlig høstet og polyfenolsterk, men rundere. Den mest skalerbare premiumlinjen.',
   },
   {
@@ -87,7 +87,7 @@ const portfolio = [
     format: '500 ml · old-tree estate selection',
     role: 'Limited allocation',
     label: '/labels/mockups/raiz-antigua-bottle.svg',
-    photo: '/donaanna/product-design/raiz-antigua-cellar.jpg',
+    photo: '/donaanna/product-design/raiz-antigua-label-hero.jpg',
     text: 'Gamle trær, nummerert batch og høy gave-/restaurantverdi. Sortsdeles bare hvis data støtter det.',
   },
   {
@@ -96,7 +96,7 @@ const portfolio = [
     format: 'Genovesa · Gordal · Changlot Real · Picual',
     role: 'Tasting flight / sommelier set',
     label: '/labels/mockups/monovarietal-bottle.svg',
-    photo: '/donaanna/product-design/product-family-studio.jpg',
+    photo: '/donaanna/product-design/portfolio-slate-mesa.jpg',
     text: 'Små batcher for smaking, opplæring og restauranter som vil fortelle sortshistorien.',
   },
   {
@@ -105,7 +105,7 @@ const portfolio = [
     format: '2 L / 5 L · chef format',
     role: 'Kitchen service',
     label: '/labels/mockups/cocina-viva-tin.svg',
-    photo: '/donaanna/product-design/cocina-viva-chef.jpg',
+    photo: '/donaanna/product-design/cocina-viva-chef-pour.jpg',
     text: 'Mørk metallkanne eller bag-in-box for profesjonelle kjøkken. Estate traceable, praktisk format.',
   },
   {
@@ -114,7 +114,7 @@ const portfolio = [
     format: 'Aceitunas de mesa',
     role: 'Spanish markets / restaurants',
     label: '/labels/mockups/mesa-jar.svg',
-    photo: '/donaanna/product-design/full-product-lineup.jpg',
+    photo: '/donaanna/product-design/portfolio-slate-mesa.jpg',
     text: 'Bordoliven for grønnsaksmarkeder, barer og restauranter. Varmere markedsspråk, samme Doña Anna-kvalitet.',
   },
 ];
@@ -190,12 +190,12 @@ const qualitySteps = [
 const visualDirections = [
   {
     title: 'Finishing ved bordet',
-    image: '/donaanna/product-design/verde-vivo-breakfast-collage.jpg',
-    text: 'Verde Vivo og Verde Alto skal fotograferes lyst, nært og appetittvekkende: brød, tomat, olivengren og tydelig helling av oljen.',
+    image: '/donaanna/product-design/verde-vivo-terrace-close.jpg',
+    text: 'Verde Vivo og Verde Alto skal fotograferes lyst, nært og appetittvekkende: terrasse, olivengren, Biar-landskap og tydelig produktfront.',
   },
   {
     title: 'Restaurantkjøkken',
-    image: '/donaanna/product-design/cocina-viva-b2b-collage.jpg',
+    image: '/donaanna/product-design/cocina-viva-chef-pour.jpg',
     text: 'Cocina Viva må vises i arbeid: kokk, panne, kobber, QR/sporbarhet og større format som faktisk passer et profesjonelt kjøkken.',
   },
   {
@@ -207,6 +207,23 @@ const visualDirections = [
     title: 'Hele kolleksjonen',
     image: '/donaanna/product-design/full-product-lineup.jpg',
     text: 'Produktfamilien bør være konsekvent: svart emballasje, kremfarget etikett, Anna-line-art og tydelig produktnavn på hvert format.',
+  },
+];
+
+const videoStories = [
+  {
+    title: 'Michelin-kjøkkenet',
+    eyebrow: 'Chef proof',
+    src: '/donaanna/video/michelin-chef-uses-dona-anna.mp4',
+    poster: '/donaanna/product-design/cocina-viva-chef-pour.jpg',
+    text: 'Brukes som B2B-bevis: oljen er ikke bare vakker på flaske, den tåler varme, tempo og presisjon i et profesjonelt kjøkken.',
+  },
+  {
+    title: 'Flasken klar',
+    eyebrow: 'Bottle film',
+    src: '/donaanna/video/video-av-flasken-klar.mp4',
+    poster: '/donaanna/product-design/verde-vivo-estate-arches.jpg',
+    text: 'Kort produktfilm for hero, kampanjer og distributørpresentasjon. Den viser hvordan flasken skal føles før man åpner den.',
   },
 ];
 
@@ -291,7 +308,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       </nav>
 
       <header id="top" className="relative min-h-screen overflow-hidden">
-        <img src="/donaanna/hero-image.jpg" alt="Oliven fra Doña Anna" className="absolute inset-0 h-full w-full object-cover opacity-42" />
+        <img src="/donaanna/product-design/verde-vivo-estate-arches.jpg" alt="Doña Anna Verde Vivo i Biar" className="absolute inset-0 h-full w-full object-cover opacity-36" />
+        <video className="absolute inset-0 h-full w-full object-cover opacity-48" autoPlay muted loop playsInline poster="/donaanna/product-design/verde-vivo-estate-arches.jpg">
+          <source src="/donaanna/video/video-av-flasken-klar.mp4" type="video/mp4" />
+        </video>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_42%,rgba(212,175,55,.16),transparent_34%),linear-gradient(90deg,rgba(13,13,13,.98),rgba(13,13,13,.78),rgba(13,13,13,.42))]" />
         <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col justify-end px-5 pb-12 pt-28 md:px-8">
           <div className="max-w-4xl animate-in fade-in duration-700">
@@ -399,6 +419,34 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 </div>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section className="bg-[#111111] px-5 py-24 md:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-10 grid gap-8 md:grid-cols-[0.85fr_1.15fr]">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Motion assets</p>
+                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Video som selger produktet før smaking.</h2>
+              </div>
+              <p className="self-end text-lg leading-8 text-white/66">
+                De nye filmene bør brukes taktisk: én for flaskens premiumfølelse, én for kokkebruk og B2B-tillit. Begge kan senere kobles til QR, produktark og tasting-kit-flyten.
+              </p>
+            </div>
+            <div className="grid gap-5 lg:grid-cols-2">
+              {videoStories.map(item => (
+                <article key={item.title} className="overflow-hidden border border-white/10 bg-black">
+                  <video className="aspect-video w-full object-cover" controls muted playsInline preload="metadata" poster={item.poster}>
+                    <source src={item.src} type="video/mp4" />
+                  </video>
+                  <div className="p-6">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#d4af37]">{item.eyebrow}</p>
+                    <h3 className="mt-2 font-serif text-3xl">{item.title}</h3>
+                    <p className="mt-4 leading-7 text-white/62">{item.text}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
 
