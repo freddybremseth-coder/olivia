@@ -30,6 +30,7 @@ interface LandingPageProps {
 }
 
 type Locale = 'no' | 'es' | 'en';
+type PortfolioItem = [string, string, string, string, string, string, string, string, string];
 
 const icons = [SunMedium, Leaf, Sprout, Trees];
 
@@ -143,6 +144,16 @@ const content = {
       success: 'Takk. Forespørselen er registrert, og Doña Anna kan følge opp med tasting kit.',
       error: 'Skjemaet er klart, men Supabase må være konfigurert før forespørsler kan lagres automatisk.',
     },
+    productCta: {
+      more: 'Se produktinfo',
+      order: 'Bestill i B2B portal',
+      access: 'Få B2B-bruker',
+      talk: 'Be om oppfølging',
+      close: 'Lukk',
+      specs: 'Produktdetaljer',
+      portalText: 'Logg inn for å bestille, se B2B-priser, produktark og ordrestatus.',
+      accessText: 'Ny kunde? Registrer deg for brukernavn og passord til B2B-portalen.',
+    },
     footerPortal: 'B2B portal',
   },
   es: {
@@ -254,6 +265,16 @@ const content = {
       success: 'Gracias. La solicitud está registrada y Doña Anna podrá preparar el tasting kit.',
       error: 'El formulario está listo, pero Supabase debe estar configurado para guardar solicitudes automáticamente.',
     },
+    productCta: {
+      more: 'Ver producto',
+      order: 'Pedir en portal B2B',
+      access: 'Solicitar usuario B2B',
+      talk: 'Pedir seguimiento',
+      close: 'Cerrar',
+      specs: 'Detalles del producto',
+      portalText: 'Inicia sesión para pedir, ver precios B2B, fichas técnicas y estado de pedidos.',
+      accessText: '¿Nuevo cliente? Regístrate para recibir usuario y contraseña del portal B2B.',
+    },
     footerPortal: 'Portal B2B',
   },
   en: {
@@ -364,6 +385,16 @@ const content = {
       sending: 'Sending...',
       success: 'Thank you. The request has been registered and Doña Anna can follow up with a tasting kit.',
       error: 'The form is ready, but Supabase must be configured before requests can be saved automatically.',
+    },
+    productCta: {
+      more: 'View product info',
+      order: 'Order in B2B portal',
+      access: 'Get B2B access',
+      talk: 'Request follow-up',
+      close: 'Close',
+      specs: 'Product details',
+      portalText: 'Log in to order, view B2B prices, product sheets and order status.',
+      accessText: 'New customer? Register to receive username and password for the B2B portal.',
     },
     footerPortal: 'B2B portal',
   },
@@ -490,7 +521,7 @@ const timeline = {
 
 const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(value);
 
-function productToPortfolioItem(product: CommerceProduct): string[] {
+function productToPortfolioItem(product: CommerceProduct): PortfolioItem {
   const primaryCollection = product.collections[0] || 'Doña Anna';
   return [
     product.name,
@@ -505,13 +536,14 @@ function productToPortfolioItem(product: CommerceProduct): string[] {
   ];
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [locale, setLocale] = useState<Locale>('no');
   const [tastingForm, setTastingForm] = useState({ company: '', contactRole: '', email: '', deliveryAddress: '' });
   const [tastingStatus, setTastingStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [tastingMessage, setTastingMessage] = useState('');
   const [liveProducts, setLiveProducts] = useState<CommerceProduct[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<PortfolioItem | null>(null);
   const [signal, setSignal] = useState<PublicEstateSignal>({
     isLive: false,
     parcelCount: 2,
@@ -523,7 +555,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin }) => {
   });
 
   const t = content[locale];
-  const products = liveProducts.length ? liveProducts.map(productToPortfolioItem) : portfolio[locale];
+  const products: PortfolioItem[] = liveProducts.length ? liveProducts.map(productToPortfolioItem) : portfolio[locale] as PortfolioItem[];
 
   useEffect(() => {
     fetchPublicEstateSignal().then(setSignal);
@@ -553,6 +585,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin }) => {
       setTastingStatus('error');
       setTastingMessage(t.tasting.error);
     }
+  };
+
+  const requestProductFollowUp = (productName: string) => {
+    setTastingForm(prev => ({
+      ...prev,
+      contactRole: prev.contactRole || `${t.tasting.rolePlaceholder} · ${productName}`,
+    }));
+    setSelectedProduct(null);
+    window.setTimeout(() => document.getElementById('tasting')?.scrollIntoView({ behavior: 'smooth' }), 0);
   };
 
   const nextLocale: Locale = locale === 'no' ? 'es' : locale === 'es' ? 'en' : 'no';
@@ -747,11 +788,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin }) => {
             <p className="self-end text-lg leading-8 text-white/66">{t.portfolioIntro.text}</p>
           </div>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {products.map(([name, tier, material, accent, labelName, format, role, photo, text]) => (
+            {products.map((product) => {
+              const [name, tier, material, accent, labelName, format, role, photo, text] = product;
+              return (
               <article key={name} className="group border border-white/10 bg-white/[0.035] p-4 transition hover:border-white/35">
-                <div className="h-72 overflow-hidden bg-[#080808]">
+                <button
+                  type="button"
+                  onClick={() => setSelectedProduct(product)}
+                  className="block h-72 w-full overflow-hidden bg-[#080808] text-left"
+                  aria-label={`${t.productCta.more}: ${name}`}
+                >
                   <img src={photo} alt={`${name} product and label`} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
-                </div>
+                </button>
                 <div className="p-2 pt-5">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: accent }}>{tier}</p>
@@ -763,9 +811,26 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin }) => {
                   <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/48">{format}</p>
                   <p className="mt-3 text-xs uppercase tracking-[0.18em]" style={{ color: accent }}>{role}</p>
                   <p className="mt-4 leading-7 text-white/64">{text}</p>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProduct(product)}
+                      className="inline-flex h-10 items-center justify-center gap-2 border border-white/14 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-white transition hover:bg-white/10"
+                    >
+                      {t.productCta.more}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onLogin}
+                      className="inline-flex h-10 items-center justify-center gap-2 bg-brushed-gold px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-black transition hover:bg-white"
+                    >
+                      {t.productCta.order}
+                    </button>
+                  </div>
                 </div>
               </article>
-            ))}
+            );
+            })}
           </div>
         </section>
 
@@ -946,6 +1011,80 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin }) => {
           </div>
         </section>
       </main>
+
+      {selectedProduct && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/82 p-4 backdrop-blur-md" role="dialog" aria-modal="true" aria-label={selectedProduct[0]}>
+          <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto border border-white/14 bg-matte-black shadow-2xl">
+            <div className="grid lg:grid-cols-[0.92fr_1.08fr]">
+              <div className="relative min-h-[360px] bg-black">
+                <img src={selectedProduct[7]} alt={`${selectedProduct[0]} product detail`} className="absolute inset-0 h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_40%,rgba(0,0,0,.72))]" />
+                <div className="absolute bottom-0 p-6">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.28em]" style={{ color: selectedProduct[3] }}>{selectedProduct[1]}</p>
+                  <h3 className="mt-2 font-serif text-4xl text-white">{selectedProduct[0]}</h3>
+                </div>
+              </div>
+              <div className="p-6 md:p-8">
+                <div className="flex items-start justify-between gap-5">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-brushed-gold">{t.productCta.specs}</p>
+                    <h2 className="mt-2 font-serif text-4xl leading-tight text-white">{selectedProduct[4]}</h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProduct(null)}
+                    className="border border-white/12 p-2 text-white/62 transition hover:bg-white/10 hover:text-white"
+                    aria-label={t.productCta.close}
+                  >
+                    <X size={22} />
+                  </button>
+                </div>
+                <p className="mt-5 text-lg leading-8 text-white/72">{selectedProduct[8]}</p>
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  {[
+                    [selectedProduct[5], selectedProduct[2]],
+                    [selectedProduct[6], selectedProduct[1]],
+                  ].map(([label, value]) => (
+                    <div key={label} className="border border-white/10 bg-white/[0.04] p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.22em]" style={{ color: selectedProduct[3] }}>{label}</p>
+                      <p className="mt-2 text-sm leading-6 text-white/68">{value}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-7 grid gap-3 border border-white/10 bg-black/24 p-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-sm leading-6 text-white/66">{t.productCta.portalText}</p>
+                    <button
+                      type="button"
+                      onClick={onLogin}
+                      className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 bg-brushed-gold px-4 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-white"
+                    >
+                      <Package size={16} /> {t.productCta.order}
+                    </button>
+                  </div>
+                  <div>
+                    <p className="text-sm leading-6 text-white/66">{t.productCta.accessText}</p>
+                    <button
+                      type="button"
+                      onClick={onRegister}
+                      className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 border border-white/14 px-4 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-white/10"
+                    >
+                      <LockKeyhole size={16} /> {t.productCta.access}
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => requestProductFollowUp(selectedProduct[0])}
+                  className="mt-4 inline-flex h-11 items-center justify-center gap-2 border border-white/14 px-4 text-xs font-bold uppercase tracking-[0.18em] text-white/80 transition hover:bg-white/10 hover:text-white"
+                >
+                  <ArrowRight size={16} /> {t.productCta.talk}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer className="border-t border-white/10 bg-matte-black px-5 py-8 md:px-8">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
