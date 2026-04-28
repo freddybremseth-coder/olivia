@@ -122,7 +122,7 @@ const content = {
     band: {
       eyebrow: 'For stjernekokker og spesialforretninger',
       title: 'Oppdag Doña Anna Chef-kolleksjonen.',
-      text: 'Be om en eksklusiv smaksprøve med produktark, etikettoversikt og utvalgte oljer fra kolleksjonen.',
+      text: 'Be om et eksklusivt tasting kit med 3 x 50 ml miniflasker, produktark, etikettoversikt og utvalgte oljer fra kolleksjonen.',
     },
     specs: {
       eyebrow: 'Produktdata',
@@ -132,7 +132,7 @@ const content = {
     tasting: {
       eyebrow: 'Smaksprøve',
       title: 'Bestill en eksklusiv smaksprøve for restaurant, butikk eller distributør.',
-      text: 'Tasting kit gir en rask, konkret opplevelse av Doña Anna: etikett, smak, story, produktark og batchsporbarhet i samme pakke.',
+      text: 'Tasting kit består av 3 x 50 ml miniflasker i en elegant presentasjon, slik at kokker kan vurdere sensorikk, etikett, produktark og batchsporbarhet uten at produktet mister sin premiumverdi.',
       productSheet: 'Be om produktark',
       login: 'B2B-login',
       company: 'Restaurant / firma',
@@ -243,7 +243,7 @@ const content = {
     band: {
       eyebrow: 'Para chefs de alta cocina y tiendas especializadas',
       title: 'Descubre la colección Chef de Doña Anna.',
-      text: 'Solicita una muestra exclusiva con ficha técnica, guía de etiqueta y aceites seleccionados de la colección.',
+      text: 'Solicita un tasting kit exclusivo con 3 x 50 ml, ficha técnica, guía de etiqueta y aceites seleccionados de la colección.',
     },
     specs: {
       eyebrow: 'Ficha técnica',
@@ -253,7 +253,7 @@ const content = {
     tasting: {
       eyebrow: 'Cata',
       title: 'Solicita una muestra exclusiva para restaurante, tienda o distribuidor.',
-      text: 'El tasting kit ofrece una experiencia directa: etiqueta, sabor, relato, ficha técnica y trazabilidad por lote en una misma entrega.',
+      text: 'El tasting kit reúne 3 x 50 ml en una presentación elegante, para que el chef evalúe sensorialidad, etiqueta, ficha técnica y trazabilidad sin devaluar el producto.',
       productSheet: 'Pedir ficha técnica',
       login: 'Acceso B2B',
       company: 'Restaurante / empresa',
@@ -364,7 +364,7 @@ const content = {
     band: {
       eyebrow: 'For starred chefs and specialty retailers',
       title: 'Discover the Doña Anna Chef collection.',
-      text: 'Request an exclusive tasting kit with product sheets, label guidance and selected oils from the collection.',
+      text: 'Request an exclusive tasting kit with 3 x 50 ml mini bottles, product sheets, label guidance and selected oils from the collection.',
     },
     specs: {
       eyebrow: 'Product data',
@@ -374,7 +374,7 @@ const content = {
     tasting: {
       eyebrow: 'Tasting kit',
       title: 'Request an exclusive sample for your restaurant, store or distribution portfolio.',
-      text: 'The tasting kit gives buyers a direct first experience: label, flavor, story, product sheet and batch traceability in one package.',
+      text: 'The tasting kit presents 3 x 50 ml mini bottles in an elegant box, letting chefs evaluate flavor, label, product sheet and batch traceability without devaluing the hero bottles.',
       productSheet: 'Request product sheet',
       login: 'B2B login',
       company: 'Restaurant / company',
@@ -406,7 +406,7 @@ const portfolio = {
     ['Raíz Antigua', 'Nivå 2 · Heritage premium', 'Strukturert bomullspapir · kobber', '#B87333', 'DOÑA ANNA · RAÍZ ANTIGUA', '500 ml · hundreårige trær', 'Flytende historie fra Biar', '/donaanna/product-design/raiz-antigua-label-hero.jpg', 'En Limited Edition presset fra våre eldste røtter. Oljen har meditativ kompleksitet og en varmere profil med toner av ristet mandel, artisjokk og ville middelhavsurter. Skapt for kraftige kjøttretter, modne oster og sauser der oljen skal ta styring.'],
     ['Verde Alto', 'Nivå 3 · Classic premium', 'Lett kremetikett · børstet gull', '#D4AF37', 'DOÑA ANNA · VERDE ALTO', '500 ml · klassisk hus-olje', 'Harmonisk Extra Virgin', '/donaanna/product-design/verde-alto-rustic-room.jpg', 'Vår klassiske hus-olje: en harmonisk Extra Virgin med grønn karakter, balansert bitterhet og ren finish. Skapt for å heve hverdagsgastronomien uten å overdøve råvaren, fra grønnsaker og fisk til brødservering og kalde emulsjoner.'],
     ['Monovarietal Changlot Real', 'Nivå 1 · Super-premium', 'Ren kremhvit etikett · sølv', '#C0C0C0', 'DOÑA ANNA · CHANGLOT REAL', '500 ml · sjelden lokal sort', 'Alicantes terroir i ren form', '/donaanna/changlot-real.jpg', 'Changlot Real er en sjelden og sofistikert sort som trives i vårt mikroklima. Den gir aromaer av grønn mandel og et hint av grønn banan, med en mesterlig balanse mellom subtil bitterhet og elegant fruktighet. Signaturolje til brødservering, kalde emulsjoner og delikate grønnsaksretter.'],
-    ['Cocina Viva', 'Nivå 4 · Profesjonelt kjøkken', 'Mattsvart metallkanne · sort/hvitt trykk', '#F9F8F6', 'DOÑA ANNA · COCINA VIVA', '2 L / 5 L · kokkeformat', 'Kjøkkensjefens arbeidshest', '/donaanna/product-design/cocina-viva-b2b-collage.jpg', 'En robust, men harmonisk Extra Virgin skapt for varmebehandling og høyt tempo på profesjonelle kjøkken. Leverer en ren base med høy stabilitet uten å overdøve råvaren. Ideell til presisjonssteking, konfitering, marinader, aioli og store emulsjoner.'],
+    ['Cocina Viva', 'Nivå 4 · Profesjonelt kjøkken', 'Mattsvart metallkanne · sort/hvitt trykk', '#F9F8F6', 'DOÑA ANNA · COCINA VIVA', '3 L · kokkeformat', 'Kjøkkensjefens arbeidshest', '/donaanna/product-design/cocina-viva-b2b-collage.jpg', 'En robust, men harmonisk Extra Virgin skapt for varmebehandling og høyt tempo på profesjonelle kjøkken. Leverer en ren base med høy stabilitet uten å overdøve råvaren. Ideell til presisjonssteking, konfitering, marinader, aioli og store emulsjoner.'],
     ['Mesa · Gordal Noble', 'Nivå 5 · Bordoliven', 'Mørk terrakotta · lite gullsegl', '#C05A46', 'DOÑA ANNA · MESA', 'Aceitunas de mesa', 'The Queen of Olives', '/donaanna/product-design/portfolio-slate-mesa.jpg', 'Håndsorterte, gigantiske Gordal-oliven med eksepsjonelt kjøttfull tekstur og ren, smøraktig profil. Et feilfritt visuelt og kulinarisk element til aperitivo, eksklusive martini-varianter og premium tapas- eller charcuterie-bord.'],
   ],
   es: [
@@ -414,7 +414,7 @@ const portfolio = {
     ['Raíz Antigua', 'Nivel 2 · Heritage premium', 'Papel algodón texturizado · cobre', '#B87333', 'DOÑA ANNA · RAÍZ ANTIGUA', '500 ml · árboles centenarios', 'Historia líquida de Biar', '/donaanna/product-design/raiz-antigua-label-hero.jpg', 'Limited Edition de nuestras raíces más antiguas. Complejidad casi meditativa, perfil cálido y notas de almendra tostada, alcachofa y hierbas mediterráneas silvestres. Creado para carnes intensas, quesos maduros y salsas donde el aceite debe dirigir el plato.'],
     ['Verde Alto', 'Nivel 3 · Classic premium', 'Etiqueta crema clara · oro cepillado', '#D4AF37', 'DOÑA ANNA · VERDE ALTO', '500 ml · aceite de casa', 'Extra Virgin armónico', '/donaanna/product-design/verde-alto-rustic-room.jpg', 'Nuestro aceite clásico de casa: un Extra Virgin armónico con carácter verde, amargor equilibrado y final limpio. Creado para elevar la gastronomía diaria sin cubrir la materia prima, desde verduras y pescado hasta pan, emulsiones frías y servicio de mesa.'],
     ['Monovarietal Changlot Real', 'Nivel 1 · Super-premium', 'Etiqueta crema limpia · plata', '#C0C0C0', 'DOÑA ANNA · CHANGLOT REAL', '500 ml · variedad local rara', 'Terroir alicantino en estado puro', '/donaanna/changlot-real.jpg', 'Changlot Real es una variedad rara y sofisticada que prospera en nuestro microclima. Ofrece aromas de almendra verde y un toque de plátano verde, con equilibrio magistral entre amargor sutil y fruta elegante. Aceite de firma para pan, emulsiones frías y verduras delicadas.'],
-    ['Cocina Viva', 'Nivel 4 · Cocina profesional', 'Lata negra mate · impresión blanco/negro', '#F9F8F6', 'DOÑA ANNA · COCINA VIVA', '2 L / 5 L · formato chef', 'El lienzo del chef', '/donaanna/product-design/cocina-viva-b2b-collage.jpg', 'Un Extra Virgin robusto y armónico para calor y ritmo alto en cocinas profesionales. Entrega una base limpia y estable sin dominar el producto principal. Ideal para fritura precisa, confitado, marinadas, alioli y grandes emulsiones.'],
+    ['Cocina Viva', 'Nivel 4 · Cocina profesional', 'Lata negra mate · impresión blanco/negro', '#F9F8F6', 'DOÑA ANNA · COCINA VIVA', '3 L · formato chef', 'El lienzo del chef', '/donaanna/product-design/cocina-viva-b2b-collage.jpg', 'Un Extra Virgin robusto y armónico para calor y ritmo alto en cocinas profesionales. Entrega una base limpia y estable sin dominar el producto principal. Ideal para fritura precisa, confitado, marinadas, alioli y grandes emulsiones.'],
     ['Mesa · Gordal Noble', 'Nivel 5 · Aceitunas de mesa', 'Terracota oscura · pequeño sello oro', '#C05A46', 'DOÑA ANNA · MESA', 'Aceitunas de mesa', 'The Queen of Olives', '/donaanna/product-design/portfolio-slate-mesa.jpg', 'Aceitunas Gordal gigantes seleccionadas a mano, con textura excepcionalmente carnosa y perfil limpio, mantecoso y elegante. Un elemento visual y culinario impecable para aperitivo, martinis exclusivos y tablas premium de tapas o charcutería.'],
   ],
   en: [
@@ -422,7 +422,7 @@ const portfolio = {
     ['Raíz Antigua', 'Tier 2 · Heritage premium', 'Textured cotton paper · copper', '#B87333', 'DOÑA ANNA · RAÍZ ANTIGUA', '500 ml · centenary trees', 'Liquid history from Biar', '/donaanna/product-design/raiz-antigua-label-hero.jpg', 'A Limited Edition from our oldest roots. Almost meditative complexity, a warmer profile and deep notes of toasted almond, artichoke and wild Mediterranean herbs. Created for powerful meat dishes, mature cheeses and sauces where the oil should take command.'],
     ['Verde Alto', 'Tier 3 · Classic premium', 'Light cream label · brushed gold', '#D4AF37', 'DOÑA ANNA · VERDE ALTO', '500 ml · house oil', 'Harmonious Extra Virgin', '/donaanna/product-design/verde-alto-rustic-room.jpg', 'Our classic house oil: a harmonious Extra Virgin with green character, balanced bitterness and a clean finish. Made to elevate everyday gastronomy without overpowering the ingredient, from vegetables and fish to bread service and cold emulsions.'],
     ['Monovarietal Changlot Real', 'Tier 1 · Super-premium', 'Clean cream label · silver', '#C0C0C0', 'DOÑA ANNA · CHANGLOT REAL', '500 ml · rare local variety', 'Alicante terroir in pure form', '/donaanna/changlot-real.jpg', 'Changlot Real is a rare and sophisticated variety that thrives in our microclimate. It gives aromas of green almond and a hint of green banana, with masterful balance between subtle bitterness and elegant fruit. A signature oil for bread service, cold emulsions and delicate vegetable dishes.'],
-    ['Cocina Viva', 'Tier 4 · Chef format', 'Matte black tin · black/white print', '#F9F8F6', 'DOÑA ANNA · COCINA VIVA', '2 L / 5 L · chef format', "The chef's canvas", '/donaanna/product-design/cocina-viva-b2b-collage.jpg', 'A robust yet harmonious Extra Virgin created for heat, pace and discipline in professional kitchens. It delivers a clean, stable base without overwhelming the primary ingredient. Ideal for precision searing, confit, marinades, aioli and large emulsions.'],
+    ['Cocina Viva', 'Tier 4 · Chef format', 'Matte black tin · black/white print', '#F9F8F6', 'DOÑA ANNA · COCINA VIVA', '3 L · chef format', "The chef's canvas", '/donaanna/product-design/cocina-viva-b2b-collage.jpg', 'A robust yet harmonious Extra Virgin created for heat, pace and discipline in professional kitchens. It delivers a clean, stable base without overwhelming the primary ingredient. Ideal for precision searing, confit, marinades, aioli and large emulsions.'],
     ['Mesa · Gordal Noble', 'Tier 5 · Table olives', 'Dark terracotta · small gold seal', '#C05A46', 'DOÑA ANNA · MESA', 'Aceitunas de mesa', 'The Queen of Olives', '/donaanna/product-design/portfolio-slate-mesa.jpg', 'Hand-sorted giant Gordal olives with exceptionally meaty texture and a clean, buttery profile. A flawless visual and culinary element for aperitivo, exclusive martinis and premium tapas or charcuterie boards.'],
   ],
 };
@@ -520,6 +520,120 @@ const productCopyOverrides: Record<Locale, Record<string, { name?: string; forma
   },
 };
 
+const productCommercials: Record<Locale, Record<string, { format: string; price: string; note: string }>> = {
+  no: {
+    'verde-vivo': {
+      format: '500 ml heroflaske · 250 ml gaveformat',
+      price: 'Veiledende retail 350-550 kr · 250 ml 220-300 kr',
+      note: 'Plasseres først i sortimentet som prisanker: tidlig høst, lavt utbytte og høy polyfenolverdi.',
+    },
+    'raiz-antigua': {
+      format: '500 ml limited allocation',
+      price: 'Veiledende retail 250-350 kr',
+      note: 'Heritage-linjen selger alder, knapphet og dybde fra de eldste trærne.',
+    },
+    'verde-alto': {
+      format: '500 ml classic premium',
+      price: 'Veiledende retail 250-350 kr',
+      note: 'Go-to luksusoljen for helgemiddag, spesialbutikk og bordservering.',
+    },
+    'monovarietal-changlot-real': {
+      format: '500 ml monovarietal',
+      price: 'Veiledende retail 250-350 kr',
+      note: 'Sjelden lokal sort for kokker som vil vise Alicantes terroir i ren form.',
+    },
+    'cocina-viva': {
+      format: '2 L / 3 L mattsvart metallkanne · 5 L BiB på forespørsel',
+      price: 'Veiledende retail 600-900 kr for 3 L',
+      note: 'B2B-arbeidsformat med lavere literpris, høy stabilitet og sporbarhet for profesjonelle kjøkken.',
+    },
+    'mesa-gordal-noble': {
+      format: '250-350 g glasskrukke',
+      price: 'Veiledende retail 120-160 kr',
+      note: 'Et naturlig tilleggskjøp som bygger merkevaren rundt aperitivo og spansk matkultur.',
+    },
+    'mesa-aceitunas': {
+      format: '250-350 g glasskrukke',
+      price: 'Veiledende retail 120-160 kr',
+      note: 'Et naturlig tilleggskjøp som bygger merkevaren rundt aperitivo og spansk matkultur.',
+    },
+  },
+  es: {
+    'verde-vivo': {
+      format: 'Botella hero 500 ml · formato regalo 250 ml',
+      price: 'PVP recomendado 35-50 € · 250 ml 22-30 €',
+      note: 'Primero en la gama como ancla de valor: cosecha temprana, bajo rendimiento y alto valor polifenólico.',
+    },
+    'raiz-antigua': {
+      format: '500 ml limited allocation',
+      price: 'PVP recomendado 25-35 €',
+      note: 'La línea heritage vende edad, escasez y profundidad de los árboles más antiguos.',
+    },
+    'verde-alto': {
+      format: '500 ml classic premium',
+      price: 'PVP recomendado 25-35 €',
+      note: 'El aceite premium de referencia para tienda especializada, mesa y gastronomía de fin de semana.',
+    },
+    'monovarietal-changlot-real': {
+      format: '500 ml monovarietal',
+      price: 'PVP recomendado 25-35 €',
+      note: 'Variedad local rara para chefs que quieren mostrar el terroir de Alicante en estado puro.',
+    },
+    'cocina-viva': {
+      format: 'Lata negra mate 2 L / 3 L · 5 L BiB bajo solicitud',
+      price: 'PVP recomendado 60-90 € por 3 L',
+      note: 'Formato de trabajo B2B con mejor precio por litro, alta estabilidad y trazabilidad profesional.',
+    },
+    'mesa-gordal-noble': {
+      format: 'Tarro de vidrio 250-350 g',
+      price: 'PVP recomendado 10-15 €',
+      note: 'Un complemento natural que construye la marca alrededor del aperitivo y la cultura gastronómica española.',
+    },
+    'mesa-aceitunas': {
+      format: 'Tarro de vidrio 250-350 g',
+      price: 'PVP recomendado 10-15 €',
+      note: 'Un complemento natural que construye la marca alrededor del aperitivo y la cultura gastronómica española.',
+    },
+  },
+  en: {
+    'verde-vivo': {
+      format: '500 ml hero bottle · 250 ml gift format',
+      price: 'Recommended retail 350-550 NOK / €35-50 · 250 ml 220-300 NOK',
+      note: 'Placed first as the value anchor: early harvest, lower yield and high polyphenol value.',
+    },
+    'raiz-antigua': {
+      format: '500 ml limited allocation',
+      price: 'Recommended retail 250-350 NOK / €25-35',
+      note: 'The heritage line sells age, scarcity and depth from the oldest trees.',
+    },
+    'verde-alto': {
+      format: '500 ml classic premium',
+      price: 'Recommended retail 250-350 NOK / €25-35',
+      note: 'The go-to luxury oil for specialty retail, table service and weekend gastronomy.',
+    },
+    'monovarietal-changlot-real': {
+      format: '500 ml monovarietal',
+      price: 'Recommended retail 250-350 NOK / €25-35',
+      note: 'A rare local variety for chefs who want Alicante terroir in pure form.',
+    },
+    'cocina-viva': {
+      format: '2 L / 3 L matte black tin · 5 L BiB on request',
+      price: 'Recommended retail 600-900 NOK / €60-90 for 3 L',
+      note: 'A B2B work format with stronger liter economics, high stability and professional traceability.',
+    },
+    'mesa-gordal-noble': {
+      format: '250-350 g glass jar',
+      price: 'Recommended retail 120-160 NOK / €10-15',
+      note: 'A natural add-on purchase that builds the brand around aperitivo and Spanish food culture.',
+    },
+    'mesa-aceitunas': {
+      format: '250-350 g glass jar',
+      price: 'Recommended retail 120-160 NOK / €10-15',
+      note: 'A natural add-on purchase that builds the brand around aperitivo and Spanish food culture.',
+    },
+  },
+};
+
 const shared = {
   labelAssets: [
     ['/labels/luxury/dona-anna-monogram-da.svg', 'DA monogram'],
@@ -568,7 +682,7 @@ const specs = {
     ['Kvalitet', 'Extra virgin med sensorisk kontroll og analyse per batch'],
     ['Polyfenoler', 'Måles per premiumbatch og kobles til QR-sporing'],
     ['Sorter', 'Genovesa · Gordal · Changlot Real · Picual'],
-    ['Formater', '500 ml · 2 L · 5 L · bordoliven'],
+    ['Formater', '500 ml heroflaske · 250 ml gaveformat · 3 L kokkekanne · 5 L BiB · 250-350 g oliven'],
   ],
   es: [
     ['Cosecha', 'Cosecha temprana en dos pasadas para intensidad y frescura'],
@@ -576,7 +690,7 @@ const specs = {
     ['Calidad', 'Virgen extra con control sensorial y análisis por lote'],
     ['Polifenoles', 'Medidos por lote premium y conectados a la trazabilidad QR'],
     ['Variedades', 'Genovesa · Gordal · Changlot Real · Picual'],
-    ['Formatos', '500 ml · 2 L · 5 L · aceitunas de mesa'],
+    ['Formatos', 'Botella hero 500 ml · regalo 250 ml · lata chef 3 L · 5 L BiB · aceitunas 250-350 g'],
   ],
   en: [
     ['Harvest', 'Early harvest in two passes for clear intensity and freshness'],
@@ -584,7 +698,7 @@ const specs = {
     ['Quality', 'Extra virgin with sensory control and batch analysis'],
     ['Polyphenols', 'Measured by premium batch and connected to QR traceability'],
     ['Varieties', 'Genovesa · Gordal · Changlot Real · Picual'],
-    ['Formats', '500 ml · 2 L · 5 L · table olives'],
+    ['Formats', '500 ml hero bottle · 250 ml gift format · 3 L chef tin · 5 L BiB · 250-350 g olives'],
   ],
 };
 
@@ -632,6 +746,10 @@ function productToPortfolioItem(product: CommerceProduct, locale: Locale): Portf
 
 function normalizeProductName(name: string) {
   return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function getProductCommercial(name: string, locale: Locale) {
+  return productCommercials[locale][normalizeProductName(name)];
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
@@ -888,6 +1006,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {products.map((product) => {
               const [name, tier, material, accent, labelName, format, role, photo, text] = product;
+              const commercial = getProductCommercial(name, locale);
               return (
               <article key={name} className="group border border-white/10 bg-white/[0.035] p-4 transition hover:border-white/35">
                 <button
@@ -907,6 +1026,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   <p className="mt-2 text-[10px] uppercase tracking-[0.2em] text-white/44">{material}</p>
                   <p className="mt-3 border-y border-white/10 py-3 text-[10px] font-bold uppercase tracking-[0.22em] text-white/72">{labelName}</p>
                   <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/48">{format}</p>
+                  {commercial && (
+                    <div className="mt-4 border border-white/10 bg-black/24 p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/46">{commercial.format}</p>
+                      <p className="mt-2 text-sm font-medium text-white/82">{commercial.price}</p>
+                    </div>
+                  )}
                   <p className="mt-3 text-xs uppercase tracking-[0.18em]" style={{ color: accent }}>{role}</p>
                   <p className="mt-4 leading-7 text-white/64">{text}</p>
                   <div className="mt-5 flex flex-wrap gap-2">
@@ -1149,6 +1274,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                     </div>
                   ))}
                 </div>
+                {getProductCommercial(selectedProduct[0], locale) && (
+                  <div className="mt-3 grid gap-3 border border-white/10 bg-black/24 p-4 md:grid-cols-[0.85fr_1.15fr]">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: selectedProduct[3] }}>
+                        {getProductCommercial(selectedProduct[0], locale)?.format}
+                      </p>
+                      <p className="mt-2 text-lg text-white/86">{getProductCommercial(selectedProduct[0], locale)?.price}</p>
+                    </div>
+                    <p className="text-sm leading-6 text-white/58">{getProductCommercial(selectedProduct[0], locale)?.note}</p>
+                  </div>
+                )}
                 <div className="mt-7 grid gap-3 border border-white/10 bg-black/24 p-4 sm:grid-cols-2">
                   <div>
                     <p className="text-sm leading-6 text-white/66">{t.productCta.portalText}</p>
