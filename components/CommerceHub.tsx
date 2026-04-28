@@ -6,7 +6,6 @@ import {
   Download,
   Eye,
   FileText,
-  Globe2,
   ImagePlus,
   MapPin,
   MessageSquare,
@@ -115,7 +114,7 @@ interface CommerceHubProps {
 const CommerceHub: React.FC<CommerceHubProps> = ({ user, isAdmin = false }) => {
   if (!isAdmin && user) return <CustomerPortal user={user} />;
 
-  const [activeTab, setActiveTab] = useState<CommerceTab>('overview');
+  const [activeTab, setActiveTab] = useState<CommerceTab>('products');
   const [adminRows, setAdminRows] = useState<AdminRows>({
     customers,
     orders,
@@ -157,24 +156,24 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, isAdmin = false }) => {
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-300">Doña Anna Commerce</p>
-          <h2 className="mt-2 text-3xl font-bold text-white">B2B, produktkatalog, ordre og faktura samlet i Olivia OS</h2>
+          <h2 className="mt-2 text-3xl font-bold text-white">Backend for produkter, priser, ordre og faktura</h2>
           <p className="mt-2 max-w-3xl text-slate-400">
-            Her styrer du produktdata, kolleksjoner, bilder, B2B-priser, kundegrupper, ordre og innhold som brukes på web, e-post og QR.
+            Her administrerer du produktene som vises på websiden og i B2B-portalen: navn, størrelser, bilder, priser, lager, kolleksjoner og etikettdata.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button className="inline-flex items-center gap-2 rounded-xl bg-amber-300 px-4 py-3 text-sm font-bold text-black">
-            <Send size={17} /> Nytt tilbud
+          <button onClick={() => setActiveTab('products')} className="inline-flex items-center gap-2 rounded-xl bg-amber-300 px-4 py-3 text-sm font-bold text-black">
+            <Package size={17} /> Endre produkter
           </button>
-          <button className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white">
-            <Globe2 size={17} /> Publiser til web
+          <button onClick={() => setActiveTab('orders')} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white">
+            <ShoppingCart size={17} /> Se ordre
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: 'B2B pipeline', value: '€12 304', icon: BadgeEuro, tone: 'text-amber-300 bg-amber-300/10' },
+          { label: 'Produktverdi', value: '€12 304', icon: BadgeEuro, tone: 'text-amber-300 bg-amber-300/10' },
           { label: 'Åpne ordre', value: '3', icon: ShoppingCart, tone: 'text-blue-300 bg-blue-300/10' },
           { label: 'Flasker på lager', value: '1 600', icon: Package, tone: 'text-green-300 bg-green-300/10' },
           { label: 'Faktura til oppfølging', value: '2', icon: ReceiptText, tone: 'text-purple-300 bg-purple-300/10' },
