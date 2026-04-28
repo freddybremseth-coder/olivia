@@ -108,11 +108,11 @@ const emptyProduct = (): CommerceProduct => ({
 
 interface CommerceHubProps {
   user?: UserProfile;
-  isAdmin?: boolean;
+  mode?: 'backend' | 'customer';
 }
 
-const CommerceHub: React.FC<CommerceHubProps> = ({ user, isAdmin = false }) => {
-  if (!isAdmin && user) return <CustomerPortal user={user} />;
+const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => {
+  if (mode === 'customer' && user) return <CustomerPortal user={user} />;
 
   const [activeTab, setActiveTab] = useState<CommerceTab>('products');
   const [adminRows, setAdminRows] = useState<AdminRows>({

@@ -247,7 +247,7 @@ const App: React.FC = () => {
   if (showPublicSite) {
     return (
       <>
-        <LandingPage onLogin={() => openApp('login', 'commerce')} onAdminLogin={() => openApp('login', 'admin')} onRegister={() => openApp('register', 'commerce')} />
+        <LandingPage onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'admin')} onRegister={() => openApp('register', 'b2b_portal')} />
         {showLogin && (
           <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
         )}
@@ -258,7 +258,7 @@ const App: React.FC = () => {
   if (!isLoggedIn) {
     return (
       <>
-        <LandingPage onLogin={() => openLogin('login', 'commerce')} onAdminLogin={() => openLogin('login', 'admin')} onRegister={() => openLogin('register', 'commerce')} />
+        <LandingPage onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'admin')} onRegister={() => openLogin('register', 'b2b_portal')} />
         {showLogin && (
           <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
         )}
@@ -295,7 +295,8 @@ const App: React.FC = () => {
         onParcelSelect={setSelectedParcel}
       />;
       case 'production': return <ProductionView parcels={parcels} language={language} />;
-      case 'commerce': return <CommerceHub user={user} isAdmin={isAdmin} />;
+      case 'commerce': return <CommerceHub user={user} mode="backend" />;
+      case 'b2b_portal': return <CommerceHub user={user} mode="customer" />;
       case 'economy': return <ProfitabilityPage language={language} parcels={parcels} />;
       case 'fleet': return <FleetView />;
       case 'irrigation': return <IrrigationView />;
