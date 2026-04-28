@@ -17,7 +17,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Sprout, TreePine, Layers, ListChecks, Wind, Thermometer, Droplets,
   Brain, RefreshCcw, AlertCircle, MapPin, Wheat, TrendingUp, ChevronRight,
-  TrendingDown, Coins, Wallet
+  TrendingDown, Coins, Wallet, ShoppingCart, ReceiptText, Truck, MessageSquare
 } from 'lucide-react';
 import { Batch, Parcel, Recipe, Task, HarvestRecord, Language, FarmExpense, SubsidyIncome } from '../types';
 import {
@@ -33,6 +33,7 @@ import { useTranslation } from '../services/i18nService';
 import GlossaryText from './GlossaryText';
 import BatchTimeline from './BatchTimeline';
 import Sesonghjul from './Sesonghjul';
+import { CommerceBusinessMetrics, fetchCommerceBusinessMetrics } from '../services/customerPortal';
 
 interface Props {
   language: Language;
@@ -46,6 +47,17 @@ const STAGES = ['PLUKKING', 'LAKE', 'SKYLLING', 'MARINERING', 'LAGRING', 'PAKKIN
 
 const formatHa = (m2: number) => (m2 / 10_000).toLocaleString('no-NO', { maximumFractionDigits: 1 });
 const formatEur = (n: number) => n.toLocaleString('no-NO', { maximumFractionDigits: 0 });
+const emptyCommerceMetrics: CommerceBusinessMetrics = {
+  pendingOrders: 0,
+  shippedOrders: 0,
+  invoicedOrders: 0,
+  outstandingInvoices: 0,
+  paidInvoices: 0,
+  unpaidAmount: 0,
+  paidAmount: 0,
+  orderValue: 0,
+  openMessages: 0,
+};
 
 const FarmOverview: React.FC<Props> = ({ language, weatherData, locationName, parcels, onNavigate }) => {
   const { t } = useTranslation(language);
@@ -56,6 +68,7 @@ const FarmOverview: React.FC<Props> = ({ language, weatherData, locationName, pa
   const [harvests, setHarvests] = useState<HarvestRecord[]>([]);
   const [expenses, setExpenses] = useState<FarmExpense[]>([]);
   const [subsidies, setSubsidies] = useState<SubsidyIncome[]>([]);
+  const [commerceMetrics, setCommerceMetrics] = useState<CommerceBusinessMetrics>(emptyCommerceMetrics);
   const [insights, setInsights] = useState<FarmInsight[]>([]);
   const [insightsLoading, setInsightsLoading] = useState(true);
 
@@ -79,6 +92,25 @@ const FarmOverview: React.FC<Props> = ({ language, weatherData, locationName, pa
       setSubsidies(su);
     });
     return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadCommerceMetrics = () => {
+      fetchCommerceBusinessMetrics()
+        .then(metrics => {
+          if (!cancelled) setCommerceMetrics(metrics);
+        })
+        .catch(error => console.warn('[dashboard] commerce metrics failed', error));
+    };
+    loadCommerceMetrics();
+    window.addEventListener('storage', loadCommerceMetrics);
+    window.addEventListener('focus', loadCommerceMetrics);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('storage', loadCommerceMetrics);
+      window.removeEventListener('focus', loadCommerceMetrics);
+    };
   }, []);
 
   // Refresh tasks when other views (PruningAdvisor, TasksView) write
@@ -237,6 +269,61 @@ const FarmOverview: React.FC<Props> = ({ language, weatherData, locationName, pa
           color="text-purple-400" bg="bg-purple-500/10"
           onClick={onNavigate ? () => onNavigate('economy') : undefined}
         />
+      </div>
+
+      {/* ── B2B Commerce ──────────────────────────────────────────────── */}
+      <div className="glass rounded-3xl p-6 border border-white/10">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-5">
+          <div>
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <ShoppingCart size={18} className="text-amber-300" /> B2B Commerce
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Ordre, faktura, betaling og kundemeldinger fra B2B-portalen
+            </p>
+          </div>
+          {onNavigate && (
+            <button onClick={() => onNavigate('commerce')}
+              className="text-xs text-amber-300 hover:text-amber-200 flex items-center gap-1">
+              Åpne Commerce <ChevronRight size={12} />
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard
+            icon={ShoppingCart}
+            label="Ordre venter"
+            value={commerceMetrics.pendingOrders.toString()}
+            sub={`${commerceMetrics.orderValue > 0 ? `€${formatEur(commerceMetrics.orderValue)} ordreverdi` : 'Ingen ordreverdi'}`}
+            color="text-amber-300" bg="bg-amber-300/10"
+            onClick={onNavigate ? () => onNavigate('commerce') : undefined}
+          />
+          <KpiCard
+            icon={Truck}
+            label="Sendt / på vei"
+            value={commerceMetrics.shippedOrders.toString()}
+            sub="Forsendelser"
+            color="text-blue-300" bg="bg-blue-400/10"
+            onClick={onNavigate ? () => onNavigate('commerce') : undefined}
+          />
+          <KpiCard
+            icon={ReceiptText}
+            label="Fakturert"
+            value={commerceMetrics.invoicedOrders.toString()}
+            sub={`${commerceMetrics.paidInvoices} betalt`}
+            color="text-purple-300" bg="bg-purple-400/10"
+            onClick={onNavigate ? () => onNavigate('commerce') : undefined}
+          />
+          <KpiCard
+            icon={Wallet}
+            label="Utestående"
+            value={`€${formatEur(commerceMetrics.unpaidAmount)}`}
+            sub={`${commerceMetrics.outstandingInvoices} faktura · ${commerceMetrics.openMessages} meldinger`}
+            color={commerceMetrics.unpaidAmount > 0 ? 'text-red-300' : 'text-green-300'}
+            bg={commerceMetrics.unpaidAmount > 0 ? 'bg-red-400/10' : 'bg-green-400/10'}
+            onClick={onNavigate ? () => onNavigate('commerce') : undefined}
+          />
+        </div>
       </div>
 
       {/* ── Resultat sesong (P&L) ─────────────────────────────────────── */}

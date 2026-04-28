@@ -63,6 +63,11 @@ function rowToProfile(row: any, fallbackEmail = ''): UserProfile {
     subscription: (row.subscription ?? 'trial') as UserProfile['subscription'],
     subscriptionStart: row.subscription_start ?? new Date().toISOString().slice(0, 10),
     avatar: row.avatar ?? undefined,
+    company: row.company ?? undefined,
+    phone: row.phone ?? undefined,
+    billingAddress: row.billing_address ?? undefined,
+    shippingAddress: row.shipping_address ?? undefined,
+    taxId: row.tax_id ?? undefined,
   };
 }
 
@@ -91,6 +96,11 @@ export async function upsertProfile(profile: UserProfile): Promise<void> {
       subscription: profile.subscription,
       subscription_start: profile.subscriptionStart,
       avatar: profile.avatar ?? null,
+      company: profile.company ?? null,
+      phone: profile.phone ?? null,
+      billing_address: profile.billingAddress ?? null,
+      shipping_address: profile.shippingAddress ?? null,
+      tax_id: profile.taxId ?? null,
     }, { onConflict: 'id' });
   if (error) console.error('upsertProfile', error);
 }

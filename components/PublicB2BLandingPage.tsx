@@ -19,7 +19,9 @@ import {
   X,
 } from 'lucide-react';
 import { createB2BTastingRequest } from '../services/b2bTasting';
+import { fetchCommerceProducts } from '../services/commerceProducts';
 import { fetchPublicEstateSignal, PublicEstateSignal } from '../services/publicEstate';
+import { CommerceProduct } from '../types';
 
 interface LandingPageProps {
   onLogin: () => void;
@@ -488,12 +490,28 @@ const timeline = {
 
 const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(value);
 
+function productToPortfolioItem(product: CommerceProduct): string[] {
+  const primaryCollection = product.collections[0] || 'Doña Anna';
+  return [
+    product.name,
+    primaryCollection,
+    product.labelMaterial || product.collections.join(' · ') || 'Doña Anna product',
+    product.accentColor || '#D4AF37',
+    `DOÑA ANNA · ${product.name.toUpperCase()}`,
+    product.size || product.sku,
+    product.channel || product.category || 'Premium product',
+    product.imageUrl || '/donaanna/product-design/product-family-studio.jpg',
+    product.publicStory || product.description,
+  ];
+}
+
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [locale, setLocale] = useState<Locale>('no');
   const [tastingForm, setTastingForm] = useState({ company: '', contactRole: '', email: '', deliveryAddress: '' });
   const [tastingStatus, setTastingStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [tastingMessage, setTastingMessage] = useState('');
+  const [liveProducts, setLiveProducts] = useState<CommerceProduct[]>([]);
   const [signal, setSignal] = useState<PublicEstateSignal>({
     isLive: false,
     parcelCount: 2,
@@ -505,10 +523,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin }) => {
   });
 
   const t = content[locale];
-  const products = portfolio[locale];
+  const products = liveProducts.length ? liveProducts.map(productToPortfolioItem) : portfolio[locale];
 
   useEffect(() => {
     fetchPublicEstateSignal().then(setSignal);
+    fetchCommerceProducts({ publicOnly: true, fallback: false })
+      .then(rows => setLiveProducts(rows.filter(product => product.isPublic !== false)))
+      .catch(error => console.warn('[DonaAnna] Kunne ikke hente produktkatalog', error));
   }, []);
 
   const setField = (field: keyof typeof tastingForm, value: string) => {

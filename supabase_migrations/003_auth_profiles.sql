@@ -11,9 +11,19 @@ create table if not exists user_profiles (
   subscription        text not null default 'trial',           -- 'trial'|'monthly'|'annual'|'lifetime'
   subscription_start  text not null default to_char(now(), 'YYYY-MM-DD'),
   avatar              text,
+  company             text,
+  phone               text,
+  billing_address     text,
+  shipping_address    text,
+  tax_id              text,
   created_at          timestamptz default now(),
   updated_at          timestamptz default now()
 );
+alter table user_profiles add column if not exists company text;
+alter table user_profiles add column if not exists phone text;
+alter table user_profiles add column if not exists billing_address text;
+alter table user_profiles add column if not exists shipping_address text;
+alter table user_profiles add column if not exists tax_id text;
 create index if not exists user_profiles_email_idx on user_profiles(email);
 
 alter table user_profiles enable row level security;

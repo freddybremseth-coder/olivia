@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { 
   Users, UserPlus, UserMinus, UserCheck, TrendingUp, 
-  DollarSign, Mail, Phone, Calendar, Search, Filter, 
+  DollarSign, Mail, Search, Filter, Package, 
   MoreVertical, CheckCircle, Clock, AlertCircle, Sparkles
 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { ProductCatalog } from './CommerceHub';
 
 const mockSaaSData = [
   { month: 'Jan', active: 450, churn: 12, trials: 85 },
@@ -17,7 +18,7 @@ const mockSaaSData = [
 ];
 
 const AdminDashboard: React.FC = () => {
-  const [activeView, setActiveView] = useState<'users' | 'leads'>('users');
+  const [activeView, setActiveView] = useState<'users' | 'leads' | 'products'>('users');
 
   const subscribers = [
     { id: 1, name: 'Juan Garcia', email: 'juan@biar.es', plan: 'Annual', status: 'Active', since: '15.01.2024', revenue: 92 },
@@ -146,6 +147,12 @@ const AdminDashboard: React.FC = () => {
             >
               Historikk & Churn
             </button>
+            <button
+              onClick={() => setActiveView('products')}
+              className={`flex items-center gap-2 text-sm font-bold uppercase tracking-widest pb-1 border-b-2 transition-all ${activeView === 'products' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'}`}
+            >
+              <Package size={16} /> Produktkatalog
+            </button>
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="relative flex-1 md:w-64">
@@ -156,6 +163,11 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
+        {activeView === 'products' ? (
+          <div className="p-6">
+            <ProductCatalog />
+          </div>
+        ) : (
         <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
           <table className="w-full text-left">
             <thead>
@@ -208,6 +220,7 @@ const AdminDashboard: React.FC = () => {
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </div>
   );

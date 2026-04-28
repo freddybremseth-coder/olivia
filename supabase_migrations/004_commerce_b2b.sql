@@ -2,6 +2,12 @@
 -- Run after supabase_schema.sql when you are ready to connect the public site,
 -- Olivia OS, Admin and B2B/customer portal to the same commerce data.
 
+alter table user_profiles add column if not exists company text;
+alter table user_profiles add column if not exists phone text;
+alter table user_profiles add column if not exists billing_address text;
+alter table user_profiles add column if not exists shipping_address text;
+alter table user_profiles add column if not exists tax_id text;
+
 create table if not exists commerce_products (
   id                 text primary key,
   sku                text unique not null,
@@ -22,9 +28,20 @@ create table if not exists commerce_products (
   image_url          text,
   status             text not null default 'draft',
   public_story       text default '',
+  collections        text[] not null default '{}',
+  price_label        text,
+  label_material     text,
+  accent_color       text,
+  is_public          boolean not null default true,
   created_at         timestamptz default now(),
   updated_at         timestamptz default now()
 );
+
+alter table commerce_products add column if not exists collections text[] not null default '{}';
+alter table commerce_products add column if not exists price_label text;
+alter table commerce_products add column if not exists label_material text;
+alter table commerce_products add column if not exists accent_color text;
+alter table commerce_products add column if not exists is_public boolean not null default true;
 
 create table if not exists commerce_customers (
   id               text primary key,
@@ -101,6 +118,32 @@ create table if not exists commerce_invoices (
   updated_at     timestamptz default now()
 );
 
+create table if not exists commerce_shipments (
+  id              text primary key,
+  order_id        text references commerce_orders(id) on delete set null,
+  customer_id     text references commerce_customers(id) on delete set null,
+  carrier         text,
+  tracking_number text,
+  status          text not null default 'pending',
+  tracking_url    text,
+  shipped_at      timestamptz,
+  delivered_at    timestamptz,
+  created_at      timestamptz default now(),
+  updated_at      timestamptz default now()
+);
+
+create table if not exists commerce_messages (
+  id          text primary key,
+  customer_id text references commerce_customers(id) on delete set null,
+  profile_id  uuid references user_profiles(id) on delete set null,
+  subject     text not null,
+  body        text not null default '',
+  status      text not null default 'new',
+  direction   text not null default 'customer_to_admin',
+  created_at  timestamptz default now(),
+  updated_at  timestamptz default now()
+);
+
 create table if not exists commerce_content_templates (
   id            text primary key,
   name          text not null,
@@ -133,6 +176,8 @@ alter table commerce_customers         enable row level security;
 alter table commerce_orders            enable row level security;
 alter table commerce_order_items       enable row level security;
 alter table commerce_invoices          enable row level security;
+alter table commerce_shipments         enable row level security;
+alter table commerce_messages          enable row level security;
 alter table commerce_content_templates enable row level security;
 alter table b2b_tasting_requests       enable row level security;
 
@@ -141,6 +186,8 @@ drop policy if exists "allow all commerce_customers"         on commerce_custome
 drop policy if exists "allow all commerce_orders"            on commerce_orders;
 drop policy if exists "allow all commerce_order_items"       on commerce_order_items;
 drop policy if exists "allow all commerce_invoices"          on commerce_invoices;
+drop policy if exists "allow all commerce_shipments"         on commerce_shipments;
+drop policy if exists "allow all commerce_messages"          on commerce_messages;
 drop policy if exists "allow all commerce_content_templates" on commerce_content_templates;
 drop policy if exists "allow public insert b2b_tasting_requests" on b2b_tasting_requests;
 drop policy if exists "allow authenticated read b2b_tasting_requests" on b2b_tasting_requests;
@@ -150,15 +197,134 @@ create policy "allow all commerce_customers"         on commerce_customers      
 create policy "allow all commerce_orders"            on commerce_orders            for all using (true) with check (true);
 create policy "allow all commerce_order_items"       on commerce_order_items       for all using (true) with check (true);
 create policy "allow all commerce_invoices"          on commerce_invoices          for all using (true) with check (true);
+create policy "allow all commerce_shipments"         on commerce_shipments         for all using (true) with check (true);
+create policy "allow all commerce_messages"          on commerce_messages          for all using (true) with check (true);
 create policy "allow all commerce_content_templates" on commerce_content_templates for all using (true) with check (true);
 create policy "allow public insert b2b_tasting_requests" on b2b_tasting_requests
   for insert with check (true);
 create policy "allow authenticated read b2b_tasting_requests" on b2b_tasting_requests
   for select using (auth.role() = 'authenticated');
 
+insert into commerce_products (
+  id, sku, name, description, category, size, channel, price_retail, stock,
+  image_url, status, public_story, collections, price_label, label_material,
+  accent_color, is_public
+) values
+  (
+    'p-verde-vivo',
+    'DA-VV-250',
+    'Verde Vivo',
+    'Super-premium finishing oil med intens grønn fruktighet, tydelig bitterhet og lang pepperfinish.',
+    'EVOO',
+    '250 ml',
+    'Fine dining finishing',
+    24.90,
+    420,
+    '/donaanna/product-design/verde-vivo-estate-arches.jpg',
+    'Aktiv',
+    'For restauranter som vil ha en signaturolje ved bordet.',
+    array['Verde Vivo', 'Restaurant', 'B2B Tasting Kit'],
+    '€24.90',
+    'Kremhvit etikett · platinafolie',
+    '#E5E4E2',
+    true
+  ),
+  (
+    'p-verde-alto',
+    'DA-VA-500',
+    'Verde Alto',
+    'Balansert premiumolje for bord, butikk og restaurantkjøkken der grønn karakter skal støtte råvaren.',
+    'EVOO',
+    '500 ml',
+    'Restaurant/Retail premium',
+    19.50,
+    760,
+    '/donaanna/product-design/verde-alto-rustic-room.jpg',
+    'Aktiv',
+    'Premiumoljen for bredere bruk på bord, i butikk og i restaurant.',
+    array['Verde Alto', 'Restaurant', 'Retail'],
+    '€19.50',
+    'Lett kremetikett · børstet gull',
+    '#D4AF37',
+    true
+  ),
+  (
+    'p-raiz-antigua',
+    'DA-RA-500',
+    'Raíz Antigua',
+    'Begrenset utvalg fra eldre trær, med varmere dybde og sterkere heritage-fortelling.',
+    'EVOO',
+    '500 ml',
+    'Limited allocation',
+    34.00,
+    180,
+    '/donaanna/product-design/raiz-antigua-label-hero.jpg',
+    'Aktiv',
+    'En begrenset seleksjon med dybde, varme og arv fra gamle trær.',
+    array['Raíz Antigua', 'Gavepakker', 'Retail'],
+    '€34.00',
+    'Strukturert bomullspapir · kobber',
+    '#B87333',
+    true
+  ),
+  (
+    'p-cocina-viva',
+    'DA-CV-5L',
+    'Cocina Viva',
+    'Profesjonelt kjøkkenformat for volum, mise en place og varme retter med sporbar kvalitet.',
+    'EVOO',
+    '5 L',
+    'Chef kitchen format',
+    0,
+    90,
+    '/donaanna/product-design/cocina-viva-b2b-collage.jpg',
+    'Aktiv',
+    'Arbeidsformatet for profesjonelle kjøkken som bruker olje hver dag.',
+    array['Cocina Viva', 'Restaurant'],
+    'B2B quote',
+    'Mattsvart metallkanne · sort/hvitt trykk',
+    '#F9F8F6',
+    true
+  ),
+  (
+    'p-mesa',
+    'DA-ME-750',
+    'Mesa Aceitunas',
+    'Bordoliven for aperitivo, bar, hotell, marked og butikker som vil ha spansk varme i hyllen.',
+    'Table olives',
+    '750 g',
+    'Spanish markets/restaurants',
+    0,
+    520,
+    '/donaanna/product-design/portfolio-slate-mesa.jpg',
+    'Aktiv',
+    'Bordoliven som gir en varm inngang til Doña Anna-universet.',
+    array['Mesa', 'Retail', 'B2B Tasting Kit'],
+    'B2B quote',
+    'Mørk terrakotta · lite gullsegl',
+    '#C05A46',
+    true
+  )
+on conflict (id) do nothing;
+
 drop trigger if exists commerce_products_set_updated_at on commerce_products;
 create trigger commerce_products_set_updated_at before update on commerce_products
   for each row execute function set_updated_at();
+
+-- Public product images. The app stores the resulting public URL in
+-- commerce_products.image_url, so admin, B2B and the public web all read the
+-- same image reference.
+insert into storage.buckets (id, name, public)
+values ('commerce-product-images', 'commerce-product-images', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "allow public read commerce product images" on storage.objects;
+drop policy if exists "allow authenticated manage commerce product images" on storage.objects;
+create policy "allow public read commerce product images" on storage.objects
+  for select using (bucket_id = 'commerce-product-images');
+create policy "allow authenticated manage commerce product images" on storage.objects
+  for all using (bucket_id = 'commerce-product-images' and auth.role() = 'authenticated')
+  with check (bucket_id = 'commerce-product-images' and auth.role() = 'authenticated');
 
 drop trigger if exists commerce_customers_set_updated_at on commerce_customers;
 create trigger commerce_customers_set_updated_at before update on commerce_customers
@@ -170,6 +336,14 @@ create trigger commerce_orders_set_updated_at before update on commerce_orders
 
 drop trigger if exists commerce_invoices_set_updated_at on commerce_invoices;
 create trigger commerce_invoices_set_updated_at before update on commerce_invoices
+  for each row execute function set_updated_at();
+
+drop trigger if exists commerce_shipments_set_updated_at on commerce_shipments;
+create trigger commerce_shipments_set_updated_at before update on commerce_shipments
+  for each row execute function set_updated_at();
+
+drop trigger if exists commerce_messages_set_updated_at on commerce_messages;
+create trigger commerce_messages_set_updated_at before update on commerce_messages
   for each row execute function set_updated_at();
 
 drop trigger if exists commerce_content_templates_set_updated_at on commerce_content_templates;

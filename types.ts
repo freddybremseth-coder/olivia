@@ -25,6 +25,11 @@ export interface UserProfile {
   subscription: 'monthly' | 'annual' | 'lifetime' | 'trial';
   subscriptionStart: string;
   avatar?: string;
+  company?: string;
+  phone?: string;
+  billingAddress?: string;
+  shippingAddress?: string;
+  taxId?: string;
 }
 
 export type TableOliveStage = 'PLUKKING' | 'LAKE' | 'SKYLLING' | 'MARINERING' | 'LAGRING' | 'PAKKING' | 'SALG';
@@ -186,6 +191,114 @@ export interface PruningHistoryItem {
   parcelId?: string;
 }
 
+export type CommerceProductStatus = 'Aktiv' | 'Utkast' | 'Utsolgt' | 'Arkivert';
+
+export interface CommerceProduct {
+  id: string;
+  sku: string;
+  name: string;
+  size: string;
+  channel: string;
+  stock: number;
+  price: string;
+  status: CommerceProductStatus;
+  description: string;
+  collections: string[];
+  imageUrl?: string;
+  category?: string;
+  oliveVariety?: string;
+  harvestYear?: number;
+  batchId?: string;
+  priceRetail?: number;
+  priceB2b?: number;
+  cost?: number;
+  polyphenolContent?: number;
+  acidity?: number;
+  publicStory?: string;
+  labelMaterial?: string;
+  accentColor?: string;
+  isPublic?: boolean;
+}
+
+export interface B2BCustomerProfile {
+  id: string;
+  profileId?: string;
+  company: string;
+  contactName: string;
+  email: string;
+  phone?: string;
+  customerType: string;
+  priceTier: string;
+  paymentTerms: string;
+  billingAddress?: string;
+  shippingAddress?: string;
+  taxId?: string;
+  status: string;
+  notes?: string;
+}
+
+export interface CommerceOrderItem {
+  id: string;
+  orderId?: string;
+  productId?: string;
+  name: string;
+  sku?: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface CommerceOrder {
+  id: string;
+  orderNumber: string;
+  customerId?: string;
+  status: string;
+  paymentStatus: string;
+  totalAmount: number;
+  currency: string;
+  shippingAddress?: string;
+  billingAddress?: string;
+  notes?: string;
+  orderedAt: string;
+  items: CommerceOrderItem[];
+}
+
+export interface CommerceInvoice {
+  id: string;
+  invoiceNumber: string;
+  orderId?: string;
+  customerId?: string;
+  status: string;
+  totalAmount: number;
+  currency: string;
+  dueDate?: string;
+  paidDate?: string;
+  pdfUrl?: string;
+}
+
+export interface CommerceShipment {
+  id: string;
+  orderId?: string;
+  customerId?: string;
+  carrier?: string;
+  trackingNumber?: string;
+  status: string;
+  trackingUrl?: string;
+  shippedAt?: string;
+  deliveredAt?: string;
+}
+
+export interface CommerceMessage {
+  id: string;
+  customerId?: string;
+  profileId?: string;
+  subject: string;
+  body: string;
+  status: string;
+  direction: 'customer_to_admin' | 'admin_to_customer';
+  createdAt: string;
+}
+
 // --- NEW TYPES FOR PROFITABILITY DASHBOARD ---
 
 export type CostCategory = 
@@ -304,4 +417,3 @@ export interface SubsidyIncome {
   amount: number;        // EUR
   description: string;
 }
-
