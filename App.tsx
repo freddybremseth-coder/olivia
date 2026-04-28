@@ -4,7 +4,6 @@ import LandingPage from './components/PublicB2BLandingPage';
 import LoginModal, { StoredUser } from './components/LoginModal';
 import ResetPasswordPage from './components/ResetPasswordPage';
 import { UserProfile, Language, Parcel } from './types';
-import { fetchParcels, upsertParcel, deleteParcel, migrateLocalStorageToSupabase } from './services/db';
 import { getCurrentSession, onAuthChange, signOut as authSignOut } from './services/auth';
 
 const Layout = lazy(() => import('./components/Layout'));
@@ -74,26 +73,35 @@ const App: React.FC = () => {
 
   // Load parcels from Supabase on mount + run one-time localStorage migration
   useEffect(() => {
-    fetchParcels().then(rows => {
-      if (rows.length > 0) {
-        setParcels(rows);
-        setSelectedParcel(rows[0]);
-      }
-      setParcelsLoaded(true);
-    });
-    // One-shot upload of any pre-existing localStorage data (tasks, batches,
-    // recipes, pruning history). Safe to run on every startup; does nothing
-    // after the first successful run thanks to a flag in localStorage.
-    migrateLocalStorageToSupabase()
-      .then(({ migrated, skipped }) => {
-        if (!skipped) {
-          console.info('[migration] uploaded to Supabase', migrated);
+    if (showPublicSite) return;
+
+    let cancelled = false;
+    import('./services/db').then(({ fetchParcels, migrateLocalStorageToSupabase }) => {
+      fetchParcels().then(rows => {
+        if (cancelled) return;
+        if (rows.length > 0) {
+          setParcels(rows);
+          setSelectedParcel(rows[0]);
         }
-      })
-      .catch(err => console.warn('[migration] failed', err));
-  }, []);
+        setParcelsLoaded(true);
+      });
+      // One-shot upload of any pre-existing localStorage data (tasks, batches,
+      // recipes, pruning history). Safe to run on every startup; does nothing
+      // after the first successful run thanks to a flag in localStorage.
+      migrateLocalStorageToSupabase()
+        .then(({ migrated, skipped }) => {
+          if (!skipped) {
+            console.info('[migration] uploaded to Supabase', migrated);
+          }
+        })
+        .catch(err => console.warn('[migration] failed', err));
+    });
+
+    return () => { cancelled = true; };
+  }, [showPublicSite]);
 
   const handleParcelSave = async (parcel: Parcel) => {
+    const { upsertParcel } = await import('./services/db');
     await upsertParcel(parcel);
     const index = parcels.findIndex(p => p.id === parcel.id);
     if (index !== -1) {
@@ -106,6 +114,7 @@ const App: React.FC = () => {
   };
 
   const handleParcelDelete = async (parcelId: string) => {
+    const { deleteParcel } = await import('./services/db');
     await deleteParcel(parcelId);
     setParcels(parcels.filter(p => p.id !== parcelId));
   };

@@ -114,12 +114,27 @@ create table if not exists commerce_content_templates (
   updated_at    timestamptz default now()
 );
 
+create table if not exists b2b_tasting_requests (
+  id               uuid primary key default gen_random_uuid(),
+  company          text not null,
+  contact_role     text,
+  email            text not null,
+  delivery_address text,
+  locale           text not null default 'no',
+  source           text not null default 'public_b2b_landing_page',
+  status           text not null default 'new',
+  notes            text,
+  created_at       timestamptz default now(),
+  updated_at       timestamptz default now()
+);
+
 alter table commerce_products          enable row level security;
 alter table commerce_customers         enable row level security;
 alter table commerce_orders            enable row level security;
 alter table commerce_order_items       enable row level security;
 alter table commerce_invoices          enable row level security;
 alter table commerce_content_templates enable row level security;
+alter table b2b_tasting_requests       enable row level security;
 
 drop policy if exists "allow all commerce_products"          on commerce_products;
 drop policy if exists "allow all commerce_customers"         on commerce_customers;
@@ -127,6 +142,8 @@ drop policy if exists "allow all commerce_orders"            on commerce_orders;
 drop policy if exists "allow all commerce_order_items"       on commerce_order_items;
 drop policy if exists "allow all commerce_invoices"          on commerce_invoices;
 drop policy if exists "allow all commerce_content_templates" on commerce_content_templates;
+drop policy if exists "allow public insert b2b_tasting_requests" on b2b_tasting_requests;
+drop policy if exists "allow authenticated read b2b_tasting_requests" on b2b_tasting_requests;
 
 create policy "allow all commerce_products"          on commerce_products          for all using (true) with check (true);
 create policy "allow all commerce_customers"         on commerce_customers         for all using (true) with check (true);
@@ -134,6 +151,10 @@ create policy "allow all commerce_orders"            on commerce_orders         
 create policy "allow all commerce_order_items"       on commerce_order_items       for all using (true) with check (true);
 create policy "allow all commerce_invoices"          on commerce_invoices          for all using (true) with check (true);
 create policy "allow all commerce_content_templates" on commerce_content_templates for all using (true) with check (true);
+create policy "allow public insert b2b_tasting_requests" on b2b_tasting_requests
+  for insert with check (true);
+create policy "allow authenticated read b2b_tasting_requests" on b2b_tasting_requests
+  for select using (auth.role() = 'authenticated');
 
 drop trigger if exists commerce_products_set_updated_at on commerce_products;
 create trigger commerce_products_set_updated_at before update on commerce_products
@@ -153,4 +174,8 @@ create trigger commerce_invoices_set_updated_at before update on commerce_invoic
 
 drop trigger if exists commerce_content_templates_set_updated_at on commerce_content_templates;
 create trigger commerce_content_templates_set_updated_at before update on commerce_content_templates
+  for each row execute function set_updated_at();
+
+drop trigger if exists b2b_tasting_requests_set_updated_at on b2b_tasting_requests;
+create trigger b2b_tasting_requests_set_updated_at before update on b2b_tasting_requests
   for each row execute function set_updated_at();

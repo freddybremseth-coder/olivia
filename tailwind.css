@@ -1,3 +1,22 @@
 @import "tailwindcss";
 @source "./components/**/*.{tsx,ts}";
 @source "./pages/**/*.{tsx,ts}";
+
+@theme {
+  --color-cream-white: #F9F8F6;
+  --color-label-cotton: #F8F5EA;
+  --color-olive-black: #1A1C19;
+  --color-matte-black: #0D0D0D;
+  --color-bottle-black: #111111;
+  --color-champagne-gold: #E6D5B8;
+  --color-brushed-gold: #D4AF37;
+  --color-brass: #B5A642;
+  --color-platinum: #E5E4E2;
+  --color-silver: #C0C0C0;
+  --color-copper: #B87333;
+  --color-bronze: #CD7F32;
+  --color-terracotta: #C05A46;
+  --color-deep-terracotta: #A24836;
+  --font-serif: "Playfair Display", Didot, Cinzel, Georgia, serif;
+  --font-sans: Montserrat, Inter, "Helvetica Neue", Arial, sans-serif;
+}
