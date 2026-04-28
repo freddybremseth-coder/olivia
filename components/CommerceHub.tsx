@@ -937,6 +937,8 @@ function ProductEditor({ product, onClose, onSave }: {
   onSave: (product: CommerceProduct) => void;
 }) {
   const [draft, setDraft] = useState<CommerceProduct>(product);
+  const [imageStatus, setImageStatus] = useState<'idle' | 'uploading' | 'ready' | 'error'>('idle');
+  const [imageMessage, setImageMessage] = useState('');
 
   const update = <K extends keyof CommerceProduct>(field: K, value: CommerceProduct[K]) => {
     setDraft(current => ({ ...current, [field]: value }));
@@ -953,8 +955,19 @@ function ProductEditor({ product, onClose, onSave }: {
 
   const handleImageFile = async (file?: File) => {
     if (!file) return;
-    const url = await uploadCommerceProductImage(file, draft.id);
-    update('imageUrl', url);
+    setImageStatus('uploading');
+    setImageMessage('Laster inn bildet...');
+    try {
+      const url = await uploadCommerceProductImage(file, draft.id);
+      update('imageUrl', url);
+      setImageStatus('ready');
+      setImageMessage(url.startsWith('data:')
+        ? 'Bildet vises nå. Kjør Supabase-migrasjonen for permanent skylagring.'
+        : 'Bildet er lastet opp og klart til lagring.');
+    } catch (error) {
+      setImageStatus('error');
+      setImageMessage(error instanceof Error ? error.message : 'Kunne ikke laste opp bildet.');
+    }
   };
 
   return (
@@ -985,9 +998,26 @@ function ProductEditor({ product, onClose, onSave }: {
               </div>
             </div>
             <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white hover:bg-white/10">
-              <ImagePlus size={17} /> Last opp bilde
-              <input type="file" accept="image/*" className="hidden" onChange={event => handleImageFile(event.target.files?.[0])} />
+              <ImagePlus size={17} /> {imageStatus === 'uploading' ? 'Laster bilde...' : 'Last opp bilde'}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={event => {
+                  handleImageFile(event.target.files?.[0]);
+                  event.currentTarget.value = '';
+                }}
+              />
             </label>
+            {imageMessage && (
+              <p className={`mt-3 rounded-xl border px-3 py-2 text-xs ${
+                imageStatus === 'error'
+                  ? 'border-red-400/20 bg-red-500/10 text-red-200'
+                  : 'border-amber-300/20 bg-amber-300/10 text-amber-100'
+              }`}>
+                {imageMessage}
+              </p>
+            )}
             <label className="mt-4 block text-xs font-bold uppercase tracking-widest text-slate-500">Bilde-URL</label>
             <input
               value={draft.imageUrl || ''}

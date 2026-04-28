@@ -148,8 +148,10 @@ export async function deleteCommerceProduct(id: string): Promise<void> {
 }
 
 export async function uploadCommerceProductImage(file: File, productId: string): Promise<string> {
+  const localPreviewUrl = await readFileAsDataUrl(file);
+
   if (!isSupabaseConfigured) {
-    return readFileAsDataUrl(file);
+    return localPreviewUrl;
   }
 
   const extension = file.name.split('.').pop() || 'jpg';
@@ -158,10 +160,13 @@ export async function uploadCommerceProductImage(file: File, productId: string):
     .from('commerce-product-images')
     .upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.warn('[commerceProducts] image upload failed, using local preview', error);
+    return localPreviewUrl;
+  }
 
   const { data } = supabase.storage.from('commerce-product-images').getPublicUrl(path);
-  return data.publicUrl;
+  return data.publicUrl || localPreviewUrl;
 }
 
 function rowToProduct(row: any): CommerceProduct {
