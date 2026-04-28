@@ -55,8 +55,8 @@ const content = {
     ],
     hero: {
       eyebrow: 'Økologisk extra virgin olivenolje · Biar, Alicante',
-      headline: 'En flaske som gir restauranten en historie å servere.',
-      subhead: 'Doña Anna er tidlig høstet olivenolje og bordoliven fra våre lunder i Biar. For kokker, innkjøpere og gourmetkunder som vil ha smak, opprinnelse og et uttrykk som løfter bordet før første dråpe.',
+      headline: 'Kompromissløs kvalitet fra jord til bord.',
+      subhead: 'Opplev den ekte smaken av Biar gjennom tidlighøstet, regenerativ olivenolje skapt for kjøkken som verdsetter presisjon, terroir og en flaske som bærer sin egen historie.',
       primary: 'Bestill tasting kit',
       secondary: 'Se kolleksjonen',
     },
@@ -66,7 +66,7 @@ const content = {
     estate: {
       eyebrow: 'Fra Biar til bordet',
       title: 'Ekte middelhavsterroir, pakket som moderne luksus.',
-      text: 'I Biar gir kalkholdig jord, tørre somre og kjølige netter oliven med grønn fruktighet, bitterhet og struktur. Doña Anna kombinerer gamle trær, presis høsting og et visuelt språk som gjør produktet lett å anbefale til gjesten.',
+      text: 'Før flasken finnes gården: kalkholdig jord, tørre somre, kjølige netter og gamle røtter som gir oliven med grønn fruktighet, bitterhet og struktur. Doña Anna er en familiehistorie fra Biar, foredlet med regenerativ drift og presis høsting.',
       cta: 'Be om smaksprøve',
       secondary: 'Se QR-sporingen',
       cards: [
@@ -97,7 +97,7 @@ const content = {
     portfolioIntro: {
       eyebrow: 'Kolleksjonen',
       title: 'Fem tydelige roller, én gjenkjennelig premiumfamilie.',
-      text: 'Hver variant har sin egen etikettkode, målgruppe og salgsrolle. Det gjør det enklere for restauranter, distributører og butikker å velge riktig produkt uten å miste Doña Annas samlede identitet.',
+      text: 'Hver variant er skrevet for en bestemt gastronomisk rolle: finishing oil, signaturolje, kjøkkenformat eller aperitivo. Slik kan kokker og spesialforretninger velge presist uten å miste Doña Annas samlede identitet.',
     },
     knowledge: {
       eyebrow: 'Kvalitet som kan forklares',
@@ -113,16 +113,16 @@ const content = {
     },
     trace: {
       title: 'Transparencia Total',
-      heading: 'Fra jord til bord, dokumentert på flasken.',
-      text: 'QR-sporingen gjør hver flaske til en salgshistorie. Kjøkkensjefen kan vise høstedato, parsell, sort, sensorisk profil og analyseverdier direkte fra batchen.',
-      features: ['QR-batchside', 'Analysebevis', 'Høstevindu', 'Klar restaurantfortelling'],
+      heading: '100% sporbarhet fra tre til tallerken.',
+      text: 'Vi eier hele verdikjeden. Hver flaske Doña Anna kan spores tilbake til nøyaktig parsell, sort, innhøstingsdato og batchdata. For kjøkkensjefen blir QR-koden ikke bare dokumentasjon, men et salgsargument ved bordet.',
+      features: ['Tre og parsell', 'Høstedato', 'Analysebevis', 'Klar restaurantfortelling'],
       cardTitle: 'Verde Vivo · tidlig høst',
       foot: 'Sporbarhet gir trygghet for innkjøperen og en bedre historie for servitøren, som kan forklare hvorfor oljen fortjener plassen på bordet.',
     },
     band: {
-      eyebrow: 'For restauranter og innkjøpere',
-      title: 'Smak før dere bestemmer dere.',
-      text: 'Vi setter sammen en B2B-smakspakke med produktark, etikettoversikt og utvalgte produkter fra kolleksjonen.',
+      eyebrow: 'For stjernekokker og spesialforretninger',
+      title: 'Oppdag Doña Anna Chef-kolleksjonen.',
+      text: 'Be om en eksklusiv smaksprøve med produktark, etikettoversikt og utvalgte oljer fra kolleksjonen.',
     },
     specs: {
       eyebrow: 'Produktdata',
@@ -151,8 +151,8 @@ const content = {
       talk: 'Be om oppfølging',
       close: 'Lukk',
       specs: 'Produktdetaljer',
-      portalText: 'Logg inn for å bestille, se B2B-priser, produktark og ordrestatus.',
-      accessText: 'Ny kunde? Registrer deg for brukernavn og passord til B2B-portalen.',
+      portalText: 'For stjernekokker og spesialforretninger: logg inn for tilgang til Chef-kolleksjonen, produktark, batchdata og bestilling.',
+      accessText: 'Ny profesjonell kunde? Be om brukernavn og passord til B2B-portalen, så følger vi opp personlig.',
     },
     footerPortal: 'B2B portal',
   },
@@ -176,8 +176,8 @@ const content = {
     ],
     hero: {
       eyebrow: 'Aceite de oliva virgen extra ecológico · Biar, Alicante',
-      headline: 'Una botella que da a la mesa una historia que servir.',
-      subhead: 'Doña Anna nace de nuestros olivares en Biar: cosecha temprana, aceitunas de mesa y una presencia visual creada para chefs, compradores y tiendas gourmet que buscan sabor, origen y diferenciación.',
+      headline: 'Calidad sin concesiones, de la tierra a la mesa.',
+      subhead: 'Descubre el sabor auténtico de Biar a través de un aceite regenerativo de cosecha temprana, creado para cocinas que valoran precisión, terroir y una botella con historia propia.',
       primary: 'Solicitar tasting kit',
       secondary: 'Ver colección',
     },
@@ -187,7 +187,7 @@ const content = {
     estate: {
       eyebrow: 'De Biar a la mesa',
       title: 'Terroir mediterráneo real, presentado como lujo contemporáneo.',
-      text: 'En Biar, el suelo calizo, los veranos secos y las noches frescas dan aceitunas con fruta verde, amargor y estructura. Doña Anna une árboles antiguos, cosecha precisa y una imagen que facilita recomendar el producto al comensal.',
+      text: 'Antes de la botella está la finca: suelo calizo, veranos secos, noches frescas y raíces antiguas que dan aceitunas con fruta verde, amargor y estructura. Doña Anna es una historia familiar de Biar, refinada con cultivo regenerativo y cosecha precisa.',
       cta: 'Solicitar muestra',
       secondary: 'Ver trazabilidad QR',
       cards: [
@@ -218,7 +218,7 @@ const content = {
     portfolioIntro: {
       eyebrow: 'Colección',
       title: 'Cinco roles claros, una sola familia premium.',
-      text: 'Cada variante tiene su código visual, público y argumento comercial. Así restaurantes, distribuidores y tiendas pueden elegir mejor sin perder la identidad Doña Anna.',
+      text: 'Cada variante está pensada para una función gastronómica concreta: aceite final, aceite de firma, formato de cocina o aperitivo. Así chefs y tiendas especializadas pueden elegir con precisión sin perder la identidad Doña Anna.',
     },
     knowledge: {
       eyebrow: 'Calidad explicable',
@@ -234,16 +234,16 @@ const content = {
     },
     trace: {
       title: 'Transparencia Total',
-      heading: 'De la tierra a la mesa, documentado en la botella.',
-      text: 'La trazabilidad QR convierte cada botella en una historia de venta. El chef puede enseñar fecha de cosecha, parcela, variedad, perfil sensorial y análisis del lote.',
-      features: ['Página QR del lote', 'Certificado analítico', 'Ventana de cosecha', 'Historia lista para sala'],
+      heading: '100% trazabilidad del árbol al plato.',
+      text: 'Controlamos toda la cadena de valor. Cada botella Doña Anna puede rastrearse hasta parcela, variedad, fecha de cosecha y datos de lote. Para el chef, el QR no es solo documentación: es un argumento de sala.',
+      features: ['Árbol y parcela', 'Fecha de cosecha', 'Certificado analítico', 'Historia lista para sala'],
       cardTitle: 'Verde Vivo · cosecha temprana',
       foot: 'La trazabilidad da confianza al comprador y una mejor historia al equipo de sala para explicar por qué el aceite merece estar en la mesa.',
     },
     band: {
-      eyebrow: 'Para restaurantes y compradores',
-      title: 'Probar antes de decidir.',
-      text: 'Preparamos un tasting kit B2B con ficha de producto, guía de etiqueta y una selección de la colección.',
+      eyebrow: 'Para chefs de alta cocina y tiendas especializadas',
+      title: 'Descubre la colección Chef de Doña Anna.',
+      text: 'Solicita una muestra exclusiva con ficha técnica, guía de etiqueta y aceites seleccionados de la colección.',
     },
     specs: {
       eyebrow: 'Ficha técnica',
@@ -272,8 +272,8 @@ const content = {
       talk: 'Pedir seguimiento',
       close: 'Cerrar',
       specs: 'Detalles del producto',
-      portalText: 'Inicia sesión para pedir, ver precios B2B, fichas técnicas y estado de pedidos.',
-      accessText: '¿Nuevo cliente? Regístrate para recibir usuario y contraseña del portal B2B.',
+      portalText: 'Para chefs y tiendas especializadas: inicia sesión para acceder a la colección Chef, fichas técnicas, datos de lote y pedidos.',
+      accessText: '¿Nuevo cliente profesional? Solicita usuario y contraseña del portal B2B y haremos seguimiento personalmente.',
     },
     footerPortal: 'Portal B2B',
   },
@@ -297,8 +297,8 @@ const content = {
     ],
     hero: {
       eyebrow: 'Organic extra virgin olive oil · Biar, Alicante',
-      headline: 'A bottle that gives your table a story worth serving.',
-      subhead: 'Doña Anna brings early-harvest estate oil and table olives from Biar to restaurants, distributors and gourmet buyers who need flavor, provenance and a premium signal guests notice immediately.',
+      headline: 'Uncompromising quality from soil to table.',
+      subhead: 'Experience the true taste of Biar through early-harvest, regenerative olive oil created for kitchens that value precision, terroir and a bottle with its own story.',
       primary: 'Request tasting kit',
       secondary: 'View collection',
     },
@@ -308,7 +308,7 @@ const content = {
     estate: {
       eyebrow: 'From Biar to the table',
       title: 'Real Mediterranean terroir, presented as contemporary luxury.',
-      text: 'Biar gives us limestone soil, dry summers and cool nights. The result is olive fruit with green aromatics, bitterness and structure, wrapped in a brand language that makes the product easy to recommend.',
+      text: 'Before the bottle comes the estate: limestone soil, dry summers, cool nights and old roots that give the fruit green aromatics, bitterness and structure. Doña Anna is a family story from Biar, refined through regenerative farming and precise harvest timing.',
       cta: 'Request sample',
       secondary: 'View QR traceability',
       cards: [
@@ -339,7 +339,7 @@ const content = {
     portfolioIntro: {
       eyebrow: 'Collection',
       title: 'Five clear roles, one recognizable premium family.',
-      text: 'Each variant has its own label code, audience and sales role. Restaurants, distributors and retailers can choose the right product without losing the Doña Anna identity.',
+      text: 'Each variant is written for a precise gastronomic role: finishing oil, signature oil, chef format or aperitivo. Chefs and specialty retailers can choose with intent without losing the Doña Anna identity.',
     },
     knowledge: {
       eyebrow: 'Quality buyers can understand',
@@ -355,16 +355,16 @@ const content = {
     },
     trace: {
       title: 'Total Transparency',
-      heading: 'From soil to table, documented on the bottle.',
-      text: 'QR traceability turns every bottle into a sales story. The chef can show harvest date, parcel, variety, sensory profile and batch analysis.',
-      features: ['QR batch page', 'Lab certificate', 'Harvest window', 'Chef-ready story'],
+      heading: '100% traceability from tree to plate.',
+      text: 'We own the full value chain. Every bottle of Doña Anna can be traced back to its parcel, variety, harvest date and batch data. For chefs, the QR code is not only documentation: it is a tableside argument.',
+      features: ['Tree and parcel', 'Harvest date', 'Lab certificate', 'Chef-ready story'],
       cardTitle: 'Verde Vivo · early harvest',
       foot: 'Traceability gives buyers confidence and gives service teams a better story when explaining why the oil deserves its place on the table.',
     },
     band: {
-      eyebrow: 'For restaurants and buyers',
-      title: 'Taste before you decide.',
-      text: 'We can prepare a B2B tasting kit with product sheets, label guidance and selected products from the collection.',
+      eyebrow: 'For starred chefs and specialty retailers',
+      title: 'Discover the Doña Anna Chef collection.',
+      text: 'Request an exclusive tasting kit with product sheets, label guidance and selected oils from the collection.',
     },
     specs: {
       eyebrow: 'Product data',
@@ -393,8 +393,8 @@ const content = {
       talk: 'Request follow-up',
       close: 'Close',
       specs: 'Product details',
-      portalText: 'Log in to order, view B2B prices, product sheets and order status.',
-      accessText: 'New customer? Register to receive username and password for the B2B portal.',
+      portalText: 'For chefs and specialty retailers: log in for access to the Chef collection, product sheets, batch data and ordering.',
+      accessText: 'New professional customer? Request a username and password for the B2B portal and we will follow up personally.',
     },
     footerPortal: 'B2B portal',
   },
@@ -402,29 +402,122 @@ const content = {
 
 const portfolio = {
   no: [
-    ['Verde Vivo', 'Nivå 1 · Super-premium', 'Kremhvit etikett · platinafolie', '#E5E4E2', 'DOÑA ANNA · VERDE VIVO', '500 ml · Cosecha Temprana I', 'Intens avslutningsolje', '/donaanna/product-design/verde-vivo-estate-arches.jpg', 'For restauranter som vil ha en signaturolje ved bordet. Intens grønn fruktighet, tydelig bitterhet og lang pepperfinish gjør den minneverdig på brød, tomat, fisk og grønnsaker.'],
-    ['Raíz Antigua', 'Nivå 2 · Heritage premium', 'Strukturert bomullspapir · kobber', '#B87333', 'DOÑA ANNA · RAÍZ ANTIGUA', '500 ml · gamle trær', 'Utvalg fra gamle trær', '/donaanna/product-design/raiz-antigua-label-hero.jpg', 'En begrenset seleksjon med varmere dybde og arv. Perfekt for menyer, gavepakker og serveringssteder som ønsker et produkt med mer emosjonell historie.'],
-    ['Verde Alto', 'Nivå 3 · Classic premium', 'Lett kremetikett · børstet gull', '#D4AF37', 'DOÑA ANNA · VERDE ALTO', '500 ml · Cosecha Temprana II', 'Balansert avslutningsolje', '/donaanna/product-design/verde-alto-rustic-room.jpg', 'Premiumoljen for bredere bruk. Grønn karakter og elegant balanse gjør den enkel å bruke i service, på bordet og i retter der oljen skal støtte råvaren.'],
-    ['Monovarietal Collection', 'Nivå 1 · Super-premium', 'Ren kremhvit etikett · sølv', '#C0C0C0', 'DOÑA ANNA · MONOVARIETAL', 'Genovesa · Gordal · Changlot Real · Picual', 'Sortssmaking', '/donaanna/changlot-real.jpg', 'Små batcher for sommelierer, kokker og spesialbutikker som vil vise hvordan sort, jord og høstetidspunkt endrer aroma, bitterhet og struktur.'],
-    ['Cocina Viva', 'Nivå 4 · Profesjonelt kjøkken', 'Mattsvart metallkanne · sort/hvitt trykk', '#F9F8F6', 'DOÑA ANNA · COCINA VIVA', '2 L / 5 L · kokkeformat', 'Profesjonell kjøkkenolje', '/donaanna/product-design/cocina-viva-b2b-collage.jpg', 'Arbeidsformatet for profesjonelle kjøkken. Utviklet for volum, mise en place og varme retter, med samme krav til kvalitet og opprinnelse.'],
-    ['Mesa', 'Nivå 5 · Bordoliven', 'Mørk terrakotta · lite gullsegl', '#C05A46', 'DOÑA ANNA · MESA', 'Aceitunas de mesa', 'Premium bordoliven', '/donaanna/product-design/portfolio-slate-mesa.jpg', 'Bordoliven som gir en varm inngang til merkevaren. Ideell for aperitivo, bar, hotell, marked og butikker som vil ha spansk følelse i hyllen.'],
+    ['Verde Vivo', 'Nivå 1 · Super-premium', 'Kremhvit etikett · platinafolie', '#E5E4E2', 'DOÑA ANNA · VERDE VIVO', '500 ml · Cosecha Temprana I', 'Årets første dråper', '/donaanna/product-design/verde-vivo-estate-arches.jpg', 'Høstet eksklusivt de første dagene i oktober mens olivenene ennå er knallgrønne, for å sikre ekstremt høyt polyfenolinnhold. Krystallklar fruktighet, nyklippet gress og tomatkvist møter en elegant, vedvarende pepperfinish. Perfekt som finishing oil til crudo, carpaccio, burrata og delikate sjømatretter.'],
+    ['Raíz Antigua', 'Nivå 2 · Heritage premium', 'Strukturert bomullspapir · kobber', '#B87333', 'DOÑA ANNA · RAÍZ ANTIGUA', '500 ml · hundreårige trær', 'Flytende historie fra Biar', '/donaanna/product-design/raiz-antigua-label-hero.jpg', 'En Limited Edition presset fra våre eldste røtter. Oljen har meditativ kompleksitet og en varmere profil med toner av ristet mandel, artisjokk og ville middelhavsurter. Skapt for kraftige kjøttretter, modne oster og sauser der oljen skal ta styring.'],
+    ['Verde Alto', 'Nivå 3 · Classic premium', 'Lett kremetikett · børstet gull', '#D4AF37', 'DOÑA ANNA · VERDE ALTO', '500 ml · klassisk hus-olje', 'Harmonisk Extra Virgin', '/donaanna/product-design/verde-alto-rustic-room.jpg', 'Vår klassiske hus-olje: en harmonisk Extra Virgin med grønn karakter, balansert bitterhet og ren finish. Skapt for å heve hverdagsgastronomien uten å overdøve råvaren, fra grønnsaker og fisk til brødservering og kalde emulsjoner.'],
+    ['Monovarietal Changlot Real', 'Nivå 1 · Super-premium', 'Ren kremhvit etikett · sølv', '#C0C0C0', 'DOÑA ANNA · CHANGLOT REAL', '500 ml · sjelden lokal sort', 'Alicantes terroir i ren form', '/donaanna/changlot-real.jpg', 'Changlot Real er en sjelden og sofistikert sort som trives i vårt mikroklima. Den gir aromaer av grønn mandel og et hint av grønn banan, med en mesterlig balanse mellom subtil bitterhet og elegant fruktighet. Signaturolje til brødservering, kalde emulsjoner og delikate grønnsaksretter.'],
+    ['Cocina Viva', 'Nivå 4 · Profesjonelt kjøkken', 'Mattsvart metallkanne · sort/hvitt trykk', '#F9F8F6', 'DOÑA ANNA · COCINA VIVA', '2 L / 5 L · kokkeformat', 'Kjøkkensjefens arbeidshest', '/donaanna/product-design/cocina-viva-b2b-collage.jpg', 'En robust, men harmonisk Extra Virgin skapt for varmebehandling og høyt tempo på profesjonelle kjøkken. Leverer en ren base med høy stabilitet uten å overdøve råvaren. Ideell til presisjonssteking, konfitering, marinader, aioli og store emulsjoner.'],
+    ['Mesa · Gordal Noble', 'Nivå 5 · Bordoliven', 'Mørk terrakotta · lite gullsegl', '#C05A46', 'DOÑA ANNA · MESA', 'Aceitunas de mesa', 'The Queen of Olives', '/donaanna/product-design/portfolio-slate-mesa.jpg', 'Håndsorterte, gigantiske Gordal-oliven med eksepsjonelt kjøttfull tekstur og ren, smøraktig profil. Et feilfritt visuelt og kulinarisk element til aperitivo, eksklusive martini-varianter og premium tapas- eller charcuterie-bord.'],
   ],
   es: [
-    ['Verde Vivo', 'Nivel 1 · Super-premium', 'Etiqueta crema · foil platino', '#E5E4E2', 'DOÑA ANNA · VERDE VIVO', '500 ml · Cosecha Temprana I', 'Aceite final intenso', '/donaanna/product-design/verde-vivo-estate-arches.jpg', 'Para restaurantes que quieren un aceite de firma en la mesa. Fruta verde intensa, amargor claro y final picante largo para pan, tomate, pescado y verduras.'],
-    ['Raíz Antigua', 'Nivel 2 · Heritage premium', 'Papel algodón texturizado · cobre', '#B87333', 'DOÑA ANNA · RAÍZ ANTIGUA', '500 ml · árboles antiguos', 'Selección de árboles antiguos', '/donaanna/product-design/raiz-antigua-label-hero.jpg', 'Una selección limitada con profundidad y memoria. Perfecta para menús, regalos y espacios que buscan un producto con historia emocional.'],
-    ['Verde Alto', 'Nivel 3 · Classic premium', 'Etiqueta crema clara · oro cepillado', '#D4AF37', 'DOÑA ANNA · VERDE ALTO', '500 ml · Cosecha Temprana II', 'Aceite final equilibrado', '/donaanna/product-design/verde-alto-rustic-room.jpg', 'El aceite premium de uso más amplio. Carácter verde y equilibrio elegante para servicio, mesa y platos donde el aceite acompaña la materia prima.'],
-    ['Monovarietal Collection', 'Nivel 1 · Super-premium', 'Etiqueta crema limpia · plata', '#C0C0C0', 'DOÑA ANNA · MONOVARIETAL', 'Genovesa · Gordal · Changlot Real · Picual', 'Cata varietal', '/donaanna/changlot-real.jpg', 'Pequeños lotes para sumilleres, chefs y tiendas que quieren mostrar cómo variedad, suelo y cosecha cambian aroma, amargor y estructura.'],
-    ['Cocina Viva', 'Nivel 4 · Cocina profesional', 'Lata negra mate · impresión blanco/negro', '#F9F8F6', 'DOÑA ANNA · COCINA VIVA', '2 L / 5 L · formato chef', 'Aceite profesional de cocina', '/donaanna/product-design/cocina-viva-b2b-collage.jpg', 'El formato de trabajo para cocinas profesionales. Pensado para volumen, mise en place y platos calientes, con control de calidad y origen.'],
-    ['Mesa', 'Nivel 5 · Aceitunas de mesa', 'Terracota oscura · pequeño sello oro', '#C05A46', 'DOÑA ANNA · MESA', 'Aceitunas de mesa', 'Aceitunas premium', '/donaanna/product-design/portfolio-slate-mesa.jpg', 'Aceitunas que abren la marca con calidez española. Ideales para aperitivo, bar, hotel, mercado y tienda gourmet.'],
+    ['Verde Vivo', 'Nivel 1 · Super-premium', 'Etiqueta crema · foil platino', '#E5E4E2', 'DOÑA ANNA · VERDE VIVO', '500 ml · Cosecha Temprana I', 'Las primeras gotas del año', '/donaanna/product-design/verde-vivo-estate-arches.jpg', 'Cosechado exclusivamente en los primeros días de octubre, cuando la aceituna sigue intensamente verde, para preservar un altísimo contenido en polifenoles. Fruta cristalina, hierba recién cortada y rama de tomate, con un final picante elegante y persistente. Aceite final para crudo, carpaccio, burrata y mariscos delicados.'],
+    ['Raíz Antigua', 'Nivel 2 · Heritage premium', 'Papel algodón texturizado · cobre', '#B87333', 'DOÑA ANNA · RAÍZ ANTIGUA', '500 ml · árboles centenarios', 'Historia líquida de Biar', '/donaanna/product-design/raiz-antigua-label-hero.jpg', 'Limited Edition de nuestras raíces más antiguas. Complejidad casi meditativa, perfil cálido y notas de almendra tostada, alcachofa y hierbas mediterráneas silvestres. Creado para carnes intensas, quesos maduros y salsas donde el aceite debe dirigir el plato.'],
+    ['Verde Alto', 'Nivel 3 · Classic premium', 'Etiqueta crema clara · oro cepillado', '#D4AF37', 'DOÑA ANNA · VERDE ALTO', '500 ml · aceite de casa', 'Extra Virgin armónico', '/donaanna/product-design/verde-alto-rustic-room.jpg', 'Nuestro aceite clásico de casa: un Extra Virgin armónico con carácter verde, amargor equilibrado y final limpio. Creado para elevar la gastronomía diaria sin cubrir la materia prima, desde verduras y pescado hasta pan, emulsiones frías y servicio de mesa.'],
+    ['Monovarietal Changlot Real', 'Nivel 1 · Super-premium', 'Etiqueta crema limpia · plata', '#C0C0C0', 'DOÑA ANNA · CHANGLOT REAL', '500 ml · variedad local rara', 'Terroir alicantino en estado puro', '/donaanna/changlot-real.jpg', 'Changlot Real es una variedad rara y sofisticada que prospera en nuestro microclima. Ofrece aromas de almendra verde y un toque de plátano verde, con equilibrio magistral entre amargor sutil y fruta elegante. Aceite de firma para pan, emulsiones frías y verduras delicadas.'],
+    ['Cocina Viva', 'Nivel 4 · Cocina profesional', 'Lata negra mate · impresión blanco/negro', '#F9F8F6', 'DOÑA ANNA · COCINA VIVA', '2 L / 5 L · formato chef', 'El lienzo del chef', '/donaanna/product-design/cocina-viva-b2b-collage.jpg', 'Un Extra Virgin robusto y armónico para calor y ritmo alto en cocinas profesionales. Entrega una base limpia y estable sin dominar el producto principal. Ideal para fritura precisa, confitado, marinadas, alioli y grandes emulsiones.'],
+    ['Mesa · Gordal Noble', 'Nivel 5 · Aceitunas de mesa', 'Terracota oscura · pequeño sello oro', '#C05A46', 'DOÑA ANNA · MESA', 'Aceitunas de mesa', 'The Queen of Olives', '/donaanna/product-design/portfolio-slate-mesa.jpg', 'Aceitunas Gordal gigantes seleccionadas a mano, con textura excepcionalmente carnosa y perfil limpio, mantecoso y elegante. Un elemento visual y culinario impecable para aperitivo, martinis exclusivos y tablas premium de tapas o charcutería.'],
   ],
   en: [
-    ['Verde Vivo', 'Tier 1 · Super-premium', 'Cream label · platinum foil', '#E5E4E2', 'DOÑA ANNA · VERDE VIVO', '500 ml · Cosecha Temprana I', 'Intense finishing oil', '/donaanna/product-design/verde-vivo-estate-arches.jpg', 'For restaurants that want a signature oil at the table. Intense green fruit, clear bitterness and a long pepper finish for bread, tomato, fish and vegetables.'],
-    ['Raíz Antigua', 'Tier 2 · Heritage premium', 'Textured cotton paper · copper', '#B87333', 'DOÑA ANNA · RAÍZ ANTIGUA', '500 ml · old-tree selection', 'Heritage selection', '/donaanna/product-design/raiz-antigua-label-hero.jpg', 'A limited selection with warmth, depth and heritage. Made for menus, gifting and venues that want a product with a richer emotional story.'],
-    ['Verde Alto', 'Tier 3 · Classic premium', 'Light cream label · brushed gold', '#D4AF37', 'DOÑA ANNA · VERDE ALTO', '500 ml · Cosecha Temprana II', 'Balanced finishing oil', '/donaanna/product-design/verde-alto-rustic-room.jpg', 'The premium oil for broader use. Green character and elegant balance make it easy to serve at the table and in dishes where the oil supports the ingredient.'],
-    ['Monovarietal Collection', 'Tier 1 · Super-premium', 'Clean cream label · silver', '#C0C0C0', 'DOÑA ANNA · MONOVARIETAL', 'Genovesa · Gordal · Changlot Real · Picual', 'Variety tasting', '/donaanna/changlot-real.jpg', 'Small batches for sommeliers, chefs and specialty stores that want to show how variety, soil and harvest timing change aroma, bitterness and structure.'],
-    ['Cocina Viva', 'Tier 4 · Chef utility', 'Matte black tin · black/white print', '#F9F8F6', 'DOÑA ANNA · COCINA VIVA', '2 L / 5 L · chef format', 'Professional kitchen oil', '/donaanna/product-design/cocina-viva-b2b-collage.jpg', 'The working format for professional kitchens. Built for volume, mise en place and warm dishes, with the same focus on quality and origin.'],
-    ['Mesa', 'Tier 5 · Table olives', 'Dark terracotta · small gold seal', '#C05A46', 'DOÑA ANNA · MESA', 'Aceitunas de mesa', 'Premium table olives', '/donaanna/product-design/portfolio-slate-mesa.jpg', 'Table olives that introduce the brand with Spanish warmth. Ideal for aperitivo, bars, hotels, markets and gourmet retail.'],
+    ['Verde Vivo', 'Tier 1 · Super-premium', 'Cream label · platinum foil', '#E5E4E2', 'DOÑA ANNA · VERDE VIVO', '500 ml · Cosecha Temprana I', 'The first drops of the year', '/donaanna/product-design/verde-vivo-estate-arches.jpg', 'Harvested exclusively in the first days of October while the olives are still vivid green, preserving an exceptionally high polyphenol content. Crystal-clear fruit, cut grass and tomato leaf lead into an elegant, persistent pepper finish. A finishing oil for crudo, carpaccio, burrata and delicate seafood.'],
+    ['Raíz Antigua', 'Tier 2 · Heritage premium', 'Textured cotton paper · copper', '#B87333', 'DOÑA ANNA · RAÍZ ANTIGUA', '500 ml · centenary trees', 'Liquid history from Biar', '/donaanna/product-design/raiz-antigua-label-hero.jpg', 'A Limited Edition from our oldest roots. Almost meditative complexity, a warmer profile and deep notes of toasted almond, artichoke and wild Mediterranean herbs. Created for powerful meat dishes, mature cheeses and sauces where the oil should take command.'],
+    ['Verde Alto', 'Tier 3 · Classic premium', 'Light cream label · brushed gold', '#D4AF37', 'DOÑA ANNA · VERDE ALTO', '500 ml · house oil', 'Harmonious Extra Virgin', '/donaanna/product-design/verde-alto-rustic-room.jpg', 'Our classic house oil: a harmonious Extra Virgin with green character, balanced bitterness and a clean finish. Made to elevate everyday gastronomy without overpowering the ingredient, from vegetables and fish to bread service and cold emulsions.'],
+    ['Monovarietal Changlot Real', 'Tier 1 · Super-premium', 'Clean cream label · silver', '#C0C0C0', 'DOÑA ANNA · CHANGLOT REAL', '500 ml · rare local variety', 'Alicante terroir in pure form', '/donaanna/changlot-real.jpg', 'Changlot Real is a rare and sophisticated variety that thrives in our microclimate. It gives aromas of green almond and a hint of green banana, with masterful balance between subtle bitterness and elegant fruit. A signature oil for bread service, cold emulsions and delicate vegetable dishes.'],
+    ['Cocina Viva', 'Tier 4 · Chef format', 'Matte black tin · black/white print', '#F9F8F6', 'DOÑA ANNA · COCINA VIVA', '2 L / 5 L · chef format', "The chef's canvas", '/donaanna/product-design/cocina-viva-b2b-collage.jpg', 'A robust yet harmonious Extra Virgin created for heat, pace and discipline in professional kitchens. It delivers a clean, stable base without overwhelming the primary ingredient. Ideal for precision searing, confit, marinades, aioli and large emulsions.'],
+    ['Mesa · Gordal Noble', 'Tier 5 · Table olives', 'Dark terracotta · small gold seal', '#C05A46', 'DOÑA ANNA · MESA', 'Aceitunas de mesa', 'The Queen of Olives', '/donaanna/product-design/portfolio-slate-mesa.jpg', 'Hand-sorted giant Gordal olives with exceptionally meaty texture and a clean, buttery profile. A flawless visual and culinary element for aperitivo, exclusive martinis and premium tapas or charcuterie boards.'],
   ],
+};
+
+const productCopyOverrides: Record<Locale, Record<string, { name?: string; format?: string; role?: string; text: string }>> = {
+  no: {
+    'verde-vivo': {
+      role: 'Årets første dråper',
+      text: 'Høstet eksklusivt de første dagene i oktober mens olivenene ennå er knallgrønne, for å sikre ekstremt høyt polyfenolinnhold. Krystallklar fruktighet, nyklippet gress og tomatkvist møter en elegant, vedvarende pepperfinish. Perfekt som finishing oil til crudo, carpaccio, burrata og delikate sjømatretter.',
+    },
+    'raiz-antigua': {
+      format: '500 ml · hundreårige trær',
+      role: 'Flytende historie fra Biar',
+      text: 'En Limited Edition presset fra våre eldste røtter. Oljen har meditativ kompleksitet og en varmere profil med toner av ristet mandel, artisjokk og ville middelhavsurter. Skapt for kraftige kjøttretter, modne oster og sauser der oljen skal ta styring.',
+    },
+    'verde-alto': {
+      format: '500 ml · klassisk hus-olje',
+      role: 'Harmonisk Extra Virgin',
+      text: 'Vår klassiske hus-olje: en harmonisk Extra Virgin med grønn karakter, balansert bitterhet og ren finish. Skapt for å heve hverdagsgastronomien uten å overdøve råvaren, fra grønnsaker og fisk til brødservering og kalde emulsjoner.',
+    },
+    'cocina-viva': {
+      role: 'Kjøkkensjefens arbeidshest',
+      text: 'En robust, men harmonisk Extra Virgin skapt for varmebehandling og høyt tempo på profesjonelle kjøkken. Leverer en ren base med høy stabilitet uten å overdøve råvaren. Ideell til presisjonssteking, konfitering, marinader, aioli og store emulsjoner.',
+    },
+    'mesa-aceitunas': {
+      name: 'Mesa · Gordal Noble',
+      role: 'The Queen of Olives',
+      text: 'Håndsorterte, gigantiske Gordal-oliven med eksepsjonelt kjøttfull tekstur og ren, smøraktig profil. Et feilfritt visuelt og kulinarisk element til aperitivo, eksklusive martini-varianter og premium tapas- eller charcuterie-bord.',
+    },
+    'mesa-gordal-noble': {
+      name: 'Mesa · Gordal Noble',
+      role: 'The Queen of Olives',
+      text: 'Håndsorterte, gigantiske Gordal-oliven med eksepsjonelt kjøttfull tekstur og ren, smøraktig profil. Et feilfritt visuelt og kulinarisk element til aperitivo, eksklusive martini-varianter og premium tapas- eller charcuterie-bord.',
+    },
+  },
+  es: {
+    'verde-vivo': {
+      role: 'Las primeras gotas del año',
+      text: 'Cosechado exclusivamente en los primeros días de octubre, cuando la aceituna sigue intensamente verde, para preservar un altísimo contenido en polifenoles. Fruta cristalina, hierba recién cortada y rama de tomate, con un final picante elegante y persistente. Aceite final para crudo, carpaccio, burrata y mariscos delicados.',
+    },
+    'raiz-antigua': {
+      format: '500 ml · árboles centenarios',
+      role: 'Historia líquida de Biar',
+      text: 'Limited Edition de nuestras raíces más antiguas. Complejidad casi meditativa, perfil cálido y notas de almendra tostada, alcachofa y hierbas mediterráneas silvestres. Creado para carnes intensas, quesos maduros y salsas donde el aceite debe dirigir el plato.',
+    },
+    'verde-alto': {
+      format: '500 ml · aceite de casa',
+      role: 'Extra Virgin armónico',
+      text: 'Nuestro aceite clásico de casa: un Extra Virgin armónico con carácter verde, amargor equilibrado y final limpio. Creado para elevar la gastronomía diaria sin cubrir la materia prima, desde verduras y pescado hasta pan, emulsiones frías y servicio de mesa.',
+    },
+    'cocina-viva': {
+      role: 'El lienzo del chef',
+      text: 'Un Extra Virgin robusto y armónico para calor y ritmo alto en cocinas profesionales. Entrega una base limpia y estable sin dominar el producto principal. Ideal para fritura precisa, confitado, marinadas, alioli y grandes emulsiones.',
+    },
+    'mesa-aceitunas': {
+      name: 'Mesa · Gordal Noble',
+      role: 'The Queen of Olives',
+      text: 'Aceitunas Gordal gigantes seleccionadas a mano, con textura excepcionalmente carnosa y perfil limpio, mantecoso y elegante. Un elemento visual y culinario impecable para aperitivo, martinis exclusivos y tablas premium de tapas o charcutería.',
+    },
+    'mesa-gordal-noble': {
+      name: 'Mesa · Gordal Noble',
+      role: 'The Queen of Olives',
+      text: 'Aceitunas Gordal gigantes seleccionadas a mano, con textura excepcionalmente carnosa y perfil limpio, mantecoso y elegante. Un elemento visual y culinario impecable para aperitivo, martinis exclusivos y tablas premium de tapas o charcutería.',
+    },
+  },
+  en: {
+    'verde-vivo': {
+      role: 'The first drops of the year',
+      text: 'Harvested exclusively in the first days of October while the olives are still vivid green, preserving an exceptionally high polyphenol content. Crystal-clear fruit, cut grass and tomato leaf lead into an elegant, persistent pepper finish. A finishing oil for crudo, carpaccio, burrata and delicate seafood.',
+    },
+    'raiz-antigua': {
+      format: '500 ml · centenary trees',
+      role: 'Liquid history from Biar',
+      text: 'A Limited Edition from our oldest roots. Almost meditative complexity, a warmer profile and deep notes of toasted almond, artichoke and wild Mediterranean herbs. Created for powerful meat dishes, mature cheeses and sauces where the oil should take command.',
+    },
+    'verde-alto': {
+      format: '500 ml · house oil',
+      role: 'Harmonious Extra Virgin',
+      text: 'Our classic house oil: a harmonious Extra Virgin with green character, balanced bitterness and a clean finish. Made to elevate everyday gastronomy without overpowering the ingredient, from vegetables and fish to bread service and cold emulsions.',
+    },
+    'cocina-viva': {
+      role: "The chef's canvas",
+      text: 'A robust yet harmonious Extra Virgin created for heat, pace and discipline in professional kitchens. It delivers a clean, stable base without overwhelming the primary ingredient. Ideal for precision searing, confit, marinades, aioli and large emulsions.',
+    },
+    'mesa-aceitunas': {
+      name: 'Mesa · Gordal Noble',
+      role: 'The Queen of Olives',
+      text: 'Hand-sorted giant Gordal olives with exceptionally meaty texture and a clean, buttery profile. A flawless visual and culinary element for aperitivo, exclusive martinis and premium tapas or charcuterie boards.',
+    },
+    'mesa-gordal-noble': {
+      name: 'Mesa · Gordal Noble',
+      role: 'The Queen of Olives',
+      text: 'Hand-sorted giant Gordal olives with exceptionally meaty texture and a clean, buttery profile. A flawless visual and culinary element for aperitivo, exclusive martinis and premium tapas or charcuterie boards.',
+    },
+  },
 };
 
 const shared = {
@@ -521,19 +614,24 @@ const timeline = {
 
 const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(value);
 
-function productToPortfolioItem(product: CommerceProduct): PortfolioItem {
+function productToPortfolioItem(product: CommerceProduct, locale: Locale): PortfolioItem {
   const primaryCollection = product.collections[0] || 'Doña Anna';
+  const override = productCopyOverrides[locale][normalizeProductName(product.name)];
   return [
-    product.name,
+    override?.name || product.name,
     primaryCollection,
     product.labelMaterial || product.collections.join(' · ') || 'Doña Anna product',
     product.accentColor || '#D4AF37',
-    `DOÑA ANNA · ${product.name.toUpperCase()}`,
-    product.size || product.sku,
-    product.channel || product.category || 'Premium product',
+    `DOÑA ANNA · ${(override?.name || product.name).toUpperCase()}`,
+    override?.format || product.size || product.sku,
+    override?.role || product.channel || product.category || 'Premium product',
     product.imageUrl || '/donaanna/product-design/product-family-studio.jpg',
-    product.publicStory || product.description,
+    override?.text || product.publicStory || product.description,
   ];
+}
+
+function normalizeProductName(name: string) {
+  return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
@@ -555,7 +653,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   });
 
   const t = content[locale];
-  const products: PortfolioItem[] = liveProducts.length ? liveProducts.map(productToPortfolioItem) : portfolio[locale] as PortfolioItem[];
+  const products: PortfolioItem[] = liveProducts.length ? liveProducts.map(product => productToPortfolioItem(product, locale)) : portfolio[locale] as PortfolioItem[];
 
   useEffect(() => {
     fetchPublicEstateSignal().then(setSignal);
