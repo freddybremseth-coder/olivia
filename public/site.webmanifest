@@ -1,0 +1,11 @@
+{
+  "name": "Olivia AI Smart Farm OS",
+  "short_name": "Olivia AI",
+  "description": "Smart Farm OS for olive producers, olive oil traceability, production data and B2B commerce.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0b",
+  "theme_color": "#0f3d22",
+  "lang": "no",
+  "categories": ["business", "productivity", "agriculture", "food"]
+}
