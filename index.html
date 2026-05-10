@@ -1,14 +1,86 @@
-
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="no" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Olivia AI | Smart Farm OS</title>
+  <title>Olivia AI | Smart Farm OS for olivenproduksjon og premium olivenolje</title>
+  <meta name="description" content="Olivia AI er et Smart Farm OS for olivenprodusenter, gårder og premium olivenolje: sporbarhet, parseller, vær, produksjon, batchdata, QR og B2B-handel." />
+  <meta name="keywords" content="Olivia AI, Smart Farm OS, olivenproduksjon, olivenolje, traceability, sporbarhet, Biar Alicante, Doña Anna, landbruk AI, gårdsdrift, regenerative agriculture, olive oil software" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <meta name="theme-color" content="#0f3d22" />
+  <link rel="canonical" href="https://olivia.vercel.app/" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta property="og:title" content="Olivia AI | Smart Farm OS" />
+  <meta property="og:description" content="Smart Farm OS for olivenprodusenter og premium olivenolje: sporbarhet, parseller, vær, produksjon, batchdata, QR og B2B-handel." />
+  <meta property="og:url" content="https://olivia.vercel.app/" />
+  <meta property="og:site_name" content="Olivia AI" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://olivia.vercel.app/og-image.svg" />
+  <meta property="og:locale" content="nb_NO" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Olivia AI | Smart Farm OS" />
+  <meta name="twitter:description" content="AI-drevet gårdssystem for olivenproduksjon, sporbarhet, batchdata og B2B-handel." />
+  <meta name="twitter:image" content="https://olivia.vercel.app/og-image.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Roboto:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://olivia.vercel.app/#website",
+        "url": "https://olivia.vercel.app/",
+        "name": "Olivia AI",
+        "description": "Smart Farm OS for olive farms, olive oil traceability, production data and B2B commerce.",
+        "inLanguage": ["no", "en", "es"],
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://olivia.vercel.app/?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://olivia.vercel.app/#software",
+        "name": "Olivia AI Smart Farm OS",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "url": "https://olivia.vercel.app/",
+        "description": "AI-powered Smart Farm OS for olive producers, combining farm parcels, weather, production, pruning advice, traceability, batch passports, QR codes and B2B commerce.",
+        "featureList": [
+          "Farm parcel management",
+          "Weather and irrigation insights",
+          "Olive oil production and batch tracking",
+          "QR traceability and batch passports",
+          "B2B tasting kit and product portfolio",
+          "AI field consultant and pruning advisor"
+        ],
+        "offers": {
+          "@type": "Offer",
+          "priceCurrency": "EUR",
+          "availability": "https://schema.org/InStock",
+          "url": "https://olivia.vercel.app/"
+        },
+        "creator": {
+          "@type": "Person",
+          "name": "Freddy Bremseth",
+          "url": "https://www.freddybremseth.com"
+        }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://olivia.vercel.app/#organization",
+        "name": "Olivia AI",
+        "url": "https://olivia.vercel.app/",
+        "sameAs": ["https://www.donaanna.com", "https://www.freddybremseth.com"],
+        "knowsAbout": ["olive oil", "olive farming", "traceability", "regenerative agriculture", "farm management software", "B2B olive oil commerce"]
+      }
+    ]
+  }
+  </script>
   <style>
     :root {
       --primary-green: 145 75% 18%;
@@ -54,7 +126,6 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #666;
     }
-    /* animate-in / fade-in utilities (tailwindcss-animate replacement) */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
