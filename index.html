@@ -166,5 +166,63 @@
 <body>
   <div id="root"></div>
   <script type="module" src="index.tsx"></script>
+  <script>
+    (() => {
+      const replacements = new Map([
+        ['Etiketten', 'Flasken'],
+        ['La etiqueta', 'La botella'],
+        ['The label', 'The bottle'],
+        ['Det kunden ser først, må føles verdt å smake.', 'Et førsteinntrykk som bærer kvaliteten.'],
+        ['Lo primero que ve el cliente debe parecer digno de probarse.', 'Una primera impresión a la altura de la calidad.'],
+        ['What customers see first must feel worth tasting.', 'A first impression worthy of the oil inside.'],
+        ['Etiketten er bygget som et kvalitetssignal: mørkt glass, kremhvit flate, kontrollert typografi og metalliske aksenter som skiller hvert nivå. Resultatet er en flaske som ser hjemme ut på hvit duk, i vinbar, i gourmetbutikk og på kokkens pass.', 'Flasken er utviklet som et tydelig premiumsignal: mørkt glass, kremhvit etikett, kontrollert typografi og metalliske detaljer som skiller hvert nivå. Uttrykket gjør Doña Anna naturlig på hvit duk, i vinbar, i gourmetbutikk og på kokkens pass.'],
+        ['La etiqueta funciona como señal de calidad: vidrio negro mate, papel crema, tipografía controlada y acentos metálicos que diferencian cada nivel. La botella encaja en mantel blanco, wine bar, tienda gourmet y cocina profesional.', 'La botella comunica calidad antes de abrirse: vidrio oscuro, papel crema, tipografía serena y acentos metálicos que diferencian cada nivel. Doña Anna encaja en mantel blanco, wine bar, tienda gourmet y cocina profesional.'],
+        ['The label is a quality signal: matte black glass, cream paper, disciplined typography and metallic accents that distinguish each tier. The bottle belongs on white tablecloths, wine bars, gourmet shelves and the chef’s pass.', 'The bottle communicates quality before it is opened: dark glass, cream label, disciplined typography and metallic accents that distinguish each tier. Doña Anna belongs on white tablecloths, wine bars, gourmet shelves and the chef’s pass.'],
+        ['Utforsk produktnivåene', 'Se kolleksjonen'],
+        ['Explorar niveles', 'Ver colección'],
+        ['Explore product tiers', 'View collection'],
+        ['DA monogram', 'DA-signatur'],
+        ['Doña Anna wordmark', 'Doña Anna'],
+        ['Branch label mark', 'Olivengren'],
+        ['Market seal', 'Kvalitetssegl'],
+        ['DA-monogrammet, produktnavnet og Biar/Alicante ligger i et rolig system som gjør flasken lett å kjenne igjen i hyllen.', 'Monogram, produktnavn og opprinnelse er satt i et rolig system som gjør flasken lett å kjenne igjen – på bordet, i hyllen og i presentasjonen til kunden.'],
+        ['El monograma DA, el nombre del producto y Biar/Alicante forman un sistema sereno y reconocible en lineal, carta o mesa.', 'El monograma, el nombre del producto y el origen forman un sistema sereno y reconocible en mesa, lineal y presentación comercial.'],
+        ['The DA monogram, product name and Biar/Alicante mark create a calm system that is instantly recognizable on shelf, menu and table.', 'The monogram, product name and origin create a calm visual system that is instantly recognizable on the table, on shelf and in professional presentations.'],
+        ['I bruk', 'På bordet'],
+        ['En uso', 'En la mesa'],
+        ['In service', 'At the table'],
+        ['Vis produktet slik kunden faktisk møter det.', 'Når flasken blir en del av opplevelsen.'],
+        ['Mostrar el producto como el cliente lo vivirá.', 'Cuando la botella forma parte de la experiencia.'],
+        ['Show the product the way customers will experience it.', 'When the bottle becomes part of the experience.'],
+        ['Kunder kjøper ikke bare analyseverdier. De kjøper følelsen av flasken på bordet, lyden av korken, oljen over retten og tryggheten i at produktet holder nivået hver gang.', 'Doña Anna skal kjennes premium i hele møtet med gjesten: flasken på bordet, oljen over retten og tryggheten i at kvaliteten holder samme nivå hver gang.'],
+        ['El comprador no adquiere solo análisis. Compra la presencia de la botella, el gesto de servir, el aceite sobre el plato y la confianza de que el producto mantiene el nivel.', 'Doña Anna debe sentirse premium en todo el encuentro con el comensal: la botella en la mesa, el aceite sobre el plato y la confianza de que la calidad se mantiene siempre.'],
+        ['Buyers do not purchase lab values alone. They buy the bottle on the table, the pour over the dish and the confidence that the product performs every time.', 'Doña Anna is designed to feel premium throughout the guest experience: the bottle on the table, the pour over the dish and the confidence that quality is consistent every time.']
+      ]);
+
+      const shouldSkip = (node) => {
+        const parent = node.parentElement;
+        if (!parent) return true;
+        const tag = parent.tagName;
+        return tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' || parent.closest('script, style, noscript');
+      };
+
+      const replaceText = () => {
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+        nodes.forEach((node) => {
+          if (shouldSkip(node)) return;
+          const next = replacements.get(node.nodeValue.trim());
+          if (next) node.nodeValue = node.nodeValue.replace(node.nodeValue.trim(), next);
+        });
+      };
+
+      const observer = new MutationObserver(() => replaceText());
+      window.addEventListener('DOMContentLoaded', () => {
+        replaceText();
+        observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+      });
+    })();
+  </script>
 </body>
 </html>
