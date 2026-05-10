@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://olivia.vercel.app/sitemap.xml
+Sitemap: https://www.donaanna.com/sitemap.xml
