@@ -18,8 +18,86 @@
 
   const allLinks = [...links, ...products];
 
+  const setFavicon = () => {
+    document.querySelectorAll("link[rel='icon'], link[rel='shortcut icon'], link[rel='apple-touch-icon']").forEach((el) => el.remove());
+
+    const icon = document.createElement('link');
+    icon.rel = 'icon';
+    icon.type = 'image/svg+xml';
+    icon.href = '/favicon.svg';
+    document.head.appendChild(icon);
+
+    const apple = document.createElement('link');
+    apple.rel = 'apple-touch-icon';
+    apple.href = '/favicon.svg';
+    document.head.appendChild(apple);
+  };
+
+  const enhanceBrandHeader = () => {
+    const header = Array.from(document.querySelectorAll('header')).find((el) => !el.id?.startsWith('donaanna'));
+    if (!header) return;
+
+    header.classList.add('da-brand-enhanced');
+
+    const images = Array.from(header.querySelectorAll('img'));
+    images.forEach((img) => {
+      const src = (img.getAttribute('src') || '').toLowerCase();
+      const alt = (img.getAttribute('alt') || '').toLowerCase();
+      const likelyLogo = src.includes('logo') || src.includes('dona') || src.includes('anna') || alt.includes('logo') || images.length <= 2;
+      if (likelyLogo) {
+        img.classList.add('da-logo-icon-large');
+        img.setAttribute('loading', 'eager');
+      }
+    });
+
+    const nodes = Array.from(header.querySelectorAll('*'));
+    nodes.forEach((el) => {
+      const text = (el.textContent || '').trim().toUpperCase().replace(/\s+/g, ' ');
+      if ((text.includes('BIAR') && text.includes('ALICANTE')) || text === 'BIAR' || text === 'ALICANTE') {
+        el.classList.add('da-origin-small');
+      }
+    });
+  };
+
+  const addSalesBridge = () => {
+    if (document.getElementById('donaanna-sales-bridge')) return;
+
+    const bridge = document.createElement('section');
+    bridge.id = 'donaanna-sales-bridge';
+    bridge.innerHTML = `
+      <div class="da-sales-inner">
+        <div>
+          <p class="da-kicker">For kokker og profesjonelle kjøpere</p>
+          <h2>Flasken er førsteinntrykket. Smaken og dokumentasjonen avgjør kjøpet.</h2>
+          <p>Se de konkrete produktsidene for bruksområde, kjøkkenrolle, B2B-argumenter og sporbarhet. Doña Anna skal gjøre det enkelt å velge riktig olje til riktig øyeblikk.</p>
+        </div>
+        <div class="da-sales-actions">
+          <a href="/organic-extra-virgin-olive-oil.html">Se kolleksjonen</a>
+          <a href="/olive-oil-for-restaurants.html">For restauranter</a>
+          <a href="/tasting-kit.html">Request tasting kit</a>
+        </div>
+      </div>
+    `;
+
+    const bodyText = document.body.innerText || '';
+    const target = Array.from(document.querySelectorAll('section, div')).find((el) => {
+      const txt = (el.innerText || '').trim();
+      return txt.includes('Et førsteinntrykk som bærer kvaliteten') || txt.includes('Flasken er utviklet som et tydelig premiumsignal');
+    });
+
+    if (target && target.parentElement) {
+      target.insertAdjacentElement('afterend', bridge);
+    } else if (document.getElementById('root')) {
+      document.getElementById('root').appendChild(bridge);
+    } else if (bodyText) {
+      document.body.appendChild(bridge);
+    }
+  };
+
   const createMenu = () => {
     if (document.getElementById('donaanna-professional-menu')) return;
+
+    setFavicon();
 
     const menu = document.createElement('div');
     menu.id = 'donaanna-professional-menu';
@@ -54,8 +132,26 @@
     style.id = 'donaanna-professional-menu-style';
     style.textContent = `
       #donaanna-professional-menu,
-      #donaanna-desktop-links {
+      #donaanna-desktop-links,
+      #donaanna-sales-bridge {
         font-family: Inter, Montserrat, Arial, sans-serif;
+      }
+
+      header.da-brand-enhanced .da-logo-icon-large {
+        width: 76px !important;
+        height: 76px !important;
+        max-width: 76px !important;
+        max-height: 76px !important;
+        object-fit: contain !important;
+        flex-shrink: 0 !important;
+      }
+
+      header.da-brand-enhanced .da-origin-small {
+        font-size: 0.64rem !important;
+        letter-spacing: 0.22em !important;
+        line-height: 1.15 !important;
+        opacity: 0.82 !important;
+        font-weight: 500 !important;
       }
 
       #donaanna-desktop-links {
@@ -170,9 +266,84 @@
 
       #donaanna-professional-menu .da-menu-section a:hover { color: #f1d889; }
 
+      #donaanna-sales-bridge {
+        background: #0b0d09;
+        border-top: 1px solid rgba(201, 169, 110, 0.18);
+        border-bottom: 1px solid rgba(201, 169, 110, 0.18);
+        color: #f6f0df;
+        padding: 48px 22px;
+      }
+
+      #donaanna-sales-bridge .da-sales-inner {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+        gap: 34px;
+        align-items: center;
+      }
+
+      #donaanna-sales-bridge .da-kicker {
+        margin: 0 0 12px;
+        color: #c9a96e;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      #donaanna-sales-bridge h2 {
+        margin: 0 0 16px;
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: clamp(30px, 4vw, 54px);
+        line-height: 1.12;
+      }
+
+      #donaanna-sales-bridge p {
+        color: #cfc4a6;
+        max-width: 760px;
+        font-size: 17px;
+        line-height: 1.7;
+      }
+
+      #donaanna-sales-bridge .da-sales-actions {
+        display: grid;
+        gap: 12px;
+      }
+
+      #donaanna-sales-bridge .da-sales-actions a {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid rgba(201, 169, 110, 0.28);
+        color: #f6f0df;
+        text-decoration: none;
+        padding: 15px 18px;
+        border-radius: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        font-size: 12px;
+        font-weight: 900;
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      #donaanna-sales-bridge .da-sales-actions a:after { content: '→'; color: #c9a96e; }
+      #donaanna-sales-bridge .da-sales-actions a:hover { border-color: #c9a96e; color: #f1d889; }
+
       @media (max-width: 920px) {
+        header.da-brand-enhanced .da-logo-icon-large {
+          width: 58px !important;
+          height: 58px !important;
+          max-width: 58px !important;
+          max-height: 58px !important;
+        }
+        header.da-brand-enhanced .da-origin-small {
+          font-size: 0.54rem !important;
+          letter-spacing: 0.16em !important;
+        }
         #donaanna-desktop-links { display: none; }
         #donaanna-professional-menu { display: block; }
+        #donaanna-sales-bridge .da-sales-inner { grid-template-columns: 1fr; }
       }
     `;
 
@@ -212,7 +383,13 @@
   };
 
   const init = () => {
-    setTimeout(createMenu, 350);
+    setTimeout(() => {
+      createMenu();
+      enhanceBrandHeader();
+      addSalesBridge();
+    }, 600);
+    setTimeout(enhanceBrandHeader, 1400);
+    setTimeout(addSalesBridge, 1800);
   };
 
   if (document.readyState === 'loading') {
