@@ -8,6 +8,14 @@
     ['Portal', '/app'],
   ];
 
+  const products = [
+    ['Verde Vivo', '/product-verde-vivo.html'],
+    ['Raíz Antigua', '/product-raiz-antigua.html'],
+    ['Verde Alto', '/product-verde-alto.html'],
+    ['Cocina Viva', '/product-cocina-viva.html'],
+    ['Mesa Gordal', '/product-mesa-gordal-noble.html'],
+  ];
+
   const createBar = () => {
     if (document.getElementById('donaanna-professional-links')) return;
 
@@ -20,6 +28,15 @@
         <div class="da-links">
           ${links.map(([label, href]) => `<a href="${href}">${label}</a>`).join('')}
         </div>
+      </div>
+    `;
+
+    const productBar = document.createElement('div');
+    productBar.id = 'donaanna-product-links';
+    productBar.innerHTML = `
+      <div class="da-product-inner">
+        <span>Produkter</span>
+        ${products.map(([label, href]) => `<a href="${href}">${label}</a>`).join('')}
       </div>
     `;
 
@@ -55,7 +72,8 @@
         white-space: nowrap;
       }
       #donaanna-professional-links .da-brand span { color: #c9a96e; }
-      #donaanna-professional-links .da-links {
+      #donaanna-professional-links .da-links,
+      #donaanna-product-links .da-product-inner {
         display: flex;
         align-items: center;
         gap: 16px;
@@ -63,7 +81,8 @@
         white-space: nowrap;
         scrollbar-width: thin;
       }
-      #donaanna-professional-links .da-links a {
+      #donaanna-professional-links .da-links a,
+      #donaanna-product-links a {
         color: #d7c89e;
         text-decoration: none;
         font-size: 12px;
@@ -72,18 +91,40 @@
         font-weight: 700;
         padding: 7px 0;
       }
-      #donaanna-professional-links .da-links a:hover { color: #f1d889; }
+      #donaanna-professional-links .da-links a:hover,
+      #donaanna-product-links a:hover { color: #f1d889; }
+      #donaanna-product-links {
+        z-index: 9998;
+        width: 100%;
+        background: rgba(15, 18, 12, 0.94);
+        border-bottom: 1px solid rgba(201, 169, 110, 0.16);
+        font-family: Inter, Montserrat, Arial, sans-serif;
+      }
+      #donaanna-product-links .da-product-inner {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 8px 22px;
+      }
+      #donaanna-product-links span {
+        color: #c9a96e;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1.4px;
+        font-weight: 800;
+      }
       @media (max-width: 720px) {
         #donaanna-professional-links .da-link-inner {
           align-items: flex-start;
           flex-direction: column;
           gap: 6px;
         }
-        #donaanna-professional-links .da-links { width: 100%; }
+        #donaanna-professional-links .da-links,
+        #donaanna-product-links .da-product-inner { width: 100%; }
       }
     `;
 
     document.head.appendChild(style);
+    document.body.prepend(productBar);
     document.body.prepend(bar);
   };
 
