@@ -34,18 +34,23 @@ function isRecoveryUrl(): boolean {
   return /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
 }
 
+function isAppUrl(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.location.pathname === '/app';
+}
+
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => isAppUrl() && !isRecoveryUrl() ? 'b2b_portal' : 'dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showPublicSite, setShowPublicSite] = useState(() => {
     if (typeof window === 'undefined') return true;
-    return window.location.pathname !== '/app' && !isRecoveryUrl();
+    return !isAppUrl() && !isRecoveryUrl();
   });
   const [language, setLanguage] = useState<Language>('no');
-  const [showLogin, setShowLogin] = useState(false);
+  const [showLogin, setShowLogin] = useState(() => isAppUrl() && !isRecoveryUrl());
   const [loginDefaultMode, setLoginDefaultMode] = useState<'login' | 'register'>('login');
-  const [postLoginTab, setPostLoginTab] = useState('dashboard');
+  const [postLoginTab, setPostLoginTab] = useState(() => isAppUrl() && !isRecoveryUrl() ? 'b2b_portal' : 'dashboard');
   const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(isRecoveryUrl);
 
   const [weatherData, setWeatherData] = useState<any>(null);
@@ -164,6 +169,7 @@ const App: React.FC = () => {
         setUser(result.user);
         setIsAdmin(result.isAdmin);
         setIsLoggedIn(true);
+        setShowLogin(false);
       });
     }
     // Single shared subscription for both sign-in/out and PASSWORD_RECOVERY —
