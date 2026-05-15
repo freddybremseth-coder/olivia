@@ -1,11 +1,11 @@
 (() => {
   const mainLinks = [
     ['Oljen', '/organic-extra-virgin-olive-oil.html'],
-    ['For restauranter', '/olive-oil-for-restaurants.html'],
-    ['B2B', '/b2b-olive-oil.html'],
+    ['For hjemmet', '/organic-extra-virgin-olive-oil.html'],
+    ['Gave og smaking', '/tasting-kit.html'],
     ['Sporbarhet', '/olive-oil-traceability.html'],
-    ['Tasting kit', '/tasting-kit.html'],
-    ['Portal', '/app'],
+    ['Produkter', '/#portfolio'],
+    ['Kjøp', '/#tasting'],
   ];
 
   const productLinks = [

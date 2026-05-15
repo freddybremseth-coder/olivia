@@ -39,12 +39,12 @@ const content = {
     languageName: 'Norsk',
     nav: [
       ['Gården', '#estate'],
-      ['Etiketten', '#label'],
+      ['Flasken', '#label'],
       ['Kolleksjonen', '#portfolio'],
       ['Kvalitet', '#knowledge'],
       ['Sporbarhet', '#traceability'],
-      ['Produktdata', '#specs'],
-      ['Smaksprøve', '#tasting'],
+      ['Gave og kjøp', '#specs'],
+      ['Meld interesse', '#tasting'],
     ],
     menuLabel: 'Meny',
     qrReady: 'QR-klar',
@@ -55,33 +55,33 @@ const content = {
     ],
     hero: {
       eyebrow: 'Økologisk extra virgin olivenolje · Biar, Alicante',
-      headline: 'Kompromissløs kvalitet fra jord til bord.',
-      subhead: 'Opplev den ekte smaken av Biar gjennom tidlighøstet, regenerativ olivenolje skapt for kjøkken som verdsetter presisjon, terroir og en flaske som bærer sin egen historie.',
-      primary: 'Bestill tasting kit',
+      headline: 'Olivenoljen du setter frem når maten betyr noe.',
+      subhead: 'Doña Anna er økologisk extra virgin olivenolje fra Biar i Alicante, laget for hjemmekokker, matelskere og gaver med ekte opprinnelse. Smak grønn fruktighet, pepperfinish og middelhavssol i hver flaske.',
+      primary: 'Meld interesse',
       secondary: 'Se kolleksjonen',
     },
-    portal: 'B2B portal',
+    portal: 'Kjøp / interesse',
     admin: 'Olivia OS',
     heroStats: ['Opprinnelse', 'Parseller', 'Trær', 'Sporbarhet'],
     estate: {
       eyebrow: 'Fra Biar til bordet',
-      title: 'Ekte middelhavsterroir, pakket som moderne luksus.',
-      text: 'Før flasken finnes gården: kalkholdig jord, tørre somre, kjølige netter og gamle røtter som gir oliven med grønn fruktighet, bitterhet og struktur. Doña Anna er en familiehistorie fra Biar, foredlet med regenerativ drift og presis høsting.',
-      cta: 'Be om smaksprøve',
+      title: 'Ekte middelhavsterroir, tappet for hverdager som fortjener mer.',
+      text: 'Før flasken finnes gården: kalkholdig jord, tørre somre, kjølige netter og gamle røtter som gir oliven med grønn fruktighet, bitterhet og struktur. Doña Anna er en familiehistorie fra Biar, laget for salater, brød, fisk, grønnsaker, pasta og bordet du samler folk rundt.',
+      cta: 'Sett meg på interesselisten',
       secondary: 'Se QR-sporingen',
       cards: [
-        ['Biar-terroir', 'En tydelig opprinnelse som gir kokken en konkret historie å fortelle ved bordet.'],
-        ['Fire sorter', 'Genovesa, Gordal, Changlot Real og Picual gir en portefølje med bredde og karakter.'],
-        ['Tidlig høsting', 'Lavere utbytte, høyere intensitet og en frisk grønn profil som merkes i retten.'],
-        ['Gamle trær', 'Raíz Antigua gir knapphet, dybde og et mer emosjonelt premiumprodukt.'],
+        ['Biar-terroir', 'En tydelig opprinnelse som gjør flasken mer personlig enn anonym olje fra hyllen.'],
+        ['Fire sorter', 'Genovesa, Gordal, Changlot Real og Picual gir ulike smaksroller til ulike måltider.'],
+        ['Tidlig høsting', 'Lavere utbytte, høyere intensitet og en frisk grønn profil som merkes på tallerkenen.'],
+        ['Gamle trær', 'Raíz Antigua gir knapphet, dybde og en gaveflaske med mer historie.'],
       ],
     },
     label: {
-      eyebrow: 'Etiketten',
-      title: 'Det kunden ser først, må føles verdt å smake.',
-      text: 'Etiketten er bygget som et kvalitetssignal: mørkt glass, kremhvit flate, kontrollert typografi og metalliske aksenter som skiller hvert nivå. Resultatet er en flaske som ser hjemme ut på hvit duk, i vinbar, i gourmetbutikk og på kokkens pass.',
-      cta: 'Utforsk produktnivåene',
-      proof: 'DA-monogrammet, produktnavnet og Biar/Alicante ligger i et rolig system som gjør flasken lett å kjenne igjen i hyllen.',
+      eyebrow: 'Flasken',
+      title: 'En flaske som føles like god å gi bort som å åpne selv.',
+      text: 'Mørkt glass, kremhvit etikett, kontrollert typografi og metalliske aksenter gjør Doña Anna til mer enn en ingrediens. Den skal tåle å stå fremme på kjøkkenbenken, på middagsbordet og i en gaveeske.',
+      cta: 'Finn din flaske',
+      proof: 'DA-monogrammet, produktnavnet og Biar/Alicante ligger i et rolig system som gjør flasken lett å kjenne igjen hjemme, i gavekurven og i gourmetbutikken.',
       details: [
         ['Platina', 'Verde Vivo og monovarietal får et kjølig, friskt og super-premium uttrykk.'],
         ['Kobber', 'Raíz Antigua får varme, arv og dybde uten å miste elegansen.'],
@@ -92,19 +92,19 @@ const content = {
     videos: {
       eyebrow: 'I bruk',
       title: 'Vis produktet slik kunden faktisk møter det.',
-      text: 'Kunder kjøper ikke bare analyseverdier. De kjøper følelsen av flasken på bordet, lyden av korken, oljen over retten og tryggheten i at produktet holder nivået hver gang.',
+      text: 'Folk kjøper ikke bare analyseverdier. De kjøper følelsen av flasken på bordet, lyden av korken, oljen over retten og vissheten om at det enkle måltidet nettopp ble litt mer spesielt.',
     },
     portfolioIntro: {
       eyebrow: 'Kolleksjonen',
-      title: 'Fem tydelige roller, én gjenkjennelig premiumfamilie.',
-      text: 'Hver variant er skrevet for en bestemt gastronomisk rolle: finishing oil, signaturolje, kjøkkenformat eller aperitivo. Slik kan kokker og spesialforretninger velge presist uten å miste Doña Annas samlede identitet.',
+      title: 'Fem flasker for ulike måltider, gaver og smaksøyeblikk.',
+      text: 'Hver variant har en tydelig rolle: finishing oil til salat og fisk, signaturolje til brød og tapas, kjøkkenolje til varm mat og aperitivo til deling. Det gjør det lett å velge riktig flaske.',
     },
     knowledge: {
       eyebrow: 'Kvalitet som kan forklares',
-      title: 'Smaken er salgsargumentet. Dokumentasjonen lukker avtalen.',
-      text: 'Premium extra virgin olivenolje skal være vakker på bordet, men også enkel å forsvare faglig. Derfor knyttes sensorikk, høstedato, sort, ekstraksjon og batchdata til produktet.',
+      title: 'Smaken skal være enkel å kjenne. Kvaliteten enkel å stole på.',
+      text: 'Premium extra virgin olivenolje skal være vakker på bordet, men også trygg å velge. Derfor knyttes sensorikk, høstedato, sort, ekstraksjon og batchdata til produktet.',
       qualityTitle: 'Derfor merkes forskjellen',
-      qualityText: 'Kokken får en olje som er forutsigbar på tallerkenen: friskhet, bitterhet, pepperfinish og opprinnelse som kan presenteres til gjesten.',
+      qualityText: 'Du får en olje som løfter enkel mat: friskhet, bitterhet, pepperfinish og en opprinnelse du faktisk kan fortelle videre.',
     },
     journey: {
       eyebrow: 'Fra lund til kjøkken',
@@ -114,47 +114,47 @@ const content = {
     trace: {
       title: 'Transparencia Total',
       heading: '100% sporbarhet fra tre til tallerken.',
-      text: 'Vi eier hele verdikjeden. Hver flaske Doña Anna kan spores tilbake til nøyaktig parsell, sort, innhøstingsdato og batchdata. For kjøkkensjefen blir QR-koden ikke bare dokumentasjon, men et salgsargument ved bordet.',
-      features: ['Tre og parsell', 'Høstedato', 'Analysebevis', 'Klar restaurantfortelling'],
+      text: 'Vi eier hele verdikjeden. Hver flaske Doña Anna kan spores tilbake til parsell, sort, innhøstingsdato og batchdata. QR-koden gjør kvaliteten synlig og gir deg historien bak oljen du serverer.',
+      features: ['Tre og parsell', 'Høstedato', 'Analysebevis', 'Historien på bordet'],
       cardTitle: 'Verde Vivo · tidlig høst',
-      foot: 'Sporbarhet gir trygghet for innkjøperen og en bedre historie for servitøren, som kan forklare hvorfor oljen fortjener plassen på bordet.',
+      foot: 'Sporbarhet gir trygghet når du kjøper premiumolje og en bedre historie når flasken deles rundt bordet.',
     },
     band: {
-      eyebrow: 'For stjernekokker og spesialforretninger',
-      title: 'Oppdag Doña Anna Chef-kolleksjonen.',
-      text: 'Be om et eksklusivt tasting kit med 3 x 50 ml miniflasker, produktark, etikettoversikt og utvalgte oljer fra kolleksjonen.',
+      eyebrow: 'Første slipp',
+      title: 'Bli med på listen før Doña Anna åpner for bestilling.',
+      text: 'Meld interesse for første slipp, gaveesker, smaksprøver og lanseringstilbud. Vi kontakter deg når flaskene er klare.',
     },
     specs: {
-      eyebrow: 'Produktdata',
-      title: 'Tekniske data som gjør innkjøpet enklere.',
-      text: 'Doña Anna samler de fakta profesjonelle kjøpere trenger: format, høstedato, sort, batchnummer, analyseverdier og serveringsrolle.',
+      eyebrow: 'Gave og kjøp',
+      title: 'En premiumflaske som kan selges som smak, gave og historie.',
+      text: 'Doña Anna skal gjøre det lett å kjøpe riktig: én flaske til hverdagsmaten, én til middagsbordet, én til gave og én til den som vil smake hele kolleksjonen.',
     },
     tasting: {
-      eyebrow: 'Smaksprøve',
-      title: 'Bestill en eksklusiv smaksprøve for restaurant, butikk eller distributør.',
-      text: 'Tasting kit består av 3 x 50 ml miniflasker i en elegant presentasjon, slik at kokker kan vurdere sensorikk, etikett, produktark og batchsporbarhet uten at produktet mister sin premiumverdi.',
-      productSheet: 'Be om produktark',
-      login: 'B2B-login',
-      company: 'Restaurant / firma',
-      role: 'Rolle',
-      rolePlaceholder: 'Kokk / innkjøper / distributør',
+      eyebrow: 'Meld interesse',
+      title: 'Vil du kjøpe Doña Anna når første slipp er klart?',
+      text: 'Legg igjen e-post, så får du beskjed om lansering, gaveesker, smaksprøver og mulighet til å forhåndsbestille. For butikker og restauranter kan samme skjema brukes for større forespørsler.',
+      productSheet: 'Send e-post',
+      login: 'Logg inn',
+      company: 'Navn',
+      role: 'Hva er du interessert i?',
+      rolePlaceholder: '1 flaske / gaveeske / smaksprøve / butikk / restaurant',
       email: 'E-post',
-      address: 'Leveringsadresse',
+      address: 'Adresse eller melding',
       sending: 'Sender...',
-      success: 'Takk. Forespørselen er registrert, og Doña Anna kan følge opp med tasting kit.',
+      success: 'Takk. Interessen er registrert, og Doña Anna kan følge deg opp med lansering, pris og bestilling.',
       error: 'Skjemaet er klart, men Supabase må være konfigurert før forespørsler kan lagres automatisk.',
     },
     productCta: {
       more: 'Se produktinfo',
-      order: 'Bestill i B2B portal',
-      access: 'Få B2B-bruker',
-      talk: 'Be om oppfølging',
+      order: 'Meld interesse',
+      access: 'Få lanseringsvarsel',
+      talk: 'Spør om denne flasken',
       close: 'Lukk',
       specs: 'Produktdetaljer',
-      portalText: 'For stjernekokker og spesialforretninger: logg inn for tilgang til Chef-kolleksjonen, produktark, batchdata og bestilling.',
-      accessText: 'Ny profesjonell kunde? Be om brukernavn og passord til B2B-portalen, så følger vi opp personlig.',
+      portalText: 'Vil du ha denne flasken hjemme, som gave eller til en smaking? Meld interesse, så følger vi deg opp når første slipp åpner.',
+      accessText: 'Vil du få beskjed først? Legg igjen e-post for lanseringsvarsel, gaveesker og forhåndsbestilling.',
     },
-    footerPortal: 'B2B portal',
+    footerPortal: 'Kjøp / interesse',
   },
   es: {
     languageName: 'Español',
@@ -791,13 +791,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     }
   };
 
+  const scrollToLeadForm = () => {
+    window.setTimeout(() => document.getElementById('tasting')?.scrollIntoView({ behavior: 'smooth' }), 0);
+  };
+
   const requestProductFollowUp = (productName: string) => {
     setTastingForm(prev => ({
       ...prev,
       contactRole: prev.contactRole || `${t.tasting.rolePlaceholder} · ${productName}`,
     }));
     closeProduct();
-    window.setTimeout(() => document.getElementById('tasting')?.scrollIntoView({ behavior: 'smooth' }), 0);
+    scrollToLeadForm();
   };
 
   const nextLocale: Locale = locale === 'no' ? 'es' : locale === 'es' ? 'en' : 'no';
@@ -827,7 +831,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             <button onClick={onAdminLogin} className="inline-flex h-10 items-center gap-2 border border-white/12 px-3 text-xs uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/8">
               <LockKeyhole size={15} /> {t.admin}
             </button>
-            <button onClick={onLogin} className="inline-flex h-10 items-center gap-2 bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-brushed-gold">
+            <button onClick={scrollToLeadForm} className="inline-flex h-10 items-center gap-2 bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-brushed-gold">
               {t.portal}
             </button>
           </div>
@@ -846,7 +850,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <button onClick={() => setLocale(nextLocale)} className="flex-1 border border-white/12 px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-white">
                 {content[nextLocale].languageName}
               </button>
-              <button onClick={onLogin} className="flex-1 bg-white px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-black">
+              <button onClick={() => { setMenuOpen(false); scrollToLeadForm(); }} className="flex-1 bg-white px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-black">
                 {t.portal}
               </button>
             </div>
@@ -1032,7 +1036,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                     </button>
                     <button
                       type="button"
-                      onClick={onLogin}
+                      onClick={() => requestProductFollowUp(name)}
                       className="inline-flex h-10 items-center justify-center gap-2 bg-brushed-gold px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-black transition hover:bg-white"
                     >
                       {t.productCta.order}
@@ -1275,7 +1279,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                     <p className="text-sm leading-6 text-white/66">{t.productCta.portalText}</p>
                     <button
                       type="button"
-                      onClick={onLogin}
+                      onClick={() => requestProductFollowUp(selectedProduct[0])}
                       className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 bg-brushed-gold px-4 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-white"
                     >
                       <Package size={16} /> {t.productCta.order}
@@ -1285,7 +1289,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                     <p className="text-sm leading-6 text-white/66">{t.productCta.accessText}</p>
                     <button
                       type="button"
-                      onClick={onRegister}
+                      onClick={() => requestProductFollowUp(selectedProduct[0])}
                       className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 border border-white/14 px-4 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-white/10"
                     >
                       <LockKeyhole size={16} /> {t.productCta.access}
