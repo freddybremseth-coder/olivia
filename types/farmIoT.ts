@@ -1,4 +1,4 @@
-import { SensorType } from '../types';
+import type { SensorType } from '../types';
 
 export type FarmSeasonProfile = 'coastal_lowland' | 'biar_mountain_650m';
 
@@ -45,12 +45,13 @@ export interface TreeGroup {
 }
 
 export interface SensorDevice {
-  id: string;
+  id?: string;
   sensor_id: string;
   name: string;
   type: SensorType;
   parcel_id?: string;
   zone_id?: string;
+  tree_group_id?: string;
   tree_group?: string;
   depth_cm?: number;
   unit: string;
@@ -69,6 +70,7 @@ export interface SensorReading {
   sensor_id: string;
   parcel_id?: string;
   zone_id?: string;
+  tree_group_id?: string;
   tree_group?: string;
   depth_cm?: number;
   type: SensorType;
@@ -88,6 +90,7 @@ export interface SensorAlert {
   sensor_id?: string;
   parcel_id?: string;
   zone_id?: string;
+  tree_group_id?: string;
   tree_group?: string;
   type: SensorType | 'irrigation' | 'calibration' | 'connectivity' | 'season' | 'harvest';
   severity: 'info' | 'warning' | 'critical';
@@ -117,6 +120,7 @@ export interface FarmObservation {
   id: string;
   parcel_id?: string;
   zone_id?: string;
+  tree_group_id?: string;
   tree_group?: string;
   category:
     | 'soil'
