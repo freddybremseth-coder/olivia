@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import {
   LayoutDashboard, Map as MapIcon, CloudSun, Sprout, TrendingUp, Truck, Droplets,
   ClipboardList, Settings, LogOut, ShieldCheck, Sparkles, Scissors, Menu, X, ChevronLeft, ChevronRight,
-  Activity, Store, Leaf, BarChart3
+  Activity, Store, Leaf, BarChart3, Gauge
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { useTranslation } from '../services/i18nService';
@@ -36,6 +36,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
     { id: 'economy', icon: TrendingUp, label: t('economy') },
     { id: 'fleet', icon: Truck, label: t('fleet') },
     { id: 'irrigation', icon: Droplets, label: t('irrigation') },
+    { id: 'irrigation_advisor', icon: Gauge, label: 'Vannråd 2.0' },
     { id: 'tasks', icon: ClipboardList, label: t('tasks') },
     { id: 'iot', icon: Activity, label: t('iot_sensors_menu') },
   ];
