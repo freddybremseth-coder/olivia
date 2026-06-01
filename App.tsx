@@ -20,6 +20,7 @@ const FieldConsultantView = lazy(() => import('./components/FieldConsultantView'
 const PruningAdvisorView = lazy(() => import('./components/PruningAdvisorView'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const IoTDashboard = lazy(() => import('./components/IoTDashboard'));
+const DonaAnnaDailyDashboard = lazy(() => import('./components/DonaAnnaDailyDashboard'));
 const CommerceHub = lazy(() => import('./components/CommerceHub'));
 const ProfitabilityPage = lazy(() => import('./pages/Profitability'));
 
@@ -64,7 +65,7 @@ const App: React.FC = () => {
     role: 'farmer',
     subscription: 'annual',
     subscriptionStart: '2024-01-15',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
   });
 
   const DEFAULT_PARCELS: Parcel[] = [
@@ -287,6 +288,7 @@ const App: React.FC = () => {
         parcels={parcels}
         onNavigate={setActiveTab}
       />;
+      case 'dona_anna_daily': return <DonaAnnaDailyDashboard />;
       case 'dashboard_classic': return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;
       case 'consultant': return <FieldConsultantView />;
       case 'pruning': return <PruningAdvisorView />;
