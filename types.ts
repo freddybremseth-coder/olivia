@@ -136,13 +136,43 @@ export interface Transaction {
   batchId?: string;
 }
 
+export type SensorType =
+  | 'soil_moisture'
+  | 'soil_temperature'
+  | 'soil_ec'
+  | 'soil_ph'
+  | 'water_ec'
+  | 'water_ph'
+  | 'flow'
+  | 'pressure'
+  | 'rain'
+  | 'air_temperature'
+  | 'air_humidity'
+  | 'leaf_wetness'
+  | 'battery'
+  // Legacy aliases kept so the existing IoT dashboard and saved localStorage data still work.
+  | 'Moisture'
+  | 'Temperature'
+  | 'NPK'
+  | 'PH';
+
 export interface Sensor {
   id: string;
+  sensor_id?: string;
   name: string;
-  type: 'Moisture' | 'Temperature' | 'NPK' | 'PH';
+  type: SensorType;
+  parcelId: string;
+  parcel_id?: string;
+  zone_id?: string;
+  tree_group?: string;
+  depth_cm?: number;
   value: string;
   unit: string;
-  parcelId: string;
+  battery_percent?: number;
+  signal_rssi?: number;
+  calibrated_at?: string;
+  measured_at?: string;
+  source?: 'manual' | 'lorawan' | 'modbus' | 'wifi' | 'bluetooth' | 'api' | 'simulation' | string;
   status: 'Online' | 'Offline' | 'Low Battery';
 }
 
