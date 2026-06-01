@@ -15,6 +15,7 @@ const ClimateDecisionStats = lazy(() => import('./components/ClimateDecisionStat
 const ProductionView = lazy(() => import('./components/ProductionView'));
 const FleetView = lazy(() => import('./components/FleetView'));
 const IrrigationView = lazy(() => import('./components/IrrigationView'));
+const IrrigationAdvisorView = lazy(() => import('./components/IrrigationAdvisorView'));
 const TasksView = lazy(() => import('./components/TasksView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
 const FieldConsultantView = lazy(() => import('./components/FieldConsultantView'));
@@ -310,6 +311,7 @@ const App: React.FC = () => {
       case 'economy': return <ProfitabilityPage language={language} parcels={parcels} />;
       case 'fleet': return <FleetView />;
       case 'irrigation': return <IrrigationView />;
+      case 'irrigation_advisor': return <IrrigationAdvisorView />;
       case 'tasks': return <TasksView parcels={parcels} />;
       case 'iot': return <IoTDashboard />;
       case 'settings': return <SettingsView language={language} onLanguageChange={updateLanguage} />;
