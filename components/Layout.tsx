@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import {
   LayoutDashboard, Map as MapIcon, CloudSun, Sprout, TrendingUp, Truck, Droplets,
-  ClipboardList, Settings, LogOut, ShieldCheck, Sparkles, Scissors, Menu, X, ChevronLeft, ChevronRight, User,
-  Activity, Store
+  ClipboardList, Settings, LogOut, ShieldCheck, Sparkles, Scissors, Menu, X, ChevronLeft, ChevronRight,
+  Activity, Store, Leaf
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { useTranslation } from '../services/i18nService';
@@ -25,6 +25,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
 
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: t('dashboard') },
+    { id: 'dona_anna_daily', icon: Leaf, label: 'DonaAnna Daily' },
     { id: 'consultant', icon: Sparkles, label: t('consultant') },
     { id: 'pruning', icon: Scissors, label: t('pruning') },
     { id: 'map', icon: MapIcon, label: t('map') },
