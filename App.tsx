@@ -11,6 +11,7 @@ const Dashboard = lazy(() => import('./components/Dashboard'));
 const FarmOverview = lazy(() => import('./components/FarmOverview'));
 const FarmMap = lazy(() => import('./components/FarmMap'));
 const WeatherView = lazy(() => import('./components/WeatherView'));
+const ClimateDecisionStats = lazy(() => import('./components/ClimateDecisionStats'));
 const ProductionView = lazy(() => import('./components/ProductionView'));
 const FleetView = lazy(() => import('./components/FleetView'));
 const IrrigationView = lazy(() => import('./components/IrrigationView'));
@@ -302,6 +303,7 @@ const App: React.FC = () => {
         selectedParcel={selectedParcel}
         onParcelSelect={setSelectedParcel}
       />;
+      case 'climate_stats': return <ClimateDecisionStats />;
       case 'production': return <ProductionView parcels={parcels} language={language} />;
       case 'commerce': return <CommerceHub user={user} mode="backend" />;
       case 'b2b_portal': return <CommerceHub user={user} mode="customer" />;
