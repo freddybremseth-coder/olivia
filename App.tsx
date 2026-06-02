@@ -19,6 +19,7 @@ const IrrigationAdvisorView = lazy(() => import('./components/IrrigationAdvisorV
 const IrrigationLogView = lazy(() => import('./components/IrrigationLogView'));
 const FieldObservationsView = lazy(() => import('./components/FieldObservationsView'));
 const SalinityDashboard = lazy(() => import('./components/SalinityDashboard'));
+const ZoneStatusMapView = lazy(() => import('./components/ZoneStatusMapView'));
 const TasksView = lazy(() => import('./components/TasksView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
 const FieldConsultantView = lazy(() => import('./components/FieldConsultantView'));
@@ -264,6 +265,7 @@ const App: React.FC = () => {
       case 'irrigation_advisor': return <IrrigationAdvisorView />;
       case 'irrigation_log': return <IrrigationLogView />;
       case 'salinity': return <SalinityDashboard />;
+      case 'zone_status': return <ZoneStatusMapView />;
       case 'field_observations': return <FieldObservationsView />;
       case 'tasks': return <TasksView parcels={parcels} />;
       case 'iot': return <IoTDashboard />;
