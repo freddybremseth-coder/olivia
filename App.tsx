@@ -16,6 +16,7 @@ const ProductionView = lazy(() => import('./components/ProductionView'));
 const FleetView = lazy(() => import('./components/FleetView'));
 const IrrigationView = lazy(() => import('./components/IrrigationView'));
 const IrrigationAdvisorView = lazy(() => import('./components/IrrigationAdvisorView'));
+const IrrigationLogView = lazy(() => import('./components/IrrigationLogView'));
 const FieldObservationsView = lazy(() => import('./components/FieldObservationsView'));
 const TasksView = lazy(() => import('./components/TasksView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
@@ -27,12 +28,6 @@ const DonaAnnaDailyDashboard = lazy(() => import('./components/DonaAnnaDailyDash
 const CommerceHub = lazy(() => import('./components/CommerceHub'));
 const ProfitabilityPage = lazy(() => import('./pages/Profitability'));
 
-/**
- * Detect a Supabase recovery URL synchronously — used as the initial state
- * so we never flash the login/dashboard during the brief window before the
- * PASSWORD_RECOVERY event fires. Supabase v2 uses either a `#...type=recovery`
- * hash fragment (implicit) or `?code=...&type=recovery` query string (PKCE).
- */
 function isRecoveryUrl(): boolean {
   if (typeof window === 'undefined') return false;
   return /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
@@ -82,7 +77,6 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (showPublicSite) return;
-
     let cancelled = false;
     import('./services/db').then(({ fetchParcels, migrateLocalStorageToSupabase }) => {
       fetchParcels().then(rows => {
@@ -94,12 +88,9 @@ const App: React.FC = () => {
         setParcelsLoaded(true);
       });
       migrateLocalStorageToSupabase()
-        .then(({ migrated, skipped }) => {
-          if (!skipped) console.info('[migration] uploaded to Supabase', migrated);
-        })
+        .then(({ migrated, skipped }) => { if (!skipped) console.info('[migration] uploaded to Supabase', migrated); })
         .catch(err => console.warn('[migration] failed', err));
     });
-
     return () => { cancelled = true; };
   }, [showPublicSite]);
 
@@ -270,6 +261,7 @@ const App: React.FC = () => {
       case 'fleet': return <FleetView />;
       case 'irrigation': return <IrrigationView />;
       case 'irrigation_advisor': return <IrrigationAdvisorView />;
+      case 'irrigation_log': return <IrrigationLogView />;
       case 'field_observations': return <FieldObservationsView />;
       case 'tasks': return <TasksView parcels={parcels} />;
       case 'iot': return <IoTDashboard />;
