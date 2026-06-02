@@ -29,6 +29,7 @@ const DonaAnnaOrderDocumentsView = lazy(() => import('./components/DonaAnnaOrder
 const OrganicCertificationView = lazy(() => import('./components/OrganicCertificationView'));
 const AutoTasksView = lazy(() => import('./components/AutoTasksView'));
 const SeasonReportView = lazy(() => import('./components/SeasonReportView'));
+const FarmAdvisorView = lazy(() => import('./components/FarmAdvisorView'));
 const PublicTracePage = lazy(() => import('./components/PublicTracePage'));
 const TasksView = lazy(() => import('./components/TasksView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
@@ -175,6 +176,7 @@ const App: React.FC = () => {
     switch (activeTab) {
       case 'dashboard': return <FarmOverview language={language} weatherData={weatherData} locationName={selectedParcel?.name || locationName} parcels={parcels} onNavigate={setActiveTab} />;
       case 'dona_anna_daily': return <DonaAnnaDailyDashboard />;
+      case 'farm_advisor': return <FarmAdvisorView />;
       case 'dashboard_classic': return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;
       case 'consultant': return <FieldConsultantView />;
       case 'pruning': return <PruningAdvisorView />;
