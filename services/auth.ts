@@ -1,32 +1,17 @@
 /**
- * auth.ts — thin wrapper around Supabase Auth + the user_profiles table.
+ * auth.ts — thin wrapper around Supabase Auth + the public.user_profiles table.
  *
- * Replaces the localStorage-only login flow. Public surface:
- *   - signInWithPassword(email, password)
- *   - signUpWithPassword(email, password, name, adminCode?)
- *   - signOut()
- *   - getSession()
- *   - onAuthChange(handler)  — wraps onAuthStateChange
- *   - fetchProfile(userId)
- *   - upsertProfile(profile)
+ * Farm data uses the `olivia` schema by default through services/supabaseClient.
+ * Auth profile data stays in `public.user_profiles`, so this file uses
+ * supabasePublic for profile reads/writes.
  */
 
-import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { supabase, supabasePublic, isSupabaseConfigured } from './supabaseClient';
 import type { UserProfile } from '../types';
 
-/**
- * Rejects with a friendly Norwegian error if `promise` doesn't settle within
- * `ms` milliseconds. Prevents the login button from spinning forever when the
- * Supabase URL is unreachable (paused project, DNS failure, wrong env var).
- */
 function withTimeout<T>(promise: Promise<T>, ms = 15000, label = 'Forespørselen'): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const t = setTimeout(() => {
-      reject(new Error(
-        `${label} tok for lang tid. Sjekk internett-tilkoblingen, eller at ` +
-        `Supabase-prosjektet er aktivt (gratis-prosjekter pauses etter 7 dager uten bruk).`
-      ));
-    }, ms);
+    const t = setTimeout(() => reject(new Error(`${label} tok for lang tid. Sjekk internett-tilkoblingen, eller at Supabase-prosjektet er aktivt.`)), ms);
     promise.then(
       (v) => { clearTimeout(t); resolve(v); },
       (e) => { clearTimeout(t); reject(e); },
@@ -34,19 +19,12 @@ function withTimeout<T>(promise: Promise<T>, ms = 15000, label = 'Forespørselen
   });
 }
 
-/** Guard every Supabase call with the config check + timeout. */
 function assertConfigured(): void {
   if (!isSupabaseConfigured) {
-    throw new Error(
-      'Pålogging er ikke tilgjengelig: Supabase er ikke konfigurert. ' +
-      'Kontakt administrator (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY mangler).'
-    );
+    throw new Error('Pålogging er ikke tilgjengelig: Supabase er ikke konfigurert. Kontakt administrator.');
   }
 }
 
-// Hard-coded admin enrolment code (same value as the legacy localStorage flow).
-// On signup the value is sent in user_metadata.role = 'super_admin' and the
-// handle_new_user() trigger persists it.
 const ADMIN_CODE = 'OLIVIA-ADMIN-2024';
 
 export interface AuthResult {
@@ -72,7 +50,7 @@ function rowToProfile(row: any, fallbackEmail = ''): UserProfile {
 }
 
 export async function fetchProfile(userId: string, fallbackEmail = ''): Promise<UserProfile | null> {
-  const { data, error } = await supabase
+  const { data, error } = await supabasePublic
     .from('user_profiles')
     .select('*')
     .eq('id', userId)
@@ -86,7 +64,7 @@ export async function fetchProfile(userId: string, fallbackEmail = ''): Promise<
 }
 
 export async function upsertProfile(profile: UserProfile): Promise<void> {
-  const { error } = await supabase
+  const { error } = await supabasePublic
     .from('user_profiles')
     .upsert({
       id: profile.id,
@@ -105,46 +83,38 @@ export async function upsertProfile(profile: UserProfile): Promise<void> {
   if (error) console.error('upsertProfile', error);
 }
 
+function fallbackProfileFromAuth(user: any, fallbackEmail = ''): UserProfile {
+  const email = user?.email ?? fallbackEmail;
+  const name = (user?.user_metadata?.name as string) || email.split('@')[0] || 'Olivia User';
+  return {
+    id: user?.id || `local-${Date.now()}`,
+    email,
+    name,
+    role: (user?.user_metadata?.role as UserProfile['role']) || 'farmer',
+    subscription: 'trial',
+    subscriptionStart: new Date().toISOString().slice(0, 10),
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=22c55e&color=000&size=256`,
+  };
+}
+
 export async function signInWithPassword(email: string, password: string): Promise<AuthResult> {
   assertConfigured();
   let data: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['data'];
   try {
-    const res = await withTimeout(
-      supabase.auth.signInWithPassword({ email, password }),
-      15000,
-      'Innlogging',
-    );
+    const res = await withTimeout(supabase.auth.signInWithPassword({ email, password }), 15000, 'Innlogging');
     if (res.error) throw new Error(translateAuthError(res.error.message));
     data = res.data;
   } catch (e: any) {
-    // Bubble up friendly text for any network / fetch failure too.
     throw new Error(translateAuthError(e?.message || String(e)));
   }
   if (!data.user) throw new Error('Innlogging feilet.');
-
   const profile = await fetchProfile(data.user.id, data.user.email ?? email);
-  if (!profile) {
-    // Auth user exists but trigger didn't run — fall back to a minimal profile
-    const fallback: UserProfile = {
-      id: data.user.id,
-      email: data.user.email ?? email,
-      name: (data.user.user_metadata?.name as string) || (data.user.email ?? '').split('@')[0],
-      role: 'farmer',
-      subscription: 'trial',
-      subscriptionStart: new Date().toISOString().slice(0, 10),
-    };
-    await upsertProfile(fallback);
-    return { user: fallback, isAdmin: false };
-  }
-  return { user: profile, isAdmin: profile.role === 'super_admin' };
+  const finalProfile = profile ?? fallbackProfileFromAuth(data.user, email);
+  if (!profile) await upsertProfile(finalProfile).catch(err => console.warn('profile fallback save failed', err));
+  return { user: finalProfile, isAdmin: finalProfile.role === 'super_admin' };
 }
 
-export async function signUpWithPassword(
-  email: string,
-  password: string,
-  name: string,
-  adminCode?: string,
-): Promise<AuthResult> {
+export async function signUpWithPassword(email: string, password: string, name: string, adminCode?: string): Promise<AuthResult> {
   assertConfigured();
   const isAdmin = adminCode === ADMIN_CODE;
   let data: Awaited<ReturnType<typeof supabase.auth.signUp>>['data'];
@@ -153,12 +123,7 @@ export async function signUpWithPassword(
       supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            name,
-            role: isAdmin ? 'super_admin' : 'farmer',
-          },
-        },
+        options: { data: { name, role: isAdmin ? 'super_admin' : 'farmer' } },
       }),
       15000,
       'Registrering',
@@ -169,14 +134,7 @@ export async function signUpWithPassword(
     throw new Error(translateAuthError(e?.message || String(e)));
   }
   if (!data.user) throw new Error('Kontoen kunne ikke opprettes.');
-
-  // If "confirm email" is enabled in Supabase, data.session is null and the
-  // user must check their inbox before signing in. Surface a friendly message.
-  if (!data.session) {
-    throw new Error('Sjekk e-posten din for å bekrefte kontoen før du logger inn.');
-  }
-
-  // Trigger should have created the profile row; refetch it.
+  if (!data.session) throw new Error('Sjekk e-posten din for å bekrefte kontoen før du logger inn.');
   const profile = await fetchProfile(data.user.id, email);
   const finalProfile: UserProfile = profile ?? {
     id: data.user.id,
@@ -187,8 +145,7 @@ export async function signUpWithPassword(
     subscriptionStart: new Date().toISOString().slice(0, 10),
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=22c55e&color=000&size=256`,
   };
-  if (!profile) await upsertProfile(finalProfile);
-
+  if (!profile) await upsertProfile(finalProfile).catch(err => console.warn('profile fallback save failed', err));
   return { user: finalProfile, isAdmin: finalProfile.role === 'super_admin' };
 }
 
@@ -198,44 +155,22 @@ export async function signOut(): Promise<void> {
   if (error) console.warn('signOut', error);
 }
 
-/**
- * Updates the password for the currently-signed-in user. Called from the
- * reset-password page *after* Supabase has exchanged the recovery link for
- * a session (which happens automatically on page load).
- *
- * Requires minimum 6 characters (Supabase default).
- */
 export async function updatePassword(newPassword: string): Promise<void> {
   assertConfigured();
-  if (newPassword.length < 6) {
-    throw new Error('Passordet må være minst 6 tegn.');
-  }
+  if (newPassword.length < 6) throw new Error('Passordet må være minst 6 tegn.');
   try {
-    const res = await withTimeout(
-      supabase.auth.updateUser({ password: newPassword }),
-      15000,
-      'Oppdatering av passord',
-    );
+    const res = await withTimeout(supabase.auth.updateUser({ password: newPassword }), 15000, 'Oppdatering av passord');
     if (res.error) throw new Error(translateAuthError(res.error.message));
   } catch (e: any) {
     throw new Error(translateAuthError(e?.message || String(e)));
   }
 }
 
-/**
- * Sends a password-reset email via Supabase. The link lands on
- * `redirectTo` (defaults to the current origin) where the user can choose
- * a new password — Supabase handles the session exchange automatically.
- */
 export async function sendPasswordReset(email: string, redirectTo?: string): Promise<void> {
   assertConfigured();
   const target = redirectTo ?? (typeof window !== 'undefined' ? `${window.location.origin}/#reset-password` : undefined);
   try {
-    const res = await withTimeout(
-      supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: target }),
-      15000,
-      'Sending av e-post',
-    );
+    const res = await withTimeout(supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: target }), 15000, 'Sending av e-post');
     if (res.error) throw new Error(translateAuthError(res.error.message));
   } catch (e: any) {
     throw new Error(translateAuthError(e?.message || String(e)));
@@ -244,118 +179,39 @@ export async function sendPasswordReset(email: string, redirectTo?: string): Pro
 
 export async function getCurrentSession(): Promise<AuthResult | null> {
   if (!isSupabaseConfigured) return null;
-  // Wrap getSession in a timeout — if the gotrue lock is contended (e.g. under
-  // React StrictMode double-mount, or from a stuck previous tab) it can hang
-  // for 5+ seconds and leave the dashboard in a loading state.
-  let result: Awaited<ReturnType<typeof supabase.auth.getSession>>;
   try {
-    result = await withTimeout(
-      supabase.auth.getSession(),
-      8000,
-      'Henting av økt',
-    );
-  } catch (e) {
-    console.warn('[auth] getSession timed out or failed:', e);
+    const { data, error } = await withTimeout(supabase.auth.getSession(), 10000, 'Henting av sesjon');
+    if (error || !data.session?.user) return null;
+    const profile = await fetchProfile(data.session.user.id, data.session.user.email ?? '');
+    const finalProfile = profile ?? fallbackProfileFromAuth(data.session.user, data.session.user.email ?? '');
+    return { user: finalProfile, isAdmin: finalProfile.role === 'super_admin' };
+  } catch (error) {
+    console.warn('getCurrentSession', error);
     return null;
   }
-  const { data, error } = result;
-  if (error || !data.session) return null;
-  const userId = data.session.user.id;
-  const email = data.session.user.email ?? '';
-  const profile = await fetchProfile(userId, email);
-  if (!profile) {
-    // Profile row missing — auth user still valid, return a minimal record.
-    const fallback: UserProfile = {
-      id: userId,
-      email,
-      name: (data.session.user.user_metadata?.name as string) || email.split('@')[0],
-      role: 'farmer',
-      subscription: 'trial',
-      subscriptionStart: new Date().toISOString().slice(0, 10),
-    };
-    return { user: fallback, isAdmin: false };
-  }
-  return { user: profile, isAdmin: profile.role === 'super_admin' };
 }
 
-export type AuthChangeHandler = (result: AuthResult | null) => void;
-
-/**
- * Subscribe to sign-in / sign-out events, optionally also reacting to
- * PASSWORD_RECOVERY. Both handlers share a single `onAuthStateChange`
- * subscription — registering two separate listeners caused the gotrue
- * client's named lock to be contended under React StrictMode (the
- * "Lock 'lock:sb-...-auth-token' was not released within 5000ms" warning).
- *
- * Returns an unsubscribe fn.
- */
 export function onAuthChange(
-  handler: AuthChangeHandler,
-  onRecovery?: () => void,
+  callback: (result: AuthResult | null) => void,
+  onPasswordRecovery?: () => void,
 ): () => void {
   if (!isSupabaseConfigured) return () => {};
   const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'PASSWORD_RECOVERY') {
-      onRecovery?.();
-      // Don't fall through — the recovery session shouldn't trigger a normal
-      // sign-in transition (App.tsx routes to ResetPasswordPage instead).
-      return;
-    }
-    if (!session) {
-      handler(null);
-      return;
-    }
+    if (event === 'PASSWORD_RECOVERY') onPasswordRecovery?.();
+    if (!session?.user) { callback(null); return; }
     const profile = await fetchProfile(session.user.id, session.user.email ?? '');
-    if (!profile) {
-      handler({
-        user: {
-          id: session.user.id,
-          email: session.user.email ?? '',
-          name: (session.user.user_metadata?.name as string) || (session.user.email ?? '').split('@')[0],
-          role: 'farmer',
-          subscription: 'trial',
-          subscriptionStart: new Date().toISOString().slice(0, 10),
-        },
-        isAdmin: false,
-      });
-      return;
-    }
-    handler({ user: profile, isAdmin: profile.role === 'super_admin' });
+    const finalProfile = profile ?? fallbackProfileFromAuth(session.user, session.user.email ?? '');
+    callback({ user: finalProfile, isAdmin: finalProfile.role === 'super_admin' });
   });
   return () => data.subscription.unsubscribe();
 }
 
-/**
- * @deprecated Pass `onRecovery` to `onAuthChange` instead — sharing one
- * subscription avoids the gotrue lock contention warning. Kept for any
- * external callers that haven't migrated.
- */
-export function onPasswordRecovery(handler: () => void): () => void {
-  if (!isSupabaseConfigured) return () => {};
-  const { data } = supabase.auth.onAuthStateChange((event) => {
-    if (event === 'PASSWORD_RECOVERY') handler();
-  });
-  return () => data.subscription.unsubscribe();
-}
-
-/** Translate common Supabase Auth + network error strings into Norwegian. */
 function translateAuthError(message: string): string {
-  const m = (message || '').toLowerCase();
-  // Supabase-worded auth errors
-  if (m.includes('invalid login') || m.includes('invalid credentials')) return 'Feil e-post eller passord.';
-  if (m.includes('email not confirmed')) return 'Du må bekrefte e-postadressen din før du kan logge inn. Sjekk innboksen.';
-  if (m.includes('user already registered')) return 'En konto med denne e-posten finnes allerede. Prøv å logge inn eller tilbakestill passordet.';
-  if (m.includes('password should be at least')) return 'Passordet må være minst 6 tegn.';
-  if (m.includes('rate limit') || m.includes('too many')) return 'For mange forsøk. Vent noen minutter og prøv igjen.';
-  if (m.includes('user not found')) return 'Ingen konto funnet for denne e-posten.';
-  // Network / connectivity failures (these used to silently hang the UI)
-  if (m.includes('failed to fetch') || m.includes('networkerror') || m.includes('network request failed')) {
-    return 'Kunne ikke nå serveren. Sjekk internett, eller at Supabase-prosjektet er aktivt (gratis-prosjekter pauses etter 7 dager uten bruk).';
-  }
-  if (m.includes('err_name_not_resolved') || m.includes('dns')) {
-    return 'Supabase-URL-en finnes ikke (DNS-feil). Kontakt administrator — VITE_SUPABASE_URL må oppdateres.';
-  }
-  if (m.includes('tok for lang tid')) return message; // already our friendly timeout text
-  if (m.includes('supabase er ikke konfigurert') || m.includes('ikke konfigurert')) return message;
-  return message || 'Ukjent feil.';
+  const m = message.toLowerCase();
+  if (m.includes('invalid login credentials')) return 'Feil e-post eller passord.';
+  if (m.includes('email not confirmed')) return 'E-posten er ikke bekreftet ennå.';
+  if (m.includes('user already registered')) return 'Denne e-posten er allerede registrert.';
+  if (m.includes('password')) return 'Passordet må være minst 6 tegn.';
+  if (m.includes('failed to fetch') || m.includes('network')) return 'Fikk ikke kontakt med Supabase. Sjekk internett eller miljøvariabler.';
+  return message;
 }
