@@ -21,6 +21,8 @@ const SalinityDashboard = lazy(() => import('./components/SalinityDashboard'));
 const ZoneStatusMapView = lazy(() => import('./components/ZoneStatusMapView'));
 const HarvestPlannerView = lazy(() => import('./components/HarvestPlannerView'));
 const TraceabilityBatchesView = lazy(() => import('./components/TraceabilityBatchesView'));
+const LabelQrGeneratorView = lazy(() => import('./components/LabelQrGeneratorView'));
+const ProfessionalLabelTemplateView = lazy(() => import('./components/ProfessionalLabelTemplateView'));
 const OrganicCertificationView = lazy(() => import('./components/OrganicCertificationView'));
 const AutoTasksView = lazy(() => import('./components/AutoTasksView'));
 const SeasonReportView = lazy(() => import('./components/SeasonReportView'));
@@ -188,6 +190,8 @@ const App: React.FC = () => {
       case 'zone_status': return <ZoneStatusMapView />;
       case 'harvest_planner': return <HarvestPlannerView />;
       case 'traceability_batches': return <TraceabilityBatchesView />;
+      case 'label_qr': return <LabelQrGeneratorView />;
+      case 'professional_label': return <ProfessionalLabelTemplateView />;
       case 'organic_certification': return <OrganicCertificationView />;
       case 'auto_tasks': return <AutoTasksView />;
       case 'season_report': return <SeasonReportView />;
