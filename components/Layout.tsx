@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import {
   LayoutDashboard, Map as MapIcon, CloudSun, Sprout, TrendingUp, Truck, Droplets,
   ClipboardList, Settings, LogOut, ShieldCheck, Sparkles, Scissors, Menu, X, ChevronLeft, ChevronRight,
-  Activity, Store, Leaf, BarChart3, Gauge, MapPin, Clock, FlaskConical, MapPinned, CalendarDays, PackageCheck, FileCheck2, FileText, QrCode
+  Activity, Store, Leaf, BarChart3, Gauge, MapPin, Clock, FlaskConical, MapPinned, CalendarDays, PackageCheck, FileCheck2, FileText, QrCode, ScrollText
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { useTranslation } from '../services/i18nService';
@@ -37,6 +37,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
     { id: 'harvest_planner', icon: CalendarDays, label: 'Høsteplan' },
     { id: 'traceability_batches', icon: PackageCheck, label: 'Batch / QR' },
     { id: 'label_qr', icon: QrCode, label: 'QR / etikett' },
+    { id: 'professional_label', icon: ScrollText, label: 'EU etikett' },
     { id: 'organic_certification', icon: FileCheck2, label: 'Øko / støtte' },
     { id: 'auto_tasks', icon: Sparkles, label: 'Auto-oppgaver' },
     { id: 'season_report', icon: FileText, label: 'Sesongrapport' },
