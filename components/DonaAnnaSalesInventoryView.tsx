@@ -1,52 +1,37 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   BarChart3,
-  Building2,
   CheckCircle2,
   ClipboardList,
   Euro,
+  Loader2,
   PackageCheck,
   Plus,
   ReceiptText,
+  RefreshCcw,
   Save,
   ShoppingBag,
-  Store,
+  Sparkles,
   TrendingUp,
   Truck,
   Users,
   X,
 } from 'lucide-react';
+import {
+  createDonaAnnaOrder,
+  fetchDonaAnnaCustomers,
+  fetchDonaAnnaOrders,
+  fetchDonaAnnaProducts,
+  type DonaAnnaCustomer,
+  type DonaAnnaOrderWithLines,
+  type DonaAnnaProduct,
+  type OrderStatus,
+  type SalesChannel,
+} from '../services/donaAnnaSales';
 
-type ProductType = 'evoo_250' | 'evoo_500' | 'evoo_750' | 'table_olives' | 'gift_pack';
-type SalesChannel = 'market' | 'b2b' | 'online' | 'restaurant' | 'farm_direct' | 'event';
-type OrderStatus = 'draft' | 'confirmed' | 'delivered' | 'paid' | 'cancelled';
+type DataSource = 'supabase' | 'local_demo';
 
-type Product = {
-  id: string;
-  sku: string;
-  name: string;
-  type: ProductType;
-  batch_code: string;
-  qr_slug?: string;
-  unit_size: string;
-  units_in_stock: number;
-  reserved_units: number;
-  unit_cost_eur: number;
-  retail_price_eur: number;
-  wholesale_price_eur: number;
-  reorder_level: number;
-};
-
-type Customer = {
-  id: string;
-  name: string;
-  type: 'private' | 'restaurant' | 'shop' | 'distributor' | 'market';
-  contact?: string;
-  city?: string;
-  notes?: string;
-};
-
-type Order = {
+type LocalOrder = {
   id: string;
   order_no: string;
   customer_id: string;
@@ -62,7 +47,7 @@ type Order = {
   notes?: string;
 };
 
-const demoProducts: Product[] = [
+const demoProducts: DonaAnnaProduct[] = [
   {
     id: 'prod-evoo-500-demo',
     sku: 'DA-EVOO-500-2026',
@@ -95,13 +80,13 @@ const demoProducts: Product[] = [
   },
 ];
 
-const demoCustomers: Customer[] = [
+const demoCustomers: DonaAnnaCustomer[] = [
   { id: 'cust-market', name: 'Marked / direkte salg', type: 'market', city: 'Alicante', notes: 'Kontant/terminal ved marked og event.' },
   { id: 'cust-restaurant', name: 'Restaurant lead', type: 'restaurant', city: 'Costa Blanca', notes: 'Potensiell B2B-kunde for olje og bordoliven.' },
   { id: 'cust-shop', name: 'Delikatessebutikk lead', type: 'shop', city: 'Benidorm/Altea', notes: 'Mulig kommisjon eller grossistpris.' },
 ];
 
-const demoOrders: Order[] = [
+const demoOrders: LocalOrder[] = [
   {
     id: 'order-demo-1',
     order_no: 'DA-ORD-2026-001',
@@ -149,6 +134,25 @@ function saveLocal<T>(key: string, value: T) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function flattenOrder(order: DonaAnnaOrderWithLines): LocalOrder {
+  const line = order.lines[0];
+  return {
+    id: order.id,
+    order_no: order.order_no,
+    customer_id: order.customer_id || '',
+    customer_name: order.customer_name,
+    channel: order.channel,
+    status: order.status,
+    order_date: order.order_date,
+    product_id: line?.product_id || '',
+    product_name: line?.product_name || 'Uten produktlinje',
+    quantity: line?.quantity || 0,
+    unit_price_eur: line?.unit_price_eur || 0,
+    paid_amount_eur: order.paid_amount_eur,
+    notes: order.notes,
+  };
+}
+
 function channelLabel(channel: SalesChannel): string {
   const labels: Record<SalesChannel, string> = {
     market: 'Marked',
@@ -179,7 +183,7 @@ function statusClass(status: OrderStatus): string {
   return 'border-slate-500/20 bg-slate-500/10 text-slate-300';
 }
 
-function stockClass(product: Product): string {
+function stockClass(product: DonaAnnaProduct): string {
   const available = product.units_in_stock - product.reserved_units;
   if (available <= product.reorder_level) return 'border-red-500/30 bg-red-500/10 text-red-400';
   if (available <= product.reorder_level * 2) return 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400';
@@ -192,11 +196,14 @@ function makeOrderNo(): string {
 }
 
 const DonaAnnaSalesInventoryView: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>(() => getLocal('donaanna_products', demoProducts));
-  const [customers] = useState<Customer[]>(() => getLocal('donaanna_customers', demoCustomers));
-  const [orders, setOrders] = useState<Order[]>(() => getLocal('donaanna_orders', demoOrders));
+  const [products, setProducts] = useState<DonaAnnaProduct[]>(() => getLocal('donaanna_products', demoProducts));
+  const [customers, setCustomers] = useState<DonaAnnaCustomer[]>(() => getLocal('donaanna_customers', demoCustomers));
+  const [orders, setOrders] = useState<LocalOrder[]>(() => getLocal('donaanna_orders', demoOrders));
+  const [dataSource, setDataSource] = useState<DataSource>('local_demo');
+  const [isLoading, setIsLoading] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
-  const [orderForm, setOrderForm] = useState<Partial<Order>>({
+  const [orderForm, setOrderForm] = useState<Partial<LocalOrder>>({
     customer_id: customers[0]?.id,
     channel: 'market',
     status: 'confirmed',
@@ -206,6 +213,44 @@ const DonaAnnaSalesInventoryView: React.FC = () => {
     unit_price_eur: products[0]?.retail_price_eur || 0,
     notes: '',
   });
+
+  const loadData = async () => {
+    setIsLoading(true);
+    setSaveError(null);
+    try {
+      const [remoteProducts, remoteCustomers, remoteOrders] = await Promise.all([
+        fetchDonaAnnaProducts(),
+        fetchDonaAnnaCustomers(),
+        fetchDonaAnnaOrders(),
+      ]);
+
+      if (remoteProducts.length || remoteCustomers.length || remoteOrders.length) {
+        const flatOrders = remoteOrders.map(flattenOrder);
+        setProducts(remoteProducts.length ? remoteProducts : demoProducts);
+        setCustomers(remoteCustomers.length ? remoteCustomers : demoCustomers);
+        setOrders(flatOrders.length ? flatOrders : []);
+        setDataSource('supabase');
+        setOrderForm(prev => ({
+          ...prev,
+          customer_id: remoteCustomers[0]?.id || prev.customer_id,
+          product_id: remoteProducts[0]?.id || prev.product_id,
+          unit_price_eur: remoteProducts[0]?.retail_price_eur || prev.unit_price_eur,
+        }));
+      } else {
+        setProducts(getLocal('donaanna_products', demoProducts));
+        setCustomers(getLocal('donaanna_customers', demoCustomers));
+        setOrders(getLocal('donaanna_orders', demoOrders));
+        setDataSource('local_demo');
+      }
+    } catch (error) {
+      console.warn('[DonaAnnaSalesInventoryView] loading failed, using local demo', error);
+      setDataSource('local_demo');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { loadData(); }, []);
 
   const stats = useMemo(() => {
     const revenue = orders.filter(o => o.status !== 'cancelled').reduce((acc, order) => acc + order.quantity * order.unit_price_eur, 0);
@@ -230,36 +275,62 @@ const DonaAnnaSalesInventoryView: React.FC = () => {
     setOrderForm(prev => ({ ...prev, product_id: productId, unit_price_eur: unitPrice }));
   };
 
-  const saveOrder = () => {
+  const saveOrder = async () => {
     if (!selectedProduct || !selectedCustomer) return;
+    setSaveError(null);
     const quantity = Number(orderForm.quantity || 0);
     const unitPrice = Number(orderForm.unit_price_eur || 0);
-    const order: Order = {
-      id: `order-${Date.now()}`,
-      order_no: makeOrderNo(),
-      customer_id: selectedCustomer.id,
-      customer_name: selectedCustomer.name,
-      channel: (orderForm.channel as SalesChannel) || 'market',
-      status: (orderForm.status as OrderStatus) || 'confirmed',
-      order_date: orderForm.order_date || new Date().toISOString().slice(0, 10),
-      product_id: selectedProduct.id,
-      product_name: selectedProduct.name,
-      quantity,
-      unit_price_eur: unitPrice,
-      paid_amount_eur: orderForm.status === 'paid' ? quantity * unitPrice : Number(orderForm.paid_amount_eur || 0),
-      notes: orderForm.notes,
-    };
-    const updatedOrders = [order, ...orders];
-    const updatedProducts = products.map(product => product.id === selectedProduct.id ? {
-      ...product,
-      units_in_stock: product.units_in_stock - (order.status === 'delivered' || order.status === 'paid' ? quantity : 0),
-      reserved_units: product.reserved_units + (order.status === 'confirmed' ? quantity : 0),
-    } : product);
-    setOrders(updatedOrders);
-    setProducts(updatedProducts);
-    saveLocal('donaanna_orders', updatedOrders);
-    saveLocal('donaanna_products', updatedProducts);
-    setIsOrderFormOpen(false);
+    const orderNo = makeOrderNo();
+    const status = (orderForm.status as OrderStatus) || 'confirmed';
+    const channel = (orderForm.channel as SalesChannel) || 'market';
+
+    try {
+      if (dataSource === 'supabase') {
+        await createDonaAnnaOrder({
+          customer: selectedCustomer,
+          product: selectedProduct,
+          order_no: orderNo,
+          channel,
+          status,
+          order_date: orderForm.order_date || new Date().toISOString().slice(0, 10),
+          quantity,
+          unit_price_eur: unitPrice,
+          paid_amount_eur: status === 'paid' ? quantity * unitPrice : Number(orderForm.paid_amount_eur || 0),
+          notes: orderForm.notes,
+        });
+        await loadData();
+      } else {
+        const order: LocalOrder = {
+          id: `order-${Date.now()}`,
+          order_no: orderNo,
+          customer_id: selectedCustomer.id,
+          customer_name: selectedCustomer.name,
+          channel,
+          status,
+          order_date: orderForm.order_date || new Date().toISOString().slice(0, 10),
+          product_id: selectedProduct.id,
+          product_name: selectedProduct.name,
+          quantity,
+          unit_price_eur: unitPrice,
+          paid_amount_eur: status === 'paid' ? quantity * unitPrice : Number(orderForm.paid_amount_eur || 0),
+          notes: orderForm.notes,
+        };
+        const updatedOrders = [order, ...orders];
+        const updatedProducts = products.map(product => product.id === selectedProduct.id ? {
+          ...product,
+          units_in_stock: product.units_in_stock - (order.status === 'delivered' || order.status === 'paid' ? quantity : 0),
+          reserved_units: product.reserved_units + (order.status === 'confirmed' ? quantity : 0),
+        } : product);
+        setOrders(updatedOrders);
+        setProducts(updatedProducts);
+        saveLocal('donaanna_orders', updatedOrders);
+        saveLocal('donaanna_products', updatedProducts);
+      }
+      setIsOrderFormOpen(false);
+    } catch (error: any) {
+      console.warn('[DonaAnnaSalesInventoryView] save order failed', error);
+      setSaveError(error?.message || 'Kunne ikke lagre ordre i Supabase. Sjekk migrasjon og RLS.');
+    }
   };
 
   return (
@@ -267,10 +338,15 @@ const DonaAnnaSalesInventoryView: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3"><ShoppingBag className="text-green-400" /> Salg og lager</h2>
-          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">DonaAnna · produkter · lager · B2B · marked · ordre</p>
+          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">DonaAnna · produkter · lager · B2B · marked · ordre · {dataSource === 'supabase' ? 'Supabase' : 'Lokal demo'}</p>
         </div>
-        <button onClick={() => setIsOrderFormOpen(true)} className="bg-green-500 hover:bg-green-400 text-black px-6 py-3.5 rounded-2xl font-bold transition-all shadow-xl shadow-green-500/20 flex items-center gap-2"><Plus size={20} /> Ny ordre</button>
+        <div className="flex gap-2">
+          <button onClick={loadData} disabled={isLoading} className="p-3.5 glass border border-white/10 rounded-2xl text-green-400 hover:bg-white/5 transition-all disabled:opacity-50">{isLoading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}</button>
+          <button onClick={() => setIsOrderFormOpen(true)} className="bg-green-500 hover:bg-green-400 text-black px-6 py-3.5 rounded-2xl font-bold transition-all shadow-xl shadow-green-500/20 flex items-center gap-2"><Plus size={20} /> Ny ordre</button>
+        </div>
       </div>
+
+      {saveError && <div className="glass rounded-[2rem] p-5 border border-red-500/30 bg-red-500/10 text-red-100 text-sm">{saveError}</div>}
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         {[
@@ -296,7 +372,7 @@ const DonaAnnaSalesInventoryView: React.FC = () => {
                   <div className="flex justify-between items-start gap-4">
                     <div>
                       <p className="text-white font-bold">{product.name}</p>
-                      <p className="text-xs text-slate-500 mt-1">{product.sku} · {product.unit_size} · Batch {product.batch_code}</p>
+                      <p className="text-xs text-slate-500 mt-1">{product.sku} · {product.unit_size} · Batch {product.batch_code || '—'}</p>
                     </div>
                     <div className="text-right"><p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Tilgjengelig</p><p className="text-2xl font-black text-white">{available}</p></div>
                   </div>
@@ -329,6 +405,7 @@ const DonaAnnaSalesInventoryView: React.FC = () => {
                 {order.notes && <p className="text-xs text-slate-500 mt-2">{order.notes}</p>}
               </div>
             ))}
+            {!orders.length && <p className="text-sm text-slate-500">Ingen ordre registrert ennå.</p>}
           </div>
         </div>
       </div>
@@ -362,7 +439,7 @@ const DonaAnnaSalesInventoryView: React.FC = () => {
             <select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white" value={orderForm.product_id} onChange={e => updateProductPrice(e.target.value, (orderForm.channel as SalesChannel) || 'market')}>{products.map(product => <option key={product.id} value={product.id}>{product.name}</option>)}</select>
             <div className="grid grid-cols-3 gap-3"><input type="date" className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white" value={orderForm.order_date || ''} onChange={e => setOrderForm(p => ({ ...p, order_date: e.target.value }))} /><input type="number" min="1" className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white" placeholder="Antall" value={orderForm.quantity || ''} onChange={e => setOrderForm(p => ({ ...p, quantity: Number(e.target.value) }))} /><input type="number" step="0.01" className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white" placeholder="Pris" value={orderForm.unit_price_eur || ''} onChange={e => setOrderForm(p => ({ ...p, unit_price_eur: Number(e.target.value) }))} /></div>
             <textarea className="w-full min-h-[90px] bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white" placeholder="Notat" value={orderForm.notes || ''} onChange={e => setOrderForm(p => ({ ...p, notes: e.target.value }))} />
-            <button onClick={saveOrder} className="w-full bg-green-500 text-black font-bold py-5 rounded-[2rem] text-lg shadow-2xl hover:bg-green-400 transition-all flex items-center justify-center gap-2"><Save size={20} /> Lagre ordre</button>
+            <button onClick={saveOrder} disabled={isLoading} className="w-full bg-green-500 text-black font-bold py-5 rounded-[2rem] text-lg shadow-2xl hover:bg-green-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50"><Save size={20} /> Lagre ordre</button>
           </div>
         </div>
       )}
