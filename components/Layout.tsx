@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import {
   LayoutDashboard, Map as MapIcon, CloudSun, Sprout, TrendingUp, Truck, Droplets,
   ClipboardList, Settings, LogOut, ShieldCheck, Sparkles, Scissors, Menu, X, ChevronLeft, ChevronRight,
-  Activity, Store, Leaf, BarChart3, Gauge, MapPin, Clock, FlaskConical
+  Activity, Store, Leaf, BarChart3, Gauge, MapPin, Clock, FlaskConical, MapPinned
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { useTranslation } from '../services/i18nService';
@@ -29,6 +29,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
     { id: 'consultant', icon: Sparkles, label: t('consultant') },
     { id: 'pruning', icon: Scissors, label: t('pruning') },
     { id: 'map', icon: MapIcon, label: t('map') },
+    { id: 'zone_status', icon: MapPinned, label: 'Sonekart' },
     { id: 'field_observations', icon: MapPin, label: 'Feltlogg' },
     { id: 'weather', icon: CloudSun, label: t('weather') },
     { id: 'climate_stats', icon: BarChart3, label: 'Klima Stats' },
