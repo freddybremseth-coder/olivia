@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Award,
   CalendarDays,
@@ -6,6 +6,7 @@ import {
   Factory,
   FlaskConical,
   Leaf,
+  Loader2,
   MapPin,
   Mountain,
   PackageCheck,
@@ -14,36 +15,18 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
+import { fetchPublicTraceBatch, type PublicTraceBatch } from '../services/publicTrace';
 
-type PublicBatch = {
-  id: string;
-  batch_code: string;
-  type: 'evoo' | 'table_olives' | 'raw_olives';
-  status: string;
-  harvest_date: string;
-  parcel_id: string;
-  zone_id: string;
-  variety: string;
-  altitude_m: number;
-  kg_harvested: number;
-  kg_processed?: number;
-  liters_oil?: number;
-  yield_percent?: number;
-  acidity_percent?: number;
-  peroxide_value?: number;
-  polyphenols_mg_kg?: number;
-  sensory_profile?: string;
-  processing_location?: string;
-  lot_notes?: string;
-  qr_slug: string;
-  created_at: string;
+type PublicBatch = PublicTraceBatch & {
+  product_status?: string;
 };
 
 const demoBatch: PublicBatch = {
   id: 'public-demo',
   batch_code: 'DA-BIAR-2026-EVOO-001',
   type: 'evoo',
-  status: 'quality_checked',
+  status: 'published',
+  product_status: 'quality_checked',
   harvest_date: '2026-11-25',
   parcel_id: 'biar-main',
   zone_id: 'zone-b',
@@ -59,6 +42,8 @@ const demoBatch: PublicBatch = {
   sensory_profile: 'Grønn frukt, urter, medium bitterhet og tydelig pepperfinish.',
   processing_location: 'Cooperativa / ekstern presse',
   lot_notes: 'Demo-batch for premium EVOO-sporbarhet.',
+  public_story: 'DonaAnna bygger sporbarhet fra felt til ferdig produkt i Biar, Alicante.',
+  organic_note: 'Økologisk status og dokumentasjon bør bekreftes per batch før kommersiell bruk.',
   qr_slug: 'da-biar-2026-evoo-001',
   created_at: new Date().toISOString(),
 };
@@ -74,13 +59,21 @@ function getLocalBatches(): PublicBatch[] {
   }
 }
 
+function normalizeLocalBatch(batch: PublicBatch): PublicBatch {
+  return {
+    ...batch,
+    status: batch.status === 'published' || batch.status === 'draft' || batch.status === 'archived' ? batch.status : 'published',
+    product_status: batch.product_status || batch.status,
+  };
+}
+
 function typeLabel(type: PublicBatch['type']): string {
   if (type === 'evoo') return 'Extra Virgin Olive Oil';
   if (type === 'table_olives') return 'Bordoliven';
   return 'Rå oliven';
 }
 
-function statusLabel(status: string): string {
+function statusLabel(status?: string): string {
   const labels: Record<string, string> = {
     planned: 'Planlagt',
     harvested: 'Høstet',
@@ -88,8 +81,9 @@ function statusLabel(status: string): string {
     quality_checked: 'Kvalitetstestet',
     packed: 'Pakket',
     ready_for_sale: 'Klar for salg',
+    published: 'Publisert',
   };
-  return labels[status] || status;
+  return labels[status || ''] || status || 'Publisert';
 }
 
 function statValue(value: unknown, suffix = ''): string {
@@ -102,12 +96,42 @@ interface PublicTracePageProps {
 }
 
 const PublicTracePage: React.FC<PublicTracePageProps> = ({ slug }) => {
-  const batch = useMemo(() => {
+  const [remoteBatch, setRemoteBatch] = useState<PublicBatch | null>(null);
+  const [isLoading, setIsLoading] = useState(Boolean(slug));
+  const [source, setSource] = useState<'supabase' | 'local' | 'demo'>('demo');
+
+  const localBatch = useMemo(() => {
     const batches = getLocalBatches();
-    return batches.find(item => item.qr_slug === slug || item.batch_code?.toLowerCase() === slug) || demoBatch;
+    const found = batches.find(item => item.qr_slug === slug || item.batch_code?.toLowerCase() === slug);
+    return found ? normalizeLocalBatch(found) : null;
   }, [slug]);
 
-  const isDemo = batch.id === 'public-demo' && slug !== batch.qr_slug;
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!slug) {
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      const fetched = await fetchPublicTraceBatch(slug);
+      if (cancelled) return;
+      if (fetched) {
+        setRemoteBatch(fetched);
+        setSource('supabase');
+      } else if (localBatch) {
+        setSource('local');
+      } else {
+        setSource('demo');
+      }
+      setIsLoading(false);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [slug, localBatch]);
+
+  const batch = remoteBatch || localBatch || demoBatch;
+  const isDemo = source === 'demo' && batch.id === 'public-demo' && slug !== batch.qr_slug;
 
   return (
     <div className="min-h-screen bg-[#060807] text-white overflow-hidden">
@@ -123,7 +147,7 @@ const PublicTracePage: React.FC<PublicTracePageProps> = ({ slug }) => {
             </div>
           </div>
           <div className="glass rounded-3xl border border-white/10 p-4 flex items-center gap-3 bg-white/[0.04]">
-            <QrCode className="text-green-400" />
+            {isLoading ? <Loader2 className="text-green-400 animate-spin" /> : <QrCode className="text-green-400" />}
             <div>
               <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">QR / Batch</p>
               <p className="font-bold text-white">{batch.batch_code}</p>
@@ -133,7 +157,13 @@ const PublicTracePage: React.FC<PublicTracePageProps> = ({ slug }) => {
 
         {isDemo && (
           <div className="rounded-3xl border border-yellow-500/30 bg-yellow-500/10 p-5 text-sm text-yellow-100">
-            Denne QR-siden viser demo-data fordi batch-slug ikke ble funnet lokalt. Når batchene flyttes til Supabase/offentlig database, kan siden hente ekte batch direkte fra QR-koden.
+            Denne QR-siden viser demo-data fordi batch-slug ikke er publisert i Supabase ennå. Kjør migrasjonen og publiser batchen for ekte offentlig QR-visning.
+          </div>
+        )}
+
+        {source === 'local' && (
+          <div className="rounded-3xl border border-blue-500/30 bg-blue-500/10 p-5 text-sm text-blue-100">
+            Viser lokal batch fra denne nettleseren. For offentlig QR på etikett bør batchen publiseres i Supabase-tabellen <strong>public_trace_batches</strong>.
           </div>
         )}
 
@@ -145,14 +175,14 @@ const PublicTracePage: React.FC<PublicTracePageProps> = ({ slug }) => {
             </div>
             <h2 className="text-4xl md:text-6xl font-black leading-tight">{batch.variety}</h2>
             <p className="text-slate-400 mt-5 text-lg leading-relaxed">
-              Denne batchen kommer fra DonaAnna-gården i Biar, Alicante. Gården ligger i fjellområdet rundt 650 meter over havet, som gir senere modning enn kyst og lavland.
+              {batch.public_story || 'Denne batchen kommer fra DonaAnna-gården i Biar, Alicante. Gården ligger i fjellområdet rundt 650 meter over havet, som gir senere modning enn kyst og lavland.'}
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
               {[
-                ['Høstedato', batch.harvest_date, <CalendarDays size={18} />],
-                ['Sone', batch.zone_id, <MapPin size={18} />],
-                ['Høyde', `${batch.altitude_m} moh.`, <Mountain size={18} />],
-                ['Status', statusLabel(batch.status), <CheckCircle2 size={18} />],
+                ['Høstedato', batch.harvest_date || '—', <CalendarDays size={18} />],
+                ['Sone', batch.zone_id || '—', <MapPin size={18} />],
+                ['Høyde', `${batch.altitude_m || 650} moh.`, <Mountain size={18} />],
+                ['Status', statusLabel(batch.product_status || batch.status), <CheckCircle2 size={18} />],
               ].map(([label, value, icon]) => (
                 <div key={String(label)} className="rounded-2xl bg-black/30 border border-white/10 p-4">
                   <div className="text-green-400 mb-2">{icon}</div>
@@ -206,6 +236,7 @@ const PublicTracePage: React.FC<PublicTracePageProps> = ({ slug }) => {
             <div className="flex items-center gap-3 mb-5"><Factory className="text-yellow-400" /><h3 className="text-xl font-black">Prosessering</h3></div>
             <p className="text-sm text-slate-300 leading-relaxed"><strong className="text-white">Sted:</strong> {batch.processing_location || 'Ikke registrert'}</p>
             <p className="text-sm text-slate-300 leading-relaxed mt-3"><strong className="text-white">Notat:</strong> {batch.lot_notes || 'Ingen batch-notater registrert.'}</p>
+            {batch.organic_note && <p className="text-sm text-slate-300 leading-relaxed mt-3"><strong className="text-white">Økologisk:</strong> {batch.organic_note}</p>}
           </div>
         </section>
 
