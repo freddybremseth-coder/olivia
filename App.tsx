@@ -25,6 +25,7 @@ const LabelQrGeneratorView = lazy(() => import('./components/LabelQrGeneratorVie
 const ProfessionalLabelTemplateView = lazy(() => import('./components/ProfessionalLabelTemplateView'));
 const PrintLabelTemplatesView = lazy(() => import('./components/PrintLabelTemplatesView'));
 const DonaAnnaSalesInventoryView = lazy(() => import('./components/DonaAnnaSalesInventoryView'));
+const DonaAnnaOrderDocumentsView = lazy(() => import('./components/DonaAnnaOrderDocumentsView'));
 const OrganicCertificationView = lazy(() => import('./components/OrganicCertificationView'));
 const AutoTasksView = lazy(() => import('./components/AutoTasksView'));
 const SeasonReportView = lazy(() => import('./components/SeasonReportView'));
@@ -196,6 +197,7 @@ const App: React.FC = () => {
       case 'professional_label': return <ProfessionalLabelTemplateView />;
       case 'print_labels': return <PrintLabelTemplatesView />;
       case 'sales_inventory': return <DonaAnnaSalesInventoryView />;
+      case 'order_documents': return <DonaAnnaOrderDocumentsView />;
       case 'organic_certification': return <OrganicCertificationView />;
       case 'auto_tasks': return <AutoTasksView />;
       case 'season_report': return <SeasonReportView />;
