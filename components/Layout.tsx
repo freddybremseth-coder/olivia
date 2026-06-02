@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import {
   LayoutDashboard, Map as MapIcon, CloudSun, Sprout, TrendingUp, Truck, Droplets,
   ClipboardList, Settings, LogOut, ShieldCheck, Sparkles, Scissors, Menu, X, ChevronLeft, ChevronRight,
-  Activity, Store, Leaf, BarChart3, Gauge, MapPin, Clock, FlaskConical, MapPinned, CalendarDays, PackageCheck, FileCheck2
+  Activity, Store, Leaf, BarChart3, Gauge, MapPin, Clock, FlaskConical, MapPinned, CalendarDays, PackageCheck, FileCheck2, FileText
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { useTranslation } from '../services/i18nService';
@@ -38,6 +38,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
     { id: 'traceability_batches', icon: PackageCheck, label: 'Batch / QR' },
     { id: 'organic_certification', icon: FileCheck2, label: 'Øko / støtte' },
     { id: 'auto_tasks', icon: Sparkles, label: 'Auto-oppgaver' },
+    { id: 'season_report', icon: FileText, label: 'Sesongrapport' },
     { id: 'commerce', icon: Store, label: 'B2B & Commerce' },
     { id: 'economy', icon: TrendingUp, label: t('economy') },
     { id: 'fleet', icon: Truck, label: t('fleet') },
