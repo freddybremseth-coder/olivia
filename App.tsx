@@ -21,6 +21,7 @@ const SalinityDashboard = lazy(() => import('./components/SalinityDashboard'));
 const ZoneStatusMapView = lazy(() => import('./components/ZoneStatusMapView'));
 const HarvestPlannerView = lazy(() => import('./components/HarvestPlannerView'));
 const TraceabilityBatchesView = lazy(() => import('./components/TraceabilityBatchesView'));
+const OrganicCertificationView = lazy(() => import('./components/OrganicCertificationView'));
 const TasksView = lazy(() => import('./components/TasksView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
 const FieldConsultantView = lazy(() => import('./components/FieldConsultantView'));
@@ -171,6 +172,7 @@ const App: React.FC = () => {
       case 'zone_status': return <ZoneStatusMapView />;
       case 'harvest_planner': return <HarvestPlannerView />;
       case 'traceability_batches': return <TraceabilityBatchesView />;
+      case 'organic_certification': return <OrganicCertificationView />;
       case 'field_observations': return <FieldObservationsView />;
       case 'tasks': return <TasksView parcels={parcels} />;
       case 'iot': return <IoTDashboard />;
