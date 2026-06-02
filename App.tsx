@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy, useState, useEffect } from 'react';
 import LandingPage from './components/PublicB2BLandingPage';
 import LoginModal, { StoredUser } from './components/LoginModal';
@@ -21,6 +20,7 @@ const FieldObservationsView = lazy(() => import('./components/FieldObservationsV
 const SalinityDashboard = lazy(() => import('./components/SalinityDashboard'));
 const ZoneStatusMapView = lazy(() => import('./components/ZoneStatusMapView'));
 const HarvestPlannerView = lazy(() => import('./components/HarvestPlannerView'));
+const TraceabilityBatchesView = lazy(() => import('./components/TraceabilityBatchesView'));
 const TasksView = lazy(() => import('./components/TasksView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
 const FieldConsultantView = lazy(() => import('./components/FieldConsultantView'));
@@ -45,38 +45,26 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState(() => isAppUrl() && !isRecoveryUrl() ? 'b2b_portal' : 'dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [showPublicSite, setShowPublicSite] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return !isAppUrl() && !isRecoveryUrl();
-  });
+  const [showPublicSite, setShowPublicSite] = useState(() => typeof window === 'undefined' ? true : !isAppUrl() && !isRecoveryUrl());
   const [language, setLanguage] = useState<Language>('no');
   const [showLogin, setShowLogin] = useState(() => isAppUrl() && !isRecoveryUrl());
   const [loginDefaultMode, setLoginDefaultMode] = useState<'login' | 'register'>('login');
   const [postLoginTab, setPostLoginTab] = useState(() => isAppUrl() && !isRecoveryUrl() ? 'b2b_portal' : 'dashboard');
   const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(isRecoveryUrl);
-
   const [weatherData, setWeatherData] = useState<any>(null);
-  const [locationName, setLocationName] = useState('Biar, Spain');
-  const [coords, setCoords] = useState<{lat: number, lon: number}>({ lat: 38.6294, lon: -0.7667 });
-
+  const [locationName] = useState('Biar, Spain');
+  const [coords] = useState<{lat: number, lon: number}>({ lat: 38.6294, lon: -0.7667 });
   const [user, setUser] = useState<UserProfile>({
-    id: 'u1',
-    name: 'Henrik Olivenlund',
-    email: 'henrik@olivia.ai',
-    role: 'farmer',
-    subscription: 'annual',
-    subscriptionStart: '2024-01-15',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
+    id: 'u1', name: 'Henrik Olivenlund', email: 'henrik@olivia.ai', role: 'farmer', subscription: 'annual', subscriptionStart: '2024-01-15', avatar: ''
   });
 
   const DEFAULT_PARCELS: Parcel[] = [
     { id: 'p1', name: 'Hovedlunden', area: 125000, cropType: 'Arbequina', soilType: 'Leire', treeCount: 350, irrigationStatus: 'Optimal', coordinates: [[38.6300, -0.7650]], lat: 38.6300, lon: -0.7650 },
     { id: 'p2', name: 'Nordhellinga', area: 82000, cropType: 'Picual', soilType: 'Sandholdig leire', treeCount: 220, irrigationStatus: 'Optimal', coordinates: [[38.6325, -0.7680]], lat: 38.6325, lon: -0.7680 },
   ];
-
   const [parcels, setParcels] = useState<Parcel[]>(DEFAULT_PARCELS);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(DEFAULT_PARCELS[0]);
-  const [parcelsLoaded, setParcelsLoaded] = useState(false);
+  const [, setParcelsLoaded] = useState(false);
 
   useEffect(() => {
     if (showPublicSite) return;
@@ -84,15 +72,10 @@ const App: React.FC = () => {
     import('./services/db').then(({ fetchParcels, migrateLocalStorageToSupabase }) => {
       fetchParcels().then(rows => {
         if (cancelled) return;
-        if (rows.length > 0) {
-          setParcels(rows);
-          setSelectedParcel(rows[0]);
-        }
+        if (rows.length > 0) { setParcels(rows); setSelectedParcel(rows[0]); }
         setParcelsLoaded(true);
       });
-      migrateLocalStorageToSupabase()
-        .then(({ migrated, skipped }) => { if (!skipped) console.info('[migration] uploaded to Supabase', migrated); })
-        .catch(err => console.warn('[migration] failed', err));
+      migrateLocalStorageToSupabase().catch(err => console.warn('[migration] failed', err));
     });
     return () => { cancelled = true; };
   }, [showPublicSite]);
@@ -105,9 +88,7 @@ const App: React.FC = () => {
       const newParcels = [...parcels];
       newParcels[index] = parcel;
       setParcels(newParcels);
-    } else {
-      setParcels([...parcels, parcel]);
-    }
+    } else setParcels([...parcels, parcel]);
   };
 
   const handleParcelDelete = async (parcelId: string) => {
@@ -118,26 +99,14 @@ const App: React.FC = () => {
 
   const fetchWeather = async (lat: number, lon: number) => {
     try {
-      const res = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-        '&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,is_day' +
-        '&hourly=temperature_2m,precipitation_probability,precipitation,wind_speed_10m,weather_code' +
-        '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,et0_fao_evapotranspiration,sunrise,sunset' +
-        '&timezone=auto'
-      );
-      const data = await res.json();
-      setWeatherData(data);
-    } catch (err) {
-      console.error("Weather fetch error:", err);
-    }
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,is_day&hourly=temperature_2m,precipitation_probability,precipitation,wind_speed_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,et0_fao_evapotranspiration,sunrise,sunset&timezone=auto`);
+      setWeatherData(await res.json());
+    } catch (err) { console.error('Weather fetch error:', err); }
   };
 
   useEffect(() => {
     const settings = localStorage.getItem('olivia_settings');
-    if (settings) {
-      const parsed = JSON.parse(settings);
-      if (parsed.language) setLanguage(parsed.language);
-    }
+    if (settings) { const parsed = JSON.parse(settings); if (parsed.language) setLanguage(parsed.language); }
   }, []);
 
   useEffect(() => {
@@ -150,104 +119,37 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
-    if (!isRecoveryUrl()) {
-      getCurrentSession().then(result => {
-        if (cancelled || !result) return;
-        setUser(result.user);
-        setIsAdmin(result.isAdmin);
-        setIsLoggedIn(true);
-        setShowLogin(false);
-      });
-    }
+    if (!isRecoveryUrl()) getCurrentSession().then(result => {
+      if (cancelled || !result) return;
+      setUser(result.user); setIsAdmin(result.isAdmin); setIsLoggedIn(true); setShowLogin(false);
+    });
     const unsubscribe = onAuthChange(
       result => {
         if (cancelled) return;
-        if (result) {
-          setUser(result.user);
-          setIsAdmin(result.isAdmin);
-          setIsLoggedIn(true);
-          setShowLogin(false);
-        } else {
-          setIsLoggedIn(false);
-          setIsAdmin(false);
-        }
+        if (result) { setUser(result.user); setIsAdmin(result.isAdmin); setIsLoggedIn(true); setShowLogin(false); }
+        else { setIsLoggedIn(false); setIsAdmin(false); }
       },
-      () => {
-        if (cancelled) return;
-        setIsPasswordRecovery(true);
-      },
+      () => { if (!cancelled) setIsPasswordRecovery(true); },
     );
     return () => { cancelled = true; unsubscribe(); };
   }, []);
 
   const handleLoginSuccess = (storedUser: StoredUser, admin: boolean) => {
-    setUser(storedUser);
-    setIsAdmin(admin);
-    setIsLoggedIn(true);
-    setActiveTab(postLoginTab === 'admin' && !admin ? 'commerce' : postLoginTab);
-    setShowLogin(false);
+    setUser(storedUser); setIsAdmin(admin); setIsLoggedIn(true); setActiveTab(postLoginTab === 'admin' && !admin ? 'commerce' : postLoginTab); setShowLogin(false);
   };
 
-  const handleLogout = async () => {
-    await authSignOut();
-    setIsLoggedIn(false);
-    setIsAdmin(false);
-    setActiveTab('dashboard');
-    localStorage.removeItem('olivia_session');
-  };
-
-  const updateLanguage = (newLang: Language) => {
-    setLanguage(newLang);
-    const settings = JSON.parse(localStorage.getItem('olivia_settings') || '{}');
-    localStorage.setItem('olivia_settings', JSON.stringify({ ...settings, language: newLang }));
-  };
-
-  const openLogin = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => {
-    setShowPublicSite(false);
-    if (typeof window !== 'undefined' && window.location.pathname !== '/app') window.history.pushState({}, '', '/app');
-    setPostLoginTab(targetTab);
-    setLoginDefaultMode(mode);
-    setShowLogin(true);
-  };
-
-  const openApp = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => {
-    setShowPublicSite(false);
-    if (typeof window !== 'undefined' && window.location.pathname !== '/app') window.history.pushState({}, '', '/app');
-    setPostLoginTab(targetTab);
-    if (isLoggedIn) {
-      setActiveTab(targetTab === 'admin' && !isAdmin ? 'commerce' : targetTab);
-      return;
-    }
-    openLogin(mode, targetTab);
-  };
+  const handleLogout = async () => { await authSignOut(); setIsLoggedIn(false); setIsAdmin(false); setActiveTab('dashboard'); localStorage.removeItem('olivia_session'); };
+  const updateLanguage = (newLang: Language) => { setLanguage(newLang); const settings = JSON.parse(localStorage.getItem('olivia_settings') || '{}'); localStorage.setItem('olivia_settings', JSON.stringify({ ...settings, language: newLang })); };
+  const openLogin = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => { setShowPublicSite(false); if (typeof window !== 'undefined' && window.location.pathname !== '/app') window.history.pushState({}, '', '/app'); setPostLoginTab(targetTab); setLoginDefaultMode(mode); setShowLogin(true); };
+  const openApp = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => { setShowPublicSite(false); if (typeof window !== 'undefined' && window.location.pathname !== '/app') window.history.pushState({}, '', '/app'); setPostLoginTab(targetTab); if (isLoggedIn) { setActiveTab(targetTab === 'admin' && !isAdmin ? 'commerce' : targetTab); return; } openLogin(mode, targetTab); };
 
   if (isPasswordRecovery) return <ResetPasswordPage onDone={() => setIsPasswordRecovery(false)} />;
+  if (showPublicSite) return <><LandingPage onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'admin')} onRegister={() => openApp('register', 'b2b_portal')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
+  if (!isLoggedIn) return <><LandingPage onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'admin')} onRegister={() => openLogin('register', 'b2b_portal')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
 
-  if (showPublicSite) {
-    return (
-      <>
-        <LandingPage onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'admin')} onRegister={() => openApp('register', 'b2b_portal')} />
-        {showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}
-      </>
-    );
-  }
-
-  if (!isLoggedIn) {
-    return (
-      <>
-        <LandingPage onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'admin')} onRegister={() => openLogin('register', 'b2b_portal')} />
-        {showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}
-      </>
-    );
-  }
-
-  const parcelCoords = selectedParcel
-    ? { lat: selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0] ?? 38.6294, lon: selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1] ?? -0.7667 }
-    : coords;
-
+  const parcelCoords = selectedParcel ? { lat: selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0] ?? 38.6294, lon: selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1] ?? -0.7667 } : coords;
   const renderContent = () => {
     if (isAdmin && activeTab === 'admin') return <AdminDashboard />;
-
     switch (activeTab) {
       case 'dashboard': return <FarmOverview language={language} weatherData={weatherData} locationName={selectedParcel?.name || locationName} parcels={parcels} onNavigate={setActiveTab} />;
       case 'dona_anna_daily': return <DonaAnnaDailyDashboard />;
@@ -268,6 +170,7 @@ const App: React.FC = () => {
       case 'salinity': return <SalinityDashboard />;
       case 'zone_status': return <ZoneStatusMapView />;
       case 'harvest_planner': return <HarvestPlannerView />;
+      case 'traceability_batches': return <TraceabilityBatchesView />;
       case 'field_observations': return <FieldObservationsView />;
       case 'tasks': return <TasksView parcels={parcels} />;
       case 'iot': return <IoTDashboard />;
@@ -276,15 +179,7 @@ const App: React.FC = () => {
     }
   };
 
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0b] p-8 text-slate-300">Laster Olivia OS...</div>}>
-      <Layout user={user} activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} language={language}>
-        <Suspense fallback={<div className="p-8 text-slate-400">Laster modul...</div>}>
-          {renderContent()}
-        </Suspense>
-      </Layout>
-    </Suspense>
-  );
+  return <Suspense fallback={<div className="min-h-screen bg-[#0a0a0b] p-8 text-slate-300">Laster Olivia OS...</div>}><Layout user={user} activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} language={language}><Suspense fallback={<div className="p-8 text-slate-400">Laster modul...</div>}>{renderContent()}</Suspense></Layout></Suspense>;
 };
 
 export default App;
