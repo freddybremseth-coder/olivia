@@ -16,6 +16,7 @@ const ProductionView = lazy(() => import('./components/ProductionView'));
 const FleetView = lazy(() => import('./components/FleetView'));
 const IrrigationView = lazy(() => import('./components/IrrigationView'));
 const IrrigationAdvisorView = lazy(() => import('./components/IrrigationAdvisorView'));
+const FieldObservationsView = lazy(() => import('./components/FieldObservationsView'));
 const TasksView = lazy(() => import('./components/TasksView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
 const FieldConsultantView = lazy(() => import('./components/FieldConsultantView'));
@@ -79,7 +80,6 @@ const App: React.FC = () => {
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(DEFAULT_PARCELS[0]);
   const [parcelsLoaded, setParcelsLoaded] = useState(false);
 
-  // Load parcels from Supabase on mount + run one-time localStorage migration
   useEffect(() => {
     if (showPublicSite) return;
 
@@ -93,14 +93,9 @@ const App: React.FC = () => {
         }
         setParcelsLoaded(true);
       });
-      // One-shot upload of any pre-existing localStorage data (tasks, batches,
-      // recipes, pruning history). Safe to run on every startup; does nothing
-      // after the first successful run thanks to a flag in localStorage.
       migrateLocalStorageToSupabase()
         .then(({ migrated, skipped }) => {
-          if (!skipped) {
-            console.info('[migration] uploaded to Supabase', migrated);
-          }
+          if (!skipped) console.info('[migration] uploaded to Supabase', migrated);
         })
         .catch(err => console.warn('[migration] failed', err));
     });
@@ -143,7 +138,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Settings (language only — no longer used for session storage)
   useEffect(() => {
     const settings = localStorage.getItem('olivia_settings');
     if (settings) {
@@ -152,7 +146,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Weather refresh whenever the selected parcel changes
   useEffect(() => {
     if (selectedParcel) {
       const lat = selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0];
@@ -161,11 +154,8 @@ const App: React.FC = () => {
     }
   }, [selectedParcel]);
 
-  // Supabase auth: hydrate from stored session on load + subscribe to changes.
   useEffect(() => {
     let cancelled = false;
-    // Skip hydration if we're in the recovery flow — we don't want to land the
-    // user on the dashboard before they've chosen a new password.
     if (!isRecoveryUrl()) {
       getCurrentSession().then(result => {
         if (cancelled || !result) return;
@@ -175,8 +165,6 @@ const App: React.FC = () => {
         setShowLogin(false);
       });
     }
-    // Single shared subscription for both sign-in/out and PASSWORD_RECOVERY —
-    // see auth.ts for why this matters (gotrue lock contention).
     const unsubscribe = onAuthChange(
       result => {
         if (cancelled) return;
@@ -199,8 +187,6 @@ const App: React.FC = () => {
   }, []);
 
   const handleLoginSuccess = (storedUser: StoredUser, admin: boolean) => {
-    // The auth listener will set state too, but doing it here makes the
-    // transition feel instant.
     setUser(storedUser);
     setIsAdmin(admin);
     setIsLoggedIn(true);
@@ -213,7 +199,6 @@ const App: React.FC = () => {
     setIsLoggedIn(false);
     setIsAdmin(false);
     setActiveTab('dashboard');
-    // Wipe any legacy localStorage session left over from the old flow
     localStorage.removeItem('olivia_session');
   };
 
@@ -225,9 +210,7 @@ const App: React.FC = () => {
 
   const openLogin = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => {
     setShowPublicSite(false);
-    if (typeof window !== 'undefined' && window.location.pathname !== '/app') {
-      window.history.pushState({}, '', '/app');
-    }
+    if (typeof window !== 'undefined' && window.location.pathname !== '/app') window.history.pushState({}, '', '/app');
     setPostLoginTab(targetTab);
     setLoginDefaultMode(mode);
     setShowLogin(true);
@@ -235,9 +218,7 @@ const App: React.FC = () => {
 
   const openApp = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => {
     setShowPublicSite(false);
-    if (typeof window !== 'undefined' && window.location.pathname !== '/app') {
-      window.history.pushState({}, '', '/app');
-    }
+    if (typeof window !== 'undefined' && window.location.pathname !== '/app') window.history.pushState({}, '', '/app');
     setPostLoginTab(targetTab);
     if (isLoggedIn) {
       setActiveTab(targetTab === 'admin' && !isAdmin ? 'commerce' : targetTab);
@@ -246,20 +227,13 @@ const App: React.FC = () => {
     openLogin(mode, targetTab);
   };
 
-  // Password-recovery takes priority over everything else: the user arrived
-  // via the email link and needs to set a new password before anything else
-  // matters (dashboard, login modal, etc).
-  if (isPasswordRecovery) {
-    return <ResetPasswordPage onDone={() => setIsPasswordRecovery(false)} />;
-  }
+  if (isPasswordRecovery) return <ResetPasswordPage onDone={() => setIsPasswordRecovery(false)} />;
 
   if (showPublicSite) {
     return (
       <>
         <LandingPage onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'admin')} onRegister={() => openApp('register', 'b2b_portal')} />
-        {showLogin && (
-          <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
-        )}
+        {showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}
       </>
     );
   }
@@ -268,9 +242,7 @@ const App: React.FC = () => {
     return (
       <>
         <LandingPage onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'admin')} onRegister={() => openLogin('register', 'b2b_portal')} />
-        {showLogin && (
-          <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />
-        )}
+        {showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}
       </>
     );
   }
@@ -283,27 +255,13 @@ const App: React.FC = () => {
     if (isAdmin && activeTab === 'admin') return <AdminDashboard />;
 
     switch (activeTab) {
-      case 'dashboard': return <FarmOverview
-        language={language}
-        weatherData={weatherData}
-        locationName={selectedParcel?.name || locationName}
-        parcels={parcels}
-        onNavigate={setActiveTab}
-      />;
+      case 'dashboard': return <FarmOverview language={language} weatherData={weatherData} locationName={selectedParcel?.name || locationName} parcels={parcels} onNavigate={setActiveTab} />;
       case 'dona_anna_daily': return <DonaAnnaDailyDashboard />;
       case 'dashboard_classic': return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;
       case 'consultant': return <FieldConsultantView />;
       case 'pruning': return <PruningAdvisorView />;
       case 'map': return <FarmMap parcels={parcels} onParcelSave={handleParcelSave} onParcelDelete={handleParcelDelete} language={language} />;
-      case 'weather': return <WeatherView
-        initialData={weatherData}
-        initialLocationName={selectedParcel?.name || ''}
-        initialCoords={parcelCoords}
-        language={language}
-        parcels={parcels}
-        selectedParcel={selectedParcel}
-        onParcelSelect={setSelectedParcel}
-      />;
+      case 'weather': return <WeatherView initialData={weatherData} initialLocationName={selectedParcel?.name || ''} initialCoords={parcelCoords} language={language} parcels={parcels} selectedParcel={selectedParcel} onParcelSelect={setSelectedParcel} />;
       case 'climate_stats': return <ClimateDecisionStats />;
       case 'production': return <ProductionView parcels={parcels} language={language} />;
       case 'commerce': return <CommerceHub user={user} mode="backend" />;
@@ -312,28 +270,17 @@ const App: React.FC = () => {
       case 'fleet': return <FleetView />;
       case 'irrigation': return <IrrigationView />;
       case 'irrigation_advisor': return <IrrigationAdvisorView />;
+      case 'field_observations': return <FieldObservationsView />;
       case 'tasks': return <TasksView parcels={parcels} />;
       case 'iot': return <IoTDashboard />;
       case 'settings': return <SettingsView language={language} onLanguageChange={updateLanguage} />;
-      default: return <FarmOverview
-        language={language}
-        weatherData={weatherData}
-        locationName={selectedParcel?.name || locationName}
-        parcels={parcels}
-        onNavigate={setActiveTab}
-      />;
+      default: return <FarmOverview language={language} weatherData={weatherData} locationName={selectedParcel?.name || locationName} parcels={parcels} onNavigate={setActiveTab} />;
     }
   };
 
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#0a0a0b] p-8 text-slate-300">Laster Olivia OS...</div>}>
-      <Layout
-        user={user}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onLogout={handleLogout}
-        language={language}
-      >
+      <Layout user={user} activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} language={language}>
         <Suspense fallback={<div className="p-8 text-slate-400">Laster modul...</div>}>
           {renderContent()}
         </Suspense>
