@@ -23,6 +23,7 @@ const HarvestPlannerView = lazy(() => import('./components/HarvestPlannerView'))
 const TraceabilityBatchesView = lazy(() => import('./components/TraceabilityBatchesView'));
 const OrganicCertificationView = lazy(() => import('./components/OrganicCertificationView'));
 const AutoTasksView = lazy(() => import('./components/AutoTasksView'));
+const SeasonReportView = lazy(() => import('./components/SeasonReportView'));
 const TasksView = lazy(() => import('./components/TasksView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
 const FieldConsultantView = lazy(() => import('./components/FieldConsultantView'));
@@ -175,6 +176,7 @@ const App: React.FC = () => {
       case 'traceability_batches': return <TraceabilityBatchesView />;
       case 'organic_certification': return <OrganicCertificationView />;
       case 'auto_tasks': return <AutoTasksView />;
+      case 'season_report': return <SeasonReportView />;
       case 'field_observations': return <FieldObservationsView />;
       case 'tasks': return <TasksView parcels={parcels} />;
       case 'iot': return <IoTDashboard />;
