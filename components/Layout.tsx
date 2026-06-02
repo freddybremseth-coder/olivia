@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import {
   LayoutDashboard, Map as MapIcon, CloudSun, Sprout, TrendingUp, Truck, Droplets,
   ClipboardList, Settings, LogOut, ShieldCheck, Sparkles, Scissors, Menu, X, ChevronLeft, ChevronRight,
-  Activity, Store, Leaf, BarChart3, Gauge, MapPin, Clock, FlaskConical, MapPinned, CalendarDays, PackageCheck
+  Activity, Store, Leaf, BarChart3, Gauge, MapPin, Clock, FlaskConical, MapPinned, CalendarDays, PackageCheck, FileCheck2
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { useTranslation } from '../services/i18nService';
@@ -36,6 +36,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
     { id: 'production', icon: Sprout, label: t('production') },
     { id: 'harvest_planner', icon: CalendarDays, label: 'Høsteplan' },
     { id: 'traceability_batches', icon: PackageCheck, label: 'Batch / QR' },
+    { id: 'organic_certification', icon: FileCheck2, label: 'Øko / støtte' },
     { id: 'commerce', icon: Store, label: 'B2B & Commerce' },
     { id: 'economy', icon: TrendingUp, label: t('economy') },
     { id: 'fleet', icon: Truck, label: t('fleet') },
@@ -80,6 +81,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
 
   return (
     <div className="flex h-screen bg-[#0a0a0b] text-slate-200 overflow-hidden">
+      {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 border-b border-white/10 bg-black/80 backdrop-blur-lg z-50 px-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center font-bold text-black text-sm">O</div>
@@ -90,6 +92,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
         </button>
       </div>
 
+      {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-40 bg-black/95 pt-20 px-6 overflow-y-auto">
           <div className="space-y-2">
@@ -111,6 +114,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
         </div>
       )}
 
+      {/* Desktop Sidebar */}
       <aside className={`hidden lg:flex flex-col border-r border-white/10 bg-[#0d0d0f] transition-all duration-300 relative ${isSidebarOpen ? 'w-72' : 'w-20'}`}>
         <div className="p-6 flex items-center gap-4 mb-4">
           <div className="min-w-[40px] h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center neon-glow-green shadow-lg">
@@ -159,6 +163,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
         </button>
       </aside>
 
+      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#0a0a0b]">
         <div className="flex-1 overflow-y-auto p-4 md:p-8 mt-16 lg:mt-0 custom-scrollbar">
           {children}
