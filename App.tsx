@@ -24,6 +24,7 @@ const TraceabilityBatchesView = lazy(() => import('./components/TraceabilityBatc
 const OrganicCertificationView = lazy(() => import('./components/OrganicCertificationView'));
 const AutoTasksView = lazy(() => import('./components/AutoTasksView'));
 const SeasonReportView = lazy(() => import('./components/SeasonReportView'));
+const PublicTracePage = lazy(() => import('./components/PublicTracePage'));
 const TasksView = lazy(() => import('./components/TasksView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
 const FieldConsultantView = lazy(() => import('./components/FieldConsultantView'));
@@ -44,11 +45,22 @@ function isAppUrl(): boolean {
   return window.location.pathname === '/app';
 }
 
+function isTraceUrl(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.location.pathname.startsWith('/trace/');
+}
+
+function getTraceSlug(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  return parts[0] === 'trace' ? parts[1] : undefined;
+}
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState(() => isAppUrl() && !isRecoveryUrl() ? 'b2b_portal' : 'dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [showPublicSite, setShowPublicSite] = useState(() => typeof window === 'undefined' ? true : !isAppUrl() && !isRecoveryUrl());
+  const [showPublicSite, setShowPublicSite] = useState(() => typeof window === 'undefined' ? true : !isAppUrl() && !isRecoveryUrl() && !isTraceUrl());
   const [language, setLanguage] = useState<Language>('no');
   const [showLogin, setShowLogin] = useState(() => isAppUrl() && !isRecoveryUrl());
   const [loginDefaultMode, setLoginDefaultMode] = useState<'login' | 'register'>('login');
@@ -70,7 +82,7 @@ const App: React.FC = () => {
   const [, setParcelsLoaded] = useState(false);
 
   useEffect(() => {
-    if (showPublicSite) return;
+    if (showPublicSite || isTraceUrl()) return;
     let cancelled = false;
     import('./services/db').then(({ fetchParcels, migrateLocalStorageToSupabase }) => {
       fetchParcels().then(rows => {
@@ -113,7 +125,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedParcel) {
+    if (selectedParcel && !isTraceUrl()) {
       const lat = selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0];
       const lon = selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1];
       if (lat && lon) fetchWeather(lat, lon);
@@ -121,6 +133,7 @@ const App: React.FC = () => {
   }, [selectedParcel]);
 
   useEffect(() => {
+    if (isTraceUrl()) return;
     let cancelled = false;
     if (!isRecoveryUrl()) getCurrentSession().then(result => {
       if (cancelled || !result) return;
@@ -146,6 +159,7 @@ const App: React.FC = () => {
   const openLogin = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => { setShowPublicSite(false); if (typeof window !== 'undefined' && window.location.pathname !== '/app') window.history.pushState({}, '', '/app'); setPostLoginTab(targetTab); setLoginDefaultMode(mode); setShowLogin(true); };
   const openApp = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => { setShowPublicSite(false); if (typeof window !== 'undefined' && window.location.pathname !== '/app') window.history.pushState({}, '', '/app'); setPostLoginTab(targetTab); if (isLoggedIn) { setActiveTab(targetTab === 'admin' && !isAdmin ? 'commerce' : targetTab); return; } openLogin(mode, targetTab); };
 
+  if (isTraceUrl()) return <Suspense fallback={<div className="min-h-screen bg-[#060807] p-8 text-slate-300">Laster DonaAnna sporbarhet...</div>}><PublicTracePage slug={getTraceSlug()} /></Suspense>;
   if (isPasswordRecovery) return <ResetPasswordPage onDone={() => setIsPasswordRecovery(false)} />;
   if (showPublicSite) return <><LandingPage onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'admin')} onRegister={() => openApp('register', 'b2b_portal')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
   if (!isLoggedIn) return <><LandingPage onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'admin')} onRegister={() => openLogin('register', 'b2b_portal')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
