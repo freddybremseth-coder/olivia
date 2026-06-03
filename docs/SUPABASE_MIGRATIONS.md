@@ -116,6 +116,8 @@ Brukes av:
 
 ## Moduler som nå skal være Supabase-only for viktige data
 
+- `App.tsx`
+- `services/db.ts`
 - `components/TasksView.tsx`
 - `components/ProductionView.tsx`
 - `components/TraceabilityBatchesView.tsx`
@@ -133,6 +135,18 @@ Brukes av:
 - `components/ZoneStatusMapView.tsx`
 - `components/FleetView.tsx`
 - `components/SettingsView.tsx`
+
+## Verifisert ryddet
+
+Siste kontroll etter opprydding:
+
+- `App.tsx` leser ikke `olivia_settings` fra browser storage.
+- `App.tsx` skriver ikke språk til browser storage.
+- `App.tsx` kaller ikke gammel `migrateLocalStorageToSupabase`.
+- `services/db.ts` inneholder ikke gammel browser-migrering.
+- Kodesøk etter `localStorage` returnerte ingen treff.
+- Kodesøk etter `migrateLocalStorageToSupabase` returnerte ingen treff.
+- Siste Vercel deploy etter `App.tsx`-opprydding var grønn.
 
 ## API keys
 
@@ -154,6 +168,8 @@ Ikke lagre disse i frontend, browser storage eller database.
 4. Registrer en rad i hver viktig modul.
 5. Refresh appen.
 6. Bekreft at data fortsatt ligger i Supabase.
+7. Endre språk/innstillinger i Settings og bekreft at `olivia.farm_settings` oppdateres.
+8. Logg ut og inn igjen og bekreft at appen fortsatt henter språk fra Supabase.
 
 ## Feilsøking
 
