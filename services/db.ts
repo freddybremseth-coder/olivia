@@ -1,61 +1,48 @@
 /**
- * db.ts – all Supabase data operations for Olivia Farm OS
+ * db.ts – Supabase data operations for Olivia Farm OS.
  *
- * Tables (created via SQL migration in Supabase dashboard):
- *   parcels, harvest_records, farm_expenses, subsidy_income, farm_settings,
- *   batches, recipes, tasks, pruning_history
- *
- * Error handling: read functions log + return empty so the UI can render an
- * "ingen data"-state. Write functions THROW so the caller can show a real
- * error toast — this is what was broken before: silent console.error meant
- * the user clicked "Lagre", saw the modal close, and assumed the row was
- * saved when in reality the upsert failed (typically: table missing on a
- * fresh Supabase project, or RLS policy denying the request).
+ * Main rule: important farm data is stored in Supabase `olivia` schema.
+ * This file intentionally does not read from or write to browser localStorage.
  */
 
 import { supabase } from './supabaseClient';
 import type {
-  Parcel, HarvestRecord, FarmExpense, SubsidyIncome,
-  Batch, Recipe, Task, PruningHistoryItem,
+  Parcel,
+  HarvestRecord,
+  FarmExpense,
+  SubsidyIncome,
+  Batch,
+  Recipe,
+  Task,
+  PruningHistoryItem,
 } from '../types';
 import type { PostgrestError } from '@supabase/supabase-js';
 
-/**
- * Translate a PostgrestError into a friendly Norwegian message and throw.
- * `label` is the operation name for logging context (e.g. "upsertExpense").
- */
 function throwDbError(label: string, error: PostgrestError | { message: string; code?: string; details?: string; hint?: string }): never {
   console.error(`[db] ${label}`, error);
   const code = (error as any).code || '';
   const msg = error.message || '';
 
-  // Common Postgres / PostgREST codes
   if (code === '42P01' || /relation .* does not exist/i.test(msg)) {
-    throw new Error(
-      `Tabellen mangler i Supabase. Kjør SQL-migrasjonen fra ` +
-      `supabase_schema.sql i Supabase Dashboard → SQL Editor og prøv igjen.`
-    );
+    throw new Error('Tabellen mangler i Supabase. Kjør riktig SQL-migrasjon i Supabase Dashboard → SQL Editor og prøv igjen.');
   }
   if (code === '42501' || /permission denied|rls/i.test(msg)) {
-    throw new Error(
-      `Tilgang nektet av Supabase RLS. Sjekk at "allow all"-policyen ` +
-      `for denne tabellen er aktivert (se supabase_schema.sql).`
-    );
+    throw new Error('Tilgang nektet av Supabase RLS. Sjekk at policyene for tabellen er aktivert.');
   }
-  if (code === '23505') {
-    throw new Error(`Duplikat: en rad med samme ID finnes allerede.`);
-  }
-  if (code === '23503') {
-    throw new Error(`Referansefeil: en relatert rad mangler (parsell, batch, etc.).`);
-  }
-  if (/jwt|token/i.test(msg)) {
-    throw new Error(`Innloggingen er utløpt — last inn siden på nytt og logg inn igjen.`);
-  }
-  if (/failed to fetch|networkerror/i.test(msg)) {
-    throw new Error(`Mistet kontakt med Supabase. Sjekk internett og prøv igjen.`);
-  }
-  // Fallback: raw Supabase message (still helpful in DevTools)
+  if (code === '23505') throw new Error('Duplikat: en rad med samme ID finnes allerede.');
+  if (code === '23503') throw new Error('Referansefeil: en relatert rad mangler, for eksempel parsell eller batch.');
+  if (/jwt|token/i.test(msg)) throw new Error('Innloggingen er utløpt — last inn siden på nytt og logg inn igjen.');
+  if (/failed to fetch|networkerror/i.test(msg)) throw new Error('Mistet kontakt med Supabase. Sjekk internett og prøv igjen.');
+
   throw new Error(`Lagring feilet: ${msg || 'ukjent feil fra Supabase'}`);
+}
+
+function parseMaybeJson<T>(value: unknown, fallback: T | undefined = undefined): T | undefined {
+  if (value === null || value === undefined || value === '') return fallback;
+  if (typeof value === 'string') {
+    try { return JSON.parse(value) as T; } catch { return fallback; }
+  }
+  return value as T;
 }
 
 // ── PARCELS ──────────────────────────────────────────────────────────────────
@@ -167,7 +154,7 @@ export async function fetchSettings(): Promise<FarmSettings | null> {
     .select('*')
     .eq('id', 'default')
     .single();
-  if (error) { return null; }
+  if (error) { console.error('fetchSettings', error); return null; }
   return data as FarmSettings;
 }
 
@@ -176,130 +163,6 @@ export async function saveSettings(settings: FarmSettings): Promise<void> {
     .from('farm_settings')
     .upsert({ id: 'default', ...settings }, { onConflict: 'id' });
   if (error) throwDbError('saveSettings', error);
-}
-
-// ── Row mappers ───────────────────────────────────────────────────────────────
-
-function rowToParcel(r: any): Parcel {
-  return {
-    id: r.id,
-    name: r.name,
-    municipality: r.municipality ?? undefined,
-    cadastralId: r.cadastral_id ?? undefined,
-    cropType: r.crop_type ?? undefined,
-    crop: r.crop ?? undefined,
-    treeVariety: r.tree_variety ?? undefined,
-    area: r.area,
-    treeCount: r.tree_count ?? undefined,
-    irrigationStatus: r.irrigation_status ?? undefined,
-    coordinates: r.coordinates ? JSON.parse(r.coordinates) : undefined,
-    lat: r.lat ?? undefined,
-    lon: r.lon ?? undefined,
-    soilType: r.soil_type ?? undefined,
-    registrationDate: r.registration_date ?? undefined,
-    boundaries: r.boundaries ? JSON.parse(r.boundaries) : undefined,
-    documentIds: r.document_ids ? JSON.parse(r.document_ids) : undefined,
-    registryDetails: r.registry_details ?? undefined,
-  };
-}
-
-function parcelToRow(p: Parcel) {
-  return {
-    id: p.id,
-    name: p.name,
-    municipality: p.municipality ?? null,
-    cadastral_id: p.cadastralId ?? null,
-    crop_type: p.cropType ?? null,
-    crop: p.crop ?? null,
-    tree_variety: p.treeVariety ?? null,
-    area: p.area,
-    tree_count: p.treeCount ?? null,
-    irrigation_status: p.irrigationStatus ?? null,
-    coordinates: p.coordinates ? JSON.stringify(p.coordinates) : null,
-    lat: p.lat ?? null,
-    lon: p.lon ?? null,
-    soil_type: p.soilType ?? null,
-    registration_date: p.registrationDate ?? null,
-    boundaries: p.boundaries ? JSON.stringify(p.boundaries) : null,
-    document_ids: p.documentIds ? JSON.stringify(p.documentIds) : null,
-    registry_details: p.registryDetails ?? null,
-  };
-}
-
-function rowToHarvest(r: any): HarvestRecord {
-  return {
-    id: r.id,
-    parcelId: r.parcel_id,
-    season: r.season,
-    date: r.date,
-    variety: r.variety,
-    kg: r.kg,
-    channel: r.channel,
-    pricePerKg: r.price_per_kg,
-    notes: r.notes ?? undefined,
-  };
-}
-
-function harvestToRow(h: HarvestRecord) {
-  return {
-    id: h.id,
-    parcel_id: h.parcelId,
-    season: h.season,
-    date: h.date,
-    variety: h.variety,
-    kg: h.kg,
-    channel: h.channel,
-    price_per_kg: h.pricePerKg,
-    notes: h.notes ?? null,
-  };
-}
-
-function rowToExpense(r: any): FarmExpense {
-  return {
-    id: r.id,
-    date: r.date,
-    season: r.season,
-    category: r.category,
-    description: r.description,
-    amount: r.amount,
-    scope: r.scope,
-    parcelId: r.parcel_id ?? undefined,
-  };
-}
-
-function expenseToRow(e: FarmExpense) {
-  return {
-    id: e.id,
-    date: e.date,
-    season: e.season,
-    category: e.category,
-    description: e.description,
-    amount: e.amount,
-    scope: e.scope,
-    parcel_id: e.parcelId ?? null,
-  };
-}
-
-function rowToSubsidy(r: any): SubsidyIncome {
-  return {
-    id: r.id,
-    date: r.date,
-    season: r.season,
-    type: r.type,
-    amount: r.amount,
-    description: r.description,
-  };
-}
-
-function subsidyToRow(s: SubsidyIncome) {
-  return {
-    id: s.id,
-    date: s.date,
-    season: s.season,
-    type: s.type,
-    amount: s.amount,
-    description: s.description,
-  };
 }
 
 // ── BATCHES ──────────────────────────────────────────────────────────────────
@@ -402,7 +265,129 @@ export async function deletePruningItem(id: string): Promise<void> {
   if (error) throwDbError('deletePruningItem', error);
 }
 
-// ── Row mappers (new tables) ─────────────────────────────────────────────────
+// ── Row mappers ───────────────────────────────────────────────────────────────
+
+function rowToParcel(r: any): Parcel {
+  return {
+    id: r.id,
+    name: r.name,
+    municipality: r.municipality ?? undefined,
+    cadastralId: r.cadastral_id ?? undefined,
+    cropType: r.crop_type ?? undefined,
+    crop: r.crop ?? undefined,
+    treeVariety: r.tree_variety ?? undefined,
+    area: r.area,
+    treeCount: r.tree_count ?? undefined,
+    irrigationStatus: r.irrigation_status ?? undefined,
+    coordinates: parseMaybeJson(r.coordinates),
+    lat: r.lat ?? undefined,
+    lon: r.lon ?? undefined,
+    soilType: r.soil_type ?? undefined,
+    registrationDate: r.registration_date ?? undefined,
+    boundaries: parseMaybeJson(r.boundaries),
+    documentIds: parseMaybeJson(r.document_ids),
+    registryDetails: r.registry_details ?? undefined,
+  };
+}
+
+function parcelToRow(p: Parcel) {
+  return {
+    id: p.id,
+    name: p.name,
+    municipality: p.municipality ?? null,
+    cadastral_id: p.cadastralId ?? null,
+    crop_type: p.cropType ?? null,
+    crop: p.crop ?? null,
+    tree_variety: p.treeVariety ?? null,
+    area: p.area,
+    tree_count: p.treeCount ?? null,
+    irrigation_status: p.irrigationStatus ?? null,
+    coordinates: p.coordinates ?? null,
+    lat: p.lat ?? null,
+    lon: p.lon ?? null,
+    soil_type: p.soilType ?? null,
+    registration_date: p.registrationDate ?? null,
+    boundaries: p.boundaries ?? null,
+    document_ids: p.documentIds ?? null,
+    registry_details: p.registryDetails ?? null,
+  };
+}
+
+function rowToHarvest(r: any): HarvestRecord {
+  return {
+    id: r.id,
+    parcelId: r.parcel_id,
+    season: r.season,
+    date: r.date,
+    variety: r.variety,
+    kg: r.kg,
+    channel: r.channel,
+    pricePerKg: r.price_per_kg,
+    notes: r.notes ?? undefined,
+  };
+}
+
+function harvestToRow(h: HarvestRecord) {
+  return {
+    id: h.id,
+    parcel_id: h.parcelId,
+    season: h.season,
+    date: h.date,
+    variety: h.variety,
+    kg: h.kg,
+    channel: h.channel,
+    price_per_kg: h.pricePerKg,
+    notes: h.notes ?? null,
+  };
+}
+
+function rowToExpense(r: any): FarmExpense {
+  return {
+    id: r.id,
+    date: r.date,
+    season: r.season,
+    category: r.category,
+    description: r.description,
+    amount: r.amount,
+    scope: r.scope,
+    parcelId: r.parcel_id ?? undefined,
+  };
+}
+
+function expenseToRow(e: FarmExpense) {
+  return {
+    id: e.id,
+    date: e.date,
+    season: e.season,
+    category: e.category,
+    description: e.description,
+    amount: e.amount,
+    scope: e.scope,
+    parcel_id: e.parcelId ?? null,
+  };
+}
+
+function rowToSubsidy(r: any): SubsidyIncome {
+  return {
+    id: r.id,
+    date: r.date,
+    season: r.season,
+    type: r.type,
+    amount: r.amount,
+    description: r.description,
+  };
+}
+
+function subsidyToRow(s: SubsidyIncome) {
+  return {
+    id: s.id,
+    date: s.date,
+    season: s.season,
+    type: s.type,
+    amount: s.amount,
+    description: s.description,
+  };
+}
 
 function rowToBatch(r: any): Batch {
   return {
@@ -548,58 +533,4 @@ function pruningToRow(p: PruningHistoryItem) {
     scheduled_time: p.scheduledTime ?? null,
     parcel_id: p.parcelId ?? null,
   };
-}
-
-// ── One-time localStorage → Supabase migration ───────────────────────────────
-// Reads any pre-existing legacy localStorage entries and uploads them. Marks
-// them as migrated using a flag key so it only runs once per browser. Safe to
-// call on every app startup.
-
-const MIGRATION_FLAG = 'olivia_migrated_to_supabase_v1';
-
-export async function migrateLocalStorageToSupabase(): Promise<{
-  migrated: { batches: number; recipes: number; tasks: number; pruning: number };
-  skipped: boolean;
-}> {
-  const empty = { batches: 0, recipes: 0, tasks: 0, pruning: 0 };
-  if (typeof window === 'undefined') return { migrated: empty, skipped: true };
-  if (localStorage.getItem(MIGRATION_FLAG)) return { migrated: empty, skipped: true };
-
-  const result = { ...empty };
-
-  try {
-    const rawTasks = localStorage.getItem('olivia_tasks');
-    if (rawTasks) {
-      const tasks: Task[] = JSON.parse(rawTasks);
-      for (const t of tasks) { await upsertTask(t); result.tasks++; }
-    }
-  } catch (e) { console.warn('migrate tasks', e); }
-
-  try {
-    const rawPruning = localStorage.getItem('olivia_pruning_history');
-    if (rawPruning) {
-      const items: PruningHistoryItem[] = JSON.parse(rawPruning);
-      for (const p of items) { await upsertPruningItem(p); result.pruning++; }
-    }
-  } catch (e) { console.warn('migrate pruning', e); }
-
-  try {
-    const rawBatches = localStorage.getItem('olivia_batches');
-    if (rawBatches) {
-      const items: Batch[] = JSON.parse(rawBatches);
-      for (const b of items) { await upsertBatch(b); result.batches++; }
-    }
-  } catch (e) { console.warn('migrate batches', e); }
-
-  try {
-    const rawRecipes = localStorage.getItem('olivia_recipes');
-    if (rawRecipes) {
-      const items: Recipe[] = JSON.parse(rawRecipes);
-      await upsertRecipes(items);
-      result.recipes = items.length;
-    }
-  } catch (e) { console.warn('migrate recipes', e); }
-
-  localStorage.setItem(MIGRATION_FLAG, new Date().toISOString());
-  return { migrated: result, skipped: false };
 }
