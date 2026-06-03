@@ -201,7 +201,7 @@ const App: React.FC = () => {
       case 'organic_certification': return <OrganicCertificationView />;
       case 'auto_tasks': return <AutoTasksView />;
       case 'season_report': return <SeasonReportView />;
-      case 'field_observations': return <FieldObservationsView />;
+      case 'field_observations': return <FieldObservationsView parcels={parcels} />;
       case 'tasks': return <TasksView parcels={parcels} />;
       case 'iot': return <IoTDashboard />;
       case 'settings': return <SettingsView language={language} onLanguageChange={updateLanguage} />;
