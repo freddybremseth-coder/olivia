@@ -85,14 +85,17 @@ const App: React.FC = () => {
   useEffect(() => {
     if (showPublicSite || isTraceUrl()) return;
     let cancelled = false;
-    import('./services/db').then(({ fetchParcels, migrateLocalStorageToSupabase }) => {
+    import('./services/db').then(({ fetchParcels, fetchSettings }) => {
       fetchParcels().then(rows => {
         if (cancelled) return;
         setParcels(rows);
         setSelectedParcel(rows[0] ?? null);
         setParcelsLoaded(true);
       });
-      migrateLocalStorageToSupabase().catch(err => console.warn('[migration] failed', err));
+      fetchSettings().then(settings => {
+        if (cancelled || !settings?.language) return;
+        setLanguage(settings.language as Language);
+      }).catch(err => console.warn('[settings] failed', err));
     });
     return () => { cancelled = true; };
   }, [showPublicSite]);
@@ -124,11 +127,6 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    const settings = localStorage.getItem('olivia_settings');
-    if (settings) { const parsed = JSON.parse(settings); if (parsed.language) setLanguage(parsed.language); }
-  }, []);
-
-  useEffect(() => {
     if (selectedParcel && !isTraceUrl()) {
       const lat = selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0];
       const lon = selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1];
@@ -158,8 +156,8 @@ const App: React.FC = () => {
     setUser(storedUser); setIsAdmin(admin); setIsLoggedIn(true); setActiveTab(postLoginTab === 'admin' && !admin ? 'commerce' : postLoginTab); setShowLogin(false);
   };
 
-  const handleLogout = async () => { await authSignOut(); setIsLoggedIn(false); setIsAdmin(false); setUser(OLIVIA_FALLBACK_USER); setActiveTab('dashboard'); localStorage.removeItem('olivia_session'); };
-  const updateLanguage = (newLang: Language) => { setLanguage(newLang); const settings = JSON.parse(localStorage.getItem('olivia_settings') || '{}'); localStorage.setItem('olivia_settings', JSON.stringify({ ...settings, language: newLang })); };
+  const handleLogout = async () => { await authSignOut(); setIsLoggedIn(false); setIsAdmin(false); setUser(OLIVIA_FALLBACK_USER); setActiveTab('dashboard'); };
+  const updateLanguage = (newLang: Language) => { setLanguage(newLang); };
   const openLogin = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => { setShowPublicSite(false); if (typeof window !== 'undefined' && window.location.pathname !== '/app') window.history.pushState({}, '', '/app'); setPostLoginTab(targetTab); setLoginDefaultMode(mode); setShowLogin(true); };
   const openApp = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => { setShowPublicSite(false); if (typeof window !== 'undefined' && window.location.pathname !== '/app') window.history.pushState({}, '', '/app'); setPostLoginTab(targetTab); if (isLoggedIn) { setActiveTab(targetTab === 'admin' && !isAdmin ? 'commerce' : targetTab); return; } openLogin(mode, targetTab); };
 
