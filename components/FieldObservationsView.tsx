@@ -18,9 +18,11 @@ import {
   X,
 } from 'lucide-react';
 import type { Parcel } from '../types';
-import type { FarmObservation } from '../types/farmIoT';
+import type { FarmObservation, FarmZone, TreeGroup } from '../types/farmIoT';
 import {
+  fetchFarmZones,
   fetchRecentFarmObservations,
+  fetchTreeGroups,
   insertFarmObservation,
 } from '../services/farmIoT';
 import { uploadFieldObservationImages } from '../services/fieldObservationStorage';
@@ -49,6 +51,7 @@ const CATEGORY_OPTIONS: { value: ObservationCategory; label: string; icon: React
 const EMPTY_FORM: Partial<FarmObservation> = {
   parcel_id: '',
   zone_id: '',
+  tree_group_id: '',
   tree_group: '',
   category: 'irrigation',
   title: '',
@@ -71,14 +74,23 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingFarmContext, setIsLoadingFarmContext] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [form, setForm] = useState<Partial<FarmObservation>>(EMPTY_FORM);
+  const [farmZones, setFarmZones] = useState<FarmZone[]>([]);
+  const [treeGroups, setTreeGroups] = useState<TreeGroup[]>([]);
   const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
   const [previewImageUrls, setPreviewImageUrls] = useState<string[]>([]);
 
   const parcelNameById = useMemo(() => new Map(parcels.map(parcel => [parcel.id, parcel.name])), [parcels]);
+  const zoneNameById = useMemo(() => new Map(farmZones.map(zone => [zone.id, zone.name])), [farmZones]);
+  const treeGroupNameById = useMemo(() => new Map(treeGroups.map(group => [group.id, group.name])), [treeGroups]);
+  const filteredTreeGroups = useMemo(() => {
+    if (!form.zone_id) return treeGroups;
+    return treeGroups.filter(group => group.zone_id === form.zone_id);
+  }, [form.zone_id, treeGroups]);
 
   const loadObservations = async () => {
     setIsLoading(true);
@@ -106,6 +118,37 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
       previewImageUrls.forEach(url => URL.revokeObjectURL(url));
     };
   }, [previewImageUrls]);
+
+  useEffect(() => {
+    if (!isFormOpen || !form.parcel_id) {
+      setFarmZones([]);
+      setTreeGroups([]);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingFarmContext(true);
+    fetchFarmZones(form.parcel_id)
+      .then(async zones => {
+        if (cancelled) return;
+        setFarmZones(zones);
+        const groupsNested = await Promise.all(zones.map(zone => fetchTreeGroups(zone.id)));
+        if (cancelled) return;
+        setTreeGroups(groupsNested.flat());
+      })
+      .catch(error => {
+        console.warn('[FieldObservationsView] Could not load zones/tree groups', error);
+        if (!cancelled) {
+          setFarmZones([]);
+          setTreeGroups([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingFarmContext(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [isFormOpen, form.parcel_id]);
 
   const stats = useMemo(() => {
     const last7 = observations.filter(obs => Date.now() - new Date(obs.observed_at).getTime() < 7 * 24 * 36e5).length;
@@ -137,6 +180,8 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
   const resetForm = () => {
     previewImageUrls.forEach(url => URL.revokeObjectURL(url));
     setForm({ ...EMPTY_FORM });
+    setFarmZones([]);
+    setTreeGroups([]);
     setSelectedImageFiles([]);
     setPreviewImageUrls([]);
   };
@@ -151,6 +196,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     setErrorMessage(null);
     const observationDraftId = makeObservationDraftId();
     try {
+      const selectedTreeGroupName = form.tree_group_id ? treeGroupNameById.get(form.tree_group_id) : undefined;
       const imageUrls = await uploadFieldObservationImages(selectedImageFiles, {
         parcelId: form.parcel_id?.trim() || undefined,
         observationId: observationDraftId,
@@ -159,7 +205,8 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
       const observation: Omit<FarmObservation, 'id'> = {
         parcel_id: form.parcel_id?.trim() || undefined,
         zone_id: form.zone_id?.trim() || undefined,
-        tree_group: form.tree_group?.trim() || undefined,
+        tree_group_id: form.tree_group_id?.trim() || undefined,
+        tree_group: selectedTreeGroupName || form.tree_group?.trim() || undefined,
         category: form.category,
         title: form.title.trim(),
         notes: form.notes?.trim() || undefined,
@@ -193,9 +240,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
             <DonaAnnaBrandMark variant="symbol" size="md" showText={false} />
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.35em] text-[#d9b657]">Doña Anna · Olivia</p>
-              <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3 mt-1">
-                Feltobservasjoner
-              </h2>
+              <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3 mt-1">Feltobservasjoner</h2>
               <p className="text-slate-400 text-sm mt-2">
                 Mobil feltlogg for vanning, trehelse, skadedyr, modenhet og økologisk kontroll. Data lagres i Supabase-tabellen <span className="font-mono text-[#d9b657]">olivia.farm_observations</span>.
               </p>
@@ -266,6 +311,8 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
             {observations.map(obs => {
               const meta = categoryMeta(obs.category);
               const parcelLabel = obs.parcel_id ? (parcelNameById.get(obs.parcel_id) || obs.parcel_id) : 'hele gården';
+              const zoneLabel = obs.zone_id ? (zoneNameById.get(obs.zone_id) || obs.zone_id) : '';
+              const treeGroupLabel = obs.tree_group_id ? (treeGroupNameById.get(obs.tree_group_id) || obs.tree_group || obs.tree_group_id) : obs.tree_group;
               return (
                 <div key={obs.id} className="glass rounded-[2rem] p-5 border border-white/10 bg-white/[0.02]">
                   <div className="flex items-start justify-between gap-4">
@@ -274,7 +321,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
                       <div>
                         <p className="text-white font-bold">{obs.title}</p>
                         <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">
-                          {meta.label} · {parcelLabel} {obs.zone_id ? `· ${obs.zone_id}` : ''} {obs.tree_group ? `· ${obs.tree_group}` : ''}
+                          {meta.label} · {parcelLabel} {zoneLabel ? `· ${zoneLabel}` : ''} {treeGroupLabel ? `· ${treeGroupLabel}` : ''}
                         </p>
                       </div>
                     </div>
@@ -338,7 +385,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
                   <select
                     className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60"
                     value={form.parcel_id || ''}
-                    onChange={event => setForm(prev => ({ ...prev, parcel_id: event.target.value || undefined }))}
+                    onChange={event => setForm(prev => ({ ...prev, parcel_id: event.target.value || undefined, zone_id: '', tree_group_id: '', tree_group: '' }))}
                   >
                     <option className="bg-slate-900" value="">Hele gården</option>
                     {parcels.map(parcel => (
@@ -354,23 +401,55 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
                   />
                 )}
               </Field>
-              <Field label="Sone / sektor" help="Valgfritt. Brukes hvis du deler parsellen i soner.">
-                <input
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60"
-                  placeholder="F.eks. nordre felt eller dryppsektor 2"
-                  value={form.zone_id || ''}
-                  onChange={event => setForm(prev => ({ ...prev, zone_id: event.target.value }))}
-                />
+              <Field label="Sone / sektor" help="Velg sone fra Supabase hvis den finnes, ellers skriv manuelt.">
+                {isLoadingFarmContext ? (
+                  <div className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-slate-500 flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Henter soner...</div>
+                ) : farmZones.length > 0 ? (
+                  <select
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60"
+                    value={form.zone_id || ''}
+                    onChange={event => setForm(prev => ({ ...prev, zone_id: event.target.value || undefined, tree_group_id: '', tree_group: '' }))}
+                  >
+                    <option className="bg-slate-900" value="">Ingen bestemt sone</option>
+                    {farmZones.map(zone => (
+                      <option key={zone.id} className="bg-slate-900" value={zone.id}>{zone.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60"
+                    placeholder="F.eks. nordre felt eller dryppsektor 2"
+                    value={form.zone_id || ''}
+                    onChange={event => setForm(prev => ({ ...prev, zone_id: event.target.value }))}
+                  />
+                )}
               </Field>
             </div>
 
-            <Field label="Tregruppe / sort" help="Valgfritt. Skriv sort eller gruppe, f.eks. Gordal, Changlot Real eller eldre trær.">
-              <input
-                className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60"
-                placeholder="F.eks. unge Gordal eller eldre blanding"
-                value={form.tree_group || ''}
-                onChange={event => setForm(prev => ({ ...prev, tree_group: event.target.value }))}
-              />
+            <Field label="Tregruppe / sort" help="Velg tregruppe fra Supabase hvis den finnes, ellers skriv sort eller gruppe manuelt.">
+              {filteredTreeGroups.length > 0 ? (
+                <select
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60"
+                  value={form.tree_group_id || ''}
+                  onChange={event => {
+                    const selectedId = event.target.value;
+                    const selectedGroup = treeGroups.find(group => group.id === selectedId);
+                    setForm(prev => ({ ...prev, tree_group_id: selectedId || undefined, tree_group: selectedGroup?.name || '' }));
+                  }}
+                >
+                  <option className="bg-slate-900" value="">Ingen bestemt tregruppe</option>
+                  {filteredTreeGroups.map(group => (
+                    <option key={group.id} className="bg-slate-900" value={group.id}>{group.name}{group.variety ? ` · ${group.variety}` : ''}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60"
+                  placeholder="F.eks. unge Gordal eller eldre blanding"
+                  value={form.tree_group || ''}
+                  onChange={event => setForm(prev => ({ ...prev, tree_group: event.target.value, tree_group_id: '' }))}
+                />
+              )}
             </Field>
 
             <Field label="Notat" help="Skriv hva du ser, hvor det er og hva som bør følges opp.">
