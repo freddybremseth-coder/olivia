@@ -1,260 +1,286 @@
-
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Camera, RefreshCcw, Sparkles, CheckCircle2, AlertTriangle,
-  AlertCircle, ChevronRight, Sprout, Bug, Info, Loader2, X,
-  Scissors, Search, Calendar, Plus, Layers, ArrowRight, History, Trash2, Clock,
-  Target, Tag, Award, Image as ImageIcon, ScanEye, Plane, Thermometer, Waves, Zap,
-  Save, ArrowUpDown, MapPin, Filter, Scale, FlaskConical, Droplets, Upload
+  AlertTriangle,
+  Award,
+  Camera,
+  CheckCircle2,
+  FileText,
+  History,
+  Image as ImageIcon,
+  Leaf,
+  Loader2,
+  MapPin,
+  Plus,
+  RefreshCcw,
+  Save,
+  Scissors,
+  Sparkles,
+  Trash2,
+  Upload,
+  X,
 } from 'lucide-react';
-import { geminiService, ComprehensiveAnalysisResult, DroneAnalysisResult } from '../services/geminiService';
-import { Task, PruningHistoryItem, Parcel } from '../types';
+import { geminiService, ComprehensiveAnalysisResult, PruningPlan } from '../services/geminiService';
+import { Parcel, PruningHistoryItem } from '../types';
 import { Language } from '../services/i18nService';
 import { filesToResizedDataUrls } from '../lib/imageUpload';
-import { fetchParcels } from '../services/db';
-import GlossaryText from './GlossaryText';
+import { deletePruningItem, fetchParcels, fetchPruningHistory, fetchSettings, upsertPruningItem } from '../services/db';
+import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 
-type ResultTab = 'health' | 'pruning' | 'drone';
-type SortKey = 'date' | 'parcel' | 'type';
+type ResultTab = 'summary' | 'health' | 'pruning' | 'history';
+
+function makeId(prefix: string) {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `${prefix}-${crypto.randomUUID()}`;
+  return `${prefix}-${Date.now()}`;
+}
+
+function confidencePercent(value: unknown): number {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n)) return 0;
+  const normalized = n <= 1 ? n * 100 : n;
+  return Math.max(0, Math.min(100, Math.round(normalized)));
+}
+
+function normalizePriority(priority: any): 'HØY' | 'MIDDELS' | 'LAV' {
+  const value = String(priority || '').toUpperCase();
+  if (value.includes('H')) return 'HØY';
+  if (value.includes('M')) return 'MIDDELS';
+  return 'LAV';
+}
+
+function normalizePlan(plan?: Partial<PruningPlan>): PruningPlan {
+  const steps = Array.isArray(plan?.pruningSteps) ? plan!.pruningSteps : [];
+  return {
+    treeType: plan?.treeType || 'Oliven · sort usikker',
+    ageEstimate: plan?.ageEstimate || 'Ukjent alder',
+    pruningSteps: steps
+      .filter(step => step && step.action)
+      .slice(0, 8)
+      .map((step, index) => ({
+        area: step.area || `Område ${index + 1}`,
+        action: step.action || 'Vurder forsiktig tynning etter visuell kontroll.',
+        priority: normalizePriority(step.priority),
+        x: Math.max(5, Math.min(95, Number(step.x || 50))),
+        y: Math.max(5, Math.min(95, Number(step.y || 50))),
+      })),
+    recommendedDate: plan?.recommendedDate || new Date().toISOString().slice(0, 10),
+    timingAdvice: plan?.timingAdvice || 'AI kunne ikke fastslå optimal timing med høy sikkerhet. Bruk lokal sesong, treets vitalitet og vær før tiltak.',
+    toolsNeeded: Array.isArray(plan?.toolsNeeded) && plan!.toolsNeeded.length ? plan!.toolsNeeded : ['Beskjæringssaks', 'Sag', 'Desinfeksjon av verktøy'],
+  };
+}
+
+function normalizeAnalysis(raw: ComprehensiveAnalysisResult | null): ComprehensiveAnalysisResult {
+  const pruning = normalizePlan(raw?.pruning);
+  const actions = Array.isArray(raw?.diagnosis?.actions) && raw!.diagnosis.actions.length
+    ? raw!.diagnosis.actions
+    : [
+        'Ta minst ett heltrebilde, ett nærbilde av bladverk og ett bilde av stamme/hovedgreiner.',
+        'Kontroller jordfukt, skuddvekst, døde greiner og tegn til skadedyr før tiltak.',
+        'Ikke utfør harde kutt før treets struktur er tydelig dokumentert.',
+      ];
+
+  return {
+    diagnosis: {
+      subject: raw?.diagnosis?.subject || 'Olivenanalyse fra bilde',
+      variety: raw?.diagnosis?.variety || 'Ukjent sort',
+      condition: raw?.diagnosis?.condition || 'OBSERVASJON',
+      diagnosis: raw?.diagnosis?.diagnosis || 'AI fikk ikke nok sikre detaljer til en presis diagnose. Analysen er derfor en praktisk feltvurdering og bør støttes med flere bilder og observasjoner.',
+      actions,
+    },
+    pruning,
+    expertReport: {
+      urgencyScore: Math.max(0, Math.min(10, Number(raw?.expertReport?.urgencyScore ?? 4))),
+      economicImpact: raw?.expertReport?.economicImpact || 'Ukjent. Trenger bedre bildegrunnlag og feltdata for å anslå produksjonstap.',
+      yieldEstimate: raw?.expertReport?.yieldEstimate || 'Ikke sikkert estimert fra tilgjengelig bilde.',
+      fertilizerRecommendation: raw?.expertReport?.fertilizerRecommendation || 'Ikke anbefal gjødsling kun fra bilde. Bruk jord-/bladprøve ved større tiltak.',
+      irrigationNote: raw?.expertReport?.irrigationNote || 'Kontroller jordfukt og siste vanning før konklusjon.',
+      rejuvenationNeeded: !!raw?.expertReport?.rejuvenationNeeded,
+      nextKeyAction: raw?.expertReport?.nextKeyAction || actions[0],
+    },
+    varietyConfidence: confidencePercent(raw?.varietyConfidence),
+    needsMoreImages: raw?.needsMoreImages ?? confidencePercent(raw?.varietyConfidence) < 60,
+    missingDetails: Array.isArray(raw?.missingDetails) && raw!.missingDetails.length
+      ? raw!.missingDetails
+      : ['heltre', 'bladverk nærbilde', 'stamme/hovedgreiner', 'frukt/skudd hvis relevant'],
+  };
+}
 
 const FieldConsultantView: React.FC = () => {
   const [images, setImages] = useState<string[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isDroneAnalyzing, setIsDroneAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<ComprehensiveAnalysisResult | null>(null);
-  const [droneResult, setDroneResult] = useState<DroneAnalysisResult | null>(null);
-  const [activeTab, setActiveTab] = useState<ResultTab>('health');
-  const [activeMarker, setActiveMarker] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [language, setLanguage] = useState<Language>('no');
-  const [showCamera, setShowCamera] = useState(true);
-  
-  // History states
+  const [analysis, setAnalysis] = useState<ComprehensiveAnalysisResult | null>(null);
   const [history, setHistory] = useState<PruningHistoryItem[]>([]);
   const [parcels, setParcels] = useState<Parcel[]>([]);
-  const [selectedParcelId, setSelectedParcelId] = useState<string>('');
-  const [selectedHistoryItem, setSelectedHistoryItem] = useState<PruningHistoryItem | null>(null);
-  const [sortKey, setSortKey] = useState<SortKey>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [selectedParcelId, setSelectedParcelId] = useState('');
+  const [activeTab, setActiveTab] = useState<ResultTab>('summary');
+  const [activeMarker, setActiveMarker] = useState<number | null>(null);
+  const [language, setLanguage] = useState<Language>('no');
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [showCamera, setShowCamera] = useState(true);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  
+  const [error, setError] = useState<string | null>(null);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
 
-  useEffect(() => {
-    const settings = localStorage.getItem('olivia_settings');
-    if (settings) {
-      const parsed = JSON.parse(settings);
-      setLanguage(parsed.language || 'no');
-    }
-
-    const savedHistory = localStorage.getItem('olivia_consultant_history');
-    if (savedHistory) setHistory(JSON.parse(savedHistory));
-
-    // Parcels live in Supabase (not localStorage). Older versions cached them
-    // in `olivia_parcels`, but that key is empty for users created after the
-    // Supabase migration → "Ingen parseller funnet" even when parcels exist.
-    (async () => {
-      try {
-        const prc = await fetchParcels();
-        if (prc.length > 0) {
-          setParcels(prc);
-          setSelectedParcelId(prev => prev || prc[0].id);
-        }
-      } catch (err) {
-        console.error('FieldConsultant: kunne ikke hente parseller', err);
-      }
-    })();
-
-    startCamera();
-    return () => stopCamera();
-  }, []);
+  const selectedParcel = useMemo(() => parcels.find(p => p.id === selectedParcelId), [parcels, selectedParcelId]);
+  const confidence = confidencePercent(analysis?.varietyConfidence);
 
   const startCamera = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' }, 
-        audio: false 
-      });
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
       setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
+      if (videoRef.current) videoRef.current.srcObject = mediaStream;
       setError(null);
-    } catch (err) {
-      setError("Kunne ikke starte kamera. Sjekk tillatelser.");
+    } catch {
+      setError('Kunne ikke starte kamera. Du kan fortsatt laste opp bilder fra enheten.');
     }
   };
 
   const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
+    stream?.getTracks().forEach(track => track.stop());
+    setStream(null);
+  };
+
+  const loadData = async () => {
+    try {
+      const [settings, parcelRows, historyRows] = await Promise.all([
+        fetchSettings(),
+        fetchParcels(),
+        fetchPruningHistory(),
+      ]);
+      if (settings?.language) setLanguage(settings.language as Language);
+      setParcels(parcelRows);
+      setSelectedParcelId(prev => prev || parcelRows[0]?.id || '');
+      setHistory(historyRows);
+    } catch (err) {
+      console.error('[FieldConsultantView] loadData', err);
+      setError('Kunne ikke hente parseller/historikk fra Supabase.');
     }
   };
+
+  useEffect(() => {
+    loadData();
+    startCamera();
+    return () => stopCamera();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const context = canvasRef.current.getContext('2d');
-      if (context) {
-        canvasRef.current.width = videoRef.current.videoWidth;
-        canvasRef.current.height = videoRef.current.videoHeight;
-        context.drawImage(videoRef.current, 0, 0);
-        const base64 = canvasRef.current.toDataURL('image/jpeg', 0.8);
-        setImages(prev => [...prev, base64]);
-      }
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+    if (!videoRef.current || !canvasRef.current) return;
+    const context = canvasRef.current.getContext('2d');
+    if (!context) return;
+    canvasRef.current.width = videoRef.current.videoWidth;
+    canvasRef.current.height = videoRef.current.videoHeight;
+    context.drawImage(videoRef.current, 0, 0);
+    const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.85);
+    setImages(prev => [...prev, dataUrl]);
   };
 
   const handleFilePick = () => fileInputRef.current?.click();
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files?.length) return;
     setIsUploading(true);
     setError(null);
     try {
       const dataUrls = await filesToResizedDataUrls(files);
-      if (dataUrls.length === 0) {
-        setError('Ingen av bildene kunne leses.');
-      } else {
-        setImages(prev => [...prev, ...dataUrls]);
-      }
+      setImages(prev => [...prev, ...dataUrls]);
     } catch (err: any) {
-      setError(`Kunne ikke laste opp bilde: ${err?.message || String(err)}`);
+      setError(`Kunne ikke lese bilder: ${err?.message || String(err)}`);
     } finally {
       setIsUploading(false);
-      // Reset so the same file can be picked again if needed
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const runAnalysis = async () => {
-    if (images.length === 0) return;
+    if (!images.length) return;
     setIsAnalyzing(true);
     setError(null);
-    setAnalysisResult(null);
-    setDroneResult(null);
-    
+    setAnalysis(null);
     try {
-      const base64List = images.map(img => img.split(',')[1]);
-      const result = await geminiService.analyzeComprehensive(base64List, language);
-      setAnalysisResult(result);
+      const base64List = images.map(img => img.split(',')[1]).filter(Boolean);
+      const raw = await geminiService.analyzeComprehensive(base64List, language);
+      const normalized = normalizeAnalysis(raw);
+      setAnalysis(normalized);
       setShowCamera(false);
+      setActiveTab('summary');
       stopCamera();
     } catch (err: any) {
-      console.error("FieldConsultant analyse feil:", err);
-      const msg = err?.message || String(err);
-      setError(`Analyse feilet: ${msg}`);
+      setError(`Analyse feilet: ${err?.message || String(err)}`);
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const saveAnalysis = () => {
-    if (!analysisResult || images.length === 0) return;
-
+  const saveAnalysis = async () => {
+    if (!analysis || !images.length) return;
+    setIsSaving(true);
+    setError(null);
     try {
-      const newItem: PruningHistoryItem = {
-        id: Date.now().toString(),
+      const item: PruningHistoryItem = {
+        id: makeId('consultant'),
         date: new Date().toISOString(),
-        images: [images[0]], 
-        treeType: analysisResult.diagnosis?.variety || 'Ukjent sort',
-        ageEstimate: analysisResult.pruning?.ageEstimate || 'Ukjent alder',
+        images,
+        treeType: analysis.diagnosis.variety || analysis.pruning.treeType,
+        ageEstimate: analysis.pruning.ageEstimate,
         analysis: {
-          diagnosis: analysisResult.diagnosis,
-          pruning: analysisResult.pruning,
-          varietyConfidence: analysisResult.varietyConfidence || 0,
-          needsMoreImages: analysisResult.needsMoreImages || false,
-          missingDetails: analysisResult.missingDetails || []
+          diagnosis: analysis.diagnosis,
+          pruning: analysis.pruning,
+          varietyConfidence: confidence,
+          needsMoreImages: analysis.needsMoreImages,
+          missingDetails: analysis.missingDetails,
         },
-        parcelId: selectedParcelId
+        plan: analysis.pruning,
+        parcelId: selectedParcelId || undefined,
+        scheduledTime: analysis.pruning.recommendedDate,
       };
-
-      const updatedHistory = [newItem, ...history];
-      setHistory(updatedHistory);
-      localStorage.setItem('olivia_consultant_history', JSON.stringify(updatedHistory));
-      
-      // Send varsel til andre komponenter
-      window.dispatchEvent(new Event('storage'));
-      
+      await upsertPruningItem(item);
+      setHistory(prev => [item, ...prev.filter(h => h.id !== item.id)]);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err) {
-      console.error("Save error:", err);
-      alert("Kunne ikke lagre analysen. Sjekk konsollen for detaljer.");
-    }
-  };
-
-  const runDroneAnalysis = async () => {
-    if (images.length === 0) return;
-    setIsDroneAnalyzing(true);
-    setError(null);
-    
-    try {
-      const base64List = images.map(img => img.split(',')[1]);
-      const result = await geminiService.analyzeDrone(base64List, language);
-      setDroneResult(result);
-      setActiveTab('drone');
-    } catch (err) {
-      setError("Drone-analysen feilet.");
+    } catch (err: any) {
+      setError(`Kunne ikke lagre analysen i Supabase: ${err?.message || String(err)}`);
     } finally {
-      setIsDroneAnalyzing(false);
+      setIsSaving(false);
     }
   };
 
-  const deleteHistoryItem = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm("Slette denne analysen fra historikken?")) return;
-    const updated = history.filter(item => item.id !== id);
-    setHistory(updated);
-    localStorage.setItem('olivia_consultant_history', JSON.stringify(updated));
+  const deleteHistory = async (id: string) => {
+    try {
+      await deletePruningItem(id);
+      setHistory(prev => prev.filter(item => item.id !== id));
+    } catch (err: any) {
+      setError(`Kunne ikke slette analyse: ${err?.message || String(err)}`);
+    }
   };
-
-  const sortedHistory = useMemo(() => {
-    return [...history].sort((a, b) => {
-      let comparison = 0;
-      if (sortKey === 'date') {
-        comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
-      } else if (sortKey === 'parcel') {
-        const pA = parcels.find(p => p.id === a.parcelId)?.name || '';
-        const pB = parcels.find(p => p.id === b.parcelId)?.name || '';
-        comparison = pA.localeCompare(pB);
-      } else if (sortKey === 'type') {
-        comparison = (a.treeType || '').localeCompare(b.treeType || '');
-      }
-      return sortOrder === 'desc' ? -comparison : comparison;
-    });
-  }, [history, sortKey, sortOrder, parcels]);
 
   const reset = () => {
     setImages([]);
-    setAnalysisResult(null);
-    setDroneResult(null);
+    setAnalysis(null);
     setError(null);
     setShowCamera(true);
+    setActiveTab('summary');
+    setActiveMarker(null);
     startCamera();
   };
 
-  const renderPruningMarkers = (steps: any[]) => {
-    if (!steps) return null;
+  const renderMarkers = (plan?: PruningPlan) => {
+    if (!plan?.pruningSteps?.length) return null;
     return (
       <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-        {steps.map((step, i) => {
+        {plan.pruningSteps.map((step, i) => {
           const color = step.priority === 'HØY' ? '#ef4444' : step.priority === 'MIDDELS' ? '#f59e0b' : '#22c55e';
           const isActive = activeMarker === i;
           return (
-            <g key={i} className="transition-all duration-300">
-              <circle cx={step.x} cy={step.y} r={isActive ? "4" : "2"} fill={color} fillOpacity="0.3" className={isActive ? "animate-ping" : ""} />
-              <circle cx={step.x} cy={step.y} r={isActive ? "6" : "3"} stroke={color} strokeWidth="1" fill="none" />
-              <circle cx={step.x} cy={step.y} r="1.5" fill={color} />
+            <g key={`${step.area}-${i}`}>
+              <circle cx={step.x} cy={step.y} r={isActive ? 5 : 3} fill={color} fillOpacity="0.25" className="animate-ping" />
+              <circle cx={step.x} cy={step.y} r={isActive ? 6 : 4} stroke={color} strokeWidth="1" fill="none" />
+              <circle cx={step.x} cy={step.y} r="1.4" fill={color} />
             </g>
           );
         })}
@@ -263,518 +289,121 @@ const FieldConsultantView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700 max-w-6xl mx-auto pb-20">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-            <Sparkles className="text-green-400" /> AI Feltkonsulent
-          </h2>
-          <p className="text-slate-400 text-sm">Alt-i-ett diagnose og beskjæringsekspert.</p>
-        </div>
-        
-        {analysisResult && (
-          <div className="flex items-center gap-3">
-             <button 
-                onClick={saveAnalysis}
-                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-bold transition-all border shadow-lg ${saveSuccess ? 'bg-green-500 text-black border-green-500' : 'bg-white/5 hover:bg-white/10 text-white border-white/10'}`}
-             >
-               {saveSuccess ? <CheckCircle2 size={16} /> : <Save size={16} />} 
-               {saveSuccess ? 'Lagret i arkiv' : 'Lagre analyse'}
-             </button>
-             {!droneResult && (
-               <button 
-                 onClick={runDroneAnalysis} 
-                 disabled={isDroneAnalyzing}
-                 className="flex items-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 px-6 py-3 rounded-2xl text-xs font-bold transition-all border border-blue-500/20 text-blue-400"
-               >
-                 {isDroneAnalyzing ? <Loader2 size={16} className="animate-spin" /> : <Plane size={16} />} 
-                 {isDroneAnalyzing ? 'Kjører drone...' : 'Drone-analyse'}
-               </button>
-             )}
-             <button onClick={reset} className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-6 py-3 rounded-2xl text-xs font-bold transition-all border border-white/10">
-               <RefreshCcw size={16} /> Ny
-             </button>
+    <div className="space-y-8 animate-in fade-in duration-700 max-w-6xl mx-auto pb-24">
+      <div className="relative overflow-hidden rounded-[2rem] border border-[#d9b657]/20 bg-[#070b08] p-6 shadow-2xl shadow-black/20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,0.14),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(217,182,87,0.12),transparent_34%)]" />
+        <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
+          <div className="flex items-center gap-4">
+            <DonaAnnaBrandMark variant="symbol" size="md" showText={false} />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.35em] text-[#d9b657]">Doña Anna · Olivia</p>
+              <h2 className="text-3xl font-bold text-white flex items-center gap-3 mt-1"><Sparkles className="text-green-400" /> AI Feltkonsulent</h2>
+              <p className="text-slate-400 text-sm mt-2">Smart feltanalyse med flere bilder, normalisert sikkerhet og Supabase-lagret historikk.</p>
+            </div>
           </div>
-        )}
+          {(analysis || images.length > 0) && <button onClick={reset} className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-3 rounded-2xl text-xs font-bold border border-white/10"><RefreshCcw size={16} /> Ny analyse</button>}
+        </div>
       </div>
+
+      {error && <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100 flex gap-3"><AlertTriangle size={18} className="flex-shrink-0 mt-0.5" /> {error}</div>}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Side: Camera & Multi-Image Capture */}
-        <div className="space-y-6">
-          {showCamera ? (
-            <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden glass border border-white/10 shadow-2xl bg-black">
-              <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover opacity-80" />
-
-              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4">
-                <button
-                  onClick={handleFilePick}
-                  disabled={isUploading}
-                  title="Last opp bilde fra enheten"
-                  className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md border-2 border-white/40 text-white flex items-center justify-center hover:border-white/80 active:scale-95 transition-all disabled:opacity-40"
-                >
-                  {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
-                </button>
-                <button onClick={capturePhoto} className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md border-4 border-white flex items-center justify-center group active:scale-95 transition-all">
-                  <div className="w-14 h-14 rounded-full bg-white group-hover:bg-green-400 transition-colors"></div>
-                </button>
+        <div className="space-y-5">
+          <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden glass border border-white/10 bg-black shadow-2xl">
+            {showCamera ? <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover opacity-80" /> : images[0] ? <img src={images[0]} className="w-full h-full object-cover" alt="Analyse" /> : null}
+            {!showCamera && analysis && renderMarkers(analysis.pruning)}
+            <canvas ref={canvasRef} className="hidden" />
+            <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileUpload} className="hidden" />
+            {showCamera && (
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-4">
+                <button onClick={handleFilePick} disabled={isUploading} className="w-14 h-14 rounded-full bg-black/50 border-2 border-white/40 text-white flex items-center justify-center hover:border-white/80 disabled:opacity-40">{isUploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}</button>
+                <button onClick={capturePhoto} className="w-20 h-20 rounded-full bg-white/10 border-4 border-white flex items-center justify-center"><div className="w-14 h-14 rounded-full bg-white" /></button>
               </div>
+            )}
+            {isAnalyzing && <div className="absolute inset-0 bg-black/75 backdrop-blur-lg flex flex-col items-center justify-center gap-4"><Loader2 size={44} className="animate-spin text-green-400" /><p className="text-white font-bold uppercase tracking-widest text-xs">Analyserer {images.length} bilde(r)...</p></div>}
+          </div>
+
+          <div className="flex gap-3 overflow-x-auto pb-2 min-h-[84px]">
+            {images.map((img, index) => <div key={`${img.slice(0, 18)}-${index}`} className="relative flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border border-white/10"><img src={img} className="w-full h-full object-cover" /><button onClick={() => setImages(prev => prev.filter((_, i) => i !== index))} className="absolute top-1 right-1 p-1 bg-black/70 text-white rounded-full"><X size={12} /></button></div>)}
+            <button onClick={capturePhoto} className="flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-white"><Camera size={18} /><span className="text-[9px] font-bold uppercase">Ta bilde</span></button>
+            <button onClick={handleFilePick} disabled={isUploading} className="flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed border-green-500/30 flex flex-col items-center justify-center gap-1 text-green-400"><Upload size={18} /><span className="text-[9px] font-bold uppercase">Last opp</span></button>
+          </div>
+
+          <div className="glass rounded-2xl p-4 border border-white/10 space-y-3">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Parsell for analyse</label>
+            <select className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white" value={selectedParcelId} onChange={e => setSelectedParcelId(e.target.value)}>
+              {parcels.length ? parcels.map(p => <option key={p.id} value={p.id}>{p.name}</option>) : <option value="">Ingen parseller funnet i Supabase</option>}
+            </select>
+            {selectedParcel && <p className="text-xs text-slate-500 flex items-center gap-2"><MapPin size={12} /> {selectedParcel.municipality || 'Biar'} · {selectedParcel.treeVariety || selectedParcel.crop || 'oliven'}</p>}
+          </div>
+
+          <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 text-xs text-blue-100 leading-relaxed">
+            <p className="font-bold text-white mb-2">For bedre treff: ta 3–5 bilder</p>
+            <p>1 heltrebilde, 1 bilde av stamme/hovedgreiner, 1 nærbilde av bladverk, og gjerne frukt/skudd eller skade. Da slipper du “0 treff” og får mer presise tiltak.</p>
+          </div>
+
+          <button onClick={runAnalysis} disabled={!images.length || isAnalyzing} className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-40 text-black font-bold py-4 rounded-2xl flex items-center justify-center gap-2"><Sparkles size={18} /> Start smart analyse</button>
+        </div>
+
+        <div className="space-y-6">
+          {!analysis ? (
+            <div className="glass rounded-[2rem] p-8 border border-white/10 text-center">
+              <ImageIcon className="mx-auto text-[#d9b657] mb-4" size={42} />
+              <h3 className="text-white font-bold text-xl">Klar for analyse</h3>
+              <p className="text-slate-400 text-sm mt-2">Legg inn flere bilder og kjør analyse. Resultatet lagres i Supabase når du trykker “Lagre analyse”.</p>
             </div>
           ) : (
-            <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden glass border border-white/10 shadow-2xl bg-black">
-              <img src={images[0]} className="w-full h-full object-cover" alt="Main result" />
-              {activeTab === 'pruning' && analysisResult?.pruning && renderPruningMarkers(analysisResult.pruning.pruningSteps)}
-              {activeTab === 'drone' && droneResult && (
-                <div className="absolute inset-0 bg-blue-500/10 pointer-events-none flex items-center justify-center">
-                  <div className="w-[80%] h-[80%] border-2 border-blue-400/30 border-dashed rounded-full animate-[spin_10s_linear_infinite]" />
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-400 opacity-20">
-                    <ScanEye size={120} />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Filmstrip / Gallery + add more images when camera is off */}
-          <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar min-h-[88px] items-center">
-            {images.map((img, i) => (
-              <div key={i} className="relative flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border border-white/10 group">
-                <img src={img} className="w-full h-full object-cover" />
-                <button onClick={() => removeImage(i)} className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity">
-                  <X size={12} />
-                </button>
-              </div>
-            ))}
-            <button
-              onClick={capturePhoto}
-              className="flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-white hover:border-white/40 transition-all"
-            >
-              <Plus size={20} />
-              <span className="text-[9px] font-bold uppercase">Ta bilde</span>
-            </button>
-            <button
-              onClick={handleFilePick}
-              disabled={isUploading}
-              className="flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed border-green-500/30 flex flex-col items-center justify-center gap-1 text-green-400 hover:text-green-300 hover:border-green-400/60 transition-all disabled:opacity-40"
-            >
-              {isUploading ? <Loader2 size={20} className="animate-spin" /> : <Upload size={20} />}
-              <span className="text-[9px] font-bold uppercase">Last opp</span>
-            </button>
-          </div>
-
-          {/* Re-analyze button — shown when we have images but no result yet, OR when needsMoreImages */}
-          {images.length > 0 && !isAnalyzing && (!analysisResult || analysisResult.needsMoreImages) && (
-            <button
-              onClick={runAnalysis}
-              className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-4 rounded-2xl flex items-center justify-center gap-2 text-sm transition-all active:scale-95"
-            >
-              <Sparkles size={18} />
-              {analysisResult?.needsMoreImages ? `Analyser på nytt (${images.length} bilder)` : 'Start analyse'}
-            </button>
-          )}
-          
-          <div className="glass rounded-2xl p-4 border border-white/5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Parsell for analyse</label>
-            <select 
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none"
-              value={selectedParcelId}
-              onChange={e => setSelectedParcelId(e.target.value)}
-            >
-              {parcels.length > 0 ? parcels.map(p => <option key={p.id} value={p.id}>{p.name}</option>) : <option value="">Ingen parseller funnet</option>}
-            </select>
-          </div>
-          
-          <canvas ref={canvasRef} className="hidden" />
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-        </div>
-
-        {/* Right Side: Analysis Results */}
-        <div className="space-y-6 overflow-y-auto lg:max-h-[80vh] custom-scrollbar pr-2">
-          {isAnalyzing && (
-            <div className="h-full flex flex-col items-center justify-center space-y-6 glass rounded-[3rem] p-12">
-               <Loader2 className="animate-spin text-green-400" size={48} />
-               <div className="text-center">
-                 <h3 className="text-lg font-bold text-white uppercase tracking-widest">Kjører dyp analyse...</h3>
-                 <p className="text-slate-500 text-sm italic mt-2">Vurderer helse, sort og arkitektonisk struktur basert på {images.length} bilder.</p>
-               </div>
-            </div>
-          )}
-
-          {analysisResult && (
-            <div className="animate-in slide-in-from-right-6 duration-700 space-y-6">
-              {/* Variety/Sort Card */}
-              <div className="glass p-6 rounded-[2rem] border border-white/10 bg-white/5">
-                <div className="flex justify-between items-start mb-4">
+            <div className="space-y-5 animate-in slide-in-from-right-6 duration-500">
+              <div className="glass rounded-[2rem] p-6 border border-white/10">
+                <div className="flex justify-between gap-4">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Award size={14} className="text-yellow-400" />
-                      <span className="text-[10px] font-bold text-yellow-400 uppercase tracking-widest">Sort-Identifisering</span>
-                    </div>
-                    <h3 className="text-3xl font-bold text-white tracking-tight">{analysisResult.diagnosis?.variety || 'Ukjent sort'}</h3>
-                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mt-1">Sikkerhet: {Math.round((analysisResult.varietyConfidence || 0) * 100)}%</p>
+                    <p className="text-[10px] font-bold text-[#d9b657] uppercase tracking-widest flex items-center gap-2"><Award size={13} /> Sort / sikkerhet</p>
+                    <h3 className="text-3xl font-bold text-white mt-1">{analysis.diagnosis.variety}</h3>
+                    <p className="text-xs text-slate-500 mt-1">Sikkerhet: {confidence}% · {analysis.needsMoreImages ? 'flere bilder anbefales' : 'godt nok grunnlag'}</p>
                   </div>
-                  <div className={`p-4 rounded-2xl ${analysisResult.diagnosis?.condition === 'SUNN' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {analysisResult.diagnosis?.condition === 'SUNN' ? <CheckCircle2 size={32} /> : <AlertTriangle size={32} />}
+                  <div className={`p-4 rounded-2xl ${analysis.diagnosis.condition === 'SUNN' ? 'bg-green-500/20 text-green-400' : analysis.diagnosis.condition === 'SYK' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                    {analysis.diagnosis.condition === 'SUNN' ? <CheckCircle2 size={30} /> : <AlertTriangle size={30} />}
                   </div>
                 </div>
-
-                {analysisResult.needsMoreImages && (
-                  <div className="p-4 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-200 text-xs flex gap-3">
-                    <Info size={20} className="shrink-0" />
-                    <div>
-                      <p className="font-bold uppercase tracking-widest text-[10px] mb-1 text-orange-400">Usikkerhet observert</p>
-                      <p className="opacity-80 italic">For 100% sikkerhet trengs: {analysisResult.missingDetails?.join(", ") || 'flere bilder'}.</p>
-                    </div>
-                  </div>
-                )}
+                {analysis.needsMoreImages && <div className="mt-4 rounded-2xl border border-orange-500/20 bg-orange-500/10 p-3 text-xs text-orange-100">Mangler for bedre presisjon: {analysis.missingDetails.join(', ')}</div>}
               </div>
 
-              {/* Tab Selector */}
               <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10">
-                <button 
-                  onClick={() => setActiveTab('health')}
-                  className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'health' ? 'bg-green-500 text-black shadow-lg shadow-green-500/20' : 'text-slate-500 hover:text-white'}`}
-                >
-                  <Search size={14} className="inline mr-2" /> Helse
-                </button>
-                <button 
-                  onClick={() => setActiveTab('pruning')}
-                  className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'pruning' ? 'bg-green-500 text-black shadow-lg shadow-green-500/20' : 'text-slate-500 hover:text-white'}`}
-                >
-                  <Scissors size={14} className="inline mr-2" /> Beskjæring
-                </button>
-                {droneResult && (
-                  <button 
-                    onClick={() => setActiveTab('drone')}
-                    className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'drone' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-500 hover:text-white'}`}
-                  >
-                    <Plane size={14} className="inline mr-2" /> Drone
-                  </button>
-                )}
+                {(['summary', 'health', 'pruning', 'history'] as ResultTab[]).map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest ${activeTab === tab ? 'bg-green-500 text-black' : 'text-slate-500 hover:text-white'}`}>{tab === 'summary' ? 'Kort' : tab === 'health' ? 'Helse' : tab === 'pruning' ? 'Beskjæring' : 'Historikk'}</button>)}
               </div>
 
-              {activeTab === 'health' && (
-                <div className="space-y-4 animate-in fade-in duration-500">
-                  {/* Expert urgency + age bar */}
-                  {analysisResult.expertReport && (
-                    <div className="glass p-4 rounded-2xl border border-white/10 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Hastegrad</span>
-                        <span className={`text-xs font-black px-2 py-0.5 rounded-full ${
-                          analysisResult.expertReport.urgencyScore >= 7 ? 'bg-red-500/20 text-red-400' :
-                          analysisResult.expertReport.urgencyScore >= 4 ? 'bg-yellow-500/20 text-yellow-400' :
-                          'bg-green-500/20 text-green-400'
-                        }`}>{analysisResult.expertReport.urgencyScore}/10</span>
-                      </div>
-                      <div className="w-full bg-slate-800 rounded-full h-2">
-                        <div className={`h-2 rounded-full transition-all ${
-                          analysisResult.expertReport.urgencyScore >= 7 ? 'bg-red-500' :
-                          analysisResult.expertReport.urgencyScore >= 4 ? 'bg-yellow-500' : 'bg-green-500'
-                        }`} style={{ width: `${analysisResult.expertReport.urgencyScore * 10}%` }} />
-                      </div>
-                      <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3">
-                        <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest mb-1">Viktigste tiltak nå</p>
-                        <p className="text-sm text-white font-medium">{analysisResult.expertReport.nextKeyAction}</p>
-                      </div>
-                    </div>
-                  )}
+              {activeTab === 'summary' && <SummaryTab analysis={analysis} />}
+              {activeTab === 'health' && <HealthTab analysis={analysis} />}
+              {activeTab === 'pruning' && <PruningTab plan={analysis.pruning} activeMarker={activeMarker} setActiveMarker={setActiveMarker} />}
+              {activeTab === 'history' && <HistoryTab history={history} parcels={parcels} onDelete={deleteHistory} />}
 
-                  <div className="p-5 rounded-2xl glass border border-white/10 space-y-4">
-                    <div>
-                      <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <Bug size={14} className="text-orange-400" /> Patologisk vurdering
-                      </h4>
-                      <p className="text-sm text-slate-300 leading-relaxed italic">"{analysisResult.diagnosis?.diagnosis || 'Ingen diagnose tilgjengelig.'}"</p>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Anbefalte tiltak</h4>
-                      {analysisResult.diagnosis?.actions?.map((action, i) => (
-                        <div key={i} className="flex gap-3 text-sm text-slate-300 p-3 rounded-xl bg-white/5 border border-white/5">
-                          <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 text-[10px] font-bold flex-shrink-0 mt-0.5">{i+1}</div>
-                          {action}
-                        </div>
-                      )) || <p className="text-xs text-slate-500 italic">Ingen spesifikke tiltak funnet.</p>}
-                    </div>
-                  </div>
-
-                  {/* Expert report grid */}
-                  {analysisResult.expertReport && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="glass p-4 rounded-2xl border border-white/10">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Scale size={11} /> Produksjonstap</p>
-                        <p className="text-sm text-red-400 font-bold">{analysisResult.expertReport.economicImpact}</p>
-                      </div>
-                      <div className="glass p-4 rounded-2xl border border-white/10">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Sprout size={11} /> Avkastning/tre</p>
-                        <p className="text-sm text-green-400 font-bold">{analysisResult.expertReport.yieldEstimate}</p>
-                      </div>
-                      <div className="glass p-4 rounded-2xl border border-white/10 sm:col-span-2">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><FlaskConical size={11} /> Gjødselanbefaling</p>
-                        <p className="text-sm text-blue-300">{analysisResult.expertReport.fertilizerRecommendation}</p>
-                      </div>
-                      <div className="glass p-4 rounded-2xl border border-white/10 sm:col-span-2">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Droplets size={11} /> Vanningsvurdering</p>
-                        <p className="text-sm text-slate-300">{analysisResult.expertReport.irrigationNote}</p>
-                      </div>
-                      {analysisResult.expertReport.rejuvenationNeeded && (
-                        <div className="glass p-4 rounded-2xl border border-orange-500/30 bg-orange-500/5 sm:col-span-2">
-                          <p className="text-xs font-bold text-orange-400 flex items-center gap-2"><AlertCircle size={14} /> Foryngelsesbeskjæring anbefalt</p>
-                          <p className="text-xs text-slate-400 mt-1">Treet er i en fase der kraftig policing-beskjæring vil øke fremtidig avkastning vesentlig.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'pruning' && analysisResult.pruning && (
-                <div className="space-y-4 animate-in fade-in duration-500">
-                  {/* Age + timing header */}
-                  <div className="glass p-4 rounded-2xl border border-white/10 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1"><Clock size={11}/> Estimert alder</span>
-                      <span className="text-xs font-bold text-blue-300">{analysisResult.pruning.ageEstimate}</span>
-                    </div>
-                    {analysisResult.pruning.timingAdvice && (
-                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
-                        <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Optimal timing</p>
-                        <p className="text-sm text-slate-300">{analysisResult.pruning.timingAdvice}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="glass rounded-2xl p-5 border border-white/10 space-y-3">
-                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Beskjæringsplan — trykk for å markere punkt</h4>
-                    {analysisResult.pruning.pruningSteps?.map((step, i) => (
-                      <div
-                        key={i}
-                        onMouseEnter={() => setActiveMarker(i)}
-                        onMouseLeave={() => setActiveMarker(null)}
-                        onTouchStart={() => setActiveMarker(i)}
-                        className={`p-4 rounded-xl border transition-all flex gap-3 cursor-pointer ${
-                          activeMarker === i ? 'bg-green-500/10 border-green-500/40' : 'bg-black/40 border-white/5'
-                        }`}
-                      >
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
-                          step.priority === 'HØY' ? 'bg-red-500/20 text-red-400 border border-red-500/20' :
-                          step.priority === 'MIDDELS' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/20' :
-                          'bg-green-500/20 text-green-400 border border-green-500/20'
-                        }`}>{i + 1}</div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest">{step.area}</p>
-                            {step.priority === 'HØY' && <span className="text-[8px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded font-bold">KRITISK</span>}
-                          </div>
-                          <p className="text-sm text-slate-300 leading-relaxed">{step.action}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Tools needed */}
-                  {analysisResult.pruning.toolsNeeded && analysisResult.pruning.toolsNeeded.length > 0 && (
-                    <div className="glass p-4 rounded-2xl border border-white/10">
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1"><Scissors size={11}/> Verktøy som trengs</p>
-                      <div className="flex flex-wrap gap-2">
-                        {analysisResult.pruning.toolsNeeded.map((tool, i) => (
-                          <span key={i} className="text-xs bg-slate-800 text-slate-300 border border-white/10 px-2.5 py-1 rounded-lg">{tool}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'drone' && droneResult && (
-                <div className="space-y-6 animate-in fade-in duration-500">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="glass p-4 rounded-2xl border border-white/10 bg-blue-500/5">
-                      <div className="flex items-center gap-2 mb-2 text-blue-400">
-                        <Layers size={14} />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">NDVI Indeks</span>
-                      </div>
-                      <p className="text-2xl font-bold text-white">{(droneResult.ndviSimulated * 1.0).toFixed(2)}</p>
-                    </div>
-                    <div className="glass p-4 rounded-2xl border border-white/10 bg-red-500/5">
-                      <div className="flex items-center gap-2 mb-2 text-red-400">
-                        <Waves size={14} />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Vannstress</span>
-                      </div>
-                      <p className="text-2xl font-bold text-white">{droneResult.waterStressLevel}</p>
-                    </div>
-                  </div>
-                  <div className="glass p-6 rounded-[2.5rem] border border-blue-500/20 bg-blue-500/5">
-                    <h4 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                      <Zap size={14} /> Drone-oppsummering
-                    </h4>
-                    <p className="text-sm text-slate-300 leading-relaxed italic">
-                      <GlossaryText text={droneResult.aerialSummary} />
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {!isAnalyzing && !analysisResult && !error && (
-            <div className="flex flex-col items-center justify-center text-center p-12 glass rounded-[3rem] border border-dashed border-white/10">
-              <ScanEye size={40} className="text-slate-600 mb-4" />
-              <h3 className="text-xl font-bold text-slate-400 uppercase tracking-widest">Klar for felt-analyse</h3>
-              <p className="text-sm text-slate-500 mt-3 max-w-xs leading-relaxed italic mx-auto">
-                Legg til bilder av blader, struktur og frukt — bruk «+»-knappen til venstre.
-              </p>
-            </div>
-          )}
-
-          {error && (
-            <div className="p-6 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 space-y-3 animate-in slide-in-from-top-4">
-              <div className="flex items-center gap-3">
-                <AlertTriangle size={24} />
-                <p className="text-sm font-bold uppercase tracking-widest">Analyse Feilet</p>
-              </div>
-              <p className="text-xs text-red-300/80 leading-relaxed">{error}</p>
-              {images.length > 0 && (
-                <button onClick={runAnalysis} className="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all">
-                  <RefreshCcw size={14} /> Prøv igjen
-                </button>
-              )}
+              <button onClick={saveAnalysis} disabled={isSaving} className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 ${saveSuccess ? 'bg-green-500 text-black' : 'bg-[#d9b657] text-black hover:bg-[#f0cf70]'}`}>{isSaving ? <Loader2 size={18} className="animate-spin" /> : saveSuccess ? <CheckCircle2 size={18} /> : <Save size={18} />} {saveSuccess ? 'Lagret i Supabase' : 'Lagre analyse'}</button>
             </div>
           )}
         </div>
       </div>
-
-      {/* History Section */}
-      <div className="space-y-6 pt-12 border-t border-white/10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <History className="text-blue-400" /> Arkiverte analyser
-          </h3>
-          <div className="flex items-center gap-3 bg-white/5 p-1.5 rounded-2xl border border-white/10">
-            {(['date', 'parcel', 'type'] as SortKey[]).map((key) => (
-              <button 
-                key={key}
-                onClick={() => setSortKey(key)}
-                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${sortKey === key ? 'bg-green-500 text-black shadow-lg shadow-green-500/20' : 'text-slate-400 hover:text-white'}`}
-              >
-                {key === 'date' ? 'Dato' : key === 'parcel' ? 'Parsell' : 'Sort'}
-              </button>
-            ))}
-            <div className="w-px h-6 bg-white/10 mx-1"></div>
-            <button 
-              onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-              className="p-2 text-slate-400 hover:text-white transition-all"
-            >
-              <ArrowUpDown size={16} className={sortOrder === 'desc' ? 'rotate-180' : ''} />
-            </button>
-          </div>
-        </div>
-
-        {sortedHistory.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedHistory.map((item) => (
-              <div 
-                key={item.id} 
-                onClick={() => setSelectedHistoryItem(item)}
-                className="glass rounded-[2rem] overflow-hidden border border-white/5 hover:border-blue-500/30 transition-all cursor-pointer group"
-              >
-                <div className="relative aspect-video">
-                  <img src={item.images[0]} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" alt="Tree" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
-                  <div className="absolute top-4 right-4">
-                    <button onClick={(e) => deleteHistoryItem(item.id, e)} className="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all shadow-lg">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                  <div className="absolute bottom-4 left-4 right-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-bold text-blue-400 uppercase tracking-[0.2em]">{new Date(item.date).toLocaleDateString('no-NO')}</span>
-                      <div className="flex items-center gap-1.5 bg-green-500/20 px-2 py-0.5 rounded-full border border-green-500/20">
-                        <MapPin size={10} className="text-green-400" />
-                        <span className="text-[9px] font-bold text-green-400 uppercase tracking-widest">{parcels.find(p => p.id === item.parcelId)?.name || 'Ukjent'}</span>
-                      </div>
-                    </div>
-                    <h4 className="text-lg font-bold text-white truncate">{item.treeType}</h4>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="p-20 glass rounded-[3rem] border border-dashed border-white/10 text-center">
-            <Clock className="mx-auto text-slate-600 mb-4" size={40} />
-            <p className="text-slate-500 italic text-sm">Ingen historikk ennå.</p>
-          </div>
-        )}
-      </div>
-
-      {/* Detail Modal */}
-      {selectedHistoryItem && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl animate-in fade-in duration-300">
-          <div className="glass w-full max-w-6xl h-[90vh] rounded-[3rem] border border-white/20 shadow-2xl overflow-hidden flex flex-col md:flex-row">
-            <div className="md:w-1/2 relative bg-black flex items-center justify-center">
-              <img src={selectedHistoryItem.images[0]} className="w-full h-full object-contain" alt="Archive" />
-              {selectedHistoryItem.analysis?.pruning && renderPruningMarkers(selectedHistoryItem.analysis.pruning.pruningSteps)}
-              <button onClick={() => setSelectedHistoryItem(null)} className="absolute top-6 left-6 p-4 bg-black/60 rounded-full text-white md:hidden shadow-lg"><X size={24} /></button>
-            </div>
-            <div className="md:w-1/2 p-8 md:p-12 overflow-y-auto custom-scrollbar space-y-10 bg-gradient-to-br from-white/[0.02] to-transparent">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-4xl font-bold text-white tracking-tight">{selectedHistoryItem.treeType}</h3>
-                  <div className="flex items-center gap-3 mt-4">
-                    <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">{new Date(selectedHistoryItem.date).toLocaleString('no-NO')}</span>
-                    <div className="h-4 w-px bg-white/10"></div>
-                    <div className="flex items-center gap-2 text-slate-400">
-                      <MapPin size={14} className="text-green-500" />
-                      <span className="text-xs font-bold uppercase tracking-widest">{parcels.find(p => p.id === selectedHistoryItem.parcelId)?.name || 'Parsell'}</span>
-                    </div>
-                  </div>
-                </div>
-                <button onClick={() => setSelectedHistoryItem(null)} className="p-3 hover:bg-white/10 rounded-2xl transition-all hidden md:block border border-transparent hover:border-white/10">
-                  <X size={32} className="text-slate-500" />
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                <div className="p-6 rounded-[2rem] glass border border-white/10 space-y-4">
-                   <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Diagnose</h4>
-                   <p className="text-sm text-slate-300 italic">"{selectedHistoryItem.analysis?.diagnosis?.diagnosis || 'Ingen data.'}"</p>
-                </div>
-
-                <div className="space-y-4">
-                   <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Planlagte tiltak</h4>
-                   <div className="space-y-2">
-                     {selectedHistoryItem.analysis?.pruning?.pruningSteps?.map((step, idx) => (
-                       <div key={idx} className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center gap-4">
-                          <span className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-[10px] font-bold">{idx + 1}</span>
-                          <div>
-                            <p className="text-xs font-bold text-white uppercase tracking-widest">{step.area}</p>
-                            <p className="text-[11px] text-slate-400">{step.action}</p>
-                          </div>
-                       </div>
-                     ))}
-                   </div>
-                </div>
-              </div>
-
-              <button onClick={() => setSelectedHistoryItem(null)} className="w-full py-6 bg-white/5 hover:bg-white/10 border border-white/10 rounded-3xl font-bold text-white transition-all uppercase tracking-widest text-xs">Lukk Arkiv</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-      `}</style>
     </div>
   );
 };
+
+function SummaryTab({ analysis }: { analysis: ComprehensiveAnalysisResult }) {
+  return <div className="glass rounded-[2rem] p-5 border border-white/10 space-y-4"><p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Viktigste tiltak nå</p><p className="text-lg text-white font-bold">{analysis.expertReport.nextKeyAction}</p><div className="grid grid-cols-2 gap-3"><Metric label="Hastegrad" value={`${analysis.expertReport.urgencyScore}/10`} /><Metric label="Foryngelse" value={analysis.expertReport.rejuvenationNeeded ? 'Ja' : 'Nei'} /><Metric label="Produksjon" value={analysis.expertReport.yieldEstimate} /><Metric label="Vanning" value={analysis.expertReport.irrigationNote} /></div></div>;
+}
+
+function HealthTab({ analysis }: { analysis: ComprehensiveAnalysisResult }) {
+  return <div className="space-y-4"><div className="glass rounded-[2rem] p-5 border border-white/10"><p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-3"><Leaf size={13} className="inline mr-1" /> Diagnose</p><p className="text-sm text-slate-300 leading-relaxed">{analysis.diagnosis.diagnosis}</p></div><div className="space-y-2">{analysis.diagnosis.actions.map((action, i) => <div key={action} className="flex gap-3 text-sm text-slate-300 p-3 rounded-xl bg-white/5 border border-white/5"><div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 text-xs font-bold flex-shrink-0">{i + 1}</div>{action}</div>)}</div></div>;
+}
+
+function PruningTab({ plan, activeMarker, setActiveMarker }: { plan: PruningPlan; activeMarker: number | null; setActiveMarker: (index: number | null) => void }) {
+  return <div className="space-y-4"><div className="glass rounded-[2rem] p-5 border border-white/10"><p className="text-white font-bold">{plan.treeType}</p><p className="text-xs text-slate-500 mt-1">{plan.ageEstimate} · anbefalt dato {plan.recommendedDate}</p><p className="text-sm text-slate-400 mt-3">{plan.timingAdvice}</p></div>{plan.pruningSteps.length ? plan.pruningSteps.map((step, i) => <button key={`${step.area}-${i}`} onMouseEnter={() => setActiveMarker(i)} onMouseLeave={() => setActiveMarker(null)} className={`w-full text-left p-4 rounded-2xl border transition-all ${activeMarker === i ? 'bg-green-500/10 border-green-500/30' : 'bg-white/5 border-white/10'}`}><div className="flex justify-between"><p className="text-white font-bold"><Scissors size={14} className="inline mr-2" />{step.area}</p><span className="text-[10px] text-[#d9b657] font-bold">{step.priority}</span></div><p className="text-sm text-slate-400 mt-2">{step.action}</p></button>) : <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">AI kunne ikke markere trygge snittpunkter. Ta flere bilder før du beskjærer.</div>}<p className="text-xs text-slate-500">Verktøy: {plan.toolsNeeded.join(', ')}</p></div>;
+}
+
+function HistoryTab({ history, parcels, onDelete }: { history: PruningHistoryItem[]; parcels: Parcel[]; onDelete: (id: string) => void }) {
+  return <div className="space-y-3">{history.length ? history.slice(0, 12).map(item => <div key={item.id} className="glass rounded-2xl p-4 border border-white/10 flex justify-between gap-3"><div><p className="text-white font-bold">{item.treeType || 'Analyse'}</p><p className="text-xs text-slate-500 mt-1"><History size={12} className="inline mr-1" />{new Date(item.date).toLocaleDateString('no-NO')} · {parcels.find(p => p.id === item.parcelId)?.name || 'Ingen parsell'}</p></div><button onClick={() => onDelete(item.id)} className="text-slate-500 hover:text-red-400"><Trash2 size={16} /></button></div>) : <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-500"><FileText className="mx-auto mb-2" />Ingen analyser lagret i Supabase ennå.</div>}</div>;
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-xl bg-white/5 border border-white/5 p-3"><p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">{label}</p><p className="text-sm text-white font-bold mt-1 line-clamp-2">{value}</p></div>;
+}
 
 export default FieldConsultantView;
