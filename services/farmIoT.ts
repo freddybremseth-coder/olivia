@@ -34,17 +34,17 @@ function throwFarmIoTError(label: string, error: PostgrestError | { message: str
   const msg = error.message || '';
 
   if (code === '42P01' || /relation .* does not exist/i.test(msg)) {
-    throw new Error('Farm IoT-tabellene mangler i Supabase. Kjør migrasjonen supabase/migrations/20260601_dona_anna_farm_iot.sql.');
+    throw new Error('Farm IoT-tabellene mangler i Supabase schema olivia. Kjør migrasjonen supabase/migrations/20260603_olivia_farm_iot.sql.');
   }
   if (code === '42501' || /permission denied|rls/i.test(msg)) {
-    throw new Error('Tilgang nektet av Supabase RLS. Sjekk policy for Farm IoT-tabellene.');
+    throw new Error('Tilgang nektet av Supabase RLS. Sjekk policy for Farm IoT-tabellene i olivia schema.');
   }
   throw new Error(`Farm IoT-operasjon feilet: ${msg || 'ukjent feil fra Supabase'}`);
 }
 
 function warnIfSupabaseMissing(label: string): boolean {
   if (isSupabaseConfigured) return false;
-  console.warn(`[farmIoT] ${label}: Supabase er ikke konfigurert. Returnerer tom demo-safe respons.`);
+  console.warn(`[farmIoT] ${label}: Supabase er ikke konfigurert. Returnerer tom respons.`);
   return true;
 }
 
