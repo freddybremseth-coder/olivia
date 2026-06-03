@@ -5,19 +5,18 @@ import {
   Building2,
   CheckCircle2,
   Crosshair,
-  ExternalLink,
-  Eye,
-  EyeOff,
   Globe,
   Key,
   Loader2,
   MapPin,
   RefreshCcw,
   Save,
+  ShieldCheck,
 } from 'lucide-react';
 import { useTranslation } from '../services/i18nService';
 import { Language } from '../types';
 import { fetchSettings, saveSettings as dbSaveSettings } from '../services/db';
+import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 
 interface SettingsViewProps {
   language: Language;
@@ -34,6 +33,7 @@ type SettingsState = {
 };
 
 type Health = { configured: boolean; ok: boolean; status?: number; error?: string };
+type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
 
 const DEFAULT_SETTINGS: SettingsState = {
   farmName: 'DonaAnna',
@@ -49,10 +49,8 @@ const inputClass = 'w-full bg-black/50 border border-white/10 rounded-2xl px-4 p
 const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange }) => {
   const { t } = useTranslation(language);
   const [settings, setSettings] = useState<SettingsState>({ ...DEFAULT_SETTINGS, language });
-  const [apiKeys, setApiKeys] = useState({ gemini: '', claude: '' });
-  const [showKeys, setShowKeys] = useState({ gemini: false, claude: false });
+  const [loadState, setLoadState] = useState<LoadState>('loading');
   const [saved, setSaved] = useState(false);
-  const [apiSaved, setApiSaved] = useState(false);
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
   const [health, setHealth] = useState<{ gemini: Health; anthropic: Health; openai: Health } | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);
@@ -73,19 +71,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
     }
   };
 
-  useEffect(() => {
-    const local = localStorage.getItem('olivia_settings');
-    if (local) {
-      try {
-        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(local) });
-      } catch {
-        setSettings({ ...DEFAULT_SETTINGS, language });
-      }
-    }
-
-    fetchSettings()
-      .then(remote => {
-        if (!remote) return;
+  const loadSettings = async () => {
+    setLoadState('loading');
+    setSaveWarning(null);
+    try {
+      const remote = await fetchSettings();
+      if (remote) {
         const merged: SettingsState = {
           farmName: remote.farm_name || DEFAULT_SETTINGS.farmName,
           farmAddress: remote.farm_address || DEFAULT_SETTINGS.farmAddress,
@@ -95,24 +86,24 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
           currency: remote.currency || DEFAULT_SETTINGS.currency,
         };
         setSettings(merged);
-        localStorage.setItem('olivia_settings', JSON.stringify(merged));
-      })
-      .catch(error => console.warn('[SettingsView] fetchSettings fallback to localStorage', error));
+        setLoadState('supabase');
+      } else {
+        setSettings({ ...DEFAULT_SETTINGS, language });
+        setLoadState('empty');
+      }
+    } catch (error) {
+      setLoadState('error');
+      setSaveWarning(error instanceof Error ? error.message : 'Kunne ikke hente innstillinger fra Supabase.');
+    }
+  };
 
-    setApiKeys({
-      gemini: localStorage.getItem('olivia_gemini_api_key') || '',
-      claude: localStorage.getItem('olivia_claude_api_key') || '',
-    });
+  useEffect(() => {
+    loadSettings();
     checkHealth('env');
   }, []);
 
   const handleSave = async () => {
     setSaveWarning(null);
-
-    localStorage.setItem('olivia_settings', JSON.stringify(settings));
-    onLanguageChange(settings.language);
-    window.dispatchEvent(new Event('storage'));
-
     try {
       await dbSaveSettings({
         farm_name: settings.farmName,
@@ -122,39 +113,43 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
         language: settings.language,
         currency: settings.currency,
       });
+      onLanguageChange(settings.language);
+      setLoadState('supabase');
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.warn('[SettingsView] Supabase save failed, local settings saved', message);
-      setSaveWarning('Lagret lokalt i nettleseren. Supabase-lagring feilet, sannsynligvis fordi farm_settings-tabellen/kolonnene eller RLS ikke er riktig satt opp ennå.');
+      console.warn('[SettingsView] Supabase save failed', message);
+      setSaveWarning('Innstillingene ble ikke lagret. Sjekk farm_settings-tabellen og RLS i Supabase. Ingen viktig innstilling lagres lokalt i nettleseren.');
     }
-
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
   };
 
-  const handleSaveApiKeys = () => {
-    if (apiKeys.gemini) localStorage.setItem('olivia_gemini_api_key', apiKeys.gemini);
-    else localStorage.removeItem('olivia_gemini_api_key');
-    if (apiKeys.claude) localStorage.setItem('olivia_claude_api_key', apiKeys.claude);
-    else localStorage.removeItem('olivia_claude_api_key');
-    setApiSaved(true);
-    setTimeout(() => setApiSaved(false), 3000);
-    window.dispatchEvent(new Event('storage'));
-  };
-
-  const maskKey = (key: string) => key ? key.slice(0, 8) + '•'.repeat(Math.max(0, key.length - 12)) + key.slice(-4) : '';
+  const sourceLabel = loadState === 'supabase' ? 'Supabase' : loadState === 'empty' ? 'Supabase · standardverdier vises' : loadState === 'error' ? 'Supabase-feil' : 'Laster Supabase';
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold text-white">{t('settings')}</h2>
-          <p className="text-xs text-slate-500 mt-1">DonaAnna / Olivia OS · lokale innstillinger med Supabase-synk når tabellen er klar</p>
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700 pb-24">
+      <div className="relative overflow-hidden rounded-[2rem] border border-[#d9b657]/20 bg-[#070b08] p-6 shadow-2xl shadow-black/20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(217,182,87,0.16),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(34,197,94,0.12),transparent_34%)]" />
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <DonaAnnaBrandMark variant="symbol" size="md" showText={false} />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.35em] text-[#d9b657]">Doña Anna · Olivia</p>
+              <h2 className="text-3xl font-bold text-white mt-1">{t('settings')}</h2>
+              <p className="text-xs text-slate-500 mt-2">Innstillinger lagres i Supabase `olivia.farm_settings`. API-nøkler lagres ikke i browser.</p>
+              <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-2">{sourceLabel}</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={loadSettings} className="p-3.5 glass border border-white/10 rounded-2xl text-[#d9b657] hover:bg-white/5 transition-all">
+              {loadState === 'loading' ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
+            </button>
+            <button onClick={handleSave} className="flex items-center gap-2 bg-[#d9b657] text-black px-6 py-3 rounded-2xl font-bold hover:bg-[#f0cf70] transition-all">
+              {saved ? <CheckCircle2 size={20} /> : <Save size={20} />}
+              {saved ? t('saved') : t('save_settings')}
+            </button>
+          </div>
         </div>
-        <button onClick={handleSave} className="flex items-center gap-2 bg-green-500 text-black px-6 py-3 rounded-2xl font-bold hover:bg-green-400 transition-all">
-          {saved ? <CheckCircle2 size={20} /> : <Save size={20} />}
-          {saved ? t('saved') : t('save_settings')}
-        </button>
       </div>
 
       {saveWarning && (
@@ -227,39 +222,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
         </div>
       </div>
 
-      <div className="glass rounded-[2.5rem] p-8 border border-yellow-500/20 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="glass rounded-[2.5rem] p-8 border border-yellow-500/20 space-y-4">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="text-yellow-400 flex-shrink-0" size={22} />
           <div>
-            <h3 className="text-xl font-bold flex items-center gap-2"><Key className="text-yellow-400" /> {t('api_keys')}</h3>
-            <p className="text-slate-400 text-sm mt-1">{t('keys_stored_locally')}</p>
-          </div>
-          <button onClick={handleSaveApiKeys} className="flex items-center gap-2 bg-yellow-500 text-black px-5 py-2.5 rounded-2xl font-bold hover:bg-yellow-400 transition-all text-sm">
-            {apiSaved ? <CheckCircle2 size={16} /> : <Save size={16} />}
-            {apiSaved ? t('saved') : t('save_keys')}
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t('google_gemini_api_key')}</label>
-              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1">{t('get_key')} <ExternalLink size={10} /></a>
-            </div>
-            <div className="relative">
-              <input type={showKeys.gemini ? 'text' : 'password'} placeholder="AIza..." className={`${inputClass} pr-12`} value={apiKeys.gemini} onChange={e => setApiKeys({ ...apiKeys, gemini: e.target.value })} />
-              <button onClick={() => setShowKeys(s => ({ ...s, gemini: !s.gemini }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">{showKeys.gemini ? <EyeOff size={16} /> : <Eye size={16} />}</button>
-            </div>
-            {apiKeys.gemini && <p className="text-[10px] text-green-400">Aktiv: {maskKey(apiKeys.gemini)}</p>}
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t('anthropic_claude_api_key')}</label>
-              <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1">{t('get_key')} <ExternalLink size={10} /></a>
-            </div>
-            <div className="relative">
-              <input type={showKeys.claude ? 'text' : 'password'} placeholder="sk-ant-..." className={`${inputClass} pr-12`} value={apiKeys.claude} onChange={e => setApiKeys({ ...apiKeys, claude: e.target.value })} />
-              <button onClick={() => setShowKeys(s => ({ ...s, claude: !s.claude }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">{showKeys.claude ? <EyeOff size={16} /> : <Eye size={16} />}</button>
-            </div>
-            {apiKeys.claude && <p className="text-[10px] text-green-400">Aktiv: {maskKey(apiKeys.claude)}</p>}
+            <h3 className="text-xl font-bold flex items-center gap-2"><Key className="text-yellow-400" /> API-nøkler</h3>
+            <p className="text-slate-400 text-sm mt-1">API-nøkler skal ikke lagres i nettleseren eller Supabase-tabeller. Legg dem i Vercel Environment Variables: <code className="bg-black/30 px-1.5 py-0.5 rounded">GEMINI_API_KEY</code>, <code className="bg-black/30 px-1.5 py-0.5 rounded">ANTHROPIC_API_KEY</code> og <code className="bg-black/30 px-1.5 py-0.5 rounded">OPENAI_API_KEY</code>.</p>
           </div>
         </div>
       </div>
