@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   CalendarDays,
@@ -7,6 +7,7 @@ import {
   Gauge,
   Leaf,
   ListChecks,
+  Loader2,
   Mountain,
   RefreshCcw,
   ShieldCheck,
@@ -14,10 +15,10 @@ import {
 } from 'lucide-react';
 import {
   DONA_ANNA_BIAR_SEASON_SETTINGS,
-  type SensorAlert,
-  type SensorReading,
   type FarmObservation,
   type IrrigationEvent,
+  type SensorAlert,
+  type SensorReading,
 } from '../types/farmIoT';
 import {
   buildDonaAnnaDecisionAdvice,
@@ -27,8 +28,9 @@ import {
   fetchRecentIrrigationEvents,
   type FarmDecisionAdvice,
 } from '../services/farmIoT';
+import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 
-type DataSource = 'supabase' | 'local_demo';
+type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
 
 type ActionCard = {
   title: string;
@@ -37,64 +39,12 @@ type ActionCard = {
   icon: React.ReactNode;
 };
 
-const demoReadings: SensorReading[] = [
-  {
-    id: 'demo-soil-moisture',
-    sensor_id: 'DA-BIAR-SOIL-M-30-A',
-    parcel_id: 'biar-main',
-    zone_id: 'zone-a',
-    tree_group: 'Unge Gordal',
-    depth_cm: 30,
-    type: 'soil_moisture',
-    value: 42,
-    unit: '%',
-    measured_at: new Date().toISOString(),
-    source: 'simulation',
-  },
-  {
-    id: 'demo-soil-ec',
-    sensor_id: 'DA-BIAR-SOIL-EC-B',
-    parcel_id: 'biar-main',
-    zone_id: 'zone-b',
-    tree_group: 'Eldre blanding',
-    depth_cm: 40,
-    type: 'soil_ec',
-    value: 2.3,
-    unit: 'dS/m',
-    measured_at: new Date().toISOString(),
-    source: 'simulation',
-  },
-  {
-    id: 'demo-pressure',
-    sensor_id: 'DA-BIAR-PRESSURE-A',
-    parcel_id: 'biar-main',
-    zone_id: 'zone-a',
-    type: 'pressure',
-    value: 0.6,
-    unit: 'bar',
-    measured_at: new Date().toISOString(),
-    source: 'simulation',
-  },
-  {
-    id: 'demo-flow',
-    sensor_id: 'DA-BIAR-FLOW-A',
-    parcel_id: 'biar-main',
-    zone_id: 'zone-a',
-    type: 'flow',
-    value: 28,
-    unit: 'L/min',
-    measured_at: new Date().toISOString(),
-    source: 'simulation',
-  },
-];
-
 function monthName(monthIndex: number): string {
   return new Date(2026, monthIndex - 1, 1).toLocaleString('no-NO', { month: 'long' });
 }
 
 function getBiarSeasonText(date = new Date()): string {
   const month = date.getMonth() + 1;
-
   if ([1, 2].includes(month)) return 'Beskjæring, vedlikehold, planlegging og jordforbedring.';
   if ([3, 4].includes(month)) return 'Jordprøver, gjødsling, kontroll av vanningssystem og vårvekst.';
   if ([5, 6].includes(month)) return 'Blomstring, fruktsetting og stabil vannbalanse.';
@@ -105,8 +55,18 @@ function getBiarSeasonText(date = new Date()): string {
   return 'Overvåk sesong, vær og feltdata.';
 }
 
-function buildActionCards(advice: FarmDecisionAdvice, readings: SensorReading[], alerts: SensorAlert[]): ActionCard[] {
+function buildActionCards(advice: FarmDecisionAdvice, readings: SensorReading[], alerts: SensorAlert[], irrigationEvents: IrrigationEvent[], observations: FarmObservation[]): ActionCard[] {
   const cards: ActionCard[] = [];
+
+  if (!readings.length && !alerts.length && !irrigationEvents.length && !observations.length) {
+    cards.push({
+      title: 'Bygg første datagrunnlag',
+      description: 'Registrer sensor, manuell måling, vanning eller feltobservasjon. Dashboardet viser ikke demo-data.',
+      priority: 'Høy',
+      icon: <ShieldCheck size={18} />,
+    });
+    return cards;
+  }
 
   if (advice.recommended_action === 'irrigate') {
     cards.push({
@@ -155,6 +115,24 @@ function buildActionCards(advice: FarmDecisionAdvice, readings: SensorReading[],
     });
   }
 
+  if (!irrigationEvents.length) {
+    cards.push({
+      title: 'Registrer neste vanning',
+      description: 'Ingen vanningshendelser finnes ennå. Vanningsloggen gir Olivia bedre grunnlag for råd.',
+      priority: 'Middels',
+      icon: <Droplets size={18} />,
+    });
+  }
+
+  if (!observations.length) {
+    cards.push({
+      title: 'Ta feltobservasjon',
+      description: 'Legg inn bilder/notater fra feltet slik at tall kan kobles til faktisk tilstand på trær og vanningssystem.',
+      priority: 'Lav',
+      icon: <Leaf size={18} />,
+    });
+  }
+
   if (cards.length === 0) {
     cards.push({
       title: 'Fortsett overvåkning',
@@ -175,17 +153,20 @@ function priorityClass(priority: ActionCard['priority']): string {
 }
 
 const DonaAnnaDailyDashboard: React.FC = () => {
-  const [readings, setReadings] = useState<SensorReading[]>(demoReadings);
+  const [readings, setReadings] = useState<SensorReading[]>([]);
   const [alerts, setAlerts] = useState<SensorAlert[]>([]);
   const [irrigationEvents, setIrrigationEvents] = useState<IrrigationEvent[]>([]);
   const [observations, setObservations] = useState<FarmObservation[]>([]);
-  const [advice, setAdvice] = useState<FarmDecisionAdvice>(() => buildDonaAnnaDecisionAdvice(demoReadings));
-  const [dataSource, setDataSource] = useState<DataSource>('local_demo');
+  const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const advice = useMemo(() => buildDonaAnnaDecisionAdvice(readings, alerts), [readings, alerts]);
 
   const loadDashboard = async () => {
     setIsLoading(true);
+    setErrorMessage(null);
     try {
       const [latestReadings, openAlerts, recentIrrigation, recentObservations] = await Promise.all([
         fetchLatestSensorReadings(300),
@@ -194,30 +175,19 @@ const DonaAnnaDailyDashboard: React.FC = () => {
         fetchRecentFarmObservations(10),
       ]);
 
-      if (!latestReadings.length) {
-        setReadings(demoReadings);
-        setAlerts([]);
-        setIrrigationEvents([]);
-        setObservations([]);
-        setAdvice(buildDonaAnnaDecisionAdvice(demoReadings));
-        setDataSource('local_demo');
-      } else {
-        setReadings(latestReadings);
-        setAlerts(openAlerts);
-        setIrrigationEvents(recentIrrigation);
-        setObservations(recentObservations);
-        setAdvice(buildDonaAnnaDecisionAdvice(latestReadings, openAlerts));
-        setDataSource('supabase');
-      }
+      setReadings(latestReadings);
+      setAlerts(openAlerts);
+      setIrrigationEvents(recentIrrigation);
+      setObservations(recentObservations);
+      setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length ? 'supabase' : 'empty');
       setLastRefresh(new Date());
     } catch (error) {
-      console.warn('[DonaAnnaDailyDashboard] Could not load Supabase data. Using local demo.', error);
-      setReadings(demoReadings);
+      setReadings([]);
       setAlerts([]);
       setIrrigationEvents([]);
       setObservations([]);
-      setAdvice(buildDonaAnnaDecisionAdvice(demoReadings));
-      setDataSource('local_demo');
+      setLoadState('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente Daily Dashboard-data fra Supabase.');
     } finally {
       setIsLoading(false);
     }
@@ -227,32 +197,52 @@ const DonaAnnaDailyDashboard: React.FC = () => {
     loadDashboard();
   }, []);
 
-  const actions = buildActionCards(advice, readings, alerts);
+  const actions = buildActionCards(advice, readings, alerts, irrigationEvents, observations);
   const currentMonth = new Date().getMonth() + 1;
   const oilWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_oil;
   const tableWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_table_olives;
+  const sourceLabel = loadState === 'supabase' ? 'Supabase' : loadState === 'empty' ? 'Supabase · ingen data ennå' : loadState === 'error' ? 'Supabase-feil' : 'Laster Supabase';
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-            <Leaf className="text-green-400" /> DonaAnna Daily Dashboard
-          </h2>
-          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">
-            Biar · {DONA_ANNA_BIAR_SEASON_SETTINGS.altitude_m} moh. · {dataSource === 'supabase' ? 'Supabase' : 'Lokal demo'} · Oppdatert {lastRefresh.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}
-          </p>
+      <div className="relative overflow-hidden rounded-[2rem] border border-[#d9b657]/20 bg-[#070b08] p-6 shadow-2xl shadow-black/20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,0.14),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(217,182,87,0.12),transparent_34%)]" />
+        <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="flex items-center gap-4">
+            <DonaAnnaBrandMark variant="symbol" size="md" showText={false} />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.35em] text-[#d9b657]">Doña Anna · Olivia</p>
+              <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3 mt-1"><Leaf className="text-green-400" /> Daily Dashboard</h2>
+              <p className="text-slate-400 text-sm mt-2">Dagsbilde basert på ekte Supabase-data fra sensorer, varsler, vanning og feltobservasjoner.</p>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">Biar · {DONA_ANNA_BIAR_SEASON_SETTINGS.altitude_m} moh. · {sourceLabel} · Oppdatert {lastRefresh.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}</p>
+            </div>
+          </div>
+          <button onClick={loadDashboard} className="p-3.5 glass border border-white/10 rounded-2xl text-[#d9b657] hover:bg-white/5 transition-all">
+            <RefreshCcw size={18} className={isLoading ? 'animate-spin' : ''} />
+          </button>
         </div>
-        <button onClick={loadDashboard} className="p-3.5 glass border border-white/10 rounded-2xl text-green-400 hover:bg-white/5 transition-all">
-          <RefreshCcw size={18} className={isLoading ? 'animate-spin' : ''} />
-        </button>
       </div>
+
+      {errorMessage && <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100 flex gap-3"><AlertTriangle size={18} className="flex-shrink-0 mt-0.5" /> {errorMessage}</div>}
+
+      {isLoading && loadState === 'loading' ? (
+        <div className="glass rounded-[2rem] p-8 border border-white/10 text-slate-400 flex items-center gap-3"><Loader2 size={18} className="animate-spin" /> Henter dagsdata fra Supabase...</div>
+      ) : null}
 
       <div className={`glass rounded-[2rem] p-6 border ${advice.severity === 'critical' ? 'border-red-500/20 bg-red-500/5' : advice.severity === 'warning' ? 'border-yellow-500/20 bg-yellow-500/5' : 'border-green-500/20 bg-green-500/5'}`}>
         <p className="text-[10px] text-green-400 font-bold uppercase tracking-widest mb-2">Dagens beslutning</p>
-        <p className="text-xl text-white font-bold">{advice.title}</p>
-        <p className="text-sm text-slate-400 mt-2">{advice.message}</p>
-        {advice.reasons.length > 0 && <p className="text-xs text-slate-500 mt-3">Grunnlag: {advice.reasons.join(' ')}</p>}
+        {loadState === 'empty' ? (
+          <>
+            <p className="text-xl text-white font-bold">Ingen driftsdata registrert ennå</p>
+            <p className="text-sm text-slate-400 mt-2">Registrer en sensor, manuell måling, vanningshendelse eller feltobservasjon. Dashboardet viser ikke demo-data.</p>
+          </>
+        ) : (
+          <>
+            <p className="text-xl text-white font-bold">{advice.title}</p>
+            <p className="text-sm text-slate-400 mt-2">{advice.message}</p>
+            {advice.reasons.length > 0 && <p className="text-xs text-slate-500 mt-3">Grunnlag: {advice.reasons.join(' ')}</p>}
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
