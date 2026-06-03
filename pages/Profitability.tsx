@@ -1,5 +1,5 @@
 import React from 'react';
-import ProfitabilityOliviaDashboard from '../components/ProfitabilityOliviaDashboard';
+import ProfitabilityOliviaSeasonView from '../components/ProfitabilityOliviaSeasonView';
 import { Language, Parcel } from '../types';
 
 interface ProfitabilityPageProps {
@@ -10,7 +10,7 @@ interface ProfitabilityPageProps {
 const ProfitabilityPage: React.FC<ProfitabilityPageProps> = ({ language, parcels }) => {
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <ProfitabilityOliviaDashboard language={language} parcels={parcels} />
+      <ProfitabilityOliviaSeasonView language={language} parcels={parcels} />
     </div>
   );
 };
