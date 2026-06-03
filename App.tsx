@@ -4,7 +4,7 @@ import LoginModal, { StoredUser } from './components/LoginModal';
 import ResetPasswordPage from './components/ResetPasswordPage';
 import { UserProfile, Language, Parcel } from './types';
 import { getCurrentSession, onAuthChange, signOut as authSignOut } from './services/auth';
-import { BIAR_DEFAULT_COORDS, BIAR_DEFAULT_LOCATION_NAME, EMPTY_OLIVIA_PARCELS } from './services/oliviaAppDefaults';
+import { BIAR_DEFAULT_COORDS, BIAR_DEFAULT_LOCATION_NAME, EMPTY_OLIVIA_PARCELS, OLIVIA_FALLBACK_USER } from './services/oliviaAppDefaults';
 
 const Layout = lazy(() => import('./components/Layout'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -76,9 +76,7 @@ const App: React.FC = () => {
   const [weatherData, setWeatherData] = useState<any>(null);
   const [locationName] = useState(BIAR_DEFAULT_LOCATION_NAME);
   const [coords] = useState<{lat: number, lon: number}>(BIAR_DEFAULT_COORDS);
-  const [user, setUser] = useState<UserProfile>({
-    id: 'u1', name: 'Henrik Olivenlund', email: 'henrik@olivia.ai', role: 'farmer', subscription: 'annual', subscriptionStart: '2024-01-15', avatar: ''
-  });
+  const [user, setUser] = useState<UserProfile>(OLIVIA_FALLBACK_USER);
 
   const [parcels, setParcels] = useState<Parcel[]>(EMPTY_OLIVIA_PARCELS);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
@@ -160,7 +158,7 @@ const App: React.FC = () => {
     setUser(storedUser); setIsAdmin(admin); setIsLoggedIn(true); setActiveTab(postLoginTab === 'admin' && !admin ? 'commerce' : postLoginTab); setShowLogin(false);
   };
 
-  const handleLogout = async () => { await authSignOut(); setIsLoggedIn(false); setIsAdmin(false); setActiveTab('dashboard'); localStorage.removeItem('olivia_session'); };
+  const handleLogout = async () => { await authSignOut(); setIsLoggedIn(false); setIsAdmin(false); setUser(OLIVIA_FALLBACK_USER); setActiveTab('dashboard'); localStorage.removeItem('olivia_session'); };
   const updateLanguage = (newLang: Language) => { setLanguage(newLang); const settings = JSON.parse(localStorage.getItem('olivia_settings') || '{}'); localStorage.setItem('olivia_settings', JSON.stringify({ ...settings, language: newLang })); };
   const openLogin = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => { setShowPublicSite(false); if (typeof window !== 'undefined' && window.location.pathname !== '/app') window.history.pushState({}, '', '/app'); setPostLoginTab(targetTab); setLoginDefaultMode(mode); setShowLogin(true); };
   const openApp = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => { setShowPublicSite(false); if (typeof window !== 'undefined' && window.location.pathname !== '/app') window.history.pushState({}, '', '/app'); setPostLoginTab(targetTab); if (isLoggedIn) { setActiveTab(targetTab === 'admin' && !isAdmin ? 'commerce' : targetTab); return; } openLogin(mode, targetTab); };
