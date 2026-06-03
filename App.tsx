@@ -63,6 +63,21 @@ function getTraceSlug(): string | undefined {
   return parts[0] === 'trace' ? parts[1] : undefined;
 }
 
+function PublicMobileLoginDock({ onLogin, onAdminLogin }: { onLogin: () => void; onAdminLogin: () => void }) {
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-[60] md:hidden border-t border-white/10 bg-[#070b08]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur-xl shadow-2xl shadow-black/50">
+      <div className="mx-auto flex max-w-md gap-2">
+        <button onClick={onLogin} className="flex-1 rounded-2xl bg-[#d9b657] px-4 py-3 text-sm font-black uppercase tracking-[0.16em] text-black shadow-lg shadow-[#d9b657]/20">
+          Logg inn
+        </button>
+        <button onClick={onAdminLogin} className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white">
+          Olivia OS
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState(() => isAppUrl() && !isRecoveryUrl() ? 'b2b_portal' : 'dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -163,8 +178,8 @@ const App: React.FC = () => {
 
   if (isTraceUrl()) return <Suspense fallback={<div className="min-h-screen bg-[#060807] p-8 text-slate-300">Laster DonaAnna sporbarhet...</div>}><PublicTracePage slug={getTraceSlug()} /></Suspense>;
   if (isPasswordRecovery) return <ResetPasswordPage onDone={() => setIsPasswordRecovery(false)} />;
-  if (showPublicSite) return <><LandingPage onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'admin')} onRegister={() => openApp('register', 'b2b_portal')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
-  if (!isLoggedIn) return <><LandingPage onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'admin')} onRegister={() => openLogin('register', 'b2b_portal')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
+  if (showPublicSite) return <><LandingPage onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'admin')} onRegister={() => openApp('register', 'b2b_portal')} /><PublicMobileLoginDock onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'admin')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
+  if (!isLoggedIn) return <><LandingPage onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'admin')} onRegister={() => openLogin('register', 'b2b_portal')} /><PublicMobileLoginDock onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'admin')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
 
   const parcelCoords = selectedParcel ? { lat: selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0] ?? BIAR_DEFAULT_COORDS.lat, lon: selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1] ?? BIAR_DEFAULT_COORDS.lon } : coords;
   const renderContent = () => {
