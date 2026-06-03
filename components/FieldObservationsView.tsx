@@ -17,6 +17,7 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
+import type { Parcel } from '../types';
 import type { FarmObservation } from '../types/farmIoT';
 import {
   fetchRecentFarmObservations,
@@ -26,8 +27,11 @@ import { uploadFieldObservationImages } from '../services/fieldObservationStorag
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 
 type ObservationCategory = FarmObservation['category'];
-
 type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
+
+interface FieldObservationsViewProps {
+  parcels?: Parcel[];
+}
 
 const CATEGORY_OPTIONS: { value: ObservationCategory; label: string; icon: React.ReactNode; color: string }[] = [
   { value: 'irrigation', label: 'Vanning / dryppslange', icon: <Droplets size={18} />, color: 'text-blue-400' },
@@ -62,7 +66,7 @@ function makeObservationDraftId() {
     : `obs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-const FieldObservationsView: React.FC = () => {
+const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels = [] }) => {
   const [observations, setObservations] = useState<FarmObservation[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isLoading, setIsLoading] = useState(false);
@@ -73,6 +77,8 @@ const FieldObservationsView: React.FC = () => {
   const [form, setForm] = useState<Partial<FarmObservation>>(EMPTY_FORM);
   const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
   const [previewImageUrls, setPreviewImageUrls] = useState<string[]>([]);
+
+  const parcelNameById = useMemo(() => new Map(parcels.map(parcel => [parcel.id, parcel.name])), [parcels]);
 
   const loadObservations = async () => {
     setIsLoading(true);
@@ -259,6 +265,7 @@ const FieldObservationsView: React.FC = () => {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {observations.map(obs => {
               const meta = categoryMeta(obs.category);
+              const parcelLabel = obs.parcel_id ? (parcelNameById.get(obs.parcel_id) || obs.parcel_id) : 'hele gården';
               return (
                 <div key={obs.id} className="glass rounded-[2rem] p-5 border border-white/10 bg-white/[0.02]">
                   <div className="flex items-start justify-between gap-4">
@@ -267,7 +274,7 @@ const FieldObservationsView: React.FC = () => {
                       <div>
                         <p className="text-white font-bold">{obs.title}</p>
                         <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">
-                          {meta.label} · {obs.parcel_id || 'hele gården'} {obs.zone_id ? `· ${obs.zone_id}` : ''} {obs.tree_group ? `· ${obs.tree_group}` : ''}
+                          {meta.label} · {parcelLabel} {obs.zone_id ? `· ${obs.zone_id}` : ''} {obs.tree_group ? `· ${obs.tree_group}` : ''}
                         </p>
                       </div>
                     </div>
@@ -326,13 +333,26 @@ const FieldObservationsView: React.FC = () => {
             </Field>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label="Parsell-ID" help="Valgfritt. Bruk Supabase parcel_id hvis observasjonen gjelder en bestemt parsell.">
-                <input
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60"
-                  placeholder="F.eks. parcela-190"
-                  value={form.parcel_id || ''}
-                  onChange={event => setForm(prev => ({ ...prev, parcel_id: event.target.value }))}
-                />
+              <Field label="Parsell" help="Velg ekte parsell fra Supabase, eller la observasjonen gjelde hele gården.">
+                {parcels.length > 0 ? (
+                  <select
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60"
+                    value={form.parcel_id || ''}
+                    onChange={event => setForm(prev => ({ ...prev, parcel_id: event.target.value || undefined }))}
+                  >
+                    <option className="bg-slate-900" value="">Hele gården</option>
+                    {parcels.map(parcel => (
+                      <option key={parcel.id} className="bg-slate-900" value={parcel.id}>{parcel.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60"
+                    placeholder="Ingen parseller lastet. Valgfri parcel_id."
+                    value={form.parcel_id || ''}
+                    onChange={event => setForm(prev => ({ ...prev, parcel_id: event.target.value }))}
+                  />
+                )}
               </Field>
               <Field label="Sone / sektor" help="Valgfritt. Brukes hvis du deler parsellen i soner.">
                 <input
@@ -368,7 +388,7 @@ const FieldObservationsView: React.FC = () => {
                 <input type="file" multiple accept="image/*" capture="environment" className="hidden" onChange={event => handleImageSelect(event.target.files)} />
               </label>
               <p className="text-[11px] text-slate-600 mt-2 leading-relaxed">
-                Bilder lastes opp til Supabase Storage og URL-ene lagres i <span className="font-mono">farm_observations.image_urls</span>. Kjør storage-migrasjonen først hvis opplasting feiler.
+                Bilder lastes opp til Supabase Storage og URL-ene lagres i <span className="font-mono">farm_observations.image_urls</span>.
               </p>
             </div>
 
