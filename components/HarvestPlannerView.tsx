@@ -1,8 +1,8 @@
 import React from 'react';
-import HarvestPlannerOliviaView from './HarvestPlannerOliviaView';
+import HarvestPlannerSupabaseView from './HarvestPlannerSupabaseView';
 
 const HarvestPlannerView: React.FC = () => {
-  return <HarvestPlannerOliviaView />;
+  return <HarvestPlannerSupabaseView />;
 };
 
 export default HarvestPlannerView;
