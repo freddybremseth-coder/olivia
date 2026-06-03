@@ -87,6 +87,12 @@ function rowToParcel(row: any): Parcel {
   const polygon = row.polygon ?? row.poligono ?? metadata.polygon ?? metadata.poligono;
   const parcela = row.parcel ?? row.parcela ?? metadata.parcel ?? metadata.parcela;
   const cadastralId = row.cadastral_id ?? row.catastro_ref ?? row.referencia_catastral ?? metadata.cadastral_id ?? metadata.catastro_ref ?? metadata.referencia_catastral;
+  const registryFallback = [
+    polygon && `Polígono ${polygon}`,
+    parcela && `Parcela ${parcela}`,
+    cadastralId && `Catastro ${cadastralId}`,
+  ].filter(Boolean).join(' · ');
+
   return {
     id: String(row.id),
     name: row.name || [row.municipality || metadata.municipality || 'Biar', polygon && `Pol. ${polygon}`, parcela && `Parc. ${parcela}`].filter(Boolean).join(' · '),
@@ -105,7 +111,7 @@ function rowToParcel(row: any): Parcel {
     registrationDate: row.registration_date ?? metadata.registration_date ?? undefined,
     boundaries: parseJson(row.boundaries),
     documentIds: parseJson(row.document_ids),
-    registryDetails: row.registry_details ?? metadata.registry_details ?? [polygon && `Polígono ${polygon}`, parcela && `Parcela ${parcela}`, cadastralId && `Catastro ${cadastralId}`].filter(Boolean).join(' · ') || undefined,
+    registryDetails: row.registry_details ?? metadata.registry_details ?? (registryFallback || undefined),
   };
 }
 
