@@ -21,6 +21,38 @@ Auth og brukerprofiler ligger i `public`.
 
 ## Migrasjoner lagt til i denne arbeidsrunden
 
+### Farm IoT / irrigation / observations
+
+Fil:
+
+```text
+supabase/migrations/20260603_olivia_farm_iot.sql
+```
+
+Tabeller:
+
+- `olivia.farm_zones`
+- `olivia.tree_groups`
+- `olivia.sensor_devices`
+- `olivia.sensor_readings`
+- `olivia.sensor_alerts`
+- `olivia.irrigation_events`
+- `olivia.farm_observations`
+- `olivia.farm_season_settings`
+
+Brukes av:
+
+- `services/farmIoT.ts`
+- `components/IrrigationLogView.tsx`
+- `components/IrrigationView.tsx`
+- `components/IoTDashboard.tsx`
+- `components/DonaAnnaDailyDashboard.tsx`
+- `components/SalinityDashboard.tsx`
+- `components/ZoneStatusMapView.tsx`
+- `components/FieldObservationsView.tsx`
+
+Merk: Den eldre filen `supabase/migrations/20260601_dona_anna_farm_iot.sql` opprettet IoT-tabeller i `public`. Appen bruker nå `olivia` schema for gårdsdata, så `20260603_olivia_farm_iot.sql` er den riktige migrasjonen for dagens app.
+
 ### Harvest planning
 
 Fil:
@@ -108,6 +140,10 @@ Brukes av:
 - `olivia.sensor_readings`
 - `olivia.sensor_alerts`
 - `olivia.irrigation_events`
+- `olivia.farm_zones`
+- `olivia.tree_groups`
+- `olivia.farm_observations`
+- `olivia.farm_season_settings`
 
 ### Equipment
 
