@@ -16,7 +16,6 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -24,8 +23,9 @@ import {
 } from 'recharts';
 import type { SensorReading } from '../types/farmIoT';
 import { fetchLatestSensorReadings } from '../services/farmIoT';
+import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 
-type DataSource = 'supabase' | 'local_demo';
+type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
 type RiskLevel = 'low' | 'watch' | 'warning' | 'critical';
 
 type ZoneSalinity = {
@@ -41,17 +41,6 @@ type ZoneSalinity = {
   reasons: string[];
 };
 
-const demoReadings: SensorReading[] = [
-  { id: 'demo-soil-ec-a-1', sensor_id: 'DA-BIAR-SOIL-EC-A', parcel_id: 'biar-main', zone_id: 'zone-a', tree_group: 'Unge Gordal', depth_cm: 40, type: 'soil_ec', value: 1.5, unit: 'dS/m', measured_at: new Date(Date.now() - 5 * 24 * 36e5).toISOString(), source: 'simulation' },
-  { id: 'demo-soil-ec-a-2', sensor_id: 'DA-BIAR-SOIL-EC-A', parcel_id: 'biar-main', zone_id: 'zone-a', tree_group: 'Unge Gordal', depth_cm: 40, type: 'soil_ec', value: 1.7, unit: 'dS/m', measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-soil-ph-a', sensor_id: 'DA-BIAR-SOIL-PH-A', parcel_id: 'biar-main', zone_id: 'zone-a', tree_group: 'Unge Gordal', depth_cm: 40, type: 'soil_ph', value: 7.4, unit: 'pH', measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-soil-ec-b-1', sensor_id: 'DA-BIAR-SOIL-EC-B', parcel_id: 'biar-main', zone_id: 'zone-b', tree_group: 'Eldre blanding', depth_cm: 40, type: 'soil_ec', value: 2.1, unit: 'dS/m', measured_at: new Date(Date.now() - 7 * 24 * 36e5).toISOString(), source: 'simulation' },
-  { id: 'demo-soil-ec-b-2', sensor_id: 'DA-BIAR-SOIL-EC-B', parcel_id: 'biar-main', zone_id: 'zone-b', tree_group: 'Eldre blanding', depth_cm: 40, type: 'soil_ec', value: 2.6, unit: 'dS/m', measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-soil-ph-b', sensor_id: 'DA-BIAR-SOIL-PH-B', parcel_id: 'biar-main', zone_id: 'zone-b', tree_group: 'Eldre blanding', depth_cm: 40, type: 'soil_ph', value: 8.1, unit: 'pH', measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-water-ec', sensor_id: 'DA-BIAR-WATER-EC', parcel_id: 'biar-main', zone_id: 'pump-house', type: 'water_ec', value: 1.2, unit: 'dS/m', measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-water-ph', sensor_id: 'DA-BIAR-WATER-PH', parcel_id: 'biar-main', zone_id: 'pump-house', type: 'water_ph', value: 7.7, unit: 'pH', measured_at: new Date().toISOString(), source: 'simulation' },
-];
-
 function latest(readings: SensorReading[], type: string, zoneId?: string): SensorReading | undefined {
   return readings
     .filter(reading => reading.type === type && (!zoneId || reading.zone_id === zoneId))
@@ -60,7 +49,7 @@ function latest(readings: SensorReading[], type: string, zoneId?: string): Senso
 
 function trend(readings: SensorReading[], type: string, zoneId: string): number {
   const series = readings
-    .filter(reading => reading.type === type && reading.zone_id === zoneId)
+    .filter(reading => reading.type === type && (reading.zone_id || 'farm') === zoneId)
     .sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
   if (series.length < 2) return 0;
   return Math.round((series[series.length - 1].value - series[0].value) * 100) / 100;
@@ -166,28 +155,25 @@ function chartData(readings: SensorReading[]) {
 }
 
 const SalinityDashboard: React.FC = () => {
-  const [readings, setReadings] = useState<SensorReading[]>(demoReadings);
-  const [dataSource, setDataSource] = useState<DataSource>('local_demo');
+  const [readings, setReadings] = useState<SensorReading[]>([]);
+  const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
+    setErrorMessage(null);
     try {
       const rows = await fetchLatestSensorReadings(1000);
       const relevant = rows.filter(r => ['soil_ec', 'water_ec', 'soil_ph', 'water_ph'].includes(r.type));
-      if (relevant.length) {
-        setReadings(relevant);
-        setDataSource('supabase');
-      } else {
-        setReadings(demoReadings);
-        setDataSource('local_demo');
-      }
+      setReadings(relevant);
+      setLoadState(relevant.length ? 'supabase' : 'empty');
       setLastRefresh(new Date());
     } catch (error) {
-      console.warn('[SalinityDashboard] Could not load Supabase salinity data. Using demo.', error);
-      setReadings(demoReadings);
-      setDataSource('local_demo');
+      setReadings([]);
+      setLoadState('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente salt-/pH-data fra Supabase.');
     } finally {
       setIsLoading(false);
     }
@@ -200,24 +186,48 @@ const SalinityDashboard: React.FC = () => {
   const topRisk = zones[0];
   const latestWaterEc = latest(readings, 'water_ec')?.value;
   const latestWaterPh = latest(readings, 'water_ph')?.value;
-  const avgSoilEc = zones.length ? Math.round((zones.reduce((acc, z) => acc + (z.soilEc || 0), 0) / zones.length) * 100) / 100 : 0;
+  const soilEcValues = zones.map(z => z.soilEc).filter((value): value is number => typeof value === 'number');
+  const avgSoilEc = soilEcValues.length ? Math.round((soilEcValues.reduce((acc, value) => acc + value, 0) / soilEcValues.length) * 100) / 100 : undefined;
   const warningZones = zones.filter(z => z.risk === 'warning' || z.risk === 'critical').length;
+  const sourceLabel = loadState === 'supabase' ? 'Supabase' : loadState === 'empty' ? 'Supabase · ingen EC/pH-data ennå' : loadState === 'error' ? 'Supabase-feil' : 'Laster Supabase';
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-24">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-            <FlaskConical className="text-green-400" /> Salt / EC / pH Dashboard
-          </h2>
-          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">
-            DonaAnna · jord og vannkvalitet · {dataSource === 'supabase' ? 'Supabase' : 'Lokal demo'} · Oppdatert {lastRefresh.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}
-          </p>
+      <div className="relative overflow-hidden rounded-[2rem] border border-[#d9b657]/20 bg-[#070b08] p-6 shadow-2xl shadow-black/20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,0.14),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(217,182,87,0.12),transparent_34%)]" />
+        <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <DonaAnnaBrandMark variant="symbol" size="md" showText={false} />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.35em] text-[#d9b657]">Doña Anna · Olivia</p>
+              <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3 mt-1">
+                <FlaskConical className="text-green-400" /> Salt / EC / pH Dashboard
+              </h2>
+              <p className="text-slate-400 text-sm mt-2">Ekte EC- og pH-målinger fra Supabase. Ingen demo-verdier og ingen simulerte saltdata.</p>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">
+                {sourceLabel} · Oppdatert {lastRefresh.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+          </div>
+          <button onClick={loadData} disabled={isLoading} className="p-3.5 glass border border-white/10 rounded-2xl text-[#d9b657] hover:bg-white/5 transition-all disabled:opacity-50">
+            {isLoading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
+          </button>
         </div>
-        <button onClick={loadData} disabled={isLoading} className="p-3.5 glass border border-white/10 rounded-2xl text-green-400 hover:bg-white/5 transition-all disabled:opacity-50">
-          {isLoading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
-        </button>
       </div>
+
+      {errorMessage && <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100 flex gap-3"><AlertTriangle size={18} className="flex-shrink-0 mt-0.5" /> {errorMessage}</div>}
+
+      {isLoading && loadState === 'loading' ? (
+        <div className="glass rounded-[2rem] p-8 border border-white/10 text-slate-400 flex items-center gap-3"><Loader2 size={18} className="animate-spin" /> Henter EC/pH-målinger fra Supabase...</div>
+      ) : null}
+
+      {loadState === 'empty' ? (
+        <div className="rounded-[2rem] border border-dashed border-[#d9b657]/30 bg-[#d9b657]/5 p-8 text-center">
+          <FlaskConical className="mx-auto text-[#d9b657] mb-3" size={34} />
+          <h4 className="text-white font-bold text-lg">Ingen EC/pH-data ennå</h4>
+          <p className="text-sm text-slate-400 mt-2 max-w-xl mx-auto leading-relaxed">Registrer målinger for jord-EC, vann-EC, jord-pH eller vann-pH i IoT-modulen. Dette dashboardet viser ikke demo-data fordi feil saltverdier kan gi feil beslutninger.</p>
+        </div>
+      ) : null}
 
       {topRisk && (
         <div className={`glass rounded-[2rem] p-6 border ${riskClass(topRisk.risk)}`}>
@@ -230,7 +240,7 @@ const SalinityDashboard: React.FC = () => {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Snitt jord-EC', value: `${avgSoilEc} dS/m`, icon: <Gauge size={18} />, cls: 'border-purple-500/20 bg-purple-500/10 text-purple-400' },
+          { label: 'Snitt jord-EC', value: avgSoilEc !== undefined ? `${avgSoilEc} dS/m` : '—', icon: <Gauge size={18} />, cls: 'border-purple-500/20 bg-purple-500/10 text-purple-400' },
           { label: 'Vann-EC', value: latestWaterEc !== undefined ? `${latestWaterEc} dS/m` : '—', icon: <Waves size={18} />, cls: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-400' },
           { label: 'Vann-pH', value: latestWaterPh !== undefined ? latestWaterPh : '—', icon: <Beaker size={18} />, cls: 'border-green-500/20 bg-green-500/10 text-green-400' },
           { label: 'Soner med varsel', value: warningZones, icon: <AlertTriangle size={18} />, cls: 'border-yellow-500/20 bg-yellow-500/10 text-yellow-400' },
@@ -248,17 +258,21 @@ const SalinityDashboard: React.FC = () => {
           <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
             <TrendingUp size={14} /> EC/pH målinger over tid
           </h3>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
-                <XAxis dataKey="date" stroke="#64748b" fontSize={10} />
-                <YAxis stroke="#64748b" fontSize={10} />
-                <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
-                <Area type="monotone" dataKey="value" stroke="#22c55e" fill="#22c55e22" name="Verdi" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          {data.length ? (
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="date" stroke="#64748b" fontSize={10} />
+                  <YAxis stroke="#64748b" fontSize={10} />
+                  <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
+                  <Area type="monotone" dataKey="value" stroke="#22c55e" fill="#22c55e22" name="Verdi" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-72 flex items-center justify-center text-center text-sm text-slate-500 border border-dashed border-white/10 rounded-2xl">Ingen EC/pH-målinger å tegne ennå.</div>
+          )}
         </div>
 
         <div className="glass rounded-[2rem] p-6 border border-white/10 bg-white/[0.02]">
@@ -274,40 +288,42 @@ const SalinityDashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Soner</h3>
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          {zones.map(zone => (
-            <div key={zone.zoneId} className={`glass rounded-[2rem] p-5 border ${riskClass(zone.risk)}`}>
-              <div className="flex justify-between items-start gap-4">
-                <div>
-                  <p className="text-[10px] uppercase font-bold tracking-widest mb-1">{riskLabel(zone.risk)}</p>
-                  <h3 className="text-lg font-bold text-white">{zone.zoneName}</h3>
+      {zones.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Soner</h3>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            {zones.map(zone => (
+              <div key={zone.zoneId} className={`glass rounded-[2rem] p-5 border ${riskClass(zone.risk)}`}>
+                <div className="flex justify-between items-start gap-4">
+                  <div>
+                    <p className="text-[10px] uppercase font-bold tracking-widest mb-1">{riskLabel(zone.risk)}</p>
+                    <h3 className="text-lg font-bold text-white">{zone.zoneName}</h3>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-slate-500">Trend EC</p>
+                    <p className="text-2xl font-black text-white flex items-center gap-1 justify-end">
+                      {zone.trendEc > 0 ? <TrendingUp size={16} className="text-red-400" /> : <TrendingDown size={16} className="text-green-400" />}
+                      {zone.trendEc}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-slate-500">Trend EC</p>
-                  <p className="text-2xl font-black text-white flex items-center gap-1 justify-end">
-                    {zone.trendEc > 0 ? <TrendingUp size={16} className="text-red-400" /> : <TrendingDown size={16} className="text-green-400" />}
-                    {zone.trendEc}
-                  </p>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+                  <div className="p-3 bg-white/5 rounded-xl border border-white/5"><p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Jord EC</p><p className="text-sm text-white font-bold mt-1">{zone.soilEc ?? '—'} dS/m</p></div>
+                  <div className="p-3 bg-white/5 rounded-xl border border-white/5"><p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Jord pH</p><p className="text-sm text-white font-bold mt-1">{zone.soilPh ?? '—'}</p></div>
+                  <div className="p-3 bg-white/5 rounded-xl border border-white/5"><p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Vann EC</p><p className="text-sm text-white font-bold mt-1">{zone.waterEc ?? '—'} dS/m</p></div>
+                  <div className="p-3 bg-white/5 rounded-xl border border-white/5"><p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Vann pH</p><p className="text-sm text-white font-bold mt-1">{zone.waterPh ?? '—'}</p></div>
+                </div>
+
+                <p className="text-sm text-slate-400 mt-4 leading-relaxed">{zone.recommendation}</p>
+                <div className="mt-4 pt-4 border-t border-white/10 space-y-1">
+                  {zone.reasons.map(reason => <p key={reason} className="text-xs text-slate-500">• {reason}</p>)}
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
-                <div className="p-3 bg-white/5 rounded-xl border border-white/5"><p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Jord EC</p><p className="text-sm text-white font-bold mt-1">{zone.soilEc ?? '—'} dS/m</p></div>
-                <div className="p-3 bg-white/5 rounded-xl border border-white/5"><p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Jord pH</p><p className="text-sm text-white font-bold mt-1">{zone.soilPh ?? '—'}</p></div>
-                <div className="p-3 bg-white/5 rounded-xl border border-white/5"><p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Vann EC</p><p className="text-sm text-white font-bold mt-1">{zone.waterEc ?? '—'} dS/m</p></div>
-                <div className="p-3 bg-white/5 rounded-xl border border-white/5"><p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Vann pH</p><p className="text-sm text-white font-bold mt-1">{zone.waterPh ?? '—'}</p></div>
-              </div>
-
-              <p className="text-sm text-slate-400 mt-4 leading-relaxed">{zone.recommendation}</p>
-              <div className="mt-4 pt-4 border-t border-white/10 space-y-1">
-                {zone.reasons.map(reason => <p key={reason} className="text-xs text-slate-500">• {reason}</p>)}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="glass rounded-[2rem] p-6 border border-white/10 bg-white/[0.02]">
         <p className="text-sm text-white font-bold">Anbefalt praksis</p>
