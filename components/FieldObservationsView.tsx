@@ -22,6 +22,7 @@ import {
   fetchRecentFarmObservations,
   insertFarmObservation,
 } from '../services/farmIoT';
+import { uploadFieldObservationImages } from '../services/fieldObservationStorage';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 
 type ObservationCategory = FarmObservation['category'];
@@ -55,6 +56,12 @@ function categoryMeta(category: ObservationCategory) {
   return CATEGORY_OPTIONS.find(item => item.value === category) || CATEGORY_OPTIONS[CATEGORY_OPTIONS.length - 1];
 }
 
+function makeObservationDraftId() {
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `obs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 const FieldObservationsView: React.FC = () => {
   const [observations, setObservations] = useState<FarmObservation[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
@@ -64,6 +71,7 @@ const FieldObservationsView: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [form, setForm] = useState<Partial<FarmObservation>>(EMPTY_FORM);
+  const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
   const [previewImageUrls, setPreviewImageUrls] = useState<string[]>([]);
 
   const loadObservations = async () => {
@@ -87,6 +95,12 @@ const FieldObservationsView: React.FC = () => {
     loadObservations();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      previewImageUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [previewImageUrls]);
+
   const stats = useMemo(() => {
     const last7 = observations.filter(obs => Date.now() - new Date(obs.observed_at).getTime() < 7 * 24 * 36e5).length;
     const irrigation = observations.filter(obs => obs.category === 'irrigation').length;
@@ -96,15 +110,28 @@ const FieldObservationsView: React.FC = () => {
   }, [observations]);
 
   const handleImageSelect = (fileList: FileList | null) => {
-    if (!fileList || !fileList[0]) return;
-    const file = fileList[0];
-    const localUrl = URL.createObjectURL(file);
-    setPreviewImageUrls(prev => [...prev, localUrl]);
-    setErrorMessage('Bildet vises kun som midlertidig forhåndsvisning. Permanent bildeopplasting til Supabase Storage bør legges til i neste steg.');
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList).filter(file => file.type.startsWith('image/'));
+    if (!files.length) return;
+    const nextPreviews = files.map(file => URL.createObjectURL(file));
+    setSelectedImageFiles(prev => [...prev, ...files]);
+    setPreviewImageUrls(prev => [...prev, ...nextPreviews]);
+    setErrorMessage(null);
+  };
+
+  const removeSelectedImage = (index: number) => {
+    setPreviewImageUrls(prev => {
+      const url = prev[index];
+      if (url) URL.revokeObjectURL(url);
+      return prev.filter((_, i) => i !== index);
+    });
+    setSelectedImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const resetForm = () => {
+    previewImageUrls.forEach(url => URL.revokeObjectURL(url));
     setForm({ ...EMPTY_FORM });
+    setSelectedImageFiles([]);
     setPreviewImageUrls([]);
   };
 
@@ -116,7 +143,13 @@ const FieldObservationsView: React.FC = () => {
 
     setIsSaving(true);
     setErrorMessage(null);
+    const observationDraftId = makeObservationDraftId();
     try {
+      const imageUrls = await uploadFieldObservationImages(selectedImageFiles, {
+        parcelId: form.parcel_id?.trim() || undefined,
+        observationId: observationDraftId,
+      });
+
       const observation: Omit<FarmObservation, 'id'> = {
         parcel_id: form.parcel_id?.trim() || undefined,
         zone_id: form.zone_id?.trim() || undefined,
@@ -124,7 +157,7 @@ const FieldObservationsView: React.FC = () => {
         category: form.category,
         title: form.title.trim(),
         notes: form.notes?.trim() || undefined,
-        image_urls: [],
+        image_urls: imageUrls,
         observed_at: new Date().toISOString(),
         created_by: 'Olivia',
       };
@@ -137,7 +170,7 @@ const FieldObservationsView: React.FC = () => {
       setIsFormOpen(false);
     } catch (error) {
       setLoadState(observations.length ? 'supabase' : 'error');
-      setErrorMessage(error instanceof Error ? error.message : 'Observasjonen ble ikke lagret i Supabase.');
+      setErrorMessage(error instanceof Error ? error.message : 'Observasjonen eller bildeopplastingen ble ikke lagret i Supabase.');
     } finally {
       setIsSaving(false);
     }
@@ -262,7 +295,7 @@ const FieldObservationsView: React.FC = () => {
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#d9b657]">Doña Anna feltlogg</p>
                 <h3 className="text-2xl font-bold text-white mt-1">Ny feltobservasjon</h3>
-                <p className="text-xs text-slate-500 mt-1">Registrer det du ser på tomten akkurat nå. Lagres i Supabase.</p>
+                <p className="text-xs text-slate-500 mt-1">Registrer det du ser på tomten akkurat nå. Bilder og observasjon lagres i Supabase.</p>
               </div>
               <button onClick={() => { setIsFormOpen(false); resetForm(); }} className="p-2 text-slate-500 hover:text-white"><X size={24} /></button>
             </div>
@@ -331,22 +364,34 @@ const FieldObservationsView: React.FC = () => {
 
             <div>
               <label className="w-full flex items-center justify-center gap-3 p-5 rounded-2xl border border-dashed border-white/20 bg-white/5 text-slate-400 cursor-pointer hover:text-white hover:border-[#d9b657]/40 transition-all">
-                <Camera size={20} /> Midlertidig bilde-forhåndsvisning
-                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={event => handleImageSelect(event.target.files)} />
+                <Camera size={20} /> Legg ved bilde fra mobil/kamera
+                <input type="file" multiple accept="image/*" capture="environment" className="hidden" onChange={event => handleImageSelect(event.target.files)} />
               </label>
               <p className="text-[11px] text-slate-600 mt-2 leading-relaxed">
-                Bilder lagres ikke permanent ennå. Neste trygge steg er å koble dette til Supabase Storage før bilde-URL-er lagres i farm_observations.
+                Bilder lastes opp til Supabase Storage og URL-ene lagres i <span className="font-mono">farm_observations.image_urls</span>. Kjør storage-migrasjonen først hvis opplasting feiler.
               </p>
             </div>
 
             {previewImageUrls.length > 0 && (
               <div className="grid grid-cols-3 gap-2">
-                {previewImageUrls.map(url => <img key={url} src={url} alt="Valgt" className="h-24 w-full object-cover rounded-xl border border-white/10" />)}
+                {previewImageUrls.map((url, index) => (
+                  <div key={url} className="relative group">
+                    <img src={url} alt="Valgt" className="h-24 w-full object-cover rounded-xl border border-white/10" />
+                    <button
+                      type="button"
+                      onClick={() => removeSelectedImage(index)}
+                      className="absolute top-1 right-1 rounded-full bg-black/70 p-1 text-white opacity-90 hover:bg-red-500"
+                      title="Fjern bilde"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
 
             <button onClick={handleSave} disabled={isSaving || !form.title?.trim()} className="w-full bg-[#d9b657] text-black font-bold py-5 rounded-[2rem] text-lg shadow-2xl hover:bg-[#f0cf70] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-              {isSaving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />} Lagre observasjon
+              {isSaving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />} {isSaving ? 'Laster opp og lagrer...' : 'Lagre observasjon'}
             </button>
           </div>
         </div>
