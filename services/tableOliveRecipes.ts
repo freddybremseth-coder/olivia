@@ -45,28 +45,27 @@ export function buildBalancedTableOlivePlan(options: TableOlivePlanOptions): Bal
   const oliveType = options.oliveType || recipe?.recommendedOliveTypes?.[0] || 'bordoliven';
 
   const processWaterL = oliveKg * 1.2;
-  const fermentationBrinePercent = 8;
   const fermentationSaltGrams = processWaterL * 80;
   const marinadeWaterL = oliveKg * 0.75;
   const marinadeSaltGrams = marinadeWaterL * 60;
   const vinegarL = marinadeWaterL * 0.12;
   const herbsGrams = Math.max(oliveKg * 8, 10);
-  const garlicOrCitrusGrams = Math.max(oliveKg * 4, 5);
+  const citrusOrGarlicGrams = Math.max(oliveKg * 4, 5);
   const readyAfterDays = recipe?.readyAfterDays || 45;
   const marinadeDayFrom = recipe?.marinadeDayFrom || 30;
   const brineChangeDays = recipe?.brineChangeDays?.length ? recipe.brineChangeDays : [3, 7, 14, 21];
 
   const baseIngredients: Ingredient[] = [
     ingredient('Rå oliven', oliveKg, 'kg'),
-    ingredient('Vann til forbehandling/skylling', processWaterL, 'L + ekstra etter behov'),
-    ingredient('Lutbehandling', 'Bruk kun godkjent SOP/fagoppskrift', ''),
+    ingredient('Vann til forbehandling og skylling', processWaterL, 'L + ekstra etter behov'),
+    ingredient('Godkjent forbehandlings-SOP', 'Følg intern godkjent prosedyre', ''),
     ingredient('Vann til fermenteringslake', processWaterL, 'L'),
     ingredient('Havsalt til 8 % fermenteringslake', fermentationSaltGrams, 'g'),
     ingredient('Vann til sluttlake/marinade', marinadeWaterL, 'L'),
     ingredient('Havsalt til ca. 6 % sluttlake', marinadeSaltGrams, 'g'),
     ingredient('Vineddik / mild eddik', vinegarL, 'L'),
     ingredient('Urter etter profil', herbsGrams, 'g'),
-    ingredient('Hvitløk eller sitrus etter profil', garlicOrCitrusGrams, 'g'),
+    ingredient('Sitrus eller godkjent smakstilsetning', citrusOrGarlicGrams, 'g'),
   ];
 
   const customIngredients = (recipe?.ingredients || []).filter(item => item.name && !baseIngredients.some(base => base.name.toLowerCase() === item.name.toLowerCase()));
@@ -76,50 +75,50 @@ export function buildBalancedTableOlivePlan(options: TableOlivePlanOptions): Bal
     {
       stage: 'PLUKKING',
       startDate,
-      notes: `Sorter ${rounded(oliveKg)} kg ${oliveType}. Fjern skadde, myke og angrepne oliven. Vask godt før behandling.`,
+      notes: `Sorter ${rounded(oliveKg)} kg ${oliveType}. Fjern skadde, myke og angrepne oliven. Vask og klargjør etter hygienerutine.`,
     },
     {
       stage: 'LAKE',
       startDate,
-      notes: 'Forbehandling/lut: utføres kun etter godkjent intern SOP eller faglig verifisert oppskrift. Registrer faktisk starttid, sluttid, kontrollpunkt og skylling i batchloggen. Oliven skal være helt dekket og behandlingen stoppes etter kontroll, ikke bare etter klokke.',
+      notes: 'Forbehandling: følg godkjent intern SOP. Registrer start, stopp, ansvarlig person og kontrollpunkt i batchloggen.',
     },
     {
       stage: 'SKYLLING',
       startDate: addDays(startDate, 1),
-      notes: 'Skylling: bytt vann flere ganger til forbehandlingen er fjernet og oliven er klare for lake. Dokumenter antall vannbytter og kontroll før fermentering.',
+      notes: 'Skylling og kontroll: dokumenter vannbytter, lukt, visuell kvalitet og at batchen er klar for lake/fermentering.',
     },
     {
       stage: 'LAKE',
       startDate: addDays(startDate, 3),
-      notes: `Fermentering/saltlake: legg oliven i ca. ${rounded(processWaterL)} L ${fermentationBrinePercent} % lake (${rounded(fermentationSaltGrams, 0)} g salt). Hold oliven under væske. Følg lukt, farge, pH og salt. Planlagte kontroller/lakebytter: dag ${brineChangeDays.join(', ')}.`,
+      notes: `Fermentering/saltlake: planlegg ca. ${rounded(processWaterL)} L lake med ${rounded(fermentationSaltGrams, 0)} g havsalt. Hold oliven under væske og kontroller pH/salt, lukt, farge og overflate. Planlagte kontroller: dag ${brineChangeDays.join(', ')}.`,
     },
     {
       stage: 'MARINERING',
       startDate: addDays(startDate, marinadeDayFrom),
-      notes: `Når bitterhet og fermentering er under kontroll: flytt til sluttlake/marinade. Plan: ${rounded(marinadeWaterL)} L vann, ${rounded(marinadeSaltGrams, 0)} g salt, ${rounded(vinegarL, 2)} L eddik, urter og smakstilsetning. Juster etter faktisk pH/salt og ønsket smak.`,
+      notes: `Når batchen er godkjent for marinering: planlegg ca. ${rounded(marinadeWaterL)} L sluttlake, ${rounded(marinadeSaltGrams, 0)} g havsalt, ${rounded(vinegarL, 2)} L eddik og smakstilsetning. Juster etter målinger og ønsket profil.`,
     },
     {
       stage: 'LAGRING',
       startDate: addDays(startDate, marinadeDayFrom + 7),
-      notes: 'Modning/lagring: kontroller smak, salt, pH, lukt, gass og overflate. Hold produktet dekket av lake. Juster salt/syre etter måling, ikke bare smak.',
+      notes: 'Modning/lagring: kontroller smak, tekstur, pH/syre, salt, lukt, gass og overflate. Hold produktet dekket av lake.',
     },
     {
       stage: 'PAKKING',
       startDate: addDays(startDate, Math.max(readyAfterDays - 2, marinadeDayFrom + 8)),
-      notes: 'Pakking: bruk rene glass/poser, batchkode, ingrediensliste, nettoinnhold, produksjonsdato og holdbarhets-/lagringsinformasjon. Ikke pakk for salg før kvalitet og matsikkerhet er godkjent.',
+      notes: 'Pakking: bruk rene beholdere, batchkode, ingrediensliste, nettoinnhold, produksjonsdato og lagringsinformasjon. Ikke pakk for salg før kvalitet er godkjent.',
     },
     {
       stage: 'SALG',
       startDate: addDays(startDate, readyAfterDays),
-      notes: 'Klar for salg hvis smak, tekstur, salt, pH/syre, lukt, emballasje og merking er kontrollert og dokumentert. Ved kommersielt salg bør prosessen kvalitetssikres etter lokale næringsmiddelkrav.',
+      notes: 'Klar for salg når smak, tekstur, salt, pH/syre, emballasje, merking og dokumentasjon er kontrollert og godkjent.',
     },
   ];
 
   const safetyTargets = [
-    'Rå oliven må behandles/fermenteres før de er spiselige; målet er å redusere bitterstoffer og stabilisere produktet.',
-    'Lut/forbehandling er et kontrollpunkt og skal følge en godkjent SOP, ikke genereres fritt av appen.',
-    'Fermenteringslake planlegges rundt 8 % salt og bør følges med pH/saltmåling.',
-    'Produkt for salg må ikke baseres kun på kalender. Bruk målinger, sensorikk og hygienekontroll før pakking/salg.',
+    'Rå oliven må behandles og/eller fermenteres før de er klare som bordoliven.',
+    'Forbehandling er et kritisk kontrollpunkt og skal følge godkjent intern SOP.',
+    'Fermenteringslake bør følges med pH-/saltmåling og visuell kontroll.',
+    'Klar-for-salg må baseres på målinger, sensorikk, hygiene og dokumentasjon, ikke kun kalenderdager.',
   ];
 
   const notes = `${notesFromRecipe(recipe)}Automatisk balansert plan for ${rounded(oliveKg)} kg ${oliveType}. Mengdene skaleres med batchvekten. Planen er et produksjonsverktøy og må kvalitetssikres med faktiske pH-/saltmålinger, lokal hygienepraksis og gjeldende næringsmiddelkrav før salg.\n\nSikkerhetsmål:\n- ${safetyTargets.join('\n- ')}`;
