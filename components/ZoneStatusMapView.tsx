@@ -15,8 +15,9 @@ import {
 } from 'lucide-react';
 import type { FarmZone, SensorReading } from '../types/farmIoT';
 import { fetchFarmZones, fetchLatestSensorReadings } from '../services/farmIoT';
+import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 
-type DataSource = 'supabase' | 'local_demo';
+type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
 type ZoneSeverity = 'optimal' | 'watch' | 'warning' | 'critical' | 'offline';
 
 type ZoneSummary = {
@@ -41,29 +42,11 @@ type ZoneSummary = {
   recommendedAction: string;
 };
 
-const demoZones: FarmZone[] = [
-  { id: 'zone-a', parcel_id: 'biar-main', name: 'Sone A - unge trær', description: 'Unge Gordal og prioritet for vannkontroll.', altitude_m: 650, status: 'watch' },
-  { id: 'zone-b', parcel_id: 'biar-main', name: 'Sone B - eldre blanding', description: 'Eldre blanding med EC-overvåkning.', altitude_m: 650, status: 'watch' },
-  { id: 'zone-c', parcel_id: 'biar-main', name: 'Sone C - tørrere felt', description: 'Tørrere felt og kontroll av dryppslanger.', altitude_m: 650, status: 'warning' },
-  { id: 'pump-house', parcel_id: 'biar-main', name: 'Pumpe / vannkilde', description: 'Vann-EC, pH, flow og trykk.', altitude_m: 650, status: 'watch' },
-];
-
-const demoReadings: SensorReading[] = [
-  { id: 'demo-a-m30', sensor_id: 'DA-BIAR-SOIL-M-30-A', parcel_id: 'biar-main', zone_id: 'zone-a', tree_group: 'Unge Gordal', depth_cm: 30, type: 'soil_moisture', value: 32, unit: '%', battery_percent: 88, measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-a-m60', sensor_id: 'DA-BIAR-SOIL-M-60-A', parcel_id: 'biar-main', zone_id: 'zone-a', tree_group: 'Unge Gordal', depth_cm: 60, type: 'soil_moisture', value: 27, unit: '%', battery_percent: 87, measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-a-flow', sensor_id: 'DA-BIAR-FLOW-A', parcel_id: 'biar-main', zone_id: 'zone-a', type: 'flow', value: 28, unit: 'L/min', battery_percent: 65, measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-a-pressure', sensor_id: 'DA-BIAR-PRESSURE-A', parcel_id: 'biar-main', zone_id: 'zone-a', type: 'pressure', value: 0.6, unit: 'bar', battery_percent: 22, measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-b-ec', sensor_id: 'DA-BIAR-SOIL-EC-B', parcel_id: 'biar-main', zone_id: 'zone-b', tree_group: 'Eldre blanding', depth_cm: 40, type: 'soil_ec', value: 2.7, unit: 'dS/m', battery_percent: 74, measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-b-m30', sensor_id: 'DA-BIAR-SOIL-M-30-B', parcel_id: 'biar-main', zone_id: 'zone-b', tree_group: 'Eldre blanding', depth_cm: 30, type: 'soil_moisture', value: 44, unit: '%', battery_percent: 70, measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-c-m30', sensor_id: 'DA-BIAR-SOIL-M-30-C', parcel_id: 'biar-main', zone_id: 'zone-c', tree_group: 'Genoesa kontrollfelt', depth_cm: 30, type: 'soil_moisture', value: 29, unit: '%', battery_percent: 52, measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-water-ec', sensor_id: 'DA-BIAR-WATER-EC', parcel_id: 'biar-main', zone_id: 'pump-house', type: 'water_ec', value: 1.2, unit: 'dS/m', battery_percent: 100, measured_at: new Date().toISOString(), source: 'simulation' },
-];
-
 function latest(readings: SensorReading[], type: string, zoneId?: string, depth?: number): SensorReading | undefined {
   return readings
     .filter(reading => {
       const typeOk = reading.type === type;
-      const zoneOk = !zoneId || reading.zone_id === zoneId;
+      const zoneOk = !zoneId || (reading.zone_id || 'farm') === zoneId;
       const depthOk = typeof depth !== 'number' || (typeof reading.depth_cm === 'number' && Math.abs(reading.depth_cm - depth) <= 15);
       return typeOk && zoneOk && depthOk;
     })
@@ -105,7 +88,7 @@ function buildZoneSummary(zone: FarmZone, readings: SensorReading[]): ZoneSummar
   const waterEc = latest(readings, 'water_ec') || latest(readings, 'water_ec', zone.id);
   const flow = latest(readings, 'flow', zone.id) || latest(readings, 'flow');
   const pressure = latest(readings, 'pressure', zone.id) || latest(readings, 'pressure');
-  const zoneReadings = readings.filter(r => r.zone_id === zone.id);
+  const zoneReadings = readings.filter(r => (r.zone_id || 'farm') === zone.id);
   const batteryValues = zoneReadings.map(r => r.battery_percent).filter((v): v is number => typeof v === 'number');
   const minBattery = batteryValues.length ? Math.min(...batteryValues) : undefined;
 
@@ -200,39 +183,40 @@ function buildZoneSummary(zone: FarmZone, readings: SensorReading[]): ZoneSummar
   };
 }
 
+function zonesFromReadings(readings: SensorReading[]): FarmZone[] {
+  return Array.from(new Set(readings.map(reading => reading.zone_id || 'farm')))
+    .map(id => ({ id, parcel_id: readings.find(reading => (reading.zone_id || 'farm') === id)?.parcel_id || 'unknown', name: id === 'farm' ? 'Hele gården' : id } as FarmZone));
+}
+
 const ZoneStatusMapView: React.FC = () => {
-  const [zones, setZones] = useState<FarmZone[]>(demoZones);
-  const [readings, setReadings] = useState<SensorReading[]>(demoReadings);
-  const [dataSource, setDataSource] = useState<DataSource>('local_demo');
+  const [zones, setZones] = useState<FarmZone[]>([]);
+  const [readings, setReadings] = useState<SensorReading[]>([]);
+  const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
-  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(demoZones[0].id);
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
+    setErrorMessage(null);
     try {
       const [zoneRows, readingRows] = await Promise.all([
         fetchFarmZones(),
         fetchLatestSensorReadings(1000),
       ]);
-      if (zoneRows.length || readingRows.length) {
-        const derivedZones = zoneRows.length
-          ? zoneRows
-          : Array.from(new Set(readingRows.map(r => r.zone_id || 'farm'))).map(id => ({ id, parcel_id: 'biar-main', name: id } as FarmZone));
-        setZones(derivedZones);
-        setReadings(readingRows.length ? readingRows : demoReadings);
-        setDataSource('supabase');
-      } else {
-        setZones(demoZones);
-        setReadings(demoReadings);
-        setDataSource('local_demo');
-      }
+      const derivedZones = zoneRows.length ? zoneRows : zonesFromReadings(readingRows);
+      setZones(derivedZones);
+      setReadings(readingRows);
+      setLoadState(derivedZones.length || readingRows.length ? 'supabase' : 'empty');
+      setSelectedZoneId(prev => prev && derivedZones.some(zone => zone.id === prev) ? prev : derivedZones[0]?.id || null);
       setLastRefresh(new Date());
     } catch (error) {
-      console.warn('[ZoneStatusMapView] Could not load Supabase zone status. Using demo.', error);
-      setZones(demoZones);
-      setReadings(demoReadings);
-      setDataSource('local_demo');
+      setZones([]);
+      setReadings([]);
+      setLoadState('error');
+      setSelectedZoneId(null);
+      setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente sone-/sensordata fra Supabase.');
     } finally {
       setIsLoading(false);
     }
@@ -246,18 +230,39 @@ const ZoneStatusMapView: React.FC = () => {
   const warning = summaries.filter(z => z.severity === 'warning').length;
   const watch = summaries.filter(z => z.severity === 'watch').length;
   const offline = summaries.filter(z => z.severity === 'offline').length;
+  const sourceLabel = loadState === 'supabase' ? 'Supabase' : loadState === 'empty' ? 'Supabase · ingen sone-/sensordata ennå' : loadState === 'error' ? 'Supabase-feil' : 'Laster Supabase';
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-24">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3"><Map className="text-green-400" /> Sonekart / Statuskart</h2>
-          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">DonaAnna · soneprioritet · {dataSource === 'supabase' ? 'Supabase' : 'Lokal demo'} · Oppdatert {lastRefresh.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}</p>
+      <div className="relative overflow-hidden rounded-[2rem] border border-[#d9b657]/20 bg-[#070b08] p-6 shadow-2xl shadow-black/20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,0.14),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(217,182,87,0.12),transparent_34%)]" />
+        <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <DonaAnnaBrandMark variant="symbol" size="md" showText={false} />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.35em] text-[#d9b657]">Doña Anna · Olivia</p>
+              <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3 mt-1"><Map className="text-green-400" /> Sonekart / Statuskart</h2>
+              <p className="text-slate-400 text-sm mt-2">Prioriteringskart basert på ekte soner og sensormålinger fra Supabase. Ingen demo-soner.</p>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">{sourceLabel} · Oppdatert {lastRefresh.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}</p>
+            </div>
+          </div>
+          <button onClick={loadData} disabled={isLoading} className="p-3.5 glass border border-white/10 rounded-2xl text-[#d9b657] hover:bg-white/5 transition-all disabled:opacity-50">
+            {isLoading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
+          </button>
         </div>
-        <button onClick={loadData} disabled={isLoading} className="p-3.5 glass border border-white/10 rounded-2xl text-green-400 hover:bg-white/5 transition-all disabled:opacity-50">
-          {isLoading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
-        </button>
       </div>
+
+      {errorMessage && <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100 flex gap-3"><AlertTriangle size={18} className="flex-shrink-0 mt-0.5" /> {errorMessage}</div>}
+
+      {isLoading && loadState === 'loading' ? <div className="glass rounded-[2rem] p-8 border border-white/10 text-slate-400 flex items-center gap-3"><Loader2 size={18} className="animate-spin" /> Henter sonestatus fra Supabase...</div> : null}
+
+      {loadState === 'empty' ? (
+        <div className="rounded-[2rem] border border-dashed border-[#d9b657]/30 bg-[#d9b657]/5 p-8 text-center">
+          <Map className="mx-auto text-[#d9b657] mb-3" size={34} />
+          <h4 className="text-white font-bold text-lg">Ingen soner eller målinger ennå</h4>
+          <p className="text-sm text-slate-400 mt-2 max-w-xl mx-auto leading-relaxed">Opprett soner i Supabase eller registrer sensormålinger med zone_id. Sonekartet viser ikke demo-soner.</p>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
@@ -268,85 +273,87 @@ const ZoneStatusMapView: React.FC = () => {
         ].map(card => <div key={card.label} className={`glass rounded-[2rem] p-5 border ${card.cls}`}><div className="mb-2">{card.icon}</div><p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">{card.label}</p><p className="text-3xl font-black text-white mt-1">{card.value}</p></div>)}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-        <div className="xl:col-span-7 glass rounded-[2rem] p-6 border border-white/10">
-          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-5">Visuelt statuskart</h3>
-          <div className="relative min-h-[520px] rounded-[2rem] border border-white/10 bg-gradient-to-br from-green-950/20 via-slate-900 to-black overflow-hidden p-6">
-            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, #22c55e 0, transparent 22%), radial-gradient(circle at 80% 70%, #84cc16 0, transparent 25%)' }} />
-            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
-              {summaries.map((zone, index) => (
-                <button
-                  key={zone.id}
-                  onClick={() => setSelectedZoneId(zone.id)}
-                  className={`text-left rounded-[2rem] p-5 border transition-all hover:scale-[1.02] ${statusClass(zone.severity)} ${selected?.id === zone.id ? 'ring-2 ring-green-400/60' : ''}`}
-                  style={{ minHeight: index === 0 ? 190 : 150 }}
-                >
-                  <div className="flex justify-between items-start gap-3">
-                    <div>
-                      <p className="text-[10px] uppercase font-bold tracking-widest">{statusLabel(zone.severity)}</p>
-                      <p className="text-lg text-white font-bold mt-1">{zone.name}</p>
+      {summaries.length > 0 && (
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+          <div className="xl:col-span-7 glass rounded-[2rem] p-6 border border-white/10">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-5">Visuelt statuskart</h3>
+            <div className="relative min-h-[520px] rounded-[2rem] border border-white/10 bg-gradient-to-br from-green-950/20 via-slate-900 to-black overflow-hidden p-6">
+              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, #22c55e 0, transparent 22%), radial-gradient(circle at 80% 70%, #84cc16 0, transparent 25%)' }} />
+              <div className="relative grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+                {summaries.map((zone, index) => (
+                  <button
+                    key={zone.id}
+                    onClick={() => setSelectedZoneId(zone.id)}
+                    className={`text-left rounded-[2rem] p-5 border transition-all hover:scale-[1.02] ${statusClass(zone.severity)} ${selected?.id === zone.id ? 'ring-2 ring-green-400/60' : ''}`}
+                    style={{ minHeight: index === 0 ? 190 : 150 }}
+                  >
+                    <div className="flex justify-between items-start gap-3">
+                      <div>
+                        <p className="text-[10px] uppercase font-bold tracking-widest">{statusLabel(zone.severity)}</p>
+                        <p className="text-lg text-white font-bold mt-1">{zone.name}</p>
+                      </div>
+                      <div className="text-right"><p className="text-[10px] text-slate-500">Score</p><p className="text-3xl text-white font-black">{zone.score}</p></div>
                     </div>
-                    <div className="text-right"><p className="text-[10px] text-slate-500">Score</p><p className="text-3xl text-white font-black">{zone.score}</p></div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 mt-5">
-                    <div className="p-2 bg-black/20 rounded-xl"><Droplets size={14} /><p className="text-[10px] mt-1">{zone.latest.soilMoisture ?? '—'}%</p></div>
-                    <div className="p-2 bg-black/20 rounded-xl"><FlaskConical size={14} /><p className="text-[10px] mt-1">{zone.latest.soilEc ?? '—'} EC</p></div>
-                    <div className="p-2 bg-black/20 rounded-xl"><Gauge size={14} /><p className="text-[10px] mt-1">{zone.latest.pressure ?? '—'} bar</p></div>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-4 line-clamp-2">{zone.recommendedAction}</p>
-                </button>
-              ))}
+                    <div className="grid grid-cols-3 gap-2 mt-5">
+                      <div className="p-2 bg-black/20 rounded-xl"><Droplets size={14} /><p className="text-[10px] mt-1">{zone.latest.soilMoisture ?? '—'}%</p></div>
+                      <div className="p-2 bg-black/20 rounded-xl"><FlaskConical size={14} /><p className="text-[10px] mt-1">{zone.latest.soilEc ?? '—'} EC</p></div>
+                      <div className="p-2 bg-black/20 rounded-xl"><Gauge size={14} /><p className="text-[10px] mt-1">{zone.latest.pressure ?? '—'} bar</p></div>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-4 line-clamp-2">{zone.recommendedAction}</p>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="xl:col-span-5 space-y-6">
-          {selected && (
-            <div className={`glass rounded-[2rem] p-6 border ${statusClass(selected.severity)}`}>
-              <p className="text-[10px] uppercase font-bold tracking-widest mb-1">Valgt sone</p>
-              <h3 className="text-2xl text-white font-bold">{selected.name}</h3>
-              {selected.description && <p className="text-sm text-slate-500 mt-2">{selected.description}</p>}
-              <p className="text-sm text-white font-bold mt-5">{selected.recommendedAction}</p>
+          <div className="xl:col-span-5 space-y-6">
+            {selected && (
+              <div className={`glass rounded-[2rem] p-6 border ${statusClass(selected.severity)}`}>
+                <p className="text-[10px] uppercase font-bold tracking-widest mb-1">Valgt sone</p>
+                <h3 className="text-2xl text-white font-bold">{selected.name}</h3>
+                {selected.description && <p className="text-sm text-slate-500 mt-2">{selected.description}</p>}
+                <p className="text-sm text-white font-bold mt-5">{selected.recommendedAction}</p>
 
-              <div className="grid grid-cols-2 gap-3 mt-5">
+                <div className="grid grid-cols-2 gap-3 mt-5">
+                  {[
+                    ['Jordfukt 30 cm', selected.latest.soilMoisture !== undefined ? `${selected.latest.soilMoisture}%` : '—'],
+                    ['Jordfukt 60 cm', selected.latest.soilMoisture60 !== undefined ? `${selected.latest.soilMoisture60}%` : '—'],
+                    ['Jord EC', selected.latest.soilEc !== undefined ? `${selected.latest.soilEc} dS/m` : '—'],
+                    ['Vann EC', selected.latest.waterEc !== undefined ? `${selected.latest.waterEc} dS/m` : '—'],
+                    ['Flow', selected.latest.flow !== undefined ? `${selected.latest.flow} L/min` : '—'],
+                    ['Trykk', selected.latest.pressure !== undefined ? `${selected.latest.pressure} bar` : '—'],
+                    ['Batteri lavest', selected.latest.battery !== undefined ? `${selected.latest.battery}%` : '—'],
+                    ['Score', selected.score],
+                  ].map(([label, value]) => <div key={label} className="p-3 bg-white/5 rounded-xl border border-white/5"><p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">{label}</p><p className="text-sm text-white font-bold mt-1">{value}</p></div>)}
+                </div>
+
+                <div className="mt-5 pt-4 border-t border-white/10 space-y-1">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-2">Grunnlag</p>
+                  {selected.reasons.map(reason => <p key={reason} className="text-xs text-slate-400 leading-relaxed">• {reason}</p>)}
+                </div>
+              </div>
+            )}
+
+            <div className="glass rounded-[2rem] p-6 border border-white/10 bg-white/[0.02]">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Fargeforklaring</h3>
+              <div className="space-y-3">
                 {[
-                  ['Jordfukt 30 cm', selected.latest.soilMoisture !== undefined ? `${selected.latest.soilMoisture}%` : '—'],
-                  ['Jordfukt 60 cm', selected.latest.soilMoisture60 !== undefined ? `${selected.latest.soilMoisture60}%` : '—'],
-                  ['Jord EC', selected.latest.soilEc !== undefined ? `${selected.latest.soilEc} dS/m` : '—'],
-                  ['Vann EC', selected.latest.waterEc !== undefined ? `${selected.latest.waterEc} dS/m` : '—'],
-                  ['Flow', selected.latest.flow !== undefined ? `${selected.latest.flow} L/min` : '—'],
-                  ['Trykk', selected.latest.pressure !== undefined ? `${selected.latest.pressure} bar` : '—'],
-                  ['Batteri lavest', selected.latest.battery !== undefined ? `${selected.latest.battery}%` : '—'],
-                  ['Score', selected.score],
-                ].map(([label, value]) => <div key={label} className="p-3 bg-white/5 rounded-xl border border-white/5"><p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">{label}</p><p className="text-sm text-white font-bold mt-1">{value}</p></div>)}
-              </div>
-
-              <div className="mt-5 pt-4 border-t border-white/10 space-y-1">
-                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-2">Grunnlag</p>
-                {selected.reasons.map(reason => <p key={reason} className="text-xs text-slate-400 leading-relaxed">• {reason}</p>)}
+                  ['Grønn', 'OK – ingen tydelige avvik', 'text-green-400'],
+                  ['Blå', 'Følg med – mulig utvikling', 'text-blue-400'],
+                  ['Gul', 'Handling anbefales', 'text-yellow-400'],
+                  ['Rød', 'Kritisk – prioriter først', 'text-red-400'],
+                  ['Grå', 'Manglende data/sensor', 'text-slate-300'],
+                ].map(([label, text, cls]) => <div key={label} className="flex items-center gap-3"><span className={`w-3 h-3 rounded-full ${cls.replace('text', 'bg')}`} /><p className="text-xs text-slate-400"><strong className="text-white">{label}:</strong> {text}</p></div>)}
               </div>
             </div>
-          )}
 
-          <div className="glass rounded-[2rem] p-6 border border-white/10 bg-white/[0.02]">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Fargeforklaring</h3>
-            <div className="space-y-3">
-              {[
-                ['Grønn', 'OK – ingen tydelige avvik', 'text-green-400'],
-                ['Blå', 'Følg med – mulig utvikling', 'text-blue-400'],
-                ['Gul', 'Handling anbefales', 'text-yellow-400'],
-                ['Rød', 'Kritisk – prioriter først', 'text-red-400'],
-                ['Grå', 'Manglende data/sensor', 'text-slate-300'],
-              ].map(([label, text, cls]) => <div key={label} className="flex items-center gap-3"><span className={`w-3 h-3 rounded-full ${cls.replace('text', 'bg')}`} /><p className="text-xs text-slate-400"><strong className="text-white">{label}:</strong> {text}</p></div>)}
+            <div className="glass rounded-[2rem] p-6 border border-white/10 bg-white/[0.02]">
+              <p className="text-sm text-white font-bold">Neste forbedring</p>
+              <p className="text-xs text-slate-500 mt-2 leading-relaxed">Når faktiske polygoner/koordinater for sonene legges inn i Supabase, kan dette erstattes av et ekte kartlag over tomten. Foreløpig fungerer dette som et praktisk prioriteringskart.</p>
             </div>
-          </div>
-
-          <div className="glass rounded-[2rem] p-6 border border-white/10 bg-white/[0.02]">
-            <p className="text-sm text-white font-bold">Neste forbedring</p>
-            <p className="text-xs text-slate-500 mt-2 leading-relaxed">Når faktiske polygoner/koordinater for sonene legges inn i Supabase, kan dette erstattes av et ekte kartlag over tomten. Foreløpig fungerer dette som et praktisk prioriteringskart.</p>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
