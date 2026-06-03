@@ -4,6 +4,7 @@ import LoginModal, { StoredUser } from './components/LoginModal';
 import ResetPasswordPage from './components/ResetPasswordPage';
 import { UserProfile, Language, Parcel } from './types';
 import { getCurrentSession, onAuthChange, signOut as authSignOut } from './services/auth';
+import { BIAR_DEFAULT_COORDS, BIAR_DEFAULT_LOCATION_NAME, EMPTY_OLIVIA_PARCELS } from './services/oliviaAppDefaults';
 
 const Layout = lazy(() => import('./components/Layout'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -73,18 +74,14 @@ const App: React.FC = () => {
   const [postLoginTab, setPostLoginTab] = useState(() => isAppUrl() && !isRecoveryUrl() ? 'b2b_portal' : 'dashboard');
   const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(isRecoveryUrl);
   const [weatherData, setWeatherData] = useState<any>(null);
-  const [locationName] = useState('Biar, Spain');
-  const [coords] = useState<{lat: number, lon: number}>({ lat: 38.6294, lon: -0.7667 });
+  const [locationName] = useState(BIAR_DEFAULT_LOCATION_NAME);
+  const [coords] = useState<{lat: number, lon: number}>(BIAR_DEFAULT_COORDS);
   const [user, setUser] = useState<UserProfile>({
     id: 'u1', name: 'Henrik Olivenlund', email: 'henrik@olivia.ai', role: 'farmer', subscription: 'annual', subscriptionStart: '2024-01-15', avatar: ''
   });
 
-  const DEFAULT_PARCELS: Parcel[] = [
-    { id: 'p1', name: 'Hovedlunden', area: 125000, cropType: 'Arbequina', soilType: 'Leire', treeCount: 350, irrigationStatus: 'Optimal', coordinates: [[38.6300, -0.7650]], lat: 38.6300, lon: -0.7650 },
-    { id: 'p2', name: 'Nordhellinga', area: 82000, cropType: 'Picual', soilType: 'Sandholdig leire', treeCount: 220, irrigationStatus: 'Optimal', coordinates: [[38.6325, -0.7680]], lat: 38.6325, lon: -0.7680 },
-  ];
-  const [parcels, setParcels] = useState<Parcel[]>(DEFAULT_PARCELS);
-  const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(DEFAULT_PARCELS[0]);
+  const [parcels, setParcels] = useState<Parcel[]>(EMPTY_OLIVIA_PARCELS);
+  const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [, setParcelsLoaded] = useState(false);
 
   useEffect(() => {
@@ -93,7 +90,8 @@ const App: React.FC = () => {
     import('./services/db').then(({ fetchParcels, migrateLocalStorageToSupabase }) => {
       fetchParcels().then(rows => {
         if (cancelled) return;
-        if (rows.length > 0) { setParcels(rows); setSelectedParcel(rows[0]); }
+        setParcels(rows);
+        setSelectedParcel(rows[0] ?? null);
         setParcelsLoaded(true);
       });
       migrateLocalStorageToSupabase().catch(err => console.warn('[migration] failed', err));
@@ -115,7 +113,9 @@ const App: React.FC = () => {
   const handleParcelDelete = async (parcelId: string) => {
     const { deleteParcel } = await import('./services/db');
     await deleteParcel(parcelId);
-    setParcels(parcels.filter(p => p.id !== parcelId));
+    const remainingParcels = parcels.filter(p => p.id !== parcelId);
+    setParcels(remainingParcels);
+    if (selectedParcel?.id === parcelId) setSelectedParcel(remainingParcels[0] ?? null);
   };
 
   const fetchWeather = async (lat: number, lon: number) => {
@@ -170,7 +170,7 @@ const App: React.FC = () => {
   if (showPublicSite) return <><LandingPage onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'admin')} onRegister={() => openApp('register', 'b2b_portal')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
   if (!isLoggedIn) return <><LandingPage onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'admin')} onRegister={() => openLogin('register', 'b2b_portal')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
 
-  const parcelCoords = selectedParcel ? { lat: selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0] ?? 38.6294, lon: selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1] ?? -0.7667 } : coords;
+  const parcelCoords = selectedParcel ? { lat: selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0] ?? BIAR_DEFAULT_COORDS.lat, lon: selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1] ?? BIAR_DEFAULT_COORDS.lon } : coords;
   const renderContent = () => {
     if (isAdmin && activeTab === 'admin') return <AdminDashboard />;
     switch (activeTab) {
