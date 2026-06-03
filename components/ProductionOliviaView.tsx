@@ -3,6 +3,7 @@ import { Archive, BookOpen, CalendarDays, CheckCircle2, Factory, FlaskConical, L
 import type { Batch, Language, Parcel, Recipe } from '../types';
 import { deleteBatch, deleteRecipe, fetchBatches, fetchRecipes, upsertBatch, upsertRecipe } from '../services/db';
 import { fetchOliviaHarvests, HarvestRecord, SalesChannel } from '../services/oliviaSchemaData';
+import TableOliveBatchPlanner from './TableOliveBatchPlanner';
 
 interface Props {
   language: Language;
@@ -133,6 +134,14 @@ const ProductionOliviaView: React.FC<Props> = ({ parcels }) => {
     }
   };
 
+  const savePlannedTableBatch = async (batch: Batch) => {
+    setError('');
+    await upsertBatch(batch);
+    setBatches(prev => [batch, ...prev]);
+    const batchYear = (batch.harvestDate || '').slice(0, 4);
+    if (batchYear) setSeason(batchYear);
+  };
+
   const addRecipe = async () => {
     setError('');
     if (!newRecipe.name) {
@@ -222,11 +231,14 @@ const ProductionOliviaView: React.FC<Props> = ({ parcels }) => {
       )}
 
       {activeTab === 'batches' && (
-        <div className="glass rounded-[2rem] p-6 border border-white/10 space-y-4">
-          <div className="flex justify-between items-center"><h3 className="text-lg text-white font-bold">Batcher fra olivia.batches</h3><button onClick={() => setShowBatchForm(true)} className="px-4 py-2 rounded-xl bg-green-500 text-black text-xs font-bold flex items-center gap-2"><Plus size={14} /> Ny batch</button></div>
-          {showBatchForm && <div className="grid grid-cols-1 md:grid-cols-6 gap-3 p-4 rounded-2xl bg-white/5"><select className={inputClass} value={newBatch.parcelId || ''} onChange={e => setNewBatch(p => ({ ...p, parcelId: e.target.value }))}><option value="">Velg parsell</option>{parcels.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select><input type="date" className={inputClass} value={newBatch.harvestDate || ''} onChange={e => setNewBatch(p => ({ ...p, harvestDate: e.target.value }))} /><input type="number" className={inputClass} placeholder="Kg" value={newBatch.weight || ''} onChange={e => setNewBatch(p => ({ ...p, weight: Number(e.target.value) }))} /><select className={inputClass} value={newBatch.yieldType} onChange={e => setNewBatch(p => ({ ...p, yieldType: e.target.value as 'Oil' | 'Table' }))}><option value="Oil">Olje</option><option value="Table">Bordoliven</option></select><input className={inputClass} placeholder="Sort" value={newBatch.oliveType || ''} onChange={e => setNewBatch(p => ({ ...p, oliveType: e.target.value }))} /><div className="flex gap-2"><button onClick={addBatch} className="p-3 bg-green-500 text-black rounded-xl"><Save size={16} /></button><button onClick={() => setShowBatchForm(false)} className="p-3 bg-white/10 text-white rounded-xl"><X size={16} /></button></div></div>}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">{seasonBatches.map(b => <div key={b.id} className="p-5 rounded-2xl bg-white/5 border border-white/10"><div className="flex justify-between gap-4"><div><p className="text-white font-bold">{b.traceabilityCode || b.id}</p><p className="text-xs text-slate-500">{b.harvestDate} · {parcels.find(p => p.id === b.parcelId)?.name || b.parcelId} · {b.yieldType}</p></div><button onClick={() => removeBatch(b.id)} className="text-slate-500 hover:text-red-400"><Trash2 size={16} /></button></div><div className="grid grid-cols-3 gap-3 mt-4 text-sm"><div><p className="text-xs text-slate-500">Vekt</p><p className="text-white font-bold">{fmtKg(b.weight)}</p></div><div><p className="text-xs text-slate-500">Kvalitet</p><p className="text-white font-bold">{b.quality}</p></div><div><p className="text-xs text-slate-500">Status</p><p className="text-green-400 font-bold">{b.status}</p></div></div></div>)}</div>
-          {!seasonBatches.length && <p className="text-sm text-slate-500 italic">Ingen batcher for {season}. Dette fylles ikke automatisk med demo-data.</p>}
+        <div className="space-y-5">
+          <TableOliveBatchPlanner parcels={parcels} recipes={recipes} onSave={savePlannedTableBatch} />
+          <div className="glass rounded-[2rem] p-6 border border-white/10 space-y-4">
+            <div className="flex justify-between items-center"><h3 className="text-lg text-white font-bold">Batcher fra olivia.batches</h3><button onClick={() => setShowBatchForm(true)} className="px-4 py-2 rounded-xl bg-green-500 text-black text-xs font-bold flex items-center gap-2"><Plus size={14} /> Enkel batch</button></div>
+            {showBatchForm && <div className="grid grid-cols-1 md:grid-cols-6 gap-3 p-4 rounded-2xl bg-white/5"><select className={inputClass} value={newBatch.parcelId || ''} onChange={e => setNewBatch(p => ({ ...p, parcelId: e.target.value }))}><option value="">Velg parsell</option>{parcels.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select><input type="date" className={inputClass} value={newBatch.harvestDate || ''} onChange={e => setNewBatch(p => ({ ...p, harvestDate: e.target.value }))} /><input type="number" className={inputClass} placeholder="Kg" value={newBatch.weight || ''} onChange={e => setNewBatch(p => ({ ...p, weight: Number(e.target.value) }))} /><select className={inputClass} value={newBatch.yieldType} onChange={e => setNewBatch(p => ({ ...p, yieldType: e.target.value as 'Oil' | 'Table' }))}><option value="Oil">Olje</option><option value="Table">Bordoliven</option></select><input className={inputClass} placeholder="Sort" value={newBatch.oliveType || ''} onChange={e => setNewBatch(p => ({ ...p, oliveType: e.target.value }))} /><div className="flex gap-2"><button onClick={addBatch} className="p-3 bg-green-500 text-black rounded-xl"><Save size={16} /></button><button onClick={() => setShowBatchForm(false)} className="p-3 bg-white/10 text-white rounded-xl"><X size={16} /></button></div></div>}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">{seasonBatches.map(b => <div key={b.id} className="p-5 rounded-2xl bg-white/5 border border-white/10"><div className="flex justify-between gap-4"><div><p className="text-white font-bold">{b.traceabilityCode || b.id}</p><p className="text-xs text-slate-500">{b.harvestDate} · {parcels.find(p => p.id === b.parcelId)?.name || b.parcelId} · {b.yieldType}{b.recipeName ? ` · ${b.recipeName}` : ''}</p></div><button onClick={() => removeBatch(b.id)} className="text-slate-500 hover:text-red-400"><Trash2 size={16} /></button></div><div className="grid grid-cols-3 gap-3 mt-4 text-sm"><div><p className="text-xs text-slate-500">Vekt</p><p className="text-white font-bold">{fmtKg(b.weight)}</p></div><div><p className="text-xs text-slate-500">Kvalitet</p><p className="text-white font-bold">{b.quality}</p></div><div><p className="text-xs text-slate-500">Status</p><p className="text-green-400 font-bold">{b.currentStage || b.status}</p></div></div>{b.logs?.length ? <div className="mt-4 space-y-2"><p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Arbeidsplan</p>{b.logs.slice(0, 4).map(log => <div key={`${b.id}-${log.stage}-${log.startDate}`} className="border-l-2 border-green-500/30 pl-3 text-xs"><p className="text-green-300 font-bold">{log.stage} · {log.startDate}</p><p className="text-slate-400">{log.notes}</p></div>)}</div> : null}</div>)}</div>
+            {!seasonBatches.length && <p className="text-sm text-slate-500 italic">Ingen batcher for {season}. Dette fylles ikke automatisk med demo-data.</p>}
+          </div>
         </div>
       )}
 
