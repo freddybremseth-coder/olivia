@@ -22,10 +22,11 @@ import {
   fetchRecentFarmObservations,
   insertFarmObservation,
 } from '../services/farmIoT';
-
-type DataSource = 'supabase' | 'local_demo';
+import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 
 type ObservationCategory = FarmObservation['category'];
+
+type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
 
 const CATEGORY_OPTIONS: { value: ObservationCategory; label: string; icon: React.ReactNode; color: string }[] = [
   { value: 'irrigation', label: 'Vanning / dryppslange', icon: <Droplets size={18} />, color: 'text-blue-400' },
@@ -40,82 +41,43 @@ const CATEGORY_OPTIONS: { value: ObservationCategory; label: string; icon: React
   { value: 'other', label: 'Annet', icon: <MapPin size={18} />, color: 'text-slate-400' },
 ];
 
-const demoObservations: FarmObservation[] = [
-  {
-    id: 'demo-obs-1',
-    parcel_id: 'biar-main',
-    zone_id: 'zone-a',
-    tree_group: 'Unge Gordal',
-    category: 'irrigation',
-    title: 'Sjekk dryppslange i Sone A',
-    notes: 'Lavt trykk i vanningsrådgiver. Se etter lekkasje, tette filter eller kaninskade.',
-    observed_at: new Date().toISOString(),
-    created_by: 'Olivia demo',
-  },
-  {
-    id: 'demo-obs-2',
-    parcel_id: 'biar-main',
-    zone_id: 'zone-b',
-    tree_group: 'Eldre blanding',
-    category: 'soil',
-    title: 'Jord-EC bør følges',
-    notes: 'Sone B har forhøyet EC i demo-data. Vurder jordprøve og sammenlign med vann-EC.',
-    observed_at: new Date(Date.now() - 36e5 * 8).toISOString(),
-    created_by: 'Olivia demo',
-  },
-];
+const EMPTY_FORM: Partial<FarmObservation> = {
+  parcel_id: '',
+  zone_id: '',
+  tree_group: '',
+  category: 'irrigation',
+  title: '',
+  notes: '',
+  image_urls: [],
+};
 
 function categoryMeta(category: ObservationCategory) {
   return CATEGORY_OPTIONS.find(item => item.value === category) || CATEGORY_OPTIONS[CATEGORY_OPTIONS.length - 1];
 }
 
-function getLocalObservations(): FarmObservation[] {
-  try {
-    const raw = localStorage.getItem('olivia_farm_observations');
-    if (!raw) return demoObservations;
-    const parsed = JSON.parse(raw) as FarmObservation[];
-    return parsed.length ? parsed : demoObservations;
-  } catch {
-    return demoObservations;
-  }
-}
-
-function saveLocalObservations(observations: FarmObservation[]) {
-  localStorage.setItem('olivia_farm_observations', JSON.stringify(observations));
-}
-
 const FieldObservationsView: React.FC = () => {
-  const [observations, setObservations] = useState<FarmObservation[]>(demoObservations);
-  const [dataSource, setDataSource] = useState<DataSource>('local_demo');
+  const [observations, setObservations] = useState<FarmObservation[]>([]);
+  const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
-  const [form, setForm] = useState<Partial<FarmObservation>>({
-    parcel_id: 'biar-main',
-    zone_id: 'zone-a',
-    tree_group: '',
-    category: 'irrigation',
-    title: '',
-    notes: '',
-    image_urls: [],
-  });
+  const [form, setForm] = useState<Partial<FarmObservation>>(EMPTY_FORM);
+  const [previewImageUrls, setPreviewImageUrls] = useState<string[]>([]);
 
   const loadObservations = async () => {
     setIsLoading(true);
+    setErrorMessage(null);
     try {
       const rows = await fetchRecentFarmObservations(100);
-      if (rows.length) {
-        setObservations(rows);
-        setDataSource('supabase');
-      } else {
-        setObservations(getLocalObservations());
-        setDataSource('local_demo');
-      }
+      setObservations(rows);
+      setLoadState(rows.length ? 'supabase' : 'empty');
       setLastRefresh(new Date());
     } catch (error) {
-      console.warn('[FieldObservationsView] Could not load Supabase observations. Using local data.', error);
-      setObservations(getLocalObservations());
-      setDataSource('local_demo');
+      setObservations([]);
+      setLoadState('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente feltobservasjoner fra Supabase.');
     } finally {
       setIsLoading(false);
     }
@@ -137,61 +99,89 @@ const FieldObservationsView: React.FC = () => {
     if (!fileList || !fileList[0]) return;
     const file = fileList[0];
     const localUrl = URL.createObjectURL(file);
-    setForm(prev => ({ ...prev, image_urls: [...(prev.image_urls || []), localUrl] }));
+    setPreviewImageUrls(prev => [...prev, localUrl]);
+    setErrorMessage('Bildet vises kun som midlertidig forhåndsvisning. Permanent bildeopplasting til Supabase Storage bør legges til i neste steg.');
+  };
+
+  const resetForm = () => {
+    setForm({ ...EMPTY_FORM });
+    setPreviewImageUrls([]);
   };
 
   const handleSave = async () => {
-    if (!form.title || !form.category) return;
-
-    const observation: Omit<FarmObservation, 'id'> = {
-      parcel_id: form.parcel_id || 'biar-main',
-      zone_id: form.zone_id || undefined,
-      tree_group: form.tree_group || undefined,
-      category: form.category,
-      title: form.title,
-      notes: form.notes || undefined,
-      image_urls: form.image_urls || [],
-      observed_at: new Date().toISOString(),
-      created_by: 'Freddy / Olivia',
-    };
-
-    let saved: FarmObservation = { ...observation, id: `local-${Date.now()}` };
-
-    if (dataSource === 'supabase') {
-      try {
-        saved = await insertFarmObservation(observation);
-      } catch (error) {
-        console.warn('[FieldObservationsView] Supabase save failed. Keeping local observation.', error);
-      }
+    if (!form.title?.trim() || !form.category) {
+      setErrorMessage('Skriv inn en tydelig tittel og velg kategori før du lagrer.');
+      return;
     }
 
-    const updated = [saved, ...observations];
-    setObservations(updated);
-    if (dataSource !== 'supabase') saveLocalObservations(updated);
-    setForm({ parcel_id: 'biar-main', zone_id: 'zone-a', tree_group: '', category: 'irrigation', title: '', notes: '', image_urls: [] });
-    setIsFormOpen(false);
+    setIsSaving(true);
+    setErrorMessage(null);
+    try {
+      const observation: Omit<FarmObservation, 'id'> = {
+        parcel_id: form.parcel_id?.trim() || undefined,
+        zone_id: form.zone_id?.trim() || undefined,
+        tree_group: form.tree_group?.trim() || undefined,
+        category: form.category,
+        title: form.title.trim(),
+        notes: form.notes?.trim() || undefined,
+        image_urls: [],
+        observed_at: new Date().toISOString(),
+        created_by: 'Olivia',
+      };
+
+      const saved = await insertFarmObservation(observation);
+      setObservations(prev => [saved, ...prev]);
+      setLoadState('supabase');
+      setLastRefresh(new Date());
+      resetForm();
+      setIsFormOpen(false);
+    } catch (error) {
+      setLoadState(observations.length ? 'supabase' : 'error');
+      setErrorMessage(error instanceof Error ? error.message : 'Observasjonen ble ikke lagret i Supabase.');
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  const sourceLabel = loadState === 'supabase' ? 'Supabase' : loadState === 'empty' ? 'Supabase · ingen data ennå' : loadState === 'error' ? 'Supabase-feil' : 'Laster Supabase';
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-24">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-            <MapPin className="text-green-400" /> Feltobservasjoner
-          </h2>
-          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">
-            DonaAnna · mobil feltlogg · {dataSource === 'supabase' ? 'Supabase' : 'Lokal demo'} · Oppdatert {lastRefresh.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={loadObservations} disabled={isLoading} className="p-3.5 glass border border-white/10 rounded-2xl text-green-400 hover:bg-white/5 transition-all disabled:opacity-50">
-            {isLoading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
-          </button>
-          <button onClick={() => setIsFormOpen(true)} className="bg-green-500 hover:bg-green-400 text-black px-6 py-3.5 rounded-2xl font-bold transition-all shadow-xl shadow-green-500/20 flex items-center gap-2">
-            <Plus size={20} /> Ny observasjon
-          </button>
+      <div className="relative overflow-hidden rounded-[2rem] border border-[#d9b657]/20 bg-[#070b08] p-6 shadow-2xl shadow-black/20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(217,182,87,0.16),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(111,127,60,0.16),transparent_34%)]" />
+        <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="flex items-center gap-4">
+            <DonaAnnaBrandMark variant="symbol" size="md" showText={false} />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.35em] text-[#d9b657]">Doña Anna · Olivia</p>
+              <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3 mt-1">
+                Feltobservasjoner
+              </h2>
+              <p className="text-slate-400 text-sm mt-2">
+                Mobil feltlogg for vanning, trehelse, skadedyr, modenhet og økologisk kontroll. Data lagres i Supabase-tabellen <span className="font-mono text-[#d9b657]">olivia.farm_observations</span>.
+              </p>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">
+                {sourceLabel} · Oppdatert {lastRefresh.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={loadObservations} disabled={isLoading} className="p-3.5 glass border border-white/10 rounded-2xl text-[#d9b657] hover:bg-white/5 transition-all disabled:opacity-50">
+              {isLoading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
+            </button>
+            <button onClick={() => setIsFormOpen(true)} className="bg-[#d9b657] hover:bg-[#f0cf70] text-black px-6 py-3.5 rounded-2xl font-bold transition-all shadow-xl shadow-[#d9b657]/20 flex items-center gap-2">
+              <Plus size={20} /> Ny observasjon
+            </button>
+          </div>
         </div>
       </div>
+
+      {errorMessage && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100">
+          <AlertTriangle className="mt-0.5 flex-shrink-0" size={18} />
+          <p>{errorMessage}</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
@@ -217,103 +207,146 @@ const FieldObservationsView: React.FC = () => {
 
       <div className="space-y-4">
         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Siste observasjoner</h3>
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          {observations.map(obs => {
-            const meta = categoryMeta(obs.category);
-            return (
-              <div key={obs.id} className="glass rounded-[2rem] p-5 border border-white/10 bg-white/[0.02]">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className={`p-2.5 rounded-xl bg-white/5 ${meta.color}`}>{meta.icon}</div>
-                    <div>
-                      <p className="text-white font-bold">{obs.title}</p>
-                      <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">
-                        {meta.label} · {obs.zone_id || 'ingen sone'} {obs.tree_group ? `· ${obs.tree_group}` : ''}
-                      </p>
+        {isLoading && observations.length === 0 ? (
+          <div className="glass rounded-[2rem] p-8 border border-white/10 text-slate-400 flex items-center gap-3">
+            <Loader2 size={18} className="animate-spin" /> Henter feltobservasjoner fra Supabase...
+          </div>
+        ) : observations.length === 0 ? (
+          <div className="rounded-[2rem] border border-dashed border-[#d9b657]/30 bg-[#d9b657]/5 p-8 text-center">
+            <MapPin className="mx-auto text-[#d9b657] mb-3" size={34} />
+            <h4 className="text-white font-bold text-lg">Ingen feltobservasjoner ennå</h4>
+            <p className="text-sm text-slate-400 mt-2 max-w-xl mx-auto leading-relaxed">
+              Start med å registrere det du faktisk ser på gården: dryppslanger, kaninskader, trehelse, jordfukt, modenhet eller økologisk dokumentasjon. Det opprettes ikke demo-observasjoner.
+            </p>
+            <button onClick={() => setIsFormOpen(true)} className="mt-5 bg-[#d9b657] hover:bg-[#f0cf70] text-black px-5 py-3 rounded-2xl font-bold inline-flex items-center gap-2">
+              <Plus size={18} /> Opprett første observasjon
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            {observations.map(obs => {
+              const meta = categoryMeta(obs.category);
+              return (
+                <div key={obs.id} className="glass rounded-[2rem] p-5 border border-white/10 bg-white/[0.02]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2.5 rounded-xl bg-white/5 ${meta.color}`}>{meta.icon}</div>
+                      <div>
+                        <p className="text-white font-bold">{obs.title}</p>
+                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">
+                          {meta.label} · {obs.parcel_id || 'hele gården'} {obs.zone_id ? `· ${obs.zone_id}` : ''} {obs.tree_group ? `· ${obs.tree_group}` : ''}
+                        </p>
+                      </div>
                     </div>
+                    <p className="text-[10px] text-slate-600 whitespace-nowrap">{new Date(obs.observed_at).toLocaleDateString('no-NO')}</p>
                   </div>
-                  <p className="text-[10px] text-slate-600 whitespace-nowrap">{new Date(obs.observed_at).toLocaleDateString('no-NO')}</p>
+                  {obs.notes && <p className="text-sm text-slate-400 mt-4 leading-relaxed">{obs.notes}</p>}
+                  {obs.image_urls && obs.image_urls.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2 mt-4">
+                      {obs.image_urls.slice(0, 3).map(url => (
+                        <img key={url} src={url} alt="Observasjon" className="h-20 w-full object-cover rounded-xl border border-white/10" />
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {obs.notes && <p className="text-sm text-slate-400 mt-4 leading-relaxed">{obs.notes}</p>}
-                {obs.image_urls && obs.image_urls.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2 mt-4">
-                    {obs.image_urls.slice(0, 3).map(url => (
-                      <img key={url} src={url} alt="Observasjon" className="h-20 w-full object-cover rounded-xl border border-white/10" />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {isFormOpen && (
         <div className="fixed inset-0 z-[2000] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/80 backdrop-blur-md">
           <div className="glass w-full md:max-w-xl rounded-t-[2.5rem] md:rounded-[2.5rem] p-6 md:p-8 border border-white/20 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-start gap-4">
               <div>
-                <h3 className="text-2xl font-bold text-white">Ny feltobservasjon</h3>
-                <p className="text-xs text-slate-500 mt-1">Registrer det du ser på tomten akkurat nå</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#d9b657]">Doña Anna feltlogg</p>
+                <h3 className="text-2xl font-bold text-white mt-1">Ny feltobservasjon</h3>
+                <p className="text-xs text-slate-500 mt-1">Registrer det du ser på tomten akkurat nå. Lagres i Supabase.</p>
               </div>
-              <button onClick={() => setIsFormOpen(false)} className="p-2 text-slate-500 hover:text-white"><X size={24} /></button>
+              <button onClick={() => { setIsFormOpen(false); resetForm(); }} className="p-2 text-slate-500 hover:text-white"><X size={24} /></button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              {CATEGORY_OPTIONS.map(option => (
-                <button
-                  key={option.value}
-                  onClick={() => setForm(prev => ({ ...prev, category: option.value }))}
-                  className={`p-3 rounded-2xl border text-left transition-all ${form.category === option.value ? 'border-green-500 bg-green-500/10' : 'border-white/10 bg-white/5'}`}
-                >
-                  <div className={option.color}>{option.icon}</div>
-                  <p className="text-xs text-white font-bold mt-2">{option.label}</p>
-                </button>
-              ))}
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Kategori *</label>
+              <div className="grid grid-cols-2 gap-2">
+                {CATEGORY_OPTIONS.map(option => (
+                  <button
+                    key={option.value}
+                    onClick={() => setForm(prev => ({ ...prev, category: option.value }))}
+                    className={`p-3 rounded-2xl border text-left transition-all ${form.category === option.value ? 'border-[#d9b657] bg-[#d9b657]/10' : 'border-white/10 bg-white/5'}`}
+                  >
+                    <div className={option.color}>{option.icon}</div>
+                    <p className="text-xs text-white font-bold mt-2">{option.label}</p>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <input
-              className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none"
-              placeholder="Tittel, f.eks. Kaninskade på dryppslange"
-              value={form.title || ''}
-              onChange={event => setForm(prev => ({ ...prev, title: event.target.value }))}
-            />
-
-            <div className="grid grid-cols-2 gap-3">
+            <Field label="Tittel *" help="Kort og konkret beskrivelse av observasjonen.">
               <input
-                className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none"
-                placeholder="Sone, f.eks. zone-a"
-                value={form.zone_id || ''}
-                onChange={event => setForm(prev => ({ ...prev, zone_id: event.target.value }))}
+                className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[#d9b657]/60"
+                placeholder="F.eks. Kaninskade på dryppslange"
+                value={form.title || ''}
+                onChange={event => setForm(prev => ({ ...prev, title: event.target.value }))}
               />
+            </Field>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Field label="Parsell-ID" help="Valgfritt. Bruk Supabase parcel_id hvis observasjonen gjelder en bestemt parsell.">
+                <input
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60"
+                  placeholder="F.eks. parcela-190"
+                  value={form.parcel_id || ''}
+                  onChange={event => setForm(prev => ({ ...prev, parcel_id: event.target.value }))}
+                />
+              </Field>
+              <Field label="Sone / sektor" help="Valgfritt. Brukes hvis du deler parsellen i soner.">
+                <input
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60"
+                  placeholder="F.eks. nordre felt eller dryppsektor 2"
+                  value={form.zone_id || ''}
+                  onChange={event => setForm(prev => ({ ...prev, zone_id: event.target.value }))}
+                />
+              </Field>
+            </div>
+
+            <Field label="Tregruppe / sort" help="Valgfritt. Skriv sort eller gruppe, f.eks. Gordal, Changlot Real eller eldre trær.">
               <input
-                className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none"
-                placeholder="Tregruppe"
+                className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60"
+                placeholder="F.eks. unge Gordal eller eldre blanding"
                 value={form.tree_group || ''}
                 onChange={event => setForm(prev => ({ ...prev, tree_group: event.target.value }))}
               />
+            </Field>
+
+            <Field label="Notat" help="Skriv hva du ser, hvor det er og hva som bør følges opp.">
+              <textarea
+                className="w-full min-h-[130px] bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[#d9b657]/60"
+                placeholder="Notat: hva ser du, hvor er det, hva bør gjøres?"
+                value={form.notes || ''}
+                onChange={event => setForm(prev => ({ ...prev, notes: event.target.value }))}
+              />
+            </Field>
+
+            <div>
+              <label className="w-full flex items-center justify-center gap-3 p-5 rounded-2xl border border-dashed border-white/20 bg-white/5 text-slate-400 cursor-pointer hover:text-white hover:border-[#d9b657]/40 transition-all">
+                <Camera size={20} /> Midlertidig bilde-forhåndsvisning
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={event => handleImageSelect(event.target.files)} />
+              </label>
+              <p className="text-[11px] text-slate-600 mt-2 leading-relaxed">
+                Bilder lagres ikke permanent ennå. Neste trygge steg er å koble dette til Supabase Storage før bilde-URL-er lagres i farm_observations.
+              </p>
             </div>
 
-            <textarea
-              className="w-full min-h-[130px] bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none"
-              placeholder="Notat: hva ser du, hvor er det, hva bør gjøres?"
-              value={form.notes || ''}
-              onChange={event => setForm(prev => ({ ...prev, notes: event.target.value }))}
-            />
-
-            <label className="w-full flex items-center justify-center gap-3 p-5 rounded-2xl border border-dashed border-white/20 bg-white/5 text-slate-400 cursor-pointer hover:text-white hover:border-green-500/40 transition-all">
-              <Camera size={20} /> Legg ved bilde fra mobil/kamera
-              <input type="file" accept="image/*" capture="environment" className="hidden" onChange={event => handleImageSelect(event.target.files)} />
-            </label>
-
-            {form.image_urls && form.image_urls.length > 0 && (
+            {previewImageUrls.length > 0 && (
               <div className="grid grid-cols-3 gap-2">
-                {form.image_urls.map(url => <img key={url} src={url} alt="Valgt" className="h-24 w-full object-cover rounded-xl border border-white/10" />)}
+                {previewImageUrls.map(url => <img key={url} src={url} alt="Valgt" className="h-24 w-full object-cover rounded-xl border border-white/10" />)}
               </div>
             )}
 
-            <button onClick={handleSave} className="w-full bg-green-500 text-black font-bold py-5 rounded-[2rem] text-lg shadow-2xl hover:bg-green-400 transition-all flex items-center justify-center gap-2">
-              <Save size={20} /> Lagre observasjon
+            <button onClick={handleSave} disabled={isSaving || !form.title?.trim()} className="w-full bg-[#d9b657] text-black font-bold py-5 rounded-[2rem] text-lg shadow-2xl hover:bg-[#f0cf70] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+              {isSaving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />} Lagre observasjon
             </button>
           </div>
         </div>
@@ -321,5 +354,15 @@ const FieldObservationsView: React.FC = () => {
     </div>
   );
 };
+
+function Field({ label, help, children }: { label: string; help: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">{label}</span>
+      <span className="text-[11px] text-slate-600 block mb-2">{help}</span>
+      {children}
+    </label>
+  );
+}
 
 export default FieldObservationsView;
