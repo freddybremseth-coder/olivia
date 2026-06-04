@@ -50,6 +50,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
       icon: MapPinned,
       items: [
         { id: 'map', icon: MapIcon, label: t('map') },
+        { id: 'property_documents', icon: ShieldCheck, label: 'Eierskapsdokumenter' },
         { id: 'zone_status', icon: MapPinned, label: 'Sonekart' },
         { id: 'field_observations', icon: MapPin, label: 'Feltlogg' },
         { id: 'consultant', icon: Sparkles, label: t('consultant') },
