@@ -1,15 +1,30 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 
-function readBody(req: IncomingMessage): Promise<Buffer> {
+async function readJsonBody(req: IncomingMessage & { body?: unknown }): Promise<string> {
+  if (req.body !== undefined && req.body !== null) {
+    if (typeof req.body === 'string') return req.body;
+    if (Buffer.isBuffer(req.body)) return req.body.toString('utf8');
+    return JSON.stringify(req.body);
+  }
+
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     req.on('data', chunk => chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
     req.on('error', reject);
   });
 }
 
-export default async function handler(req: IncomingMessage & { method?: string }, res: ServerResponse) {
+function sendJson(res: ServerResponse, status: number, payload: unknown) {
+  res.writeHead(status, {
+    'Access-Control-Allow-Origin': '*',
+    'Cache-Control': 'no-store',
+    'Content-Type': 'application/json',
+  });
+  res.end(JSON.stringify(payload));
+}
+
+export default async function handler(req: IncomingMessage & { method?: string; body?: unknown }, res: ServerResponse) {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
@@ -21,20 +36,23 @@ export default async function handler(req: IncomingMessage & { method?: string }
   }
 
   if (req.method !== 'POST') {
-    res.writeHead(405, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: { message: 'Method not allowed' } }));
+    sendJson(res, 405, { error: { message: 'Method not allowed' } });
     return;
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: { message: 'ANTHROPIC_API_KEY is not configured in Vercel Environment Variables.' } }));
+    sendJson(res, 503, { error: { message: 'Claude er ikke konfigurert: legg inn ANTHROPIC_API_KEY i Vercel Environment Variables.' } });
     return;
   }
 
   try {
-    const body = await readBody(req);
+    const body = await readJsonBody(req);
+    if (!body || body === '{}') {
+      sendJson(res, 400, { error: { message: 'Tom request body til Anthropic proxy.' } });
+      return;
+    }
+
     const upstream = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -52,7 +70,6 @@ export default async function handler(req: IncomingMessage & { method?: string }
     });
     res.end(text);
   } catch (error: any) {
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: { message: error?.message || 'Anthropic proxy failed.' } }));
+    sendJson(res, 500, { error: { message: error?.message || 'Anthropic proxy failed.' } });
   }
 }
