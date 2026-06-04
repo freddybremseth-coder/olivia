@@ -37,6 +37,7 @@ const SettingsView = lazy(() => import('./components/SettingsView'));
 const FieldConsultantView = lazy(() => import('./components/FieldConsultantView'));
 const PruningAdvisorView = lazy(() => import('./components/PruningAdvisorView'));
 const PropertyDocumentsView = lazy(() => import('./components/PropertyDocumentsView'));
+const CaecvDocumentsView = lazy(() => import('./components/CaecvDocumentsView'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const IoTDashboard = lazy(() => import('./components/IoTDashboard'));
 const DonaAnnaDailyDashboard = lazy(() => import('./components/DonaAnnaDailyDashboard'));
@@ -193,6 +194,7 @@ const App: React.FC = () => {
       case 'consultant': return <FieldConsultantView />;
       case 'pruning': return <PruningAdvisorView />;
       case 'property_documents': return <PropertyDocumentsView />;
+      case 'caecv_documents': return <CaecvDocumentsView />;
       case 'map': return <FarmMap parcels={parcels} onParcelSave={handleParcelSave} onParcelDelete={handleParcelDelete} language={language} />;
       case 'weather': return <WeatherView initialData={weatherData} initialLocationName={selectedParcel?.name || ''} initialCoords={parcelCoords} language={language} parcels={parcels} selectedParcel={selectedParcel} onParcelSelect={setSelectedParcel} />;
       case 'climate_stats': return <ClimateDecisionStats />;
