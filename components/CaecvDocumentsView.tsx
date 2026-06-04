@@ -12,8 +12,11 @@ import {
   ShieldCheck,
   Upload,
   X,
+  ClipboardList,
 } from 'lucide-react';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
+import type { Task } from '../types';
+import { upsertTask } from '../services/db';
 import { ORGANIC_CHANGE_OF_OWNERSHIP_ITEMS, OrganicApplicationItem } from '../services/organicCertificationPackage';
 import {
   archiveCaecvDocument,
@@ -30,6 +33,12 @@ const inputClass = 'w-full bg-black/40 border border-white/10 rounded-2xl px-4 p
 const textareaClass = 'w-full min-h-[110px] bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[#d9b657]/60';
 const labelClass = 'text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1';
 const helpClass = 'text-[11px] text-slate-600 block mb-2';
+
+function makeDueDate(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
 
 function formatBytes(bytes?: number) {
   if (!bytes) return '—';
@@ -49,10 +58,26 @@ function itemUploaded(item: OrganicApplicationItem, documents: CaecvDocument[]) 
   return documents.some(doc => doc.caecv_item_id === item.id);
 }
 
+function itemToTask(item: OrganicApplicationItem): Task {
+  const priority: Task['priority'] = item.priority === 'critical' ? 'Kritisk' : item.priority === 'high' ? 'Høy' : item.priority === 'medium' ? 'Middels' : 'Lav';
+  const dueDays = item.priority === 'critical' ? 7 : item.priority === 'high' ? 14 : item.priority === 'medium' ? 30 : 45;
+  return {
+    id: `caecv-${item.id}`,
+    title: `CAECV: ${item.title}`,
+    priority,
+    category: 'Øko / CAECV sertifisering',
+    user: item.party === 'previous_holder' ? 'Tidligere eier / Emilio' : 'Anna / Freddy',
+    status: 'TODO',
+    dueDate: makeDueDate(dueDays),
+  };
+}
+
 const CaecvDocumentsView: React.FC = () => {
   const [documents, setDocuments] = useState<CaecvDocument[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingTasks, setIsCreatingTasks] = useState(false);
+  const [createdTasksMessage, setCreatedTasksMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -85,6 +110,21 @@ const CaecvDocumentsView: React.FC = () => {
     setSelectedFile(null);
     setForm(defaultCaecvDocumentInput(item?.id));
     setModalOpen(true);
+  };
+
+  const createCaecvTasks = async () => {
+    setIsCreatingTasks(true);
+    setError(null);
+    setCreatedTasksMessage(null);
+    try {
+      const items = ORGANIC_CHANGE_OF_OWNERSHIP_ITEMS.filter(item => item.required || item.priority === 'critical' || item.priority === 'high');
+      await Promise.all(items.map(item => upsertTask(itemToTask(item))));
+      setCreatedTasksMessage(`${items.length} CAECV-oppgaver er opprettet/oppdatert i olivia.tasks.`);
+    } catch (err: any) {
+      setError(err?.message || 'Kunne ikke opprette CAECV-oppgaver i Supabase.');
+    } finally {
+      setIsCreatingTasks(false);
+    }
   };
 
   const save = async () => {
@@ -135,14 +175,16 @@ const CaecvDocumentsView: React.FC = () => {
               <p className="text-slate-400 text-sm mt-2">Privat arkiv for søknad, maler, signerte skjema, NIE, parselliste, kvitteringer og korrespondanse ved økologisk sertifisering.</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button onClick={load} disabled={isLoading} className="p-3.5 glass border border-white/10 rounded-2xl text-[#d9b657] hover:bg-white/5 transition-all disabled:opacity-50">{isLoading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}</button>
+            <button onClick={createCaecvTasks} disabled={isCreatingTasks} className="bg-white/10 hover:bg-white/15 text-white px-5 py-3.5 rounded-2xl font-bold transition-all border border-white/10 flex items-center gap-2 disabled:opacity-50">{isCreatingTasks ? <Loader2 size={18} className="animate-spin" /> : <ClipboardList size={18} />} Opprett oppgaver</button>
             <button onClick={() => openUpload()} className="bg-[#d9b657] hover:bg-[#f0cf70] text-black px-6 py-3.5 rounded-2xl font-bold transition-all shadow-xl shadow-[#d9b657]/20 flex items-center gap-2"><Plus size={20} /> Last opp</button>
           </div>
         </div>
       </div>
 
       {error && <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100 flex gap-3"><AlertTriangle size={18} className="flex-shrink-0 mt-0.5" /> {error}</div>}
+      {createdTasksMessage && <div className="rounded-2xl border border-green-500/25 bg-green-500/10 p-4 text-sm text-green-100 flex gap-3"><CheckCircle2 size={18} className="flex-shrink-0 mt-0.5" /> {createdTasksMessage}</div>}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Stat label="Obligatoriske lastet opp" value={`${stats.uploadedRequired}/${stats.required}`} icon={<CheckCircle2 size={18} />} />
