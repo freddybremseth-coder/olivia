@@ -13,6 +13,7 @@ import {
   Sprout,
 } from 'lucide-react';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
+import OrganicCertificationCaecvPackage from './OrganicCertificationCaecvPackage';
 import type { Parcel, Task } from '../types';
 import { fetchTasks } from '../services/db';
 import { fetchOliviaParcels, fetchOliviaSubsidies, type SubsidyIncome } from '../services/oliviaSchemaData';
@@ -84,7 +85,7 @@ function parcelToOrganic(parcel: Parcel): OrganicParcel {
 
 function isOrganicTask(task: Task): boolean {
   const haystack = `${task.title || ''} ${task.category || ''}`.toLowerCase();
-  return haystack.includes('øko') || haystack.includes('organic') || haystack.includes('sertif') || haystack.includes('støtte') || haystack.includes('kompensasjon') || haystack.includes('catastro') || haystack.includes('befaring');
+  return haystack.includes('øko') || haystack.includes('organic') || haystack.includes('sertif') || haystack.includes('støtte') || haystack.includes('kompensasjon') || haystack.includes('catastro') || haystack.includes('befaring') || haystack.includes('caecv');
 }
 
 function subsidyLabel(type: SubsidyIncome['type']): string {
@@ -138,7 +139,7 @@ const OrganicCertificationOliviaView: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3"><Leaf className="text-green-400" /> Øko / støtte</h2>
-          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">olivia.parcels · olivia.subsidy_income · olivia.tasks</p>
+          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">olivia.parcels · olivia.subsidy_income · olivia.tasks · CAECV søknadspakke</p>
         </div>
         <button onClick={load} disabled={isLoading} className="p-3.5 glass border border-white/10 rounded-2xl text-green-400 hover:bg-white/5 transition-all disabled:opacity-50">
           {isLoading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
@@ -152,11 +153,13 @@ const OrganicCertificationOliviaView: React.FC = () => {
           <ShieldCheck className="text-green-400 mt-1" />
           <div>
             <p className="text-[10px] text-green-400 uppercase font-bold tracking-widest mb-2">Viktig kontekst</p>
-            <p className="text-white font-bold">Denne modulen bruker nå ekte gårdsdata fra RealtyFlow/Olivia-skjemaet.</p>
+            <p className="text-white font-bold">Denne modulen bruker ekte gårdsdata og viser nå også CAECV-dokumentpakken for eierskifte.</p>
             <p className="text-xs text-slate-500 mt-2">Parseller og Catastro-info hentes fra olivia.parcels. Støtte/kompensasjon hentes fra olivia.subsidy_income. Relaterte oppgaver filtreres fra olivia.tasks.</p>
           </div>
         </div>
       </div>
+
+      <OrganicCertificationCaecvPackage />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
@@ -203,7 +206,7 @@ const OrganicCertificationOliviaView: React.FC = () => {
               <p className="text-xs text-slate-500 mt-3">Kategori: {task.category || '—'} · Ansvarlig: {task.user || '—'}</p>
             </div>
           ))}
-          {!tasks.length && <div className="glass rounded-[2rem] p-6 border border-white/10 text-slate-500">Ingen øko-/støtteoppgaver funnet. Opprett oppgaver med kategori/tittel som inneholder øko, sertifisering, støtte, kompensasjon, Catastro eller befaring.</div>}
+          {!tasks.length && <div className="glass rounded-[2rem] p-6 border border-white/10 text-slate-500">Ingen øko-/støtteoppgaver funnet. Opprett oppgaver med kategori/tittel som inneholder øko, CAECV, sertifisering, støtte, kompensasjon, Catastro eller befaring.</div>}
         </div>
       </div>
 
@@ -231,7 +234,7 @@ const OrganicCertificationOliviaView: React.FC = () => {
           <FileCheck2 size={18} className="text-green-400 mt-0.5" />
           <div>
             <p className="text-sm text-white font-bold">Dokumentkontroll</p>
-            <p className="text-xs text-slate-500 mt-2 leading-relaxed">Koble senere dokumenter direkte til parceller/batcher: copia simple, nota simple, Catastro, økologisk sertifikat, befaringsrapport og søknad/vedtak om støtte.</p>
+            <p className="text-xs text-slate-500 mt-2 leading-relaxed">Koble dokumenter direkte til parceller/batcher: copia simple, nota simple, Catastro, økologisk sertifikat, CAECV-søknadspakke, befaringsrapport og søknad/vedtak om støtte.</p>
           </div>
         </div>
       </div>
