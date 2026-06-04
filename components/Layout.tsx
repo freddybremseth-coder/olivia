@@ -101,6 +101,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
       icon: ClipboardList,
       items: [
         { id: 'organic_certification', icon: FileCheck2, label: 'Øko / støtte' },
+        { id: 'caecv_documents', icon: FileText, label: 'CAECV dokumentpakke' },
         { id: 'auto_tasks', icon: Sparkles, label: 'Auto-oppgaver' },
         { id: 'season_report', icon: FileText, label: 'Sesongrapport' },
         { id: 'tasks', icon: ClipboardList, label: t('tasks') },
