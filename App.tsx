@@ -44,6 +44,8 @@ const DonaAnnaDailyDashboard = lazy(() => import('./components/DonaAnnaDailyDash
 const CommerceHub = lazy(() => import('./components/CommerceHub'));
 const ProfitabilityPage = lazy(() => import('./pages/Profitability'));
 
+const OWNER_EMAILS = ['freddy.bremseth@gmail.com'];
+
 function isRecoveryUrl(): boolean {
   if (typeof window === 'undefined') return false;
   return /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
@@ -63,6 +65,16 @@ function getTraceSlug(): string | undefined {
   if (typeof window === 'undefined') return undefined;
   const parts = window.location.pathname.split('/').filter(Boolean);
   return parts[0] === 'trace' ? parts[1] : undefined;
+}
+
+function isOwnerEmail(email?: string): boolean {
+  return !!email && OWNER_EMAILS.includes(email.trim().toLowerCase());
+}
+
+function resolvePostLoginTab(targetTab: string, storedUser: Pick<UserProfile, 'email'>, admin: boolean): string {
+  if (isOwnerEmail(storedUser.email)) return 'dashboard';
+  if (targetTab === 'admin' && !admin) return 'commerce';
+  return targetTab;
 }
 
 function PublicMobileLoginDock({ onLogin, onAdminLogin }: { onLogin: () => void; onAdminLogin: () => void }) {
@@ -156,21 +168,25 @@ const App: React.FC = () => {
     let cancelled = false;
     if (!isRecoveryUrl()) getCurrentSession().then(result => {
       if (cancelled || !result) return;
-      setUser(result.user); setIsAdmin(result.isAdmin); setIsLoggedIn(true); setShowLogin(false);
+      const target = resolvePostLoginTab(postLoginTab, result.user, result.isAdmin);
+      setUser(result.user); setIsAdmin(result.isAdmin); setIsLoggedIn(true); setShowLogin(false); setActiveTab(target);
     });
     const unsubscribe = onAuthChange(
       result => {
         if (cancelled) return;
-        if (result) { setUser(result.user); setIsAdmin(result.isAdmin); setIsLoggedIn(true); setShowLogin(false); }
+        if (result) {
+          const target = resolvePostLoginTab(postLoginTab, result.user, result.isAdmin);
+          setUser(result.user); setIsAdmin(result.isAdmin); setIsLoggedIn(true); setShowLogin(false); setActiveTab(target);
+        }
         else { setIsLoggedIn(false); setIsAdmin(false); }
       },
       () => { if (!cancelled) setIsPasswordRecovery(true); },
     );
     return () => { cancelled = true; unsubscribe(); };
-  }, []);
+  }, [postLoginTab]);
 
   const handleLoginSuccess = (storedUser: StoredUser, admin: boolean) => {
-    setUser(storedUser); setIsAdmin(admin); setIsLoggedIn(true); setActiveTab(postLoginTab === 'admin' && !admin ? 'commerce' : postLoginTab); setShowLogin(false);
+    setUser(storedUser); setIsAdmin(admin); setIsLoggedIn(true); setActiveTab(resolvePostLoginTab(postLoginTab, storedUser, admin)); setShowLogin(false);
   };
 
   const handleLogout = async () => { await authSignOut(); setIsLoggedIn(false); setIsAdmin(false); setUser(OLIVIA_FALLBACK_USER); setActiveTab('dashboard'); };
@@ -181,7 +197,7 @@ const App: React.FC = () => {
   if (isTraceUrl()) return <Suspense fallback={<div className="min-h-screen bg-[#060807] p-8 text-slate-300">Laster DonaAnna sporbarhet...</div>}><PublicTracePage slug={getTraceSlug()} /></Suspense>;
   if (isPasswordRecovery) return <ResetPasswordPage onDone={() => setIsPasswordRecovery(false)} />;
   if (showPublicSite) return <><LandingPage onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'admin')} onRegister={() => openApp('register', 'b2b_portal')} /><PublicMobileLoginDock onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'admin')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
-  if (!isLoggedIn) return <><LandingPage onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'admin')} onRegister={() => openLogin('register', 'b2b_portal')} /><PublicMobileLoginDock onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'admin')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
+  if (!isLoggedIn) return <><LandingPage onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'admin')} onRegister={() => openLogin('register', 'b2b_portal')} /><PublicMobileLoginDock onLogin={() => openLogin('login', 'admin')} onAdminLogin={() => openLogin('login', 'admin')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
 
   const parcelCoords = selectedParcel ? { lat: selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0] ?? BIAR_DEFAULT_COORDS.lat, lon: selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1] ?? BIAR_DEFAULT_COORDS.lon } : coords;
   const renderContent = () => {
