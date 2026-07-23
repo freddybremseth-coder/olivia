@@ -35,6 +35,20 @@ function normalizePriority(priority: any): 'HØY' | 'MIDDELS' | 'LAV' {
   return 'LAV';
 }
 
+function confidencePercent(value: unknown): number {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n)) return 0;
+  const normalized = n <= 1 ? n * 100 : n;
+  return Math.max(0, Math.min(100, Math.round(normalized)));
+}
+
+function qualityLabel(value: unknown): string {
+  const raw = String(value || '').toUpperCase();
+  if (raw === 'GOOD') return 'Godt';
+  if (raw === 'INSUFFICIENT') return 'Svakt';
+  return 'Begrenset';
+}
+
 function normalizeStep(step: Partial<PruningStep>, index: number): PruningStep {
   return {
     area: step.area || `Område ${index + 1}`,
@@ -42,6 +56,8 @@ function normalizeStep(step: Partial<PruningStep>, index: number): PruningStep {
     priority: normalizePriority(step.priority),
     x: Math.max(5, Math.min(95, Number(step.x || 50))),
     y: Math.max(5, Math.min(95, Number(step.y || 50))),
+    confidence: confidencePercent(step.confidence || 50),
+    evidence: step.evidence,
   };
 }
 
@@ -54,6 +70,12 @@ function normalizePlan(raw: PruningPlan | null | undefined): PruningPlan {
     recommendedDate: raw?.recommendedDate || new Date().toISOString().slice(0, 10),
     timingAdvice: raw?.timingAdvice || 'AI kunne ikke fastslå optimal timing med høy sikkerhet. Bruk lokal sesong, vær og treets vitalitet før tiltak.',
     toolsNeeded: Array.isArray(raw?.toolsNeeded) && raw!.toolsNeeded.length ? raw!.toolsNeeded : ['Beskjæringssaks', 'Sag', 'Desinfeksjon av verktøy'],
+    confidence: confidencePercent(raw?.confidence),
+    ageConfidence: confidencePercent(raw?.ageConfidence),
+    observationQuality: raw?.observationQuality || (confidencePercent(raw?.confidence) >= 70 ? 'GOOD' : confidencePercent(raw?.confidence) >= 40 ? 'LIMITED' : 'INSUFFICIENT'),
+    limitations: Array.isArray(raw?.limitations) ? raw!.limitations : [],
+    missingDetails: Array.isArray(raw?.missingDetails) ? raw!.missingDetails : [],
+    safetyNotes: Array.isArray(raw?.safetyNotes) ? raw!.safetyNotes : [],
   };
 }
 
@@ -308,11 +330,11 @@ const PruningAdvisorView: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-          {!plan ? <div className="glass rounded-[2rem] p-8 border border-white/10 text-center"><ImageIcon className="mx-auto text-[#d9b657] mb-4" size={42} /><h3 className="text-white font-bold text-xl">Klar for beskjæringsanalyse</h3><p className="text-slate-400 text-sm mt-2">Legg inn minst ett godt heltrebilde. Flere vinkler gir bedre verdi.</p></div> : <div className="space-y-5 animate-in slide-in-from-right-6 duration-500"><div className="glass rounded-[2rem] p-6 border border-white/10"><p className="text-[10px] font-bold text-[#d9b657] uppercase tracking-widest">Plan</p><h3 className="text-2xl font-bold text-white mt-1">{plan.treeType}</h3><p className="text-xs text-slate-500 mt-1">{plan.ageEstimate}</p><p className="text-sm text-slate-400 mt-4">{plan.timingAdvice}</p><div className="grid grid-cols-2 gap-3 mt-5"><Metric label="Anbefalt dato" value={scheduledDate || plan.recommendedDate} /><Metric label="Antall punkter" value={String(plan.pruningSteps.length)} /></div></div>
+          {!plan ? <div className="glass rounded-[2rem] p-8 border border-white/10 text-center"><ImageIcon className="mx-auto text-[#d9b657] mb-4" size={42} /><h3 className="text-white font-bold text-xl">Klar for beskjæringsanalyse</h3><p className="text-slate-400 text-sm mt-2">Legg inn minst ett godt heltrebilde. Flere vinkler gir bedre verdi.</p></div> : <div className="space-y-5 animate-in slide-in-from-right-6 duration-500"><div className="glass rounded-[2rem] p-6 border border-white/10"><p className="text-[10px] font-bold text-[#d9b657] uppercase tracking-widest">Plan</p><h3 className="text-2xl font-bold text-white mt-1">{plan.treeType}</h3><p className="text-xs text-slate-500 mt-1">{plan.ageEstimate}</p><p className="text-sm text-slate-400 mt-4">{plan.timingAdvice}</p><div className="grid grid-cols-2 gap-3 mt-5"><Metric label="Anbefalt dato" value={scheduledDate || plan.recommendedDate} /><Metric label="Antall punkter" value={String(plan.pruningSteps.length)} /><Metric label="Sikkerhet" value={`${confidencePercent(plan.confidence)}%`} /><Metric label="Bildegrunnlag" value={qualityLabel(plan.observationQuality)} /></div>{(plan.limitations?.length || plan.missingDetails?.length || plan.safetyNotes?.length) ? <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-100 space-y-1">{plan.limitations?.length ? <p>Begrensning: {plan.limitations.join(', ')}</p> : null}{plan.missingDetails?.length ? <p>Mangler: {plan.missingDetails.join(', ')}</p> : null}{plan.safetyNotes?.length ? <p>Sikkerhet: {plan.safetyNotes.join(', ')}</p> : null}</div> : null}</div>
 
             <div className="glass rounded-[2rem] p-5 border border-white/10 space-y-3"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Planlagt dato</label><input type="date" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} /></div>
 
-            <div className="space-y-3">{plan.pruningSteps.length ? plan.pruningSteps.map((step, i) => <button key={`${step.area}-${i}`} onMouseEnter={() => setActiveMarker(i)} onMouseLeave={() => setActiveMarker(null)} className={`w-full text-left p-4 rounded-2xl border transition-all ${activeMarker === i ? 'bg-green-500/10 border-green-500/30' : 'bg-white/5 border-white/10'}`}><div className="flex justify-between"><p className="text-white font-bold"><Scissors size={14} className="inline mr-2" />{step.area}</p><span className="text-[10px] text-[#d9b657] font-bold">{step.priority}</span></div><p className="text-sm text-slate-400 mt-2">{step.action}</p></button>) : <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">AI kunne ikke markere trygge snittpunkter. Ta flere bilder før du beskjærer.</div>}</div>
+            <div className="space-y-3">{plan.pruningSteps.length ? plan.pruningSteps.map((step, i) => <button key={`${step.area}-${i}`} onMouseEnter={() => setActiveMarker(i)} onMouseLeave={() => setActiveMarker(null)} className={`w-full text-left p-4 rounded-2xl border transition-all ${activeMarker === i ? 'bg-green-500/10 border-green-500/30' : 'bg-white/5 border-white/10'}`}><div className="flex justify-between gap-3"><p className="text-white font-bold flex-1 min-w-0"><Scissors size={14} className="inline mr-2" />{step.area}</p><span className="text-[10px] text-[#d9b657] font-bold flex-shrink-0">{step.priority} · {confidencePercent(step.confidence)}%</span></div><p className="text-sm text-slate-400 mt-2">{step.action}</p>{step.evidence && <p className="text-xs text-slate-500 mt-2">Grunnlag: {step.evidence}</p>}</button>) : <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">AI kunne ikke markere trygge snittpunkter. Ta flere bilder før du beskjærer.</div>}</div>
 
             <div className="flex flex-col md:flex-row gap-3"><button onClick={saveToHistory} disabled={isSavingHistory} className={`flex-1 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 ${historySaved ? 'bg-green-500 text-black' : 'bg-white/10 text-white hover:bg-white/15'}`}>{isSavingHistory ? <Loader2 size={18} className="animate-spin" /> : historySaved ? <CheckCircle2 size={18} /> : <Save size={18} />} {historySaved ? 'Lagret' : 'Lagre historikk'}</button><button onClick={addTask} disabled={isSavingTask} className={`flex-1 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 ${taskSaved ? 'bg-green-500 text-black' : 'bg-[#d9b657] text-black hover:bg-[#f0cf70]'}`}>{isSavingTask ? <Loader2 size={18} className="animate-spin" /> : taskSaved ? <CheckCircle2 size={18} /> : <Calendar size={18} />} {taskSaved ? 'Oppgave laget' : 'Lag oppgave'}</button></div>
 

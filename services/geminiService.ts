@@ -14,6 +14,8 @@ export interface PruningStep {
   priority: 'LAV' | 'MIDDELS' | 'HØY';
   x: number;
   y: number;
+  confidence?: number;
+  evidence?: string;
 }
 
 export interface PruningPlan {
@@ -23,6 +25,12 @@ export interface PruningPlan {
   recommendedDate: string;
   timingAdvice: string;
   toolsNeeded: string[];
+  confidence?: number;
+  ageConfidence?: number;
+  observationQuality?: 'GOOD' | 'LIMITED' | 'INSUFFICIENT';
+  limitations?: string[];
+  missingDetails?: string[];
+  safetyNotes?: string[];
 }
 
 export interface PlantDiagnosis {
@@ -31,6 +39,8 @@ export interface PlantDiagnosis {
   condition: 'SUNN' | 'OBSERVASJON' | 'SYK';
   diagnosis: string;
   actions: string[];
+  confidence?: number;
+  evidence?: string[];
 }
 
 export interface ExpertOliveReport {
@@ -176,6 +186,131 @@ function shouldFallback(err: unknown): boolean {
     msg.includes('http 504') ||
     msg.includes('overloaded')
   );
+}
+
+const LOCAL_OLIVE_CONTEXT = `
+Gårdskontekst: Doña Anna ligger i Biar, Alicante, Spania.
+Kjente eller sannsynlige sorter på gården: Gordal/Gordal Sevillana ("gordial" kan være lokal skrivevariant), Changlot Real, Genovesa/Genoesa og Picual. Det kan finnes andre sorter i miks på enkelte parseller, blant annet lokale Alicante/Valencia-sorter som Blanqueta, Alfafara/Alfafara, Manzanilla Villalonga eller Arbequina.
+Presisjonsregel: Sort kan ofte IKKE fastslås sikkert fra ett kronebilde. Krev synlige blad-nærbilder, fruktstørrelse/-form, stein, vekstform og helst parsellhistorikk. Ved usikkert grunnlag skal sort være "Ukjent sort" og ikke en gjetning.
+`;
+
+function clampNumber(value: unknown, min: number, max: number, fallback: number) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
+function normalizeConfidence(value: unknown, fallback = 0) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return clampNumber(n <= 1 ? n * 100 : n, 0, 100, fallback);
+}
+
+function defaultPruningDate() {
+  const now = new Date();
+  const year = now.getMonth() <= 1 ? now.getFullYear() : now.getFullYear() + 1;
+  return `${year}-02-15`;
+}
+
+function normalizePriorityValue(value: unknown): PruningStep['priority'] {
+  const raw = String(value || '').toUpperCase();
+  if (raw.includes('HØY') || raw.includes('HOY') || raw.includes('HIGH')) return 'HØY';
+  if (raw.includes('MIDDELS') || raw.includes('MEDIUM')) return 'MIDDELS';
+  return 'LAV';
+}
+
+function normalizeCondition(value: unknown): PlantDiagnosis['condition'] {
+  const raw = String(value || '').toUpperCase();
+  if (raw.includes('SYK') || raw.includes('DISEASE') || raw.includes('SICK')) return 'SYK';
+  if (raw.includes('OBS') || raw.includes('WARN') || raw.includes('STRESS')) return 'OBSERVASJON';
+  return 'SUNN';
+}
+
+function validIsoDate(value: unknown) {
+  const raw = String(value || '');
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : defaultPruningDate();
+}
+
+function sanitizePruningPlan(raw: Partial<PruningPlan> | undefined, varietyConfidence = 0): PruningPlan {
+  const plan = raw || {};
+  const steps = Array.isArray(plan.pruningSteps) ? plan.pruningSteps : [];
+  const normalizedSteps = steps
+    .filter((step: any) => step && step.area && step.action)
+    .slice(0, 8)
+    .map((step: any): PruningStep => ({
+      area: String(step.area).slice(0, 120),
+      action: String(step.action).slice(0, 420),
+      priority: normalizePriorityValue(step.priority),
+      x: clampNumber(step.x, 0, 100, 50),
+      y: clampNumber(step.y, 0, 100, 50),
+      confidence: normalizeConfidence(step.confidence, 50),
+      evidence: step.evidence ? String(step.evidence).slice(0, 220) : undefined,
+    }));
+
+  const confidence = normalizeConfidence(plan.confidence, normalizedSteps.length ? 60 : 20);
+  const observationQuality =
+    plan.observationQuality === 'GOOD' || plan.observationQuality === 'LIMITED' || plan.observationQuality === 'INSUFFICIENT'
+      ? plan.observationQuality
+      : confidence >= 75 ? 'GOOD' : confidence >= 45 ? 'LIMITED' : 'INSUFFICIENT';
+
+  const treeType = String(plan.treeType || '').trim() || 'Oliven tre - sort ukjent';
+  const safeTreeType = varietyConfidence && varietyConfidence < 70 && !/ukjent/i.test(treeType)
+    ? `Oliven tre - sort ukjent (mulig ${treeType}, lav sikkerhet)`
+    : treeType;
+
+  return {
+    treeType: safeTreeType,
+    ageEstimate: String(plan.ageEstimate || 'Ukjent alder - krever synlig stamme/stammediameter').slice(0, 140),
+    pruningSteps: normalizedSteps,
+    recommendedDate: validIsoDate(plan.recommendedDate),
+    timingAdvice: String(plan.timingAdvice || 'I Alicante/Biar bør større strukturbeskjæring normalt planlegges etter innhøsting og utenom sterk sommerstress. Gjør bare lett fjerning av skudd/tørt virke når bildegrunnlaget tilsier det.').slice(0, 700),
+    toolsNeeded: Array.isArray(plan.toolsNeeded) ? plan.toolsNeeded.map(String).slice(0, 8) : ['Desinfisert beskjæringssaks', 'Sag for større greiner', 'Hansker/vernebriller'],
+    confidence,
+    ageConfidence: normalizeConfidence(plan.ageConfidence, /ukjent/i.test(String(plan.ageEstimate || '')) ? 20 : 45),
+    observationQuality,
+    limitations: Array.isArray(plan.limitations) ? plan.limitations.map(String).slice(0, 6) : [],
+    missingDetails: Array.isArray(plan.missingDetails) ? plan.missingDetails.map(String).slice(0, 8) : [],
+    safetyNotes: Array.isArray(plan.safetyNotes) ? plan.safetyNotes.map(String).slice(0, 6) : [],
+  };
+}
+
+function sanitizeComprehensiveAnalysis(raw: Partial<ComprehensiveAnalysisResult>): ComprehensiveAnalysisResult {
+  const diagnosis = raw.diagnosis || {} as PlantDiagnosis;
+  const varietyConfidence = normalizeConfidence(raw.varietyConfidence ?? diagnosis.confidence, 0);
+  const rawVariety = String(diagnosis.variety || '').trim();
+  const variety = !rawVariety || (varietyConfidence < 70 && !/ukjent/i.test(rawVariety))
+    ? (rawVariety ? `Ukjent sort (mulig ${rawVariety}, lav sikkerhet)` : 'Ukjent sort')
+    : rawVariety;
+  const pruning = sanitizePruningPlan(raw.pruning, varietyConfidence);
+  const missingDetails = Array.isArray(raw.missingDetails) ? raw.missingDetails.map(String).slice(0, 10) : [];
+  const needsMoreImages = Boolean(raw.needsMoreImages || varietyConfidence < 70 || pruning.observationQuality !== 'GOOD');
+
+  return {
+    diagnosis: {
+      subject: String(diagnosis.subject || 'Oliven tre i Biar, Alicante').slice(0, 160),
+      variety,
+      condition: normalizeCondition(diagnosis.condition),
+      diagnosis: String(diagnosis.diagnosis || 'Ingen sikker diagnose. Krever flere bilder eller feltkontroll før tiltak besluttes.').slice(0, 1000),
+      actions: Array.isArray(diagnosis.actions) ? diagnosis.actions.map(String).slice(0, 8) : ['Ta flere bilder før endelig beslutning.'],
+      confidence: normalizeConfidence(diagnosis.confidence, varietyConfidence),
+      evidence: Array.isArray(diagnosis.evidence) ? diagnosis.evidence.map(String).slice(0, 8) : [],
+    },
+    pruning,
+    expertReport: {
+      urgencyScore: clampNumber(raw.expertReport?.urgencyScore, 0, 10, 3),
+      economicImpact: String(raw.expertReport?.economicImpact || 'Ikke beregnbart fra bilde alene. Krever historiske avlingsdata og feltkontroll.').slice(0, 500),
+      yieldEstimate: String(raw.expertReport?.yieldEstimate || 'Ikke beregnbart fra bilde alene.').slice(0, 260),
+      fertilizerRecommendation: String(raw.expertReport?.fertilizerRecommendation || 'Ikke gi presis gjødselplan uten jord-/bladanalyse. Vurder bladprøve og jordprøve før NPK-dose.').slice(0, 520),
+      irrigationNote: String(raw.expertReport?.irrigationNote || 'Visuell vurdering kan indikere stress, men vanningsdose krever jordfuktighet, ET0 og værdata.').slice(0, 520),
+      rejuvenationNeeded: Boolean(raw.expertReport?.rejuvenationNeeded),
+      nextKeyAction: String(raw.expertReport?.nextKeyAction || (needsMoreImages ? 'Ta flere diagnostiske bilder før endelig tiltak.' : 'Utfør kun tiltak med tydelig visuell begrunnelse.')).slice(0, 320),
+    },
+    varietyConfidence,
+    needsMoreImages,
+    missingDetails: missingDetails.length ? missingDetails : (
+      needsMoreImages ? ['nærbilde av bladoverside og underside', 'frukt/stein hvis tilgjengelig', 'hele treet med stamme', 'parsell og kjent sortshistorikk'] : []
+    ),
+  };
 }
 
 export class GeminiService {
@@ -724,27 +859,39 @@ Svar i JSON med feltene: amount (string), unit (string), rationale (string).`;
   }
 
   async analyzeComprehensive(imagesBase64: string[], lang: string): Promise<ComprehensiveAnalysisResult> {
-    const prompt = `Du er en olivenagronom med doktorgrad i Olea europaea og 30+ års felterfaring fra Andalucia, Toscana og Tunesia.
+    const languageInstruction = lang === 'no' ? 'Svar på norsk.' : lang === 'es' ? 'Responde en español.' : 'Answer in English.';
+    const prompt = `Du er en senior olivenagronom og beskjæringsrådgiver for profesjonell olivendrift i Alicante.
+${languageInstruction}
+Dato for vurdering: ${new Date().toISOString().slice(0, 10)}.
+${LOCAL_OLIVE_CONTEXT}
 
 Analyser bildet(ene) grundig og returner NØYAKTIG dette JSON-objektet (ingen markdown, bare ren JSON):
 
 {
   "diagnosis": {
     "subject": "hva som er avbildet",
-    "variety": "olivensort eller Ukjent",
+    "variety": "Ukjent sort eller dokumentert sannsynlig sort",
     "condition": "SUNN eller OBSERVASJON eller SYK",
     "diagnosis": "detaljert patologisk vurdering med latinske navn der relevant",
-    "actions": ["tiltak 1", "tiltak 2", "tiltak 3"]
+    "actions": ["tiltak 1", "tiltak 2", "tiltak 3"],
+    "confidence": 0,
+    "evidence": ["hvilke synlige tegn vurderingen bygger på"]
   },
   "pruning": {
     "treeType": "sort og trekategori",
-    "ageEstimate": "estimert alder som tekst",
+    "ageEstimate": "bred aldersklasse, ikke eksakt årstall hvis stamme ikke er målbar",
     "pruningSteps": [
-      { "area": "grenområde", "action": "hva som skal gjøres", "priority": "HØY", "x": 50, "y": 30 }
+      { "area": "synlig gren-/kroneområde", "action": "spesifikk handling og agronomisk begrunnelse", "priority": "HØY", "x": 50, "y": 30, "confidence": 0, "evidence": "synlig grunnlag" }
     ],
     "recommendedDate": "YYYY-MM-DD",
     "timingAdvice": "forklaring på optimal timing",
-    "toolsNeeded": ["verktøy 1", "verktøy 2"]
+    "toolsNeeded": ["verktøy 1", "verktøy 2"],
+    "confidence": 0,
+    "ageConfidence": 0,
+    "observationQuality": "GOOD eller LIMITED eller INSUFFICIENT",
+    "limitations": ["hva bildet ikke kan avgjøre"],
+    "missingDetails": ["hvilke bilder/data som mangler"],
+    "safetyNotes": ["sikkerhets- eller smittehygiene-notat"]
   },
   "expertReport": {
     "urgencyScore": 5,
@@ -760,28 +907,37 @@ Analyser bildet(ene) grundig og returner NØYAKTIG dette JSON-objektet (ingen ma
   "missingDetails": []
 }
 
-Bruk faglig ekspertise:
-- Sykdommer: Spilocaea oleagina, Colletotrichum acutatum, Verticillium dahliae, Pseudomonas savastanoi
-- Skadedyr: Bactrocera oleae, Prays oleae, Saissetia oleae
-- Næring: N/Fe/B/Mg/K-mangler med spesifikke symptomer
-- Sorter: Gordal Sevillana (store blader), Changlot Real (lys underside), Picual (spisse blader), Arbequina (kompakt), Hojiblanca (lyse blader)
+Krav til faglig presisjon:
+- Ikke gjett. Hvis sort, alder, sykdom eller avling ikke kan ses tydelig, skriv "Ukjent" og forklar hva som mangler.
+- Sortsidentifisering: bare oppgi Gordal/Gordal Sevillana, Changlot Real, Genovesa/Genoesa, Picual eller annen sort hvis synlige trekk faktisk støtter det. Hvis bare kroneform er synlig, sett varietyConfidence <= 35.
+- Alder: gi kun aldersklasse (ungt, etablering, voksent produksjonstre, gammelt/monumentalt) med lav sikkerhet hvis stammebasis/stammediameter ikke er synlig.
+- Beskjæring: hvert snitt må peke på en synlig gren i bildet. Ikke lag 3 snitt hvis bildet bare støtter 0-2 trygge tiltak.
+- Store strukturelle snitt i Biar/Alicante bør normalt legges etter innhøsting/vinter-senvinter. I sterk sommervarme anbefales bare lette tiltak som tørre greiner, rotskudd/stammeskudd eller åpenbare kryssgreiner.
+- Ikke anbefal å tømme hele innsiden av kronen. Bevar nok bladmasse; fjern primært dødt virke, rotskudd/stammeskudd, vertikale vannskudd med høy vigor, kryssende greiner og greiner som skygger produktivt fruktved.
+- Store sår: anbefal rene skrå snitt, desinfiserte verktøy og gradvis fornying, ikke brutal engangskapping uten tydelig grunn.
+- Økonomi, gjødsel og vanning: ikke gi eksakte tall uten avlingshistorikk, jord-/bladanalyse, jordfuktighet og ET0. Skriv at tall ikke kan beregnes hvis de ikke kan ses.
+
+Bruk faglig ekspertise, men vær eksplisitt om usikkerhet:
+- Sykdommer/skadedyr: Spilocaea oleagina, Colletotrichum acutatum, Verticillium dahliae, Pseudomonas savastanoi, Bactrocera oleae, Prays oleae, Saissetia oleae.
+- Næring: N/Fe/B/Mg/K-mangler bare hvis bladtegn er synlige; ellers anbefal blad-/jordprøve.
 - urgencyScore: 0=perfekt, 10=krev tiltak i dag
 - priority-felt: kun verdiene HØY, MIDDELS eller LAV
+- confidence-felter og varietyConfidence: tall 0-100, ikke 0-1.
 - x/y: koordinater 0–100 i bildet`;
-    return this.callVisionJson<ComprehensiveAnalysisResult>(imagesBase64, prompt, {} as ComprehensiveAnalysisResult);
+    return sanitizeComprehensiveAnalysis(await this.callVisionJson<ComprehensiveAnalysisResult>(imagesBase64, prompt, {} as ComprehensiveAnalysisResult));
   }
 
   async analyzeDrone(imagesBase64: string[], lang: string): Promise<DroneAnalysisResult> {
-    const dronePrompt = `Du er en presisjonsjordbruksekspert med drone-analyse. Analyser dette luftbildet av en olivenlund.
+    const dronePrompt = `Du er en presisjonsjordbruksekspert for olivenlund i Biar/Alicante.
 
 Gi:
-- Kanonitettstetthet (%) og krondekning
-- NDVI-simulasjon (0.0–1.0) basert på fargeintensitet
-- Vannstressvurdering (Lav/Moderat/Høy) basert på blad-/kronefarge
-- Termiske anomalier (soner med stress, sykdom, varme)
+- Kronedekning/canopy density (%) basert på synlige kroner
+- RGB-basert vigor-indeks (0.0–1.0), ikke kall dette ekte NDVI hvis bildet ikke er multispektralt
+- Vannstressvurdering (Low/Moderate/High) bare hvis blad-/kronefarge og jordforhold støtter det
+- Termiske anomalier skal være [] med mindre bildet faktisk er termisk; bruk aerialSummary for visuelle stress-soner
 - Teller-estimat av trær synlige i bildet
-- Identifiser mulige problemsoner (tørre flekker, sykdomsspredning, høydedifferanser)
-- Luftig sammendrag med agronomiske anbefalinger
+- Identifiser mulige problemsoner, men skriv "krever feltkontroll" når årsak ikke kan bestemmes fra RGB-bilde
+- Kort, agronomisk sammendrag med anbefalinger
 
 Svar i JSON med feltene: canopyDensity (string), ndviSimulated (number 0–1), waterStressLevel ("Low"/"Moderate"/"High"), thermalAnomalies (string[]), treeCountEstimation (number), aerialSummary (string).`;
 
@@ -803,27 +959,43 @@ Svar i JSON med feltene: canopyDensity (string), ndviSimulated (number 0–1), w
   }
 
   async analyzePruning(image: string, lang: string): Promise<PruningPlan> {
-    const prompt = `Du er olivenbeskjæringsmester med ekspertise fra Spania, Italia og Marokko.
+    const languageInstruction = lang === 'no' ? 'Svar på norsk.' : lang === 'es' ? 'Responde en español.' : 'Answer in English.';
+    const prompt = `Du er olivenbeskjæringsmester for profesjonell olivendrift i Alicante-provinsen.
+${languageInstruction}
+Dato for vurdering: ${new Date().toISOString().slice(0, 10)}.
+${LOCAL_OLIVE_CONTEXT}
 
 Analyser treet og returner NØYAKTIG dette JSON-objektet (ingen markdown, bare ren JSON):
 
 {
   "treeType": "sort og trekategori",
-  "ageEstimate": "estimert alder som tekst",
+  "ageEstimate": "bred aldersklasse med usikkerhet hvis stamme ikke er synlig",
   "pruningSteps": [
-    { "area": "grenområde som skal kuttes", "action": "spesifikk handling og begrunnelse", "priority": "HØY", "x": 50, "y": 30 }
+    { "area": "synlig gren-/kroneområde", "action": "spesifikk handling og begrunnelse", "priority": "HØY", "x": 50, "y": 30, "confidence": 0, "evidence": "synlig grunnlag" }
   ],
   "recommendedDate": "YYYY-MM-DD",
   "timingAdvice": "forklaring på optimal timing for beskjæring",
-  "toolsNeeded": ["Beskjæringssaks", "Baufil", "Sårpasta"]
+  "toolsNeeded": ["Beskjæringssaks", "Baufil", "Sårpasta"],
+  "confidence": 0,
+  "ageConfidence": 0,
+  "observationQuality": "GOOD eller LIMITED eller INSUFFICIENT",
+  "limitations": ["hva bildet ikke kan avgjøre"],
+  "missingDetails": ["hvilke bilder/data som mangler"],
+  "safetyNotes": ["sikkerhets- eller smittehygiene-notat"]
 }
 
 Regler:
+- Ikke gjett sort eller alder. Hvis bildet ikke viser nok, skriv "Oliven tre - sort ukjent" og "Ukjent alder - krever synlig stamme/stammediameter".
+- Ikke tving frem snitt. Returner 0-8 pruningSteps, bare for synlige greiner der tiltaket er agronomisk begrunnet.
+- Ikke anbefal hard foryngelsesbeskjæring, toppkapping eller store strukturelle snitt hvis treets helhet, stamme og hovedgreiner ikke er synlige.
+- For Biar/Alicante: større beskjæring legges normalt etter innhøsting/vinter-senvinter; i sterk sommervarme bør tiltak begrenses til tørre greiner, rotskudd/stammeskudd, tydelige vannskudd eller små korrigeringer.
+- Bevar bladmasse og produktivt fruktved. Ikke "rens ut" hele innsiden; fjern primært dødt virke, rotskudd, vertikale vannskudd med høy vigor, kryssende greiner og greiner som skaper sykdoms-/lysproblem.
+- Store snitt skal beskrive ren snittflate, liten tapp, desinfisert verktøy og gradvis fornying.
 - priority: kun HØY, MIDDELS eller LAV
 - x/y: koordinater 0–100 der kuttet er i bildet
-- Gi minst 3 og maks 8 kuttpunkter
+- confidence/ageConfidence: tall 0-100
 - recommendedDate: en dato i YYYY-MM-DD format`;
-    return this.callVisionJson<PruningPlan>([image], prompt, {} as PruningPlan);
+    return sanitizePruningPlan(await this.callVisionJson<PruningPlan>([image], prompt, {} as PruningPlan));
   }
 
   async analyzeReceipt(base64Image: string): Promise<any> {

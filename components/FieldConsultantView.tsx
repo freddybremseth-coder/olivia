@@ -40,6 +40,13 @@ function confidencePercent(value: unknown): number {
   return Math.max(0, Math.min(100, Math.round(normalized)));
 }
 
+function qualityLabel(value: unknown): string {
+  const raw = String(value || '').toUpperCase();
+  if (raw === 'GOOD') return 'Godt';
+  if (raw === 'INSUFFICIENT') return 'Svakt';
+  return 'Begrenset';
+}
+
 function normalizePriority(priority: any): 'HØY' | 'MIDDELS' | 'LAV' {
   const value = String(priority || '').toUpperCase();
   if (value.includes('H')) return 'HØY';
@@ -61,10 +68,18 @@ function normalizePlan(plan?: Partial<PruningPlan>): PruningPlan {
         priority: normalizePriority(step.priority),
         x: Math.max(5, Math.min(95, Number(step.x || 50))),
         y: Math.max(5, Math.min(95, Number(step.y || 50))),
+        confidence: confidencePercent(step.confidence || 50),
+        evidence: step.evidence,
       })),
     recommendedDate: plan?.recommendedDate || new Date().toISOString().slice(0, 10),
     timingAdvice: plan?.timingAdvice || 'AI kunne ikke fastslå optimal timing med høy sikkerhet. Bruk lokal sesong, treets vitalitet og vær før tiltak.',
     toolsNeeded: Array.isArray(plan?.toolsNeeded) && plan!.toolsNeeded.length ? plan!.toolsNeeded : ['Beskjæringssaks', 'Sag', 'Desinfeksjon av verktøy'],
+    confidence: confidencePercent(plan?.confidence),
+    ageConfidence: confidencePercent(plan?.ageConfidence),
+    observationQuality: plan?.observationQuality || (confidencePercent(plan?.confidence) >= 70 ? 'GOOD' : confidencePercent(plan?.confidence) >= 40 ? 'LIMITED' : 'INSUFFICIENT'),
+    limitations: Array.isArray(plan?.limitations) ? plan!.limitations : [],
+    missingDetails: Array.isArray(plan?.missingDetails) ? plan!.missingDetails : [],
+    safetyNotes: Array.isArray(plan?.safetyNotes) ? plan!.safetyNotes : [],
   };
 }
 
@@ -85,6 +100,8 @@ function normalizeAnalysis(raw: ComprehensiveAnalysisResult | null): Comprehensi
       condition: raw?.diagnosis?.condition || 'OBSERVASJON',
       diagnosis: raw?.diagnosis?.diagnosis || 'AI fikk ikke nok sikre detaljer til en presis diagnose. Analysen er derfor en praktisk feltvurdering og bør støttes med flere bilder og observasjoner.',
       actions,
+      confidence: confidencePercent(raw?.diagnosis?.confidence),
+      evidence: Array.isArray(raw?.diagnosis?.evidence) ? raw!.diagnosis.evidence : [],
     },
     pruning,
     expertReport: {
@@ -391,11 +408,11 @@ function SummaryTab({ analysis }: { analysis: ComprehensiveAnalysisResult }) {
 }
 
 function HealthTab({ analysis }: { analysis: ComprehensiveAnalysisResult }) {
-  return <div className="space-y-4"><div className="glass rounded-[2rem] p-5 border border-white/10"><p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-3"><Leaf size={13} className="inline mr-1" /> Diagnose</p><p className="text-sm text-slate-300 leading-relaxed">{analysis.diagnosis.diagnosis}</p></div><div className="space-y-2">{analysis.diagnosis.actions.map((action, i) => <div key={action} className="flex gap-3 text-sm text-slate-300 p-3 rounded-xl bg-white/5 border border-white/5"><div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 text-xs font-bold flex-shrink-0">{i + 1}</div>{action}</div>)}</div></div>;
+  return <div className="space-y-4"><div className="glass rounded-[2rem] p-5 border border-white/10"><p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-3"><Leaf size={13} className="inline mr-1" /> Diagnose</p><p className="text-sm text-slate-300 leading-relaxed">{analysis.diagnosis.diagnosis}</p>{analysis.diagnosis.evidence?.length ? <p className="text-xs text-slate-500 mt-3">Grunnlag: {analysis.diagnosis.evidence.join(', ')}</p> : null}</div><div className="space-y-2">{analysis.diagnosis.actions.map((action, i) => <div key={action} className="flex gap-3 text-sm text-slate-300 p-3 rounded-xl bg-white/5 border border-white/5"><div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 text-xs font-bold flex-shrink-0">{i + 1}</div>{action}</div>)}</div></div>;
 }
 
 function PruningTab({ plan, activeMarker, setActiveMarker }: { plan: PruningPlan; activeMarker: number | null; setActiveMarker: (index: number | null) => void }) {
-  return <div className="space-y-4"><div className="glass rounded-[2rem] p-5 border border-white/10"><p className="text-white font-bold">{plan.treeType}</p><p className="text-xs text-slate-500 mt-1">{plan.ageEstimate} · anbefalt dato {plan.recommendedDate}</p><p className="text-sm text-slate-400 mt-3">{plan.timingAdvice}</p></div>{plan.pruningSteps.length ? plan.pruningSteps.map((step, i) => <button key={`${step.area}-${i}`} onMouseEnter={() => setActiveMarker(i)} onMouseLeave={() => setActiveMarker(null)} className={`w-full text-left p-4 rounded-2xl border transition-all ${activeMarker === i ? 'bg-green-500/10 border-green-500/30' : 'bg-white/5 border-white/10'}`}><div className="flex justify-between"><p className="text-white font-bold"><Scissors size={14} className="inline mr-2" />{step.area}</p><span className="text-[10px] text-[#d9b657] font-bold">{step.priority}</span></div><p className="text-sm text-slate-400 mt-2">{step.action}</p></button>) : <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">AI kunne ikke markere trygge snittpunkter. Ta flere bilder før du beskjærer.</div>}<p className="text-xs text-slate-500">Verktøy: {plan.toolsNeeded.join(', ')}</p></div>;
+  return <div className="space-y-4"><div className="glass rounded-[2rem] p-5 border border-white/10"><p className="text-white font-bold">{plan.treeType}</p><p className="text-xs text-slate-500 mt-1">{plan.ageEstimate} · anbefalt dato {plan.recommendedDate}</p><p className="text-sm text-slate-400 mt-3">{plan.timingAdvice}</p><div className="grid grid-cols-2 gap-3 mt-4"><Metric label="Sikkerhet" value={`${confidencePercent(plan.confidence)}%`} /><Metric label="Bildegrunnlag" value={qualityLabel(plan.observationQuality)} /></div>{(plan.limitations?.length || plan.missingDetails?.length || plan.safetyNotes?.length) ? <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-100 space-y-1">{plan.limitations?.length ? <p>Begrensning: {plan.limitations.join(', ')}</p> : null}{plan.missingDetails?.length ? <p>Mangler: {plan.missingDetails.join(', ')}</p> : null}{plan.safetyNotes?.length ? <p>Sikkerhet: {plan.safetyNotes.join(', ')}</p> : null}</div> : null}</div>{plan.pruningSteps.length ? plan.pruningSteps.map((step, i) => <button key={`${step.area}-${i}`} onMouseEnter={() => setActiveMarker(i)} onMouseLeave={() => setActiveMarker(null)} className={`w-full text-left p-4 rounded-2xl border transition-all ${activeMarker === i ? 'bg-green-500/10 border-green-500/30' : 'bg-white/5 border-white/10'}`}><div className="flex justify-between gap-3"><p className="text-white font-bold flex-1 min-w-0"><Scissors size={14} className="inline mr-2" />{step.area}</p><span className="text-[10px] text-[#d9b657] font-bold flex-shrink-0">{step.priority} · {confidencePercent(step.confidence)}%</span></div><p className="text-sm text-slate-400 mt-2">{step.action}</p>{step.evidence && <p className="text-xs text-slate-500 mt-2">Grunnlag: {step.evidence}</p>}</button>) : <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">AI kunne ikke markere trygge snittpunkter. Ta flere bilder før du beskjærer.</div>}<p className="text-xs text-slate-500">Verktøy: {plan.toolsNeeded.join(', ')}</p></div>;
 }
 
 function HistoryTab({ history, parcels, onDelete }: { history: PruningHistoryItem[]; parcels: Parcel[]; onDelete: (id: string) => void }) {
