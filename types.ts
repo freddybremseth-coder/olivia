@@ -14,7 +14,7 @@ export enum EquipmentStatus {
   BROKEN = 'BROKEN'
 }
 
-export type UserRole = 'farmer' | 'super_admin';
+export type UserRole = 'farmer' | 'super_admin' | 'b2b_customer';
 
 export interface UserProfile {
   id: string;

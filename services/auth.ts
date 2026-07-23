@@ -1,12 +1,12 @@
 /**
- * auth.ts — thin wrapper around Supabase Auth + the public.user_profiles table.
+ * auth.ts — thin wrapper around Supabase Auth + the olivia.user_profiles table.
  *
  * Farm data uses the `olivia` schema by default through services/supabaseClient.
- * Auth profile data stays in `public.user_profiles`, so this file uses
- * supabasePublic for profile reads/writes.
+ * Olivia profile and role data belongs there too; `public.user_profiles` is used
+ * by other apps in the shared RealtyFlow project and has a different shape.
  */
 
-import { supabase, supabasePublic, isSupabaseConfigured } from './supabaseClient';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 import type { UserProfile } from '../types';
 
 function withTimeout<T>(promise: Promise<T>, ms = 25000, label = 'Forespørselen'): Promise<T> {
@@ -24,8 +24,6 @@ function assertConfigured(): void {
     throw new Error('Pålogging er ikke tilgjengelig: Supabase er ikke konfigurert. Kontakt administrator.');
   }
 }
-
-const ADMIN_CODE = 'OLIVIA-ADMIN-2024';
 
 export interface AuthResult {
   user: UserProfile;
@@ -50,7 +48,7 @@ function rowToProfile(row: any, fallbackEmail = ''): UserProfile {
 }
 
 export async function fetchProfile(userId: string, fallbackEmail = ''): Promise<UserProfile | null> {
-  const { data, error } = await supabasePublic
+  const { data, error } = await supabase
     .from('user_profiles')
     .select('*')
     .eq('id', userId)
@@ -64,7 +62,7 @@ export async function fetchProfile(userId: string, fallbackEmail = ''): Promise<
 }
 
 export async function upsertProfile(profile: UserProfile): Promise<void> {
-  const { error } = await supabasePublic
+  const { error } = await supabase
     .from('user_profiles')
     .upsert({
       id: profile.id,
@@ -90,21 +88,21 @@ function fallbackProfileFromAuth(user: any, fallbackEmail = ''): UserProfile {
     id: user?.id || `auth-${Date.now()}`,
     email,
     name,
-    role: (user?.user_metadata?.role as UserProfile['role']) || 'farmer',
+    role: 'b2b_customer',
     subscription: 'trial',
     subscriptionStart: new Date().toISOString().slice(0, 10),
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=22c55e&color=000&size=256`,
   };
 }
 
-async function profileOrFallback(user: any, fallbackEmail = ''): Promise<AuthResult> {
+async function profileOrFallback(user: any, fallbackEmail = '', saveFallback = false): Promise<AuthResult> {
   const fallback = fallbackProfileFromAuth(user, fallbackEmail);
   const profile = await withTimeout(fetchProfile(user.id, user.email ?? fallbackEmail), 6000, 'Henting av profil').catch(error => {
     console.warn('profile lookup timed out/failed, using auth profile', error);
     return null;
   });
   const finalProfile = profile ?? fallback;
-  if (!profile) upsertProfile(finalProfile).catch(err => console.warn('profile fallback save failed', err));
+  if (!profile && saveFallback) upsertProfile(finalProfile).catch(err => console.warn('profile fallback save failed', err));
   return { user: finalProfile, isAdmin: finalProfile.role === 'super_admin' };
 }
 
@@ -138,16 +136,15 @@ export async function signInWithPassword(email: string, password: string): Promi
   return profileOrFallback(data.user, data.user.email ?? email);
 }
 
-export async function signUpWithPassword(email: string, password: string, name: string, adminCode?: string): Promise<AuthResult> {
+export async function signUpWithPassword(email: string, password: string, name: string): Promise<AuthResult> {
   assertConfigured();
-  const isAdmin = adminCode === ADMIN_CODE;
   let data: Awaited<ReturnType<typeof supabase.auth.signUp>>['data'];
   try {
     const res = await withTimeout(
       supabase.auth.signUp({
         email,
         password,
-        options: { data: { name, role: isAdmin ? 'super_admin' : 'farmer' } },
+        options: { data: { name } },
       }),
       30000,
       'Registrering',
@@ -159,7 +156,7 @@ export async function signUpWithPassword(email: string, password: string, name: 
   }
   if (!data.user) throw new Error('Kontoen kunne ikke opprettes.');
   if (!data.session) throw new Error('Sjekk e-posten din for å bekrefte kontoen før du logger inn.');
-  return profileOrFallback(data.user, email);
+  return profileOrFallback(data.user, email, true);
 }
 
 export async function signOut(): Promise<void> {

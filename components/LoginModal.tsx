@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Mail, Lock, User, Eye, EyeOff, AlertCircle, Sprout, ShieldAlert, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { X, Mail, Lock, User, Eye, EyeOff, AlertCircle, Sprout, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { signInWithPassword, signUpWithPassword, sendPasswordReset, AuthResult } from '../services/auth';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import type { UserProfile } from '../types';
@@ -13,14 +13,14 @@ interface LoginModalProps {
   onClose: () => void;
   onLogin: (user: StoredUser, isAdmin: boolean) => void;
   defaultMode?: 'login' | 'register';
+  allowRegister?: boolean;
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode = 'login' }) => {
-  const [mode, setMode] = useState<'login' | 'register' | 'reset'>(defaultMode);
+const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode = 'login', allowRegister = true }) => {
+  const [mode, setMode] = useState<'login' | 'register' | 'reset'>(defaultMode === 'register' && !allowRegister ? 'login' : defaultMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [adminCode, setAdminCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
@@ -50,7 +50,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
     if (password.length < 6) { setError('Passordet må være minst 6 tegn.'); return; }
     setLoading(true);
     try {
-      const result = await signUpWithPassword(email.trim(), password, name.trim(), adminCode || undefined);
+      const result = await signUpWithPassword(email.trim(), password, name.trim());
       onLogin(result.user, result.isAdmin);
     } catch (e: any) {
       console.error('[Login] signUpWithPassword failed:', e);
@@ -102,7 +102,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
         )}
 
         {/* Tab switch (hidden in reset mode so it doesn't steal focus) */}
-        {mode !== 'reset' && (
+        {mode !== 'reset' && allowRegister && (
           <div className="flex gap-1 bg-white/5 rounded-2xl p-1 mb-8">
             <button
               onClick={() => { setMode('login'); setError(''); setInfo(''); }}
@@ -195,20 +195,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
             </div>
           )}
 
-          {mode === 'register' && (
-            <div className="relative">
-              <ShieldAlert className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-              <input
-                type="text"
-                placeholder="Admin-kode (valgfritt)"
-                className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-5 py-3.5 text-white focus:outline-none focus:border-purple-500/50 placeholder:text-slate-600"
-                value={adminCode}
-                onChange={e => setAdminCode(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-          )}
-
           {info && (
             <div className="flex items-start gap-2 text-green-300 text-sm bg-green-500/10 border border-green-500/20 rounded-2xl px-4 py-3">
               <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
@@ -235,7 +221,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
           </button>
         </div>
 
-        {mode === 'login' && (
+        {mode === 'login' && allowRegister && (
           <p className="text-center text-slate-500 text-sm mt-6">
             Har du ikke konto?{' '}
             <button onClick={() => { setMode('register'); setError(''); setInfo(''); }} className="text-green-400 hover:text-green-300 font-bold">

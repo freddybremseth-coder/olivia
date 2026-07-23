@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const LEGACY_SUPABASE_REF = 'jvcdkclfcaccogmvvkrs';
+const REQUIRED_SUPABASE_REF = 'ereapsfcsqtdmzosgnnn';
 const fallbackSupabaseUrl = 'http://127.0.0.1:54321';
 const fallbackSupabaseAnonKey = 'public-site-placeholder-key';
 
@@ -12,15 +14,30 @@ const fallbackSupabaseAnonKey = 'public-site-placeholder-key';
  */
 export const OLIVIA_SCHEMA = 'olivia';
 
+function hasProjectRef(url: string | undefined, ref: string) {
+  return Boolean(url && url.includes(ref));
+}
+
+export const supabaseEnvStatus = {
+  urlConfigured: Boolean(supabaseUrl && supabaseUrl.startsWith('http')),
+  anonKeyConfigured: Boolean(supabaseAnonKey),
+  legacyProjectDetected: hasProjectRef(supabaseUrl, LEGACY_SUPABASE_REF),
+  expectedProjectDetected: hasProjectRef(supabaseUrl, REQUIRED_SUPABASE_REF),
+};
+
 export const isSupabaseConfigured: boolean = Boolean(
-  supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http')
+  supabaseEnvStatus.urlConfigured &&
+  supabaseEnvStatus.anonKeyConfigured &&
+  !supabaseEnvStatus.legacyProjectDetected
 );
 
 if (!isSupabaseConfigured) {
   console.warn(
-    '[Olivia] Supabase er ikke konfigurert. Sett VITE_SUPABASE_URL og ' +
-    'VITE_SUPABASE_ANON_KEY i Vercel (Environment Variables) og re-deploy ' +
-    'uten build-cache.'
+    supabaseEnvStatus.legacyProjectDetected
+      ? '[Olivia] Gammel gratis Supabase er blokkert. Sett VITE_SUPABASE_URL til RealtyFlow-prosjektet.'
+      : '[Olivia] Supabase er ikke konfigurert. Sett VITE_SUPABASE_URL og ' +
+        'VITE_SUPABASE_ANON_KEY i Vercel (Environment Variables) og re-deploy ' +
+        'uten build-cache.'
   );
 }
 
