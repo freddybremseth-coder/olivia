@@ -1,4 +1,4 @@
-import { isSupabaseConfigured, supabase } from './supabaseClient';
+import { isSupabaseConfigured, supabasePublic } from './supabaseClient';
 
 export type PublicTraceBatch = {
   id: string;
@@ -28,6 +28,7 @@ export type PublicTraceBatch = {
   lab_report_url?: string;
   organic_note?: string;
   published_at?: string;
+  created_by?: string;
   created_at?: string;
   updated_at?: string;
 };
@@ -35,7 +36,7 @@ export type PublicTraceBatch = {
 export async function fetchPublicTraceBatch(slug: string): Promise<PublicTraceBatch | null> {
   if (!slug || !isSupabaseConfigured) return null;
 
-  const { data, error } = await supabase
+  const { data, error } = await supabasePublic
     .from('public_trace_batches')
     .select('*')
     .eq('qr_slug', slug)
@@ -53,9 +54,14 @@ export async function fetchPublicTraceBatch(slug: string): Promise<PublicTraceBa
 export async function publishTraceBatch(batch: Omit<PublicTraceBatch, 'id' | 'created_at' | 'updated_at'>): Promise<PublicTraceBatch> {
   if (!isSupabaseConfigured) throw new Error('Supabase er ikke konfigurert.');
 
-  const { data, error } = await supabase
+  const { data: userResult, error: userError } = await supabasePublic.auth.getUser();
+  if (userError || !userResult.user) {
+    throw new Error('Du må være innlogget i Olivia OS for å publisere QR-batcher.');
+  }
+
+  const { data, error } = await supabasePublic
     .from('public_trace_batches')
-    .upsert(batch, { onConflict: 'qr_slug' })
+    .upsert({ ...batch, created_by: userResult.user.id }, { onConflict: 'qr_slug' })
     .select('*')
     .single();
 
