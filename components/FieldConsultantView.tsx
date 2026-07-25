@@ -28,6 +28,8 @@ import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 
 type ResultTab = 'summary' | 'health' | 'pruning' | 'history';
 
+const MAX_ANALYSIS_IMAGES = 6;
+
 function makeId(prefix: string) {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `${prefix}-${crypto.randomUUID()}`;
   return `${prefix}-${Date.now()}`;
@@ -130,7 +132,6 @@ const FieldConsultantView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ResultTab>('summary');
   const [activeMarker, setActiveMarker] = useState<number | null>(null);
   const [language, setLanguage] = useState<Language>('no');
-  const [stream, setStream] = useState<MediaStream | null>(null);
   const [showCamera, setShowCamera] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -141,14 +142,21 @@ const FieldConsultantView: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const selectedParcel = useMemo(() => parcels.find(p => p.id === selectedParcelId), [parcels, selectedParcelId]);
   const confidence = confidencePercent(analysis?.varietyConfidence);
 
   const startCamera = async () => {
     try {
+      stopCamera();
+      setShowCamera(true);
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError('Kamera er ikke tilgjengelig i denne nettleseren. Du kan fortsatt laste opp bilder fra enheten.');
+        return;
+      }
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-      setStream(mediaStream);
+      streamRef.current = mediaStream;
       if (videoRef.current) videoRef.current.srcObject = mediaStream;
       setError(null);
     } catch {
@@ -157,8 +165,9 @@ const FieldConsultantView: React.FC = () => {
   };
 
   const stopCamera = () => {
-    stream?.getTracks().forEach(track => track.stop());
-    setStream(null);
+    streamRef.current?.getTracks().forEach(track => track.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
   };
 
   const loadData = async () => {
@@ -186,7 +195,15 @@ const FieldConsultantView: React.FC = () => {
   }, []);
 
   const capturePhoto = () => {
+    if (images.length >= MAX_ANALYSIS_IMAGES) {
+      setError(`Maks ${MAX_ANALYSIS_IMAGES} bilder per analyse. Fjern et bilde før du legger til flere.`);
+      return;
+    }
     if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current.videoWidth || !videoRef.current.videoHeight) {
+      setError('Kameraet er ikke klart ennå. Vent et øyeblikk eller last opp bilder.');
+      return;
+    }
     const context = canvasRef.current.getContext('2d');
     if (!context) return;
     canvasRef.current.width = videoRef.current.videoWidth;
@@ -194,6 +211,7 @@ const FieldConsultantView: React.FC = () => {
     context.drawImage(videoRef.current, 0, 0);
     const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.85);
     setImages(prev => [...prev, dataUrl]);
+    setError(null);
   };
 
   const handleFilePick = () => fileInputRef.current?.click();
@@ -204,8 +222,21 @@ const FieldConsultantView: React.FC = () => {
     setIsUploading(true);
     setError(null);
     try {
-      const dataUrls = await filesToResizedDataUrls(files);
+      const remainingSlots = MAX_ANALYSIS_IMAGES - images.length;
+      if (remainingSlots <= 0) {
+        setError(`Maks ${MAX_ANALYSIS_IMAGES} bilder per analyse. Fjern et bilde før du legger til flere.`);
+        return;
+      }
+      const selectedFiles = Array.from(files).slice(0, remainingSlots);
+      const dataUrls = await filesToResizedDataUrls(selectedFiles);
+      if (!dataUrls.length) {
+        setError('Ingen av bildene kunne leses.');
+        return;
+      }
       setImages(prev => [...prev, ...dataUrls]);
+      if (files.length > remainingSlots) {
+        setError(`Tok med de første ${remainingSlots} bildene. Maks er ${MAX_ANALYSIS_IMAGES} per analyse.`);
+      }
     } catch (err: any) {
       setError(`Kunne ikke lese bilder: ${err?.message || String(err)}`);
     } finally {
@@ -216,11 +247,15 @@ const FieldConsultantView: React.FC = () => {
 
   const runAnalysis = async () => {
     if (!images.length) return;
+    const base64List = images.map(img => img.split(',')[1]).filter(Boolean);
+    if (!base64List.length) {
+      setError('Bildene kunne ikke klargjøres for analyse. Prøv å laste dem opp på nytt.');
+      return;
+    }
     setIsAnalyzing(true);
     setError(null);
     setAnalysis(null);
     try {
-      const base64List = images.map(img => img.split(',')[1]).filter(Boolean);
       const raw = await geminiService.analyzeComprehensive(base64List, language);
       const normalized = normalizeAnalysis(raw);
       setAnalysis(normalized);
@@ -342,7 +377,7 @@ const FieldConsultantView: React.FC = () => {
 
           <div className="flex gap-3 overflow-x-auto pb-2 min-h-[84px]">
             {images.map((img, index) => <div key={`${img.slice(0, 18)}-${index}`} className="relative flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border border-white/10"><img src={img} className="w-full h-full object-cover" /><button onClick={() => setImages(prev => prev.filter((_, i) => i !== index))} className="absolute top-1 right-1 p-1 bg-black/70 text-white rounded-full"><X size={12} /></button></div>)}
-            <button onClick={capturePhoto} className="flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-white"><Camera size={18} /><span className="text-[9px] font-bold uppercase">Ta bilde</span></button>
+            <button onClick={showCamera ? capturePhoto : startCamera} className="flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-white"><Camera size={18} /><span className="text-[9px] font-bold uppercase">{showCamera ? 'Ta bilde' : 'Kamera'}</span></button>
             <button onClick={handleFilePick} disabled={isUploading} className="flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed border-green-500/30 flex flex-col items-center justify-center gap-1 text-green-400"><Upload size={18} /><span className="text-[9px] font-bold uppercase">Last opp</span></button>
           </div>
 

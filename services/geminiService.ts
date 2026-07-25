@@ -973,7 +973,7 @@ Svar i JSON med feltene: canopyDensity (string), ndviSimulated (number 0–1), w
     );
   }
 
-  async analyzePruning(image: string, lang: string): Promise<PruningPlan> {
+  async analyzePruning(image: string | string[], lang: string): Promise<PruningPlan> {
     const languageInstruction = lang === 'no' ? 'Svar på norsk.' : lang === 'es' ? 'Responde en español.' : 'Answer in English.';
     const prompt = `Du er olivenbeskjæringsmester for profesjonell olivendrift i Alicante-provinsen.
 ${languageInstruction}
@@ -1001,6 +1001,7 @@ Analyser treet og returner NØYAKTIG dette JSON-objektet (ingen markdown, bare r
 
 Regler:
 - Ikke gjett sort eller alder. Hvis bildet ikke viser nok, skriv "Oliven tre - sort ukjent" og "Ukjent alder - krever synlig stamme/stammediameter".
+- Bruk alle bilder som støtte når flere vinkler er sendt inn. Plasser x/y-koordinater på hovedbildet/første bildet.
 - Ikke tving frem snitt. Returner 0-8 pruningSteps, bare for synlige greiner der tiltaket er agronomisk begrunnet.
 - Ikke anbefal hard foryngelsesbeskjæring, toppkapping eller store strukturelle snitt hvis treets helhet, stamme og hovedgreiner ikke er synlige.
 - For Biar/Alicante: større beskjæring legges normalt etter innhøsting/vinter-senvinter; i sterk sommervarme bør tiltak begrenses til tørre greiner, rotskudd/stammeskudd, tydelige vannskudd eller små korrigeringer.
@@ -1010,7 +1011,8 @@ Regler:
 - x/y: koordinater 0–100 der kuttet er i bildet
 - confidence/ageConfidence: tall 0-100
 - recommendedDate: en dato i YYYY-MM-DD format`;
-    return sanitizePruningPlan(await this.callVisionJson<PruningPlan>([image], prompt, {} as PruningPlan));
+    const images = Array.isArray(image) ? image : [image];
+    return sanitizePruningPlan(await this.callVisionJson<PruningPlan>(images, prompt, {} as PruningPlan));
   }
 
   async analyzeReceipt(base64Image: string): Promise<any> {
