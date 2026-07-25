@@ -1,6 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { Sensor, Recipe, Ingredient } from "../types";
+import { isSupabaseConfigured, supabase } from './supabaseClient';
 
 export interface FarmInsight {
   id: string;
@@ -134,6 +135,20 @@ const CLAUDE_MODEL_CHAIN     = [
 const DEFAULT_CLAUDE_MODEL   = CLAUDE_MODEL_CHAIN[0];
 const DEFAULT_OPENAI_MODEL   = 'gpt-4o-mini';
 const DEFAULT_OPENAI_VISION_MODEL = 'gpt-4o-mini';
+
+async function aiProxyJsonHeaders(extra: Record<string, string> = {}): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...extra };
+  if (!isSupabaseConfigured) return headers;
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) headers.Authorization = `Bearer ${token}`;
+  } catch {
+    // Keep AI health errors focused on the provider; missing auth can be
+    // tightened server-side without changing every caller again.
+  }
+  return headers;
+}
 
 /**
  * True when the error suggests the model itself is the problem (renamed,
@@ -375,7 +390,7 @@ export class GeminiService {
 
         const response = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.useGeminiProxy() ? await aiProxyJsonHeaders() : { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
 
@@ -424,7 +439,7 @@ export class GeminiService {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers,
+        headers: useProxy ? await aiProxyJsonHeaders(headers) : headers,
         body: JSON.stringify({
           model: m,
           max_tokens: 4096,
@@ -477,7 +492,7 @@ export class GeminiService {
       content.push({ type: 'text', text: prompt });
       const response = await fetch(url, {
         method: 'POST',
-        headers,
+        headers: useProxy ? await aiProxyJsonHeaders(headers) : headers,
         body: JSON.stringify({ model: m, max_tokens: 4096, messages: [{ role: 'user', content }] }),
       });
       if (!response.ok) {
@@ -511,7 +526,7 @@ export class GeminiService {
     if (json) body.response_format = { type: 'json_object' };
     const response = await fetch(OPENAI_PROXY_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await aiProxyJsonHeaders(),
       body: JSON.stringify(body),
     });
     if (!response.ok) {
@@ -533,7 +548,7 @@ export class GeminiService {
     content.push({ type: 'text', text: prompt });
     const response = await fetch(OPENAI_PROXY_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await aiProxyJsonHeaders(),
       body: JSON.stringify({
         model,
         max_tokens: 4096,

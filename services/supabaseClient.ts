@@ -50,13 +50,14 @@ async function inMemoryLock<R>(
   const prev = (memLocks.get(name) ?? Promise.resolve()) as Promise<unknown>;
   let release: () => void = () => {};
   const next = new Promise<void>((r) => { release = r; });
-  memLocks.set(name, prev.then(() => next));
+  const queued = prev.then(() => next);
+  memLocks.set(name, queued);
   try { await prev; } catch { /* ignore */ }
   try {
     return await fn();
   } finally {
     release();
-    if (memLocks.get(name) === prev.then(() => next)) memLocks.delete(name);
+    if (memLocks.get(name) === queued) memLocks.delete(name);
   }
 }
 

@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http';
+import { rejectCrossOrigin, sameOriginCorsHeaders } from '../_lib/cors';
 
 async function readJsonBody(req: IncomingMessage & { body?: unknown }): Promise<string> {
   if (req.body !== undefined && req.body !== null) {
@@ -15,9 +16,9 @@ async function readJsonBody(req: IncomingMessage & { body?: unknown }): Promise<
   });
 }
 
-function sendJson(res: ServerResponse, status: number, payload: unknown) {
+function sendJson(req: IncomingMessage, res: ServerResponse, status: number, payload: unknown) {
   res.writeHead(status, {
-    'Access-Control-Allow-Origin': '*',
+    ...sameOriginCorsHeaders(req),
     'Cache-Control': 'no-store',
     'Content-Type': 'application/json',
   });
@@ -25,31 +26,31 @@ function sendJson(res: ServerResponse, status: number, payload: unknown) {
 }
 
 export default async function handler(req: IncomingMessage & { method?: string; body?: unknown }, res: ServerResponse) {
+  if (rejectCrossOrigin(req, res)) return;
+
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      ...sameOriginCorsHeaders(req),
     });
     res.end();
     return;
   }
 
   if (req.method !== 'POST') {
-    sendJson(res, 405, { error: { message: 'Method not allowed' } });
+    sendJson(req, res, 405, { error: { message: 'Method not allowed' } });
     return;
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    sendJson(res, 503, { error: { message: 'OpenAI er ikke konfigurert: legg inn OPENAI_API_KEY i Vercel Environment Variables.' } });
+    sendJson(req, res, 503, { error: { message: 'OpenAI er ikke konfigurert: legg inn OPENAI_API_KEY i Vercel Environment Variables.' } });
     return;
   }
 
   try {
     const body = await readJsonBody(req);
     if (!body || body === '{}') {
-      sendJson(res, 400, { error: { message: 'Tom request body til OpenAI proxy.' } });
+      sendJson(req, res, 400, { error: { message: 'Tom request body til OpenAI proxy.' } });
       return;
     }
 
@@ -63,12 +64,12 @@ export default async function handler(req: IncomingMessage & { method?: string; 
     });
     const text = await upstream.text();
     res.writeHead(upstream.status, {
-      'Access-Control-Allow-Origin': '*',
+      ...sameOriginCorsHeaders(req),
       'Cache-Control': 'no-store',
       'Content-Type': upstream.headers.get('content-type') || 'application/json',
     });
     res.end(text);
   } catch (error: any) {
-    sendJson(res, 500, { error: { message: error?.message || 'OpenAI proxy failed.' } });
+    sendJson(req, res, 500, { error: { message: error?.message || 'OpenAI proxy failed.' } });
   }
 }

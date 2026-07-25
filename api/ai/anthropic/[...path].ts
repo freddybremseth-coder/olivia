@@ -9,6 +9,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'http';
 import https from 'https';
+import { rejectCrossOrigin, sameOriginCorsHeaders } from '../../_lib/cors';
 
 const UPSTREAM_HOST = 'api.anthropic.com';
 const DEFAULT_VERSION = '2023-06-01';
@@ -26,11 +27,11 @@ export default async function handler(
   req: IncomingMessage & { url: string; method?: string },
   res: ServerResponse,
 ) {
+  if (rejectCrossOrigin(req, res)) return;
+
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, anthropic-version',
+      ...sameOriginCorsHeaders(req, 'POST,OPTIONS', 'Content-Type, Authorization, anthropic-version'),
     });
     res.end();
     return;
@@ -67,7 +68,7 @@ export default async function handler(
     },
     (proxyRes) => {
       const respHeaders: Record<string, string | string[]> = {
-        'Access-Control-Allow-Origin': '*',
+        ...sameOriginCorsHeaders(req, 'POST,OPTIONS', 'Content-Type, Authorization, anthropic-version'),
         'Cache-Control': 'no-store',
       };
       if (proxyRes.headers['content-type']) respHeaders['Content-Type'] = proxyRes.headers['content-type'];

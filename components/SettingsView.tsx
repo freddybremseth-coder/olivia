@@ -16,6 +16,7 @@ import {
 import { useTranslation } from '../services/i18nService';
 import { Language } from '../types';
 import { fetchSettings, saveSettings as dbSaveSettings } from '../services/db';
+import { isSupabaseConfigured, supabase } from '../services/supabaseClient';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 
 interface SettingsViewProps {
@@ -60,7 +61,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({ language, onLanguageChange 
     setHealthLoading(true);
     setHealthMode(mode);
     try {
-      const res = await fetch(`/api/ai/health${mode === 'probe' ? '?probe=1' : ''}`);
+      const headers: Record<string, string> = {};
+      if (isSupabaseConfigured) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.access_token) headers.Authorization = `Bearer ${data.session.access_token}`;
+      }
+      const res = await fetch(`/api/ai/health${mode === 'probe' ? '?probe=1' : ''}`, { headers });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setHealth(await res.json());
     } catch (err) {

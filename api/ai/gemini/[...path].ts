@@ -14,6 +14,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import https from 'https';
 import { URL } from 'url';
+import { rejectCrossOrigin, sameOriginCorsHeaders } from '../../_lib/cors';
 
 const UPSTREAM_HOST = 'generativelanguage.googleapis.com';
 
@@ -30,12 +31,12 @@ export default async function handler(
   req: IncomingMessage & { url: string; method?: string },
   res: ServerResponse,
 ) {
+  if (rejectCrossOrigin(req, res)) return;
+
   // CORS pre-flight (mostly defensive — same-origin in prod)
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, x-goog-api-key',
+      ...sameOriginCorsHeaders(req, 'GET,POST,OPTIONS', 'Content-Type, Authorization, x-goog-api-key'),
     });
     res.end();
     return;
@@ -73,7 +74,7 @@ export default async function handler(
     },
     (proxyRes) => {
       const respHeaders: Record<string, string | string[]> = {
-        'Access-Control-Allow-Origin': '*',
+        ...sameOriginCorsHeaders(req, 'GET,POST,OPTIONS', 'Content-Type, Authorization, x-goog-api-key'),
         'Cache-Control': 'no-store',
       };
       if (proxyRes.headers['content-type']) respHeaders['Content-Type'] = proxyRes.headers['content-type'];

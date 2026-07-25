@@ -17,6 +17,7 @@
  */
 
 import type { IncomingMessage, ServerResponse } from 'http';
+import { rejectCrossOrigin, sameOriginCorsHeaders } from '../_lib/cors';
 
 interface ProviderHealth {
   configured: boolean;
@@ -98,9 +99,20 @@ export default async function handler(
   req: IncomingMessage & { url: string; method?: string },
   res: ServerResponse,
 ) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  if (rejectCrossOrigin(req, res)) return;
+  res.setHeader('Vary', 'Origin');
+  const origin = Array.isArray(req.headers.origin) ? req.headers.origin[0] : req.headers.origin;
+  if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, sameOriginCorsHeaders(req, 'GET,OPTIONS'));
+    res.end();
+    return;
+  }
 
   const url = new URL(req.url || '/', 'http://localhost');
   const probe = url.searchParams.get('probe') === '1';
