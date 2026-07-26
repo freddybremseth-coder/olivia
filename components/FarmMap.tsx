@@ -81,12 +81,29 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
   const electricityLayerRef = useRef<L.TileLayer | null>(null);
   const waterLayerRef = useRef<L.TileLayer | null>(null);
   const baseLayerRef = useRef<L.TileLayer | null>(null);
+  const hasFittedParcelsRef = useRef(false);
 
   const MAP_CENTER: [number, number] = [38.6294, -0.7667];
 
+  const normalizeCoordinate = (coord: unknown): [number, number] | null => {
+    if (!Array.isArray(coord) || coord.length < 2) return null;
+    const lat = Number(coord[0]);
+    const lon = Number(coord[1]);
+    return Number.isFinite(lat) && Number.isFinite(lon) ? [lat, lon] : null;
+  };
+
+  const getParcelCoordinates = (p: Parcel): [number, number][] => (
+    (p.coordinates ?? [])
+      .map(normalizeCoordinate)
+      .filter((coord): coord is [number, number] => Boolean(coord))
+  );
+
   const getParcelCenter = (p: Parcel): [number, number] => {
-    if (p.lat && p.lon) return [p.lat, p.lon];
-    if (p.coordinates && p.coordinates.length > 0) return p.coordinates[0];
+    const lat = Number(p.lat);
+    const lon = Number(p.lon ?? (p as any).lng);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) return [lat, lon];
+    const firstCoordinate = getParcelCoordinates(p)[0];
+    if (firstCoordinate) return firstCoordinate;
     return MAP_CENTER;
   };
 
@@ -227,18 +244,29 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
   useEffect(() => {
     if (!mapRef.current) return;
     parcelsLayerRef.current.clearLayers();
+    if (parcels.length === 0) hasFittedParcelsRef.current = false;
+    let combinedBounds: L.LatLngBounds | null = null;
+    const extendBounds = (points: [number, number][]) => {
+      points.forEach(point => {
+        combinedBounds = combinedBounds ? combinedBounds.extend(point) : L.latLngBounds(point, point);
+      });
+    };
+
     parcels.forEach(p => {
-      const center = getParcelCenter(p);
       const area = p.area ? ` · ${(p.area / 10000).toFixed(2)} ha` : '';
       const trees = p.treeCount ? ` · ${p.treeCount} trær` : '';
       const label = `<b>${p.name}</b>${area}${trees}`;
+      const coordinates = getParcelCoordinates(p);
 
-      if (p.coordinates && p.coordinates.length > 2) {
-        L.polygon(p.coordinates, { color: '#22c55e', weight: 2, fillOpacity: 0.15, dashArray: '3, 3' })
+      if (coordinates.length > 2) {
+        extendBounds(coordinates);
+        L.polygon(coordinates, { color: '#22c55e', weight: 2, fillOpacity: 0.15, dashArray: '3, 3' })
           .addTo(parcelsLayerRef.current)
           .bindTooltip(label, { direction: 'center', className: 'parcel-tooltip', permanent: false })
           .on('click', () => setSelectedParcel(p));
       } else {
+        const center = getParcelCenter(p);
+        extendBounds([center]);
         L.marker(center, {
           icon: L.divIcon({
             className: '',
@@ -252,6 +280,11 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
           .on('click', () => setSelectedParcel(p));
       }
     });
+
+    if (!hasFittedParcelsRef.current && combinedBounds?.isValid()) {
+      hasFittedParcelsRef.current = true;
+      mapRef.current.fitBounds(combinedBounds, { padding: [60, 60], maxZoom: 17 });
+    }
   }, [parcels]);
 
   const verifySelectedParcel = async () => {
@@ -595,8 +628,9 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     drawingLayerRef.current.clearLayers();
     setSelectedParcel(p);
     setVerifyStatus(null);
-    if (p.coordinates && p.coordinates.length > 2) {
-      const poly = L.polygon(p.coordinates, { color: '#22c55e', fillOpacity: 0.4, weight: 4 }).addTo(drawingLayerRef.current);
+    const coordinates = getParcelCoordinates(p);
+    if (coordinates.length > 2) {
+      const poly = L.polygon(coordinates, { color: '#22c55e', fillOpacity: 0.4, weight: 4 }).addTo(drawingLayerRef.current);
       mapRef.current.fitBounds(poly.getBounds(), { padding: [80, 80], animate: true });
     } else {
       const center = getParcelCenter(p);

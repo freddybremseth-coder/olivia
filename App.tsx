@@ -132,22 +132,30 @@ const App: React.FC = () => {
   const [, setParcelsLoaded] = useState(false);
 
   useEffect(() => {
-    if (showPublicSite || isTraceUrl()) return;
+    if (showPublicSite || isTraceUrl() || !isLoggedIn) {
+      setParcelsLoaded(false);
+      return;
+    }
     let cancelled = false;
-    import('./services/db').then(({ fetchParcels, fetchSettings }) => {
-      fetchParcels().then(rows => {
+    import('./services/db').then(async ({ fetchParcels, fetchSettings }) => {
+      try {
+        const rows = await fetchParcels();
         if (cancelled) return;
         setParcels(rows);
         setSelectedParcel(rows[0] ?? null);
         setParcelsLoaded(true);
-      });
+      } catch (err) {
+        console.warn('[parcels] failed', err);
+        if (!cancelled) setParcelsLoaded(true);
+      }
+
       fetchSettings().then(settings => {
         if (cancelled || !settings?.language) return;
         setLanguage(settings.language as Language);
       }).catch(err => console.warn('[settings] failed', err));
-    });
+    }).catch(err => console.warn('[data] failed', err));
     return () => { cancelled = true; };
-  }, [showPublicSite]);
+  }, [showPublicSite, isLoggedIn]);
 
   const handleParcelSave = async (parcel: Parcel) => {
     const { upsertParcel } = await import('./services/db');
@@ -209,7 +217,7 @@ const App: React.FC = () => {
     setUser(storedUser); setIsAdmin(admin); setIsLoggedIn(true); setActiveTab(resolvePostLoginTab(postLoginTab, storedUser, admin)); setShowLogin(false);
   };
 
-  const handleLogout = async () => { await authSignOut(); setIsLoggedIn(false); setIsAdmin(false); setUser(OLIVIA_FALLBACK_USER); setActiveTab('dashboard'); };
+  const handleLogout = async () => { await authSignOut(); setIsLoggedIn(false); setIsAdmin(false); setUser(OLIVIA_FALLBACK_USER); setParcels(EMPTY_OLIVIA_PARCELS); setSelectedParcel(null); setActiveTab('dashboard'); };
   const updateLanguage = (newLang: Language) => { setLanguage(newLang); };
   const openLogin = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => { setShowPublicSite(false); const targetPath = pathForTargetTab(targetTab); if (typeof window !== 'undefined' && window.location.pathname !== targetPath) window.history.pushState({}, '', targetPath); setPostLoginTab(targetTab); setLoginDefaultMode(mode); setShowLogin(true); };
   const openApp = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => { setShowPublicSite(false); const targetPath = pathForTargetTab(targetTab); if (typeof window !== 'undefined' && window.location.pathname !== targetPath) window.history.pushState({}, '', targetPath); setPostLoginTab(targetTab); if (isLoggedIn) { setActiveTab(resolvePostLoginTab(targetTab, user, isAdmin)); return; } openLogin(mode, targetTab); };
