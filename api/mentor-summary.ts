@@ -22,6 +22,13 @@ function unauthorized(res: ServerResponse) {
   res.end(JSON.stringify({ error: 'Unauthorized' }));
 }
 
+function severityRank(value: string | undefined): number {
+  if (value === 'critical') return 4;
+  if (value === 'warning') return 3;
+  if (value === 'watch') return 2;
+  return 1;
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Cache-Control', 'no-store');
@@ -84,7 +91,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const criticalAlerts = alerts.filter((alert) => alert.severity === 'critical');
     const warningAlerts = alerts.filter((alert) => alert.severity === 'warning');
 
-    const topSeverity = topAdvice[0]?.severity || (criticalAlerts.length ? 'critical' : warningAlerts.length ? 'warning' : 'optimal');
+    const alertSeverity = criticalAlerts.length ? 'critical' : warningAlerts.length ? 'warning' : 'optimal';
+    const adviceSeverity = topAdvice[0]?.severity || 'optimal';
+    const topSeverity = severityRank(alertSeverity) >= severityRank(adviceSeverity) ? alertSeverity : adviceSeverity;
     const learningOpportunity = topAdvice.find((item) => item.action === 'check_salinity')
       ? 'salinity_management'
       : topAdvice.find((item) => item.action === 'irrigate_evening' || item.action === 'monitor')
