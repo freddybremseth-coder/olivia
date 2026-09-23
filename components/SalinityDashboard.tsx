@@ -241,7 +241,7 @@ const SalinityDashboard: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Snitt jord-EC', value: avgSoilEc !== undefined ? `${avgSoilEc} dS/m` : '—', icon: <Gauge size={18} />, cls: 'border-purple-500/20 bg-purple-500/10 text-purple-400' },
-          { label: 'Vann-EC', value: latestWaterEc !== undefined ? `${latestWaterEc} dS/m` : '—', icon: <Waves size={18} />, cls: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-400' },
+          { label: 'Vann-EC', value: latestWaterEc !== undefined ? `${latestWaterEc} dS/m` : '—', icon: <Waves size={18} />, cls: 'border-blue-500/20 bg-blue-500/10 text-blue-500' },
           { label: 'Vann-pH', value: latestWaterPh !== undefined ? latestWaterPh : '—', icon: <Beaker size={18} />, cls: 'border-green-500/20 bg-green-500/10 text-green-400' },
           { label: 'Soner med varsel', value: warningZones, icon: <AlertTriangle size={18} />, cls: 'border-yellow-500/20 bg-yellow-500/10 text-yellow-400' },
         ].map(card => (

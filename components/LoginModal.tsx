@@ -84,7 +84,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
 
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center">
             <Sprout size={20} className="text-black" />
           </div>
           <h1 className="text-xl font-bold text-white">Olivia <span className="text-green-400">AI</span></h1>

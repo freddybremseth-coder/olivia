@@ -22,6 +22,8 @@ import { createB2BTastingRequest } from '../services/b2bTasting';
 import { fetchCommerceProducts } from '../services/commerceProducts';
 import { fetchPublicEstateSignal, PublicEstateSignal } from '../services/publicEstate';
 import { CommerceProduct } from '../types';
+import DonaAnnaBrandMark from './DonaAnnaBrandMark';
+import { DONA_ANNA_BRAND } from '../services/donaAnnaBrand';
 
 interface LandingPageProps {
   onLogin: () => void;
@@ -81,7 +83,7 @@ const content = {
       title: 'En flaske som føles like god å gi bort som å åpne selv.',
       text: 'Mørkt glass, kremhvit etikett, kontrollert typografi og metalliske aksenter gjør Doña Anna til mer enn en ingrediens. Den skal tåle å stå fremme på kjøkkenbenken, på middagsbordet og i en gaveeske.',
       cta: 'Finn din flaske',
-      proof: 'DA-monogrammet, produktnavnet og Biar/Alicante ligger i et rolig system som gjør flasken lett å kjenne igjen hjemme, i gavekurven og i gourmetbutikken.',
+      proof: 'Figurmerket, produktnavnet og Biar/Alicante ligger i et rolig system som gjør flasken lett å kjenne igjen hjemme, i gavekurven og i gourmetbutikken.',
       details: [
         ['Platina', 'Verde Vivo og monovarietal får et kjølig, friskt og super-premium uttrykk.'],
         ['Kobber', 'Raíz Antigua får varme, arv og dybde uten å miste elegansen.'],
@@ -202,7 +204,7 @@ const content = {
       title: 'Lo primero que ve el cliente debe parecer digno de probarse.',
       text: 'La etiqueta funciona como señal de calidad: vidrio negro mate, papel crema, tipografía controlada y acentos metálicos que diferencian cada nivel. La botella encaja en mantel blanco, wine bar, tienda gourmet y cocina profesional.',
       cta: 'Explorar niveles',
-      proof: 'El monograma DA, el nombre del producto y Biar/Alicante forman un sistema sereno y reconocible en lineal, carta o mesa.',
+      proof: 'La figura de Doña Anna, el nombre del producto y Biar/Alicante forman un sistema sereno y reconocible en lineal, carta o mesa.',
       details: [
         ['Platino', 'Verde Vivo y monovarietales transmiten frescura, precisión y super-premium.'],
         ['Cobre', 'Raíz Antigua suma herencia, calidez y profundidad sin perder elegancia.'],
@@ -323,7 +325,7 @@ const content = {
       title: 'What customers see first must feel worth tasting.',
       text: 'The label is a quality signal: matte black glass, cream paper, disciplined typography and metallic accents that distinguish each tier. The bottle belongs on white tablecloths, wine bars, gourmet shelves and the chef’s pass.',
       cta: 'Explore product tiers',
-      proof: 'The DA monogram, product name and Biar/Alicante mark create a calm system that is instantly recognizable on shelf, menu and table.',
+      proof: 'The Doña Anna figure mark, product name and Biar/Alicante mark create a calm system that is instantly recognizable on shelf, menu and table.',
       details: [
         ['Platinum', 'Verde Vivo and monovarietals feel cool, fresh and super-premium.'],
         ['Copper', 'Raíz Antigua brings heritage, warmth and depth without losing elegance.'],
@@ -593,20 +595,14 @@ const productCommercials: Record<Locale, Record<string, { format: string }>> = {
 };
 
 const shared = {
-  labelAssets: [
-    ['/labels/luxury/dona-anna-monogram-da.svg', 'DA monogram'],
-    ['/labels/logo-variants/dona-anna-wordmark.svg', 'Doña Anna wordmark'],
-    ['/labels/logo-variants/dona-anna-branch.svg', 'Branch label mark'],
-    ['/labels/logo-variants/dona-anna-market-seal.svg', 'Market seal'],
-  ],
   palette: [
     ['Matte black', '#0D0D0D'],
-    ['Cream white', '#F9F8F6'],
-    ['Olive black', '#1A1C19'],
-    ['Platinum', '#E5E4E2'],
-    ['Copper', '#B87333'],
-    ['Gold', '#D4AF37'],
-    ['Terracotta', '#C05A46'],
+    ['Cotton white', '#F8F5EA'],
+    ['Ink black', '#080808'],
+    ['Champagne', '#E6D5B8'],
+    ['Brushed gold', '#D4AF37'],
+    ['Gold ink', '#8A6A19'],
+    ['Label cotton', '#F8F5EA'],
   ],
   videos: [
     ['/donaanna/video/video-av-flasken-klar.mp4', '/donaanna/product-design/verde-vivo-breakfast-collage.jpg'],
@@ -617,17 +613,17 @@ const shared = {
 
 const knowledgeCards = {
   no: [
-    ['Polyfenolens kraft', 'Naturlige antioksidanter', 'Tidlig høsting kan gi høyere polyfenolnivå. Det skaper bitterhet, pepperfølelse og et tydelig kvalitetssignal for kunden.'],
+    ['Polyfenolens kraft', 'Målt per batch', 'Tidlig høsting kan gi høyere polyfenolnivå. Det skaper bitterhet, pepperfølelse og et tydelig kvalitetssignal for kunden.'],
     ['Regenerativ drift', 'Jord og biodiversitet', 'Dekkvekster, blomster og presis vannforvaltning styrker jordlivet og gjør opprinnelsen mer troverdig.'],
     ['Tidlig høsting', 'Cosecha temprana', 'Lavere utbytte gir mer intens aroma og en grønnere, friskere olje som fungerer spesielt godt som finishing oil.'],
   ],
   es: [
-    ['La fuerza del polifenol', 'Antioxidantes naturales', 'La cosecha temprana puede aportar más polifenoles. Eso crea amargor, picor y una señal clara de calidad.'],
+    ['La fuerza del polifenol', 'Medido por lote', 'La cosecha temprana puede aportar más polifenoles. Eso crea amargor, picor y una señal clara de calidad.'],
     ['Cultivo regenerativo', 'Suelo y biodiversidad', 'Cubiertas vegetales, flores y gestión precisa del agua refuerzan el suelo y hacen más creíble el origen.'],
     ['Cosecha temprana', 'Cosecha temprana', 'Menor rendimiento, más aroma y un aceite más verde y fresco, especialmente eficaz como aceite final.'],
   ],
   en: [
-    ['Polyphenol strength', 'Natural antioxidants', 'Early harvest can bring higher polyphenols, creating bitterness, pepper and a clear quality signal for buyers.'],
+    ['Polyphenol strength', 'Measured per batch', 'Early harvest can bring higher polyphenols, creating bitterness, pepper and a clear quality signal for buyers.'],
     ['Regenerative farming', 'Soil and biodiversity', 'Cover crops, flowers and precise water use strengthen the soil and make the origin more credible.'],
     ['Early harvest', 'Cosecha temprana', 'Lower yield creates more aroma and a greener, fresher oil that works especially well as a finishing oil.'],
   ],
@@ -807,15 +803,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   const nextLocale: Locale = locale === 'no' ? 'es' : locale === 'es' ? 'en' : 'no';
 
   return (
-    <div className="min-h-screen bg-matte-black font-sans font-light tracking-[0.015em] text-cream-white selection:bg-brushed-gold/30">
+    <div className="min-h-screen bg-matte-black font-sans font-light tracking-[0.015em] text-label-cotton selection:bg-brushed-gold/30">
       <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-matte-black/86 px-4 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between">
           <a href="#top" className="flex items-center gap-3">
-            <img src="/labels/luxury/dona-anna-monogram-da.svg" alt="Doña Anna DA monogram" className="h-10 w-10 object-contain" />
-            <div>
-              <p className="font-serif text-sm font-medium leading-none tracking-[0.38em]">DOÑA ANNA</p>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-brushed-gold">Biar · Alicante</p>
-            </div>
+            <DonaAnnaBrandMark variant="symbol" size="sm" showText />
           </a>
           <div className="hidden items-center gap-6 md:flex">
             {t.nav.map(([label, href]) => (
@@ -938,12 +930,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 {t.label.cta} <ArrowRight size={17} />
               </a>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {shared.labelAssets.map(([src, alt]) => (
-                <div key={src} className="flex min-h-56 items-center justify-center border border-white/10 bg-cream-white p-8">
-                  <img src={src} alt={alt} className="max-h-40 w-full object-contain" />
-                </div>
-              ))}
+            <div className="flex min-h-[28rem] items-center justify-center border border-white/10 bg-label-cotton p-10">
+              <img src={DONA_ANNA_BRAND.symbolPath} alt="Doña Anna" className="max-h-96 w-full object-contain" />
             </div>
           </div>
           <div className="mx-auto mt-10 grid max-w-7xl gap-5 lg:grid-cols-[0.9fr_1.1fr]">
@@ -1049,7 +1037,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section id="knowledge" className="border-y border-white/10 bg-cream-white px-5 py-24 text-black md:px-8">
+        <section id="knowledge" className="border-y border-white/10 bg-label-cotton px-5 py-24 text-black md:px-8">
           <div className="mx-auto max-w-7xl">
             <div className="mb-12 grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
               <div>
@@ -1190,7 +1178,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section id="tasting" className="bg-cream-white px-5 py-24 text-black md:px-8">
+        <section id="tasting" className="bg-label-cotton px-5 py-24 text-black md:px-8">
           <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[1fr_0.9fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">{t.tasting.eyebrow}</p>

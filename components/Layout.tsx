@@ -195,7 +195,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
 
       <aside className={`hidden lg:flex flex-col border-r border-white/10 bg-[#0d0d0f] transition-all duration-300 relative ${isSidebarOpen ? 'w-80' : 'w-20'}`}>
         <div className="p-6 flex items-center gap-4 mb-4">
-          <div className="min-w-[40px] h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center neon-glow-green shadow-lg"><span className="font-bold text-xl text-black">O</span></div>
+          <div className="min-w-[40px] h-10 rounded-xl bg-green-500 flex items-center justify-center neon-glow-green shadow-lg"><span className="font-bold text-xl text-black">O</span></div>
           {isSidebarOpen && <h1 className="text-xl font-bold tracking-tight text-white whitespace-nowrap overflow-hidden">Olivia <span className="text-green-400">AI</span></h1>}
         </div>
 

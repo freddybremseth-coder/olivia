@@ -230,7 +230,7 @@ const IrrigationOliviaView: React.FC = () => {
           { label: 'Lavt batteri', value: stats.lowBattery, icon: <Battery size={18} />, cls: 'border-yellow-500/20 bg-yellow-500/10 text-yellow-400' },
           { label: 'Åpne varsler', value: stats.alerts, icon: <AlertTriangle size={18} />, cls: 'border-red-500/20 bg-red-500/10 text-red-400' },
           { label: 'Siste jordfukt', value: stats.latestMoisture ? `${stats.latestMoisture.value}${stats.latestMoisture.unit}` : '—', icon: <Droplets size={18} />, cls: 'border-blue-500/20 bg-blue-500/10 text-blue-400' },
-          { label: 'Siste trykk', value: stats.latestPressure ? `${stats.latestPressure.value}${stats.latestPressure.unit}` : '—', icon: <Gauge size={18} />, cls: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-400' },
+          { label: 'Siste trykk', value: stats.latestPressure ? `${stats.latestPressure.value}${stats.latestPressure.unit}` : '—', icon: <Gauge size={18} />, cls: 'border-blue-500/20 bg-blue-500/10 text-blue-500' },
         ].map(card => <div key={card.label} className={`glass rounded-[2rem] p-5 border ${card.cls}`}><div className="mb-2">{card.icon}</div><p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">{card.label}</p><p className="text-2xl font-black text-white mt-1">{card.value}</p></div>)}
       </div>
 

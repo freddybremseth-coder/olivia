@@ -21,11 +21,11 @@ const DonaAnnaBrandMark: React.FC<DonaAnnaBrandMarkProps> = ({ variant = 'compac
 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <div className={`${s.box} rounded-2xl bg-[#070b08] border border-[#d9b657]/30 flex items-center justify-center overflow-hidden shadow-lg shadow-black/20`}>
+      <div className={`${s.box} bg-[#0d0d0d] border border-white/10 flex items-center justify-center overflow-hidden`}>
         <img
           src={src}
           alt={variant === 'logo' ? `${DONA_ANNA_BRAND.name} logo` : `${DONA_ANNA_BRAND.name} symbol`}
-          className="w-full h-full object-contain p-1"
+          className="w-full h-full object-contain p-1 invert"
           onError={(event) => {
             const target = event.currentTarget;
             target.style.display = 'none';
@@ -33,14 +33,14 @@ const DonaAnnaBrandMark: React.FC<DonaAnnaBrandMarkProps> = ({ variant = 'compac
             if (fallback) fallback.style.display = 'flex';
           }}
         />
-        <div className="hidden w-full h-full items-center justify-center text-[#d9b657]">
+        <div className="hidden w-full h-full items-center justify-center text-[#d4af37]">
           <Leaf size={size === 'lg' ? 34 : size === 'md' ? 24 : 18} />
         </div>
       </div>
       {showText && (
         <div>
           <p className={`${s.text} font-serif tracking-[0.16em] text-white leading-none`}>{DONA_ANNA_BRAND.name.toUpperCase()}</p>
-          <p className={`${s.sub} text-[#d9b657] tracking-[0.45em] uppercase mt-2`}>{DONA_ANNA_BRAND.location}</p>
+          <p className={`${s.sub} text-[#d4af37] tracking-[0.45em] uppercase mt-2`}>{DONA_ANNA_BRAND.location}</p>
         </div>
       )}
     </div>

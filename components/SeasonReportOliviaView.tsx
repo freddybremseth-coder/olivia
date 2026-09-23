@@ -230,7 +230,7 @@ const SeasonReportOliviaView: React.FC = () => {
           </div>
         </div>
         <div className="glass rounded-[2rem] p-6 border border-white/10">
-          <h3 className="text-sm text-white font-bold flex items-center gap-2"><Droplets size={18} className="text-cyan-400" /> Vanning og IoT</h3>
+          <h3 className="text-sm text-white font-bold flex items-center gap-2"><Droplets size={18} className="text-blue-500" /> Vanning og IoT</h3>
           <div className="grid grid-cols-2 gap-3 mt-5 text-sm">
             <Info label="Sensorer" value={readings.length} />
             <Info label="Vanninger" value={irrigation.length} />

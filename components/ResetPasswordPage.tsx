@@ -63,7 +63,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onDone }) => {
       <div className="bg-[#0f0f10] border border-white/10 rounded-[2.5rem] p-10 w-full max-w-md relative shadow-2xl">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center">
             <Sprout size={20} className="text-black" />
           </div>
           <h1 className="text-xl font-bold text-white">Olivia <span className="text-green-400">AI</span></h1>
