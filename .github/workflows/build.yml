@@ -17,9 +17,18 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - name: Install dependencies
         run: npm ci
       - name: Build
         run: npm run build
+      - name: Compile public SEO handlers
+        run: |
+          npx esbuild api/public-article.ts api/public-listing.ts api/public-evergreen.ts api/sitemap.ts api/realtyflow/publish.ts \
+            --outdir=/tmp/donaanna-api-check \
+            --bundle --platform=node --format=esm --external:@supabase/supabase-js
+      - name: Validate public SEO, AEO, GEO and customer journey
+        run: node scripts/audit-public-seo.mjs
+      - name: Validate public routing
+        run: node -e "const c=require('./vercel.json'); const must=['/sitemap.xml','/magasin','/magasin/:slug','/olivenolje-fra-biar','/tidlig-hostet-olivenolje','/olivenolje-for-restauranter','/bordoliven-fra-biar']; if(must.some(source=>!c.rewrites?.some(r=>r.source===source))) process.exit(1)"
