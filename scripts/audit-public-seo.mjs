@@ -63,7 +63,9 @@ if (!landing.includes('Anna Bremseth og Freddy Bremseth driver Doña Anna sammen
 for (const productName of ['VERDE VIVO','VERDE ALTO','RAÍZ ANTIGUA','COCINA VIVA','MESA · GORDAL NOBLE']) {
   if (!landing.includes(productName)) fail('Visible portfolio missing distinct Doña Anna product: ' + productName);
 }
-if (!landing.includes('VERDE VIVO · 500 ml')) fail('Visible product card must match the approved current format.');
+if (!landing.includes("name: 'Verde Vivo'") || !landing.includes("format: '500 ml · Cosecha temprana'")) {
+  fail('Verde Vivo must retain its approved current public name and 500 ml format.');
+}
 if (!landing.includes('mål om extra virgin-kvalitet') || landing.includes("role: 'Extra virgin olivenolje'")) {
   fail('Visible product copy must keep final extra virgin classification pending batch analysis.');
 }
@@ -71,8 +73,11 @@ if (!landing.includes('data-testid="tasting-request-form"')) fail('Tasting form 
 if (!landing.includes('id="tasting-product"') || !landing.includes('Mesa · Gordal Noble (planlagt)')) {
   fail('Tasting/customer journey must capture which distinct Doña Anna product the lead is interested in.');
 }
-for (const productPath of ['/verde-vivo','/verde-alto','/raiz-antigua','/cocina-viva','/mesa-gordal-noble']) {
-  if (!landing.includes(productPath)) fail('Homepage product routing missing ' + productPath);
+for (const productSlug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa-gordal-noble']) {
+  if (!landing.includes("slug: '" + productSlug + "'")) fail('Homepage product media/routing registry missing ' + productSlug);
+}
+if (!landing.includes("const productHref = (name: string) => '/' + productMedia(name).slug;")) {
+  fail('Homepage product links must resolve through the product-specific media registry.');
 }
 if (!commerce.includes("public_site_approved === true")) fail('Live commerce data must require explicit public-site approval.');
 if (!commerce.includes("const BRAND_SAFE_FALLBACK = '/donaanna/olive-trees.jpg'")) fail('Public commerce service must retain a brand-safe image fallback.');
