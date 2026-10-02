@@ -37,6 +37,23 @@ export type SubsidyIncome = {
   description: string;
 };
 
+export type FarmIncome = {
+  id: string;
+  season: string;
+  incomeType: 'harvest_sale' | 'b2b_sale' | 'web_sale' | 'subsidy' | 'other';
+  description: string;
+  amount: number;
+  currency: string;
+  status: 'expected' | 'invoiced' | 'received' | 'cancelled';
+  earnedDate?: string;
+  paymentDate?: string;
+  paymentPeriod?: string;
+  customer?: string;
+  source?: string;
+  sourceRef?: string;
+  notes?: string;
+};
+
 function seasonFromDate(date?: string | null): string {
   return (date || new Date().toISOString()).slice(0, 4);
 }
@@ -168,6 +185,30 @@ export async function fetchOliviaExpenses(): Promise<FarmExpense[]> {
       parcelId: row.parcel_id ?? undefined,
     };
   });
+}
+
+export async function fetchOliviaIncome(): Promise<FarmIncome[]> {
+  const { data, error } = await supabase.from('farm_income').select('*').order('created_at', { ascending: false });
+  if (error) {
+    console.error('[oliviaSchemaData] fetchOliviaIncome', error);
+    return [];
+  }
+  return (data || []).map((row: any) => ({
+    id: String(row.id),
+    season: String(row.season || seasonFromDate(row.earned_date || row.payment_date || row.created_at)),
+    incomeType: row.income_type || 'other',
+    description: row.description || 'Inntekt',
+    amount: Number(row.amount || 0),
+    currency: row.currency || 'EUR',
+    status: row.status || 'received',
+    earnedDate: row.earned_date ?? undefined,
+    paymentDate: row.payment_date ?? undefined,
+    paymentPeriod: row.payment_period ?? undefined,
+    customer: row.customer ?? undefined,
+    source: row.source ?? undefined,
+    sourceRef: row.source_ref ?? undefined,
+    notes: row.notes ?? undefined,
+  }));
 }
 
 export async function fetchOliviaSubsidies(): Promise<SubsidyIncome[]> {
