@@ -116,10 +116,10 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
 
   const [activeTab, setActiveTab] = useState<CommerceTab>('products');
   const [adminRows, setAdminRows] = useState<AdminRows>({
-    customers,
-    orders,
-    invoices,
-    shipments,
+    customers: [],
+    orders: [],
+    invoices: [],
+    shipments: [],
     messages: [],
   });
 
@@ -129,9 +129,9 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
       .then(rows => {
         if (cancelled) return;
         setAdminRows({
-          customers: rows.customers.length ? rows.customers : customers,
-          orders: rows.orders.length ? rows.orders : orders,
-          invoices: rows.invoices.length ? rows.invoices : invoices,
+          customers: rows.customers,
+          orders: rows.orders,
+          invoices: rows.invoices,
           shipments: rows.shipments,
           messages: rows.messages,
         });

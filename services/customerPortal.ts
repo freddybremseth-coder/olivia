@@ -67,9 +67,9 @@ export async function fetchCustomerPortalData(user: UserProfile): Promise<Custom
 
   return {
     customer,
-    orders: orders.length ? orders : defaultOrders(customer.id),
-    invoices: invoices.length ? invoices : defaultInvoices(customer.id),
-    shipments: shipments.length ? shipments : defaultShipments(customer.id),
+    orders,
+    invoices,
+    shipments,
     messages,
   };
 }
@@ -204,7 +204,7 @@ export async function fetchCommerceBusinessMetrics(): Promise<CommerceBusinessMe
   const localMessages = loadLocalMessages();
 
   if (!isSupabaseConfigured) {
-    return calculateMetrics(localOrders, defaultInvoices('local-customer'), localMessages);
+    return calculateMetrics(localOrders.filter(order => order.status.toLowerCase() !== 'test'), [], localMessages);
   }
 
   const [ordersRes, invoicesRes, messagesRes] = await Promise.all([
@@ -216,14 +216,14 @@ export async function fetchCommerceBusinessMetrics(): Promise<CommerceBusinessMe
   const orders = [
     ...(ordersRes.data ?? []).map(rowToOrder),
     ...localOrders,
-  ];
+  ].filter(order => order.status.toLowerCase() !== 'test' && order.totalAmount > 0);
   const invoices = (invoicesRes.data ?? []).map(rowToInvoice);
   const messages = [
     ...(messagesRes.data ?? []).map(rowToMessage),
     ...localMessages,
   ];
 
-  return calculateMetrics(orders, invoices.length ? invoices : defaultInvoices('local-customer'), messages);
+  return calculateMetrics(orders, invoices, messages);
 }
 
 function loadLocalProfile(user: UserProfile): B2BCustomerProfile {
@@ -257,9 +257,9 @@ function localPortalData(customer: B2BCustomerProfile): CustomerPortalData {
   const messages = loadLocalMessages().filter(message => !message.customerId || message.customerId === customer.id);
   return {
     customer,
-    orders: orders.length ? orders : defaultOrders(customer.id),
-    invoices: defaultInvoices(customer.id),
-    shipments: defaultShipments(customer.id),
+    orders: orders.filter(order => order.status.toLowerCase() !== 'test' && order.totalAmount > 0),
+    invoices: [],
+    shipments: [],
     messages,
   };
 }
