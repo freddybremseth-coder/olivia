@@ -114,7 +114,7 @@ const b2bPackages = [
     audience: 'Restaurant / hotell',
     image: imagePaths.harvestHands,
     imageAlt: 'Grønne oliven ved innhøsting for Doña Anna',
-    text: 'Registrer interesse for Verde Vivo. Vi bekrefter først tilgjengelighet, batchdata, pris og levering når produksjonen er klar.',
+    text: 'Velg hvilket Doña Anna-produkt du er interessert i. Vi bekrefter tilgjengelighet, batchdata, pris og eventuell smaksprøve for riktig produkt når produksjonen er klar.',
   },
   {
     title: 'Produktinformasjon',
@@ -128,7 +128,7 @@ const b2bPackages = [
     audience: 'Gourmetbutikk / import',
     image: imagePaths.oliveGrove,
     imageAlt: 'Doña Anna olivengård i Alicante-innlandet',
-    text: 'Ta kontakt for dialog om Verde Vivo, format, dokumentasjon og mulig distribusjon når første produksjon er klar.',
+    text: 'Ta kontakt for dialog om Verde Vivo, Verde Alto, Raíz Antigua, Cocina Viva eller planlagte Mesa · Gordal Noble. Format, dokumentasjon og distribusjon behandles per produkt.',
   },
 ];
 
@@ -208,7 +208,7 @@ const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(va
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [livePortfolio, setLivePortfolio] = useState<PublicCommerceProduct[]>([]);
-  const [tastingRequest, setTastingRequest] = useState({ company: '', role: '', email: '', address: '' });
+  const [tastingRequest, setTastingRequest] = useState({ product: 'Verde Vivo', company: '', role: '', email: '', address: '' });
   const [signal, setSignal] = useState<PublicEstateSignal>({
     isLive: false,
     parcelCount: 0,
@@ -229,8 +229,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
   const handleTastingRequest = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const subject = 'Interesse for smaksprøve – Doña Anna';
+    const subject = `Interesse for ${tastingRequest.product} – Doña Anna`;
     const body = [
+      `Produkt: ${tastingRequest.product}`,
       `Restaurant / virksomhet: ${tastingRequest.company}`,
       `Rolle: ${tastingRequest.role}`,
       `E-post: ${tastingRequest.email}`,
@@ -733,7 +734,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               </div>
             </div>
             <form data-testid="tasting-request-form" className="border border-black/12 bg-white p-5 shadow-2xl shadow-black/10" onSubmit={handleTastingRequest}>
-              <label htmlFor="tasting-company" className="block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Restaurant / virksomhet</label>
+              <label htmlFor="tasting-product" className="block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Produkt</label>
+              <select id="tasting-product" required value={tastingRequest.product} onChange={(event) => setTastingRequest({ ...tastingRequest, product: event.target.value })} className="mt-2 h-12 w-full border border-black/12 bg-white px-3 outline-none focus:border-[#d4af37]">
+                <option>Verde Vivo</option>
+                <option>Verde Alto</option>
+                <option>Raíz Antigua</option>
+                <option>Cocina Viva</option>
+                <option>Mesa · Gordal Noble (planlagt)</option>
+              </select>
+              <label htmlFor="tasting-company" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Restaurant / virksomhet</label>
               <input id="tasting-company" required value={tastingRequest.company} onChange={(event) => setTastingRequest({ ...tastingRequest, company: event.target.value })} className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
               <label htmlFor="tasting-role" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Rolle</label>
               <input id="tasting-role" required value={tastingRequest.role} onChange={(event) => setTastingRequest({ ...tastingRequest, role: event.target.value })} placeholder="Kokk, innkjøper eller distributør" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
