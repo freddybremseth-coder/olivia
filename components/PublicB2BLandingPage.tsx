@@ -267,6 +267,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   useEffect(() => {
     fetchPublicEstateSignal().then(setSignal);
     fetchPublicCommerceProducts().then(setLivePortfolio);
+
+    const requestedProduct = new URLSearchParams(window.location.search).get('product')?.trim().toLowerCase() || '';
+    const productFromSlug: Record<string, string> = {
+      'verde-vivo': 'Verde Vivo',
+      'verde-alto': 'Verde Alto',
+      'raiz-antigua': 'Raíz Antigua',
+      'cocina-viva': 'Cocina Viva',
+      'mesa-gordal-noble': 'Mesa · Gordal Noble (planlagt)',
+    };
+    const selectedProduct = productFromSlug[requestedProduct];
+    if (selectedProduct) {
+      setTastingRequest(current => ({ ...current, product: selectedProduct }));
+    }
   }, []);
 
   const approvedNames = new Set(['verde vivo', 'verde alto', 'raíz antigua', 'raiz antigua', 'cocina viva', 'mesa · gordal noble', 'mesa gordal noble']);
