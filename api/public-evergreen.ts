@@ -127,7 +127,7 @@ const PAGES: Record<string, EvergreenPage> = {
     description: 'For restaurant, hotell og faghandel: meld interesse for Doña Anna Verde Vivo 500 ml og få batchdata, produktark, pris og levering når produksjonen er klar.',
     eyebrow: 'Restaurant · hotell · faghandel',
     h1: 'Olivenolje for restauranter: Verde Vivo og dokumentert batchinformasjon',
-    answer: 'Restauranter, hoteller, butikker og distributører kan melde interesse for Doña Annas ulike produkter. Produktark, batchdata, pris og levering bekreftes per produkt når produksjonen er klar.'
+    answer: 'Restauranter, hoteller, butikker og distributører kan melde interesse for Doña Annas ulike produkter. Produktark, batchdata, pris og levering bekreftes per produkt når produksjonen er klar.',
     sections: [
       {
         heading: 'Hvilket produkt tilbyr Doña Anna nå?',
