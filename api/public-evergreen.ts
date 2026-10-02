@@ -195,6 +195,44 @@ const PAGES: Record<string, EvergreenPage> = {
     ],
     primaryCta: { label: 'Se Verde Vivo i dag', href: '/#portfolio' }
   },
+  'verde-vivo': {
+    slug: 'verde-vivo',
+    title: 'Verde Vivo 500 ml | Doña Anna olivenolje fra Biar',
+    description: 'Verde Vivo er Doña Annas 500 ml tidlig høstede extra virgin olivenolje fra Biar. Se hva som er definert nå og hvilke batchdata som publiseres senere.',
+    eyebrow: 'Verde Vivo · 500 ml · Biar',
+    h1: 'Verde Vivo 500 ml – Doña Anna olivenolje fra Biar',
+    answer: 'Verde Vivo er Doña Annas første produkt: en 500 ml extra virgin olivenolje utviklet rundt tidlig høsting og tydelig opprinnelse i Biar. Batchdata, analyse og tilgjengelighet publiseres når produksjonen er dokumentert.',
+    sections: [
+      {
+        heading: 'Hva er Verde Vivo?',
+        body: [
+          'Verde Vivo er produktet Doña Anna bygger merkevaren rundt nå. Formatet som kommuniseres offentlig er 500 ml.',
+          'Flasken skal bruke Doña Annas godkjente etikett med den stiliserte Doña Anna-figuren. Nettstedet bruker ikke genererte flaskebilder dersom etiketten ikke kan gjengis korrekt.'
+        ]
+      },
+      {
+        heading: 'Hva vet vi om produktet før batchen er klar?',
+        body: [
+          'Produktretningen er extra virgin olivenolje med cosecha temprana / tidlig høsting og opprinnelse i Biar.',
+          'Høstedato, konkrete sorter i batchen, analyseverdier, sensoriske notater, pris og tilgjengelighet publiseres først når den faktiske produksjonen er dokumentert.'
+        ]
+      },
+      {
+        heading: 'Hvordan kan restaurant eller butikk følge produktet?',
+        body: [
+          'Restaurant, hotell, butikk og importør kan melde interesse via DoñaAnna.com.',
+          'Doña Anna følger opp med produktark, batchinformasjon, pris, levering og eventuell smaksprøve når opplysningene faktisk kan bekreftes.'
+        ]
+      }
+    ],
+    faqs: [
+      { question: 'Hvilket format har Verde Vivo?', answer: 'Verde Vivo kommuniseres nå som 500 ml.' },
+      { question: 'Hvor kommer Verde Vivo fra?', answer: 'Verde Vivo er Doña Annas olivenoljeprodukt fra gården i Biar i Alicante.' },
+      { question: 'Er analyseverdier publisert?', answer: 'Analyseverdier publiseres når den konkrete batchen er produsert og dokumentert.' },
+      { question: 'Kan profesjonelle kjøpere melde interesse?', answer: 'Ja. Restaurant, hotell, butikk og import kan melde interesse før lansering.' }
+    ],
+    primaryCta: { label: 'Meld interesse for Verde Vivo', href: '/#tasting' }
+  },
   'om-dona-anna': {
     slug: 'om-dona-anna',
     title: 'Om Doña Anna | Anna og Freddy Bremseth i Biar',
@@ -332,6 +370,18 @@ function pageHtml(page: EvergreenPage) {
     ],
   };
 
+  if (page.slug === 'verde-vivo') {
+    schema['@graph'].push({
+      '@type': 'Product',
+      '@id': SITE + '/verde-vivo#product',
+      name: 'Doña Anna Verde Vivo',
+      description: page.description,
+      url: SITE + '/verde-vivo',
+      brand: { '@id': ORG },
+      size: '500 ml',
+    } as never);
+  }
+
   const sections = page.sections.map(section =>
     '<section class="article-section"><h2>' + escapeHtml(section.heading) + '</h2>' +
     section.body.map(paragraph => '<p>' + escapeHtml(paragraph) + '</p>').join('') + '</section>'
@@ -368,13 +418,13 @@ function pageHtml(page: EvergreenPage) {
     '<meta property="og:description" content="' + escapeHtml(page.description) + '">' +
     '<script type="application/ld+json">' + JSON.stringify(schema).replace(/</g, '\\u003c') + '</script>' +
     '<style>' + css + '</style></head><body>' +
-    '<header class="topbar"><a class="brand" href="/">DOÑA ANNA</a><nav class="topnav" aria-label="Hovedmeny"><a href="/guider">Guider</a><a href="/#portfolio">Verde Vivo</a><a href="/magasin">Magasin</a><a href="/om-dona-anna">Om oss</a><a href="/#tasting">Kontakt</a></nav></header>' +
+    '<header class="topbar"><a class="brand" href="/">DOÑA ANNA</a><nav class="topnav" aria-label="Hovedmeny"><a href="/guider">Guider</a><a href="/verde-vivo">Verde Vivo</a><a href="/magasin">Magasin</a><a href="/om-dona-anna">Om oss</a><a href="/#tasting">Kontakt</a></nav></header>' +
     '<section class="hero"><div class="hero-inner"><p class="eyebrow">' + escapeHtml(page.eyebrow) + '</p><h1>' + escapeHtml(page.h1) + '</h1><p class="lead">' + escapeHtml(page.description) + '</p><div class="answer"><strong>Kort svar:</strong> ' + escapeHtml(page.answer) + '</div><div class="actions"><a class="button primary" href="' + escapeHtml(page.primaryCta.href) + '">' + escapeHtml(page.primaryCta.label) + '</a><a class="button secondary" href="/magasin">Les magasinet</a></div></div></section>' +
     '<main><div class="article-grid"><article>' + sections +
     '<section class="faq"><h2>Vanlige spørsmål</h2>' + faq + '</section>' +
     '<section class="next"><h2>Neste steg</h2><p>Se Verde Vivo, les mer om gården eller meld interesse dersom du vurderer Doña Anna for restaurant, hotell, butikk eller import.</p><a class="button primary" href="' + escapeHtml(page.primaryCta.href) + '">' + escapeHtml(page.primaryCta.label) + '</a><div class="cluster"><a href="/guider">Alle guider</a><a href="/olivenolje-fra-biar">Olivenolje fra Biar</a><a href="/tidlig-hostet-olivenolje">Tidlig høstet olivenolje</a><a href="/olivenolje-for-restauranter">For restauranter</a><a href="/bordoliven-fra-biar">Bordoliven – planlagt</a></div></section>' +
     '<p class="author">Oppdatert 2. oktober 2026 · Innhold fra Doña Anna. <a href="/om-dona-anna">Anna og Freddy Bremseth driver prosjektet sammen.</a></p></article>' +
-    '<aside class="aside"><strong>Utforsk Doña Anna</strong><nav><a href="/">Forsiden</a><a href="/guider">Guider</a><a href="/#estate">Gården i Biar</a><a href="/#portfolio">Verde Vivo</a><a href="/#traceability">Sporbarhet</a><a href="/#b2b">For profesjonelle</a><a href="/om-dona-anna">Om Anna og Freddy</a><a href="/#tasting">Kontakt</a></nav></aside></div></main>' +
+    '<aside class="aside"><strong>Utforsk Doña Anna</strong><nav><a href="/">Forsiden</a><a href="/guider">Guider</a><a href="/#estate">Gården i Biar</a><a href="/verde-vivo">Verde Vivo</a><a href="/#traceability">Sporbarhet</a><a href="/#b2b">For profesjonelle</a><a href="/om-dona-anna">Om Anna og Freddy</a><a href="/#tasting">Kontakt</a></nav></aside></div></main>' +
     '<footer class="footer"><a href="/om-dona-anna">Anna & Freddy</a><a href="/personvern">Personvern</a><a href="https://www.freddybremseth.com/">FreddyBremseth.com</a><a href="https://www.pinosoecolife.com/">Pinoso Eco Life</a></footer>' +
     '<script src="/donaanna-analytics.js" defer></script></body></html>';
 }
