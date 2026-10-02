@@ -41,6 +41,15 @@ if (!index.includes(FREDDY) || !index.includes(ANNA)) fail('Homepage schema must
 if (!index.includes('"name": "Anna Bremseth"') || !index.includes('"name": "Freddy Bremseth"')) fail('Both people must be named in structured data.');
 if (!index.includes('"@type": "Product"') || !index.includes('"name": "Doña Anna Verde Vivo"')) fail('Homepage schema must expose the real Verde Vivo product.');
 if (index.includes('/donaanna/product-design/')) fail('Homepage social preview must not use unapproved bottle imagery.');
+if (!index.includes('<link rel="preload" as="image" href="/donaanna/hero-image.jpg" fetchpriority="high">')) {
+  fail('Homepage must preload the lightweight LCP hero image.');
+}
+if (!index.includes('https://www.donaanna.com/donaanna/hero-image.jpg')) {
+  fail('Homepage social preview must use the approved lightweight harvest image.');
+}
+if (!landing.includes("estateHero: '/donaanna/hero-image.jpg'")) {
+  fail('Public landing must retain the lightweight harvest hero.');
+}
 if (!index.includes('"@type": "FAQPage"') && !index.includes('"@type":"FAQPage"')) fail('Homepage must include matching FAQ schema.');
 if (!index.includes('"@type": "ItemList"') && !index.includes('"@type":"ItemList"')) fail('Homepage must include product ItemList schema.');
 if (!index.includes('"@type": "Place"') && !index.includes('"@type":"Place"')) fail('Homepage must identify Biar as a Place entity.');
