@@ -97,6 +97,24 @@ const evergreenSlugs = [
   'personvern',
 ];
 const routeRewrites = Array.isArray(vercel.rewrites) ? vercel.rewrites : [];
+const routeRedirects = Array.isArray(vercel.redirects) ? vercel.redirects : [];
+const legacyRedirects = {
+  '/product-verde-vivo.html': '/verde-vivo',
+  '/product-verde-alto.html': '/verde-vivo',
+  '/product-raiz-antigua.html': '/verde-vivo',
+  '/product-cocina-viva.html': '/verde-vivo',
+  '/product-mesa-gordal-noble.html': '/verde-vivo',
+  '/organic-extra-virgin-olive-oil.html': '/olivenolje-fra-biar',
+  '/olive-oil-for-restaurants.html': '/olivenolje-for-restauranter',
+  '/b2b-olive-oil.html': '/olivenolje-for-restauranter',
+  '/olive-oil-traceability.html': '/verde-vivo',
+  '/tasting-kit.html': '/olivenolje-for-restauranter',
+};
+for (const [source, destination] of Object.entries(legacyRedirects)) {
+  if (!routeRedirects.some((row) => row.source === source && row.destination === destination && row.permanent === true)) {
+    fail('Legacy public route must redirect permanently: ' + source);
+  }
+}
 for (const slug of evergreenSlugs) {
   if (!evergreen.includes(slug + ':') && !evergreen.includes("'" + slug + "':")) fail('Evergreen page missing ' + slug);
   if (!sitemap.includes("'/" + slug + "'")) fail('Sitemap missing evergreen path /' + slug);
@@ -110,6 +128,17 @@ if (!evergreen.includes("'@type': 'BreadcrumbList'")) fail('Evergreen pages must
 if (!evergreen.includes("author: { '@id': ORG }")) fail('Evergreen pages must use Doña Anna as the page author entity.');
 if (!evergreen.includes("name: 'Anna Bremseth'") || !evergreen.includes("name: 'Freddy Bremseth'")) fail('Evergreen schema must expose both people.');
 if (!evergreen.includes("dateModified: '2026-10-02'")) fail('Evergreen pages must expose an updated date.');
+for (const staleClaim of [
+  'tidlig høstede extra virgin olivenolje fra Biar',
+  '500 ml extra virgin olivenolje utviklet rundt tidlig høsting',
+  'tidlig høstet extra virgin olivenolje.',
+  'Produktretningen er extra virgin olivenolje'
+]) {
+  if (evergreen.includes(staleClaim)) fail('Evergreen content must not present extra virgin as confirmed before batch classification.');
+}
+if (!evergreen.includes('mål om extra virgin-kvalitet') || !evergreen.includes('Endelig kvalitetsklasse')) {
+  fail('Evergreen product pages must clearly qualify the pending extra virgin classification.');
+}
 if (!evergreen.includes('Doña Anna har ikke lansert bordoliven som et tilgjengelig produkt nå')) {
   fail('Bordoliven page must clearly distinguish future plans from current products.');
 }
