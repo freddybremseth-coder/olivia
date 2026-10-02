@@ -101,6 +101,26 @@
       "destination": "/api/public-evergreen?page=verde-vivo"
     },
     {
+      "source": "/produkter",
+      "destination": "/api/public-evergreen?page=produkter"
+    },
+    {
+      "source": "/verde-alto",
+      "destination": "/api/public-evergreen?page=verde-alto"
+    },
+    {
+      "source": "/raiz-antigua",
+      "destination": "/api/public-evergreen?page=raiz-antigua"
+    },
+    {
+      "source": "/cocina-viva",
+      "destination": "/api/public-evergreen?page=cocina-viva"
+    },
+    {
+      "source": "/mesa-gordal-noble",
+      "destination": "/api/public-evergreen?page=mesa-gordal-noble"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
@@ -142,22 +162,22 @@
     },
     {
       "source": "/product-verde-alto.html",
-      "destination": "/verde-vivo",
+      "destination": "/verde-alto",
       "permanent": true
     },
     {
       "source": "/product-raiz-antigua.html",
-      "destination": "/verde-vivo",
+      "destination": "/raiz-antigua",
       "permanent": true
     },
     {
       "source": "/product-cocina-viva.html",
-      "destination": "/verde-vivo",
+      "destination": "/cocina-viva",
       "permanent": true
     },
     {
       "source": "/product-mesa-gordal-noble.html",
-      "destination": "/verde-vivo",
+      "destination": "/mesa-gordal-noble",
       "permanent": true
     },
     {

@@ -53,7 +53,7 @@ const PAGES: Record<string, EvergreenPage> = {
     description: 'Verde Vivo knyttes til gården i Biar gjennom olivensorter, tidlig høsting, dokumentasjon og sporbarhet for den konkrete batchen.',
     eyebrow: 'Opprinnelse · Biar, Alicante',
     h1: 'Olivenolje fra Biar: opprinnelse, sorter og sporbarhet',
-    answer: 'Doña Anna er et olivenprosjekt fra Biar i Alicante. Verde Vivo 500 ml er første produkt, og batchdata publiseres når produksjonen er gjennomført og dokumentert.',
+    answer: 'Doña Anna er et olivenprosjekt fra Biar i Alicante med flere separate produkter. Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva er egne olivenoljeprodukter, mens Mesa · Gordal Noble er et planlagt bordolivenprodukt.',
     sections: [
       {
         heading: 'Hvorfor er Biar viktig for Doña Anna?',
@@ -70,9 +70,9 @@ const PAGES: Record<string, EvergreenPage> = {
         ]
       },
       {
-        heading: 'Hvordan dokumenteres Verde Vivo?',
+        heading: 'Hvordan dokumenteres de ulike produktene?',
         body: [
-          'Doña Anna skal knytte høstedato, relevante produksjonsopplysninger, analyseverdier og sensoriske notater til den konkrete batchen når dokumentasjonen foreligger.',
+          'Doña Anna skal knytte høstedato, relevante produksjonsopplysninger, analyseverdier og sensoriske notater til riktig produkt og konkret batch når dokumentasjonen foreligger.',
           'Pris, tilgjengelighet og analyseverdier publiseres derfor ikke som generelle løfter før de faktisk finnes.'
         ]
       }
@@ -80,9 +80,9 @@ const PAGES: Record<string, EvergreenPage> = {
     faqs: [
       { question: 'Hvor ligger Doña Anna?', answer: 'Doña Anna ligger i Biar i Alicante, Spania.' },
       { question: 'Hvilke sorter finnes på gården?', answer: 'Blant sortene er Genovesa, Gordal, Changlot Real og Picual.' },
-      { question: 'Er Verde Vivo sporbar?', answer: 'Målet er batchbasert sporbarhet med produksjons- og analyseopplysninger når den konkrete batchen er klar.' }
+      { question: 'Blir produktene sporbare?', answer: 'Målet er produkt- og batchbasert sporbarhet med produksjons- og analyseopplysninger når den konkrete batchen er klar.' }
     ],
-    primaryCta: { label: 'Se Verde Vivo', href: '/#portfolio' }
+    primaryCta: { label: 'Se produktene', href: '/produkter' }
   },
   'tidlig-hostet-olivenolje': {
     slug: 'tidlig-hostet-olivenolje',
@@ -119,7 +119,7 @@ const PAGES: Record<string, EvergreenPage> = {
       { question: 'Er Verde Vivo tidlig høstet?', answer: 'Ja. Verde Vivo er utviklet som cosecha temprana / tidlig høstet olivenolje med mål om extra virgin-kvalitet. Endelig kvalitetsklasse bekreftes først etter analyse og sensorisk vurdering.' },
       { question: 'Er polyfenoltall publisert nå?', answer: 'Doña Anna publiserer analyseverdier når den konkrete batchen er analysert og dokumentert.' }
     ],
-    primaryCta: { label: 'Se Verde Vivo', href: '/#portfolio' }
+    primaryCta: { label: 'Se produktlinjen', href: '/produkter' }
   },
   'olivenolje-for-restauranter': {
     slug: 'olivenolje-for-restauranter',
@@ -127,12 +127,12 @@ const PAGES: Record<string, EvergreenPage> = {
     description: 'For restaurant, hotell og faghandel: meld interesse for Doña Anna Verde Vivo 500 ml og få batchdata, produktark, pris og levering når produksjonen er klar.',
     eyebrow: 'Restaurant · hotell · faghandel',
     h1: 'Olivenolje for restauranter: Verde Vivo og dokumentert batchinformasjon',
-    answer: 'Restauranter, hoteller, butikker og distributører kan melde interesse for Verde Vivo 500 ml. Batchdata, produktark, pris og levering bekreftes når produksjonen er klar.',
+    answer: 'Restauranter, hoteller, butikker og distributører kan melde interesse for Doña Annas ulike produkter. Produktark, batchdata, pris og levering bekreftes per produkt når produksjonen er klar.',
     sections: [
       {
         heading: 'Hvilket produkt tilbyr Doña Anna nå?',
         body: [
-          'Verde Vivo 500 ml er produktet Doña Anna kommuniserer offentlig nå.',
+          'Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva er separate olivenoljeprodukter. Tilgjengelighet og kommersielle data bekreftes per produkt.',
           'Større kjøkkenformat, flere oljer eller bordoliven markedsføres ikke som tilgjengelige før de faktisk er besluttet og produsert.'
         ]
       },
@@ -153,7 +153,7 @@ const PAGES: Record<string, EvergreenPage> = {
     ],
     faqs: [
       { question: 'Kan en restaurant melde interesse for smaksprøve?', answer: 'Ja. Doña Anna tar imot interesse og bekrefter smaksprøve når produksjonen og tilgjengeligheten er klar.' },
-      { question: 'Hvilket format kommuniseres nå?', answer: 'Verde Vivo kommuniseres som 500 ml.' },
+      { question: 'Har alle produktene samme format?', answer: 'Nei. Format skal oppgis separat for hvert produkt når emballasje og produksjon er bekreftet.' },
       { question: 'Finnes produktark og batchinformasjon?', answer: 'Produkt- og batchinformasjon publiseres når den faktiske produksjonen er dokumentert.' }
     ],
     primaryCta: { label: 'Meld interesse', href: '/#tasting' }
@@ -169,7 +169,7 @@ const PAGES: Record<string, EvergreenPage> = {
       {
         heading: 'Er bordoliven tilgjengelig nå?',
         body: [
-          'Nei. Verde Vivo er produktet Doña Anna kommuniserer offentlig nå.',
+          'Nei. Mesa · Gordal Noble står som planlagt bordolivenprodukt og markedsføres ikke som tilgjengelig nå.',
           'Bordoliven kan bli aktuelt senere, men nettstedet skal ikke fremstille navn, pris, format eller tilgjengelighet som bestemt før dette faktisk er avklart.'
         ]
       },
@@ -233,13 +233,196 @@ const PAGES: Record<string, EvergreenPage> = {
     ],
     primaryCta: { label: 'Meld interesse for Verde Vivo', href: '/#tasting' }
   },
+  produkter: {
+    slug: 'produkter',
+    title: 'Doña Anna produkter fra Biar, Alicante | Olje og oliven',
+    description: 'Se Doña Annas produktlinje fra Biar: Verde Vivo, Verde Alto, Raíz Antigua, Cocina Viva og planlagte Mesa Gordal Noble, med egne produktsider og batchdata.',
+    eyebrow: 'Produktlinje · Biar · Doña Anna',
+    h1: 'Doña Anna produkter: flere tydelige produkter under én merkevare',
+    answer: 'Doña Anna har flere separate produkter. Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva er egne olivenoljeprodukter med egne roller og etiketter. Mesa · Gordal Noble er et eget planlagt bordolivenprodukt.',
+    sections: [
+      {
+        heading: 'Hvilke olivenoljeprodukter finnes i produktlinjen?',
+        body: [
+          'Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva skal behandles som separate produkter – ikke som varianter av samme etikett eller produktside.',
+          'Hvert produkt får egen produktside, eget navn, egen etikett og egne batchdata. Format, kvalitetsklasse, sensorikk, pris og tilgjengelighet publiseres per produkt når den faktiske produksjonen er dokumentert.'
+        ]
+      },
+      {
+        heading: 'Hva er Mesa · Gordal Noble?',
+        body: [
+          'Mesa · Gordal Noble er et eget produktspor for bordoliven.',
+          'Det står som planlagt og skal ikke fremstilles som tilgjengelig før råvare, prosess, emballasje, etikett, pris og lansering er bekreftet.'
+        ]
+      },
+      {
+        heading: 'Hvorfor skilles produktene tydelig?',
+        body: [
+          'Produktnavnet skal fortelle kunden hvilket produkt de ser, og etiketten må være den godkjente etiketten for akkurat det produktet.',
+          'Nettstedet skal aldri bruke et bilde av én flaske til å representere et annet produkt eller bruke en generert etikett som avviker fra godkjent merkevare.'
+        ]
+      }
+    ],
+    faqs: [
+      { question: 'Har Doña Anna flere olivenoljeprodukter?', answer: 'Ja. Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva er separate olivenoljeprodukter.' },
+      { question: 'Er Mesa Gordal Noble en olivenolje?', answer: 'Nei. Mesa · Gordal Noble er et eget planlagt bordolivenprodukt.' },
+      { question: 'Har hvert produkt egen etikett?', answer: 'Ja. Produktene skal bruke sine egne godkjente etiketter og skal ikke blandes visuelt på nettstedet.' }
+    ],
+    primaryCta: { label: 'Se produktlinjen på forsiden', href: '/#portfolio' }
+  },
+  'verde-alto': {
+    slug: 'verde-alto',
+    title: 'Verde Alto olivenolje fra Biar, Alicante | Doña Anna',
+    description: 'Verde Alto er et eget olivenoljeprodukt i Doña Anna-porteføljen fra Biar. Smaksprofil, format, kvalitetsklasse og batchdata dokumenteres per produksjon.',
+    eyebrow: 'Verde Alto · eget olivenoljeprodukt',
+    h1: 'Verde Alto – et eget Doña Anna-produkt fra Biar',
+    answer: 'Verde Alto er et separat olivenoljeprodukt i Doña Anna-porteføljen. Produktet skal ha egen etikett og egne batchdata, og skal ikke beskrives eller avbildes som Verde Vivo.',
+    sections: [
+      {
+        heading: 'Hva er Verde Alto?',
+        body: [
+          'Verde Alto er definert som et eget produkt med en mer balansert og bredt anvendelig posisjon i porteføljen.',
+          'Den faktiske kvalitetsklassen, smaksprofilen, formatet og tilgjengeligheten beskrives først når den konkrete produksjonen er dokumentert.'
+        ]
+      },
+      {
+        heading: 'Hvordan skal Verde Alto vises på nettstedet?',
+        body: [
+          'Verde Alto skal bruke sin egen godkjente etikett og skal ha egne produktbilder.',
+          'Inntil et merkevarekorrekt flaskebilde finnes, bruker nettstedet en nøytral produktpresentasjon fremfor å vise feil etikett.'
+        ]
+      },
+      {
+        heading: 'Hva dokumenteres per batch?',
+        body: [
+          'Høstedato, sorter i batchen, produksjonsdata, analyseverdier, sensoriske notater, format, pris og tilgjengelighet knyttes til den faktiske batchen når opplysningene foreligger.'
+        ]
+      }
+    ],
+    faqs: [
+      { question: 'Er Verde Alto det samme som Verde Vivo?', answer: 'Nei. Verde Alto er et separat produkt med egen etikett og egen produktside.' },
+      { question: 'Er kvalitetsklasse og smak bekreftet?', answer: 'Disse opplysningene publiseres først når den konkrete batchen er produsert og dokumentert.' },
+      { question: 'Kan profesjonelle kjøpere melde interesse?', answer: 'Ja. Restaurant, butikk, import og andre profesjonelle kjøpere kan melde interesse før tilgjengelighet er bekreftet.' }
+    ],
+    primaryCta: { label: 'Meld interesse for Verde Alto', href: '/#tasting' }
+  },
+  'raiz-antigua': {
+    slug: 'raiz-antigua',
+    title: 'Raíz Antigua olivenolje fra Biar, Alicante | Doña Anna',
+    description: 'Raíz Antigua er et eget Doña Anna-produkt fra Biar med heritage-posisjonering. Opprinnelse, sorter, sensorikk og batchdata dokumenteres for hver produksjon.',
+    eyebrow: 'Raíz Antigua · eget heritage-produkt',
+    h1: 'Raíz Antigua – egen identitet, opprinnelse og batch',
+    answer: 'Raíz Antigua er et separat olivenoljeprodukt i Doña Anna-porteføljen. Heritage-posisjoneringen skal bygge på dokumentert opprinnelse og faktiske batchdata, ikke generelle påstander om alder, sorter eller smak.',
+    sections: [
+      {
+        heading: 'Hva skiller Raíz Antigua fra de andre produktene?',
+        body: [
+          'Raíz Antigua har en egen heritage-posisjonering og skal ha egen etikett, egen produktside og egen produktfortelling.',
+          'Påstander om gamle trær, bestemte sorter eller begrenset produksjon brukes bare når de kan dokumenteres for den aktuelle råvaren og batchen.'
+        ]
+      },
+      {
+        heading: 'Hvordan bygges produktfortellingen?',
+        body: [
+          'Fortellingen skal knyttes til den faktiske gården i Biar, konkrete trær eller områder når dette er dokumentert, og produksjonsdata fra batchen.',
+          'Det gir en mer troverdig produktidentitet enn generiske beskrivelser av smak og terroir.'
+        ]
+      },
+      {
+        heading: 'Hvordan behandles bilder og etikett?',
+        body: [
+          'Raíz Antigua må vises med sin egen godkjente etikett. Bilder med gamle AI-etiketter eller etiketter fra andre produkter skal ikke brukes.',
+          'Inntil korrekt produktfoto er tilgjengelig, brukes merkevaretrygge bilder fra gården og en nøytral produktpresentasjon.'
+        ]
+      }
+    ],
+    faqs: [
+      { question: 'Er Raíz Antigua det samme som Verde Vivo?', answer: 'Nei. Raíz Antigua er et separat produkt med egen identitet, etikett og produktside.' },
+      { question: 'Kommer Raíz Antigua fra gamle trær?', answer: 'Dette beskrives først når opprinnelsen til den konkrete batchen kan dokumenteres.' },
+      { question: 'Når publiseres sensoriske data?', answer: 'Sensorikk og analyseverdier publiseres per batch etter produksjon og vurdering.' }
+    ],
+    primaryCta: { label: 'Meld interesse for Raíz Antigua', href: '/#tasting' }
+  },
+  'cocina-viva': {
+    slug: 'cocina-viva',
+    title: 'Cocina Viva olivenolje for profesjonelle kjøkken | Doña Anna',
+    description: 'Cocina Viva er Doña Annas separate produkt for profesjonelle kjøkken. Format, kvalitetsklasse, pris, batchdata og levering bekreftes før tilgjengelighet.',
+    eyebrow: 'Cocina Viva · profesjonelt kjøkken',
+    h1: 'Cocina Viva – Doña Anna for profesjonelle kjøkken',
+    answer: 'Cocina Viva er et eget produktspor for restaurant og profesjonelt kjøkken. Det skal ha egen etikett, eget format og egne kommersielle data – ikke være en større flaske med Verde Vivo-innhold på nettsiden.',
+    sections: [
+      {
+        heading: 'Hva er rollen til Cocina Viva?',
+        body: [
+          'Cocina Viva er definert for profesjonell bruk der format, pris, levering og praktisk kjøkkenbruk er sentrale kjøpskriterier.',
+          'Det konkrete formatet, kvalitetsklassen og tekniske produktopplysningene bekreftes før produktet markedsføres som tilgjengelig.'
+        ]
+      },
+      {
+        heading: 'Hvordan skilles Cocina Viva fra de andre oljene?',
+        body: [
+          'Cocina Viva har eget navn, egen etikett, egen produktside og egen B2B-posisjon.',
+          'Produktet skal ikke bruke Verde Vivo-, Verde Alto- eller Raíz Antigua-bilder som erstatning.'
+        ]
+      },
+      {
+        heading: 'Hva trenger en profesjonell kjøper?',
+        body: [
+          'Når produktet er klart, skal siden vise relevant format, batchdata, analyse, pris, levering og produktark som gjelder Cocina Viva spesifikt.'
+        ]
+      }
+    ],
+    faqs: [
+      { question: 'Er Cocina Viva et eget produkt?', answer: 'Ja. Cocina Viva er et separat Doña Anna-produkt for profesjonelle kjøkken.' },
+      { question: 'Hvilket format får Cocina Viva?', answer: 'Det endelige kjøkkenformatet publiseres når produkt og emballasje er bekreftet.' },
+      { question: 'Kan restauranter melde interesse?', answer: 'Ja. Profesjonelle kjøpere kan melde interesse før endelig tilgjengelighet og pris er publisert.' }
+    ],
+    primaryCta: { label: 'Kontakt oss om Cocina Viva', href: '/#tasting' }
+  },
+  'mesa-gordal-noble': {
+    slug: 'mesa-gordal-noble',
+    title: 'Mesa Gordal Noble bordoliven fra Biar, Alicante | Doña Anna',
+    description: 'Mesa Gordal Noble er Doña Annas planlagte bordolivenprodukt fra Biar. Produkt, prosess, format, etikett, pris og tilgjengelighet bekreftes før lansering.',
+    eyebrow: 'Mesa · Gordal Noble · planlagt',
+    h1: 'Mesa · Gordal Noble – planlagt bordolivenprodukt',
+    answer: 'Mesa · Gordal Noble er et eget planlagt Doña Anna-produkt for bordoliven. Det er ikke en olivenolje og markedsføres ikke som tilgjengelig før produksjon, emballasje og lansering er avklart.',
+    sections: [
+      {
+        heading: 'Hva er Mesa · Gordal Noble?',
+        body: [
+          'Mesa · Gordal Noble er produktnavnet for et eget bordolivenprodukt i Doña Anna-porteføljen.',
+          'Det holdes tydelig adskilt fra olivenoljene Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva.'
+        ]
+      },
+      {
+        heading: 'Er produktet til salgs nå?',
+        body: [
+          'Nei. Produktet står som planlagt.',
+          'Råvare, prosess, emballasje, nettovekt, etikett, pris, holdbarhet og tilgjengelighet må være besluttet og dokumentert før produktet fremstilles som lansert.'
+        ]
+      },
+      {
+        heading: 'Hvordan skal produktet vises visuelt?',
+        body: [
+          'Mesa · Gordal Noble skal bruke sin egen godkjente emballasje og etikett når disse er klare.',
+          'Nettstedet skal ikke bruke et oljeprodukt, feil glass eller en AI-generert etikett som midlertidig produktbilde.'
+        ]
+      }
+    ],
+    faqs: [
+      { question: 'Er Mesa Gordal Noble en olivenolje?', answer: 'Nei. Mesa · Gordal Noble er et planlagt bordolivenprodukt.' },
+      { question: 'Er det tilgjengelig nå?', answer: 'Nei. Lansering og tilgjengelighet publiseres først når produktet er ferdig definert og dokumentert.' },
+      { question: 'Hvilken olivensort skal brukes?', answer: 'Sort og produksjonsmetode bekreftes ut fra den faktiske produksjonen før lansering.' }
+    ],
+    primaryCta: { label: 'Se resten av produktlinjen', href: '/produkter' }
+  },
   'om-dona-anna': {
     slug: 'om-dona-anna',
     title: 'Om Doña Anna | Anna og Freddy Bremseth i Biar, Alicante',
-    description: 'Møt Anna og Freddy Bremseth og les hvordan Doña Anna bygges rundt olivengården i Biar, Verde Vivo og langsiktig merkevarearbeid.',
+    description: 'Møt Anna og Freddy Bremseth og les hvordan Doña Anna bygges rundt olivengården i Biar, flere produkter, tydelig opprinnelse og langsiktig merkevarearbeid.',
     eyebrow: 'Om prosjektet · menneskene · gården',
     h1: 'Om Doña Anna: Anna og Freddy Bremseth bygger prosjektet sammen',
-    answer: 'Doña Anna er olivenprosjektet til Anna og Freddy Bremseth i Biar, Alicante. Gården, Verde Vivo og den langsiktige merkevaren utvikles sammen.',
+    answer: 'Doña Anna er olivenprosjektet til Anna og Freddy Bremseth i Biar, Alicante. Gården, de ulike produktene og den langsiktige merkevaren utvikles sammen.',
     sections: [
       {
         heading: 'Hvem driver Doña Anna?',
@@ -252,7 +435,7 @@ const PAGES: Record<string, EvergreenPage> = {
         heading: 'Hva er prosjektet bygget rundt?',
         body: [
           'Utgangspunktet er gården i Biar på rundt 60 000 m² med om lag 1 500 oliventrær.',
-          'Verde Vivo 500 ml er det produktet som kommuniseres offentlig nå. Nye produkter legges til først når de er reelt besluttet og dokumentert.'
+          'Produktlinjen består av Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva som separate olivenoljeprodukter. Mesa · Gordal Noble er et eget planlagt bordolivenprodukt.'
         ]
       },
       {
@@ -266,7 +449,7 @@ const PAGES: Record<string, EvergreenPage> = {
     faqs: [
       { question: 'Hvem står bak Doña Anna?', answer: 'Anna Bremseth og Freddy Bremseth driver prosjektet sammen.' },
       { question: 'Hvor ligger gården?', answer: 'Gården ligger i Biar i Alicante, Spania.' },
-      { question: 'Hva er hovedproduktet nå?', answer: 'Verde Vivo 500 ml er produktet Doña Anna kommuniserer offentlig nå.' }
+      { question: 'Hvilke produkter har Doña Anna?', answer: 'Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva er separate olivenoljeprodukter. Mesa · Gordal Noble er et planlagt bordolivenprodukt.' }
     ],
     primaryCta: { label: 'Se Verde Vivo', href: '/#portfolio' }
   },
@@ -370,15 +553,24 @@ function pageHtml(page: EvergreenPage) {
     ],
   };
 
-  if (page.slug === 'verde-vivo') {
+  const productSchema: Record<string, { name: string; category: string; size?: string }> = {
+    'verde-vivo': { name: 'Doña Anna Verde Vivo', category: 'Olive Oil', size: '500 ml' },
+    'verde-alto': { name: 'Doña Anna Verde Alto', category: 'Olive Oil' },
+    'raiz-antigua': { name: 'Doña Anna Raíz Antigua', category: 'Olive Oil' },
+    'cocina-viva': { name: 'Doña Anna Cocina Viva', category: 'Olive Oil' },
+    'mesa-gordal-noble': { name: 'Doña Anna Mesa · Gordal Noble', category: 'Table Olives' },
+  };
+  const product = productSchema[page.slug];
+  if (product) {
     schema['@graph'].push({
       '@type': 'Product',
-      '@id': SITE + '/verde-vivo#product',
-      name: 'Doña Anna Verde Vivo',
+      '@id': canonical + '#product',
+      name: product.name,
       description: page.description,
-      url: SITE + '/verde-vivo',
+      url: canonical,
       brand: { '@id': ORG },
-      size: '500 ml',
+      category: product.category,
+      ...(product.size ? { size: product.size } : {}),
     });
   }
 
@@ -418,13 +610,13 @@ function pageHtml(page: EvergreenPage) {
     '<meta property="og:description" content="' + escapeHtml(page.description) + '">' +
     '<script type="application/ld+json">' + JSON.stringify(schema).replace(/</g, '\\u003c') + '</script>' +
     '<style>' + css + '</style></head><body>' +
-    '<header class="topbar"><a class="brand" href="/">DOÑA ANNA</a><nav class="topnav" aria-label="Hovedmeny"><a href="/guider">Guider</a><a href="/verde-vivo">Verde Vivo</a><a href="/magasin">Magasin</a><a href="/om-dona-anna">Om oss</a><a href="/#tasting">Kontakt</a></nav></header>' +
+    '<header class="topbar"><a class="brand" href="/">DOÑA ANNA</a><nav class="topnav" aria-label="Hovedmeny"><a href="/produkter">Produkter</a><a href="/guider">Guider</a><a href="/magasin">Magasin</a><a href="/om-dona-anna">Om oss</a><a href="/#tasting">Kontakt</a></nav></header>' +
     '<section class="hero"><div class="hero-inner"><p class="eyebrow">' + escapeHtml(page.eyebrow) + '</p><h1>' + escapeHtml(page.h1) + '</h1><p class="lead">' + escapeHtml(page.description) + '</p><div class="answer"><strong>Kort svar:</strong> ' + escapeHtml(page.answer) + '</div><div class="actions"><a class="button primary" href="' + escapeHtml(page.primaryCta.href) + '">' + escapeHtml(page.primaryCta.label) + '</a><a class="button secondary" href="/magasin">Les magasinet</a></div></div></section>' +
     '<main><div class="article-grid"><article>' + sections +
     '<section class="faq"><h2>Vanlige spørsmål</h2>' + faq + '</section>' +
-    '<section class="next"><h2>Neste steg</h2><p>Se Verde Vivo, les mer om gården eller meld interesse dersom du vurderer Doña Anna for restaurant, hotell, butikk eller import.</p><a class="button primary" href="' + escapeHtml(page.primaryCta.href) + '">' + escapeHtml(page.primaryCta.label) + '</a><div class="cluster"><a href="/guider">Alle guider</a><a href="/olivenolje-fra-biar">Olivenolje fra Biar</a><a href="/tidlig-hostet-olivenolje">Tidlig høstet olivenolje</a><a href="/olivenolje-for-restauranter">For restauranter</a><a href="/bordoliven-fra-biar">Bordoliven – planlagt</a></div></section>' +
+    '<section class="next"><h2>Neste steg</h2><p>Se riktig produkt, les mer om gården eller meld interesse dersom du vurderer Doña Anna for restaurant, hotell, butikk eller import.</p><a class="button primary" href="' + escapeHtml(page.primaryCta.href) + '">' + escapeHtml(page.primaryCta.label) + '</a><div class="cluster"><a href="/produkter">Alle produkter</a><a href="/verde-vivo">Verde Vivo</a><a href="/verde-alto">Verde Alto</a><a href="/raiz-antigua">Raíz Antigua</a><a href="/cocina-viva">Cocina Viva</a><a href="/mesa-gordal-noble">Mesa · Gordal Noble</a></div></section>' +
     '<p class="author">Oppdatert 2. oktober 2026 · Innhold fra Doña Anna. <a href="/om-dona-anna">Anna og Freddy Bremseth driver prosjektet sammen.</a></p></article>' +
-    '<aside class="aside"><strong>Utforsk Doña Anna</strong><nav><a href="/">Forsiden</a><a href="/guider">Guider</a><a href="/#estate">Gården i Biar</a><a href="/verde-vivo">Verde Vivo</a><a href="/#traceability">Sporbarhet</a><a href="/#b2b">For profesjonelle</a><a href="/om-dona-anna">Om Anna og Freddy</a><a href="/#tasting">Kontakt</a></nav></aside></div></main>' +
+    '<aside class="aside"><strong>Utforsk Doña Anna</strong><nav><a href="/">Forsiden</a><a href="/produkter">Produkter</a><a href="/guider">Guider</a><a href="/#estate">Gården i Biar</a><a href="/verde-vivo">Verde Vivo</a><a href="/verde-alto">Verde Alto</a><a href="/raiz-antigua">Raíz Antigua</a><a href="/cocina-viva">Cocina Viva</a><a href="/mesa-gordal-noble">Mesa · Gordal Noble</a><a href="/#b2b">For profesjonelle</a><a href="/om-dona-anna">Om Anna og Freddy</a><a href="/#tasting">Kontakt</a></nav></aside></div></main>' +
     '<footer class="footer"><a href="/om-dona-anna">Anna & Freddy</a><a href="/personvern">Personvern</a><a href="https://www.freddybremseth.com/">FreddyBremseth.com</a><a href="https://www.pinosoecolife.com/">Pinoso Eco Life</a></footer>' +
     '<script src="/donaanna-analytics.js" defer></script></body></html>';
 }

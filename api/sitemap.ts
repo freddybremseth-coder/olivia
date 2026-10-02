@@ -34,7 +34,12 @@ export default async function handler(_req: IncomingMessage, res: ServerResponse
   const staticPaths = [
     '/',
     '/guider',
+    '/produkter',
     '/verde-vivo',
+    '/verde-alto',
+    '/raiz-antigua',
+    '/cocina-viva',
+    '/mesa-gordal-noble',
     '/om-dona-anna',
     '/personvern',
     '/olivenolje-fra-biar',
