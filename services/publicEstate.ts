@@ -17,11 +17,11 @@ const hasPublicSupabaseConfig = Boolean(
 export async function fetchPublicEstateSignal(): Promise<PublicEstateSignal> {
   const fallback: PublicEstateSignal = {
     isLive: false,
-    parcelCount: 2,
-    treeCount: 570,
+    parcelCount: 0,
+    treeCount: 1500,
     activeBatches: 0,
-    latestHarvestDate: 'Oktober-november',
-    nextTask: 'Sensorisk evaluering og batch-dokumentasjon',
+    latestHarvestDate: 'Publiseres per batch',
+    nextTask: 'Høsting, produksjon og batch-dokumentasjon',
     heroMetric: 'Biar, Alicante',
   };
 
