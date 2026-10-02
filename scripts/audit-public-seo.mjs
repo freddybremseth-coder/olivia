@@ -200,6 +200,15 @@ if (evergreenDescriptions.length < 8 || evergreenDescriptions.some(value => valu
 }
 if (!evergreen.includes("'@type': 'FAQPage'")) fail('Evergreen pages must include FAQPage schema.');
 if (!evergreen.includes("const productSchema: Record<string") || !evergreen.includes("'@type': 'Product'")) fail('Distinct product pages must expose Product schema.');
+if (!evergreen.includes("additionalProperty: [") || !evergreen.includes("name: 'Produktrolle'") || !evergreen.includes("name: 'Status'")) {
+  fail('Product schema must expose product-specific role and status without collapsing products into variants.');
+}
+if (!evergreen.includes("page.slug === 'produkter'") || !evergreen.includes("name: 'Doña Anna produktlinje'") || !evergreen.includes("numberOfItems: 5")) {
+  fail('Products hub must expose a five-item structured product list.');
+}
+if (evergreen.includes("'isVariantOf'") || evergreen.includes('"isVariantOf"')) {
+  fail('Distinct Doña Anna products must never be modeled as variants of each other.');
+}
 if (!evergreen.includes("const productVisual: Record<string") || !evergreen.includes('Etikett verifisert · produktfoto venter')) {
   fail('Distinct product pages must expose product-specific visual/label status.');
 }
@@ -225,8 +234,16 @@ for (const slug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa
 if (!evergreen.includes("productHubCards = [") || !evergreen.includes("name: 'Mesa · Gordal Noble'")) {
   fail('Products hub must list all distinct Doña Anna products.');
 }
-for (const productSlug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa-gordal-noble']) {
-  if (!evergreen.includes("'" + productSlug + "': { name:")) fail('Product schema map missing ' + productSlug);
+for (const [productSlug, productName] of [
+  ['verde-vivo', 'Doña Anna Verde Vivo'],
+  ['verde-alto', 'Doña Anna Verde Alto'],
+  ['raiz-antigua', 'Doña Anna Raíz Antigua'],
+  ['cocina-viva', 'Doña Anna Cocina Viva'],
+  ['mesa-gordal-noble', 'Doña Anna Mesa · Gordal Noble'],
+]) {
+  if (!evergreen.includes("'" + productSlug + "': {") || !evergreen.includes("name: '" + productName + "'")) {
+    fail('Product schema map missing distinct product ' + productSlug);
+  }
 }
 if (!evergreen.includes("'@type': 'BreadcrumbList'")) fail('Evergreen pages must include breadcrumb schema.');
 if (!evergreen.includes("author: { '@id': ORG }")) fail('Evergreen pages must use Doña Anna as the page author entity.');
