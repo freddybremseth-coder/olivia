@@ -146,9 +146,15 @@ export default async function handler(
         image: image || undefined,
         datePublished: data.published_at || undefined,
         dateModified: data.updated_at || data.published_at || undefined,
-        author: { '@id': 'https://www.freddybremseth.com/#person' },
+        author: { '@id': SITE + '/#organization' },
         publisher: { '@id': SITE + '/#organization' },
         isPartOf: { '@id': SITE + '/#website' },
+      },
+      {
+        '@type': 'Person',
+        '@id': SITE + '/#anna-bremseth',
+        name: 'Anna Bremseth',
+        affiliation: { '@id': SITE + '/#organization' },
       },
       {
         '@type': 'Person',
@@ -161,7 +167,10 @@ export default async function handler(
         '@id': SITE + '/#organization',
         name: 'Doña Anna',
         url: SITE + '/',
-        founder: { '@id': 'https://www.freddybremseth.com/#person' },
+        member: [
+          { '@id': SITE + '/#anna-bremseth' },
+          { '@id': 'https://www.freddybremseth.com/#person' },
+        ],
       },
       {
         '@type': 'BreadcrumbList',
@@ -187,33 +196,30 @@ export default async function handler(
     '@media(max-width:640px){header nav a:nth-child(n+4){display:none}main{padding-inline:18px}.next{padding:22px}}';
   const html = '<!doctype html><html lang="no"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-    '<title>' + escapeHtml(title) + ' | Doña Anna · Freddy Bremseth</title>' +
+    '<title>' + escapeHtml(title) + ' | Doña Anna</title>' +
     '<meta name="description" content="' + escapeHtml(summary) + '">' +
     '<link rel="canonical" href="' + escapeHtml(canonical) + '">' +
     '<meta property="og:type" content="article"><meta property="og:site_name" content="Doña Anna">' +
     '<meta property="og:url" content="' + escapeHtml(canonical) + '">' +
     '<meta property="og:title" content="' + escapeHtml(title) + '">' +
-    '<meta property="og:description" content="' + escapeHtml(summary) + '"><meta name="author" content="Freddy Bremseth">' +
+    '<meta property="og:description" content="' + escapeHtml(summary) + '"><meta name="author" content="Doña Anna">' +
     (image ? '<meta property="og:image" content="' + escapeHtml(image) + '">' : '') +
     '<script type="application/ld+json">' + JSON.stringify(schema).replace(/</g, '\\u003c') + '</script>' +
     '<style>' + css + '</style></head><body>' +
-    '<header><nav><a href="/">DOÑA ANNA</a><a href="/magasin">Magasin</a><a href="/artikler">Artikler</a><a href="/oppskrifter">Oppskrifter</a><a href="/#tasting">Smaksprøve</a></nav></header>' +
+    '<header><nav><a href="/">DOÑA ANNA</a><a href="/guider">Guider</a><a href="/magasin">Magasin</a><a href="/artikler">Artikler</a><a href="/oppskrifter">Oppskrifter</a><a href="/#tasting">Kontakt</a></nav></header>' +
     '<main><p class="crumbs"><a href="/">Doña Anna</a> · <a href="/' + destination + '">' + escapeHtml(destination) + '</a></p><article><h1>' + escapeHtml(title) + '</h1><p class="summary">' + escapeHtml(summary) + '</p><div class="direct"><strong>Kort fortalt:</strong> ' + escapeHtml(summary) + '</div>' +
-    '<p class="byline">Av <a href="https://www.freddybremseth.com/">Freddy Bremseth</a> · Doña Anna' +
+    '<p class="byline">Doña Anna redaksjon · <a href="/om-dona-anna">Anna og Freddy Bremseth</a>' +
     (data.updated_at || data.published_at ? ' · Oppdatert ' + escapeHtml(new Intl.DateTimeFormat('nb-NO',{day:'numeric',month:'long',year:'numeric',timeZone:'Europe/Oslo'}).format(new Date(data.updated_at || data.published_at))) : '') + '</p>' +
     (image ? '<img class="hero-image" src="' + escapeHtml(image) + '" alt="' + escapeHtml(title) + '">' : '') +
     articleMarkup(String(data.markdown || '')) +
-    '<aside class="author-card"><strong>Om forfatteren</strong><p>Freddy Bremseth utvikler Doña Anna i Biar, Alicante, og skriver om olivenolje, gårdsliv, produktutvikling og prosjektene sine i Spania. <a href="https://www.freddybremseth.com/olivenolje-og-dona-anna.html">Les mer om Freddy Bremseth og Doña Anna</a>.</p></aside>' +
+    '<aside class="author-card"><strong>Om Doña Anna</strong><p>Anna og Freddy Bremseth driver Doña Anna sammen i Biar, Alicante. <a href="/om-dona-anna">Les om gården, prosjektet og menneskene bak</a>.</p></aside>' +
     '<section class="next"><h2>Hva vil du gjøre videre?</h2><p>Gå fra artikkelen til produkt, opprinnelse eller en konkret forespørsel. Doña Anna viser bare tilgjengelighet, pris og batchdata som faktisk er publisert.</p><div class="next-links"><a href="/#portfolio">Se produktene</a><a href="/olivenolje-fra-biar">Olivenolje fra Biar</a><a href="/tidlig-hostet-olivenolje">Tidlig høstet olivenolje</a><a href="/olivenolje-for-restauranter">For restauranter</a><a href="/#tasting">Be om smaksprøve</a></div></section>' +
     '</article><p><a href="/' + destination + '">← Tilbake</a></p></main>' +
-    '<footer class="network"><strong>Freddy Bremseth network</strong>' +
+    '<footer class="network"><strong>Relatert</strong>' +
+    '<a href="/om-dona-anna">Om Doña Anna</a>' +
     '<a href="https://www.freddybremseth.com/">FreddyBremseth.com</a>' +
-    '<a href="https://www.zenecohomes.com/">Zen Eco Homes</a>' +
     '<a href="https://www.pinosoecolife.com/">Pinoso Eco Life</a>' +
-    '<a href="https://www.chatgenius.pro/">ChatGenius</a>' +
-    '<a href="https://books.freddybremseth.com/">Books</a>' +
-    '<a href="https://art.freddybremseth.com/">Art</a>' +
-    '<a href="https://remaster.freddybremseth.com/">Re-Master Freddy</a></footer></body></html>';
+    '<a href="/personvern">Personvern</a></footer></body></html>';
 
   res.writeHead(200, {
     'Content-Type': 'text/html; charset=utf-8',
