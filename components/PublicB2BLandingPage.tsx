@@ -267,6 +267,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   useEffect(() => {
     fetchPublicEstateSignal().then(setSignal);
     fetchPublicCommerceProducts().then(setLivePortfolio);
+
+    const productParam = new URLSearchParams(window.location.search).get('product');
+    const productNames: Record<string, string> = {
+      'verde-vivo': 'Verde Vivo',
+      'verde-alto': 'Verde Alto',
+      'raiz-antigua': 'Raíz Antigua',
+      'cocina-viva': 'Cocina Viva',
+      'mesa-gordal-noble': 'Mesa · Gordal Noble (planlagt)',
+    };
+    if (productParam && productNames[productParam]) {
+      setTastingRequest(current => ({ ...current, product: productNames[productParam] }));
+    }
   }, []);
 
   const approvedNames = new Set(['verde vivo', 'verde alto', 'raíz antigua', 'raiz antigua', 'cocina viva', 'mesa · gordal noble', 'mesa gordal noble']);
