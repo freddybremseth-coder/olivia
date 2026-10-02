@@ -186,7 +186,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
   const handleTastingRequest = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const subject = 'Forespørsel om smaksprøve – Doña Anna';
+    const subject = 'Interesse for smaksprøve – Doña Anna';
     const body = [
       `Restaurant / virksomhet: ${tastingRequest.company}`,
       `Rolle: ${tastingRequest.role}`,
@@ -201,6 +201,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     ['Gården', '#estate'],
     ['Produkter', '#portfolio'],
     ['Kunnskap', '#knowledge'],
+    ['Guider', '/guider'],
     ['Magasin', '/magasin'],
     ['For profesjonelle', '#b2b'],
     ['Om prosjektet', '#people'],
@@ -714,6 +715,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
           <div className="space-y-3">
             <div className="flex flex-wrap gap-4 text-xs uppercase tracking-[0.18em] text-white/54">
+              <a href="/guider">Guider</a>
               <a href="/magasin">Magasin</a>
               <a href="/artikler">Artikler</a>
               <a href="/oppskrifter">Oppskrifter</a>
