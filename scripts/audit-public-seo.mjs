@@ -11,6 +11,7 @@ const evergreen = read('api/public-evergreen.ts');
 const sitemap = read('api/sitemap.ts');
 const robots = read('public/robots.txt');
 const analytics = read('public/donaanna-analytics.js');
+const commerce = read('services/publicCommerce.ts');
 const vercel = JSON.parse(read('vercel.json'));
 
 const FREDDY = 'https://www.freddybremseth.com/#person';
@@ -40,6 +41,10 @@ if (!landing.includes('id="customer-path"') || !landing.includes('Hva vil du bru
 if (!landing.includes('Anna Bremseth og Freddy Bremseth driver Doña Anna sammen')) fail('Visible trust copy must name Anna and Freddy together.');
 if (!landing.includes("name.trim().toLowerCase() === 'verde vivo'")) fail('Public commerce must allow only the approved Verde Vivo product.');
 if (!landing.includes('VERDE VIVO · 500 ml')) fail('Visible product card must match the approved current format.');
+if (!landing.includes('href="/verde-vivo"')) fail('Homepage product card must link to the dedicated Verde Vivo page.');
+if (!commerce.includes("public_site_approved === true")) fail('Live commerce data must require explicit public-site approval.');
+if (!commerce.includes("const BRAND_SAFE_FALLBACK = '/donaanna/olive-trees.jpg'")) fail('Public commerce service must retain a brand-safe image fallback.');
+if (!commerce.includes("!image.includes('/donaanna/product-design/')")) fail('Public commerce service must reject legacy product-design imagery.');
 if (landing.includes('DOÑA ANNA · VERDE ALTO') || landing.includes('Raíz Antigua') || landing.includes('Cocina Viva') || landing.includes('Doña Anna Mesa')) {
   fail('Unapproved product lines must not be marketed as current products.');
 }
@@ -63,6 +68,7 @@ if (!listing.includes('Fra kunnskap til neste steg')) fail('Editorial hubs must 
 
 const evergreenSlugs = [
   'guider',
+  'verde-vivo',
   'olivenolje-fra-biar',
   'tidlig-hostet-olivenolje',
   'olivenolje-for-restauranter',
@@ -79,6 +85,7 @@ for (const slug of evergreenSlugs) {
   }
 }
 if (!evergreen.includes("'@type': 'FAQPage'")) fail('Evergreen pages must include FAQPage schema.');
+if (!evergreen.includes("page.slug === 'verde-vivo'") || !evergreen.includes("'@type': 'Product'")) fail('Verde Vivo page must expose Product schema.');
 if (!evergreen.includes("'@type': 'BreadcrumbList'")) fail('Evergreen pages must include breadcrumb schema.');
 if (!evergreen.includes("author: { '@id': ORG }")) fail('Evergreen pages must use Doña Anna as the page author entity.');
 if (!evergreen.includes("name: 'Anna Bremseth'") || !evergreen.includes("name: 'Freddy Bremseth'")) fail('Evergreen schema must expose both people.');

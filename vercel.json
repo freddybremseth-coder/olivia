@@ -97,6 +97,10 @@
       "destination": "/api/public-evergreen?page=guider"
     },
     {
+      "source": "/verde-vivo",
+      "destination": "/api/public-evergreen?page=verde-vivo"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
