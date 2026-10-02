@@ -30,7 +30,7 @@ interface LandingPageProps {
 const copy = {
   eyebrow: 'Olivenprosjekt fra Biar · Alicante · Anna & Freddy Bremseth',
   headline: 'Doña Anna – tidlig høstet olivenolje fra Biar.',
-  subhead: 'Doña Anna er vårt felles olivenprosjekt i Biar. Verde Vivo er første produkt: 500 ml extra virgin olivenolje med tydelig opprinnelse. Batchdata, analyser og tilgjengelighet publiseres når produksjonen er klar.',
+  subhead: 'Doña Anna er vårt felles olivenprosjekt i Biar. Verde Vivo er første produkt: 500 ml tidlig høstet olivenolje, utviklet med mål om extra virgin-kvalitet og tydelig opprinnelse. Endelig kvalitetsklasse, batchdata, analyser og tilgjengelighet publiseres når produksjonen er klar.',
   cta: 'Meld interesse for smaksprøve',
   portal: 'B2B portal',
   specTitle: 'Produktdata for Verde Vivo',
@@ -57,7 +57,7 @@ const portfolio = [
     name: 'Verde Vivo',
     labelName: 'DOÑA ANNA · VERDE VIVO',
     format: '500 ml · Cosecha temprana',
-    role: 'Extra virgin olivenolje',
+    role: 'Tidlig høstet olivenolje · mål om extra virgin-kvalitet',
     photo: imagePaths.verdeVivoHero,
     text: 'Verde Vivo er Doña Annas første produkt. Den endelige batchinformasjonen – blant annet høstedato, analyseverdier og tilgjengelighet – publiseres når produksjonen er ferdig og dokumentert.',
   },
@@ -66,7 +66,7 @@ const portfolio = [
 const specs = [
   ['Produkt', 'Verde Vivo'],
   ['Format', '500 ml'],
-  ['Type', 'Extra virgin olivenolje · cosecha temprana'],
+  ['Type', 'Tidlig høstet olivenolje · mål om extra virgin-kvalitet'],
   ['Opprinnelse', 'Biar · Alicante · Spania'],
   ['Sorter på gården', 'Genovesa · Gordal · Changlot Real · Picual'],
   ['Batchdata', 'Høstedato, analyser og tilgjengelighet publiseres når produksjonen er klar'],
@@ -140,7 +140,7 @@ const knowledgeCards = [
     kicker: 'Cosecha temprana',
     image: imagePaths.verdeVivoHero,
     imageAlt: 'Oliventrær på Doña Anna-gården i Biar',
-    text: 'Verde Vivo er utviklet som en tidlig høstet extra virgin olivenolje. Smaksprofil og analyseverdier beskrives for den faktiske batchen når den foreligger.',
+    text: 'Verde Vivo er utviklet som en tidlig høstet olivenolje med mål om extra virgin-kvalitet. Endelig kvalitetsklasse, smaksprofil og analyseverdier beskrives for den faktiske batchen når den foreligger.',
   },
   {
     title: 'Våre sorter',
@@ -312,11 +312,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <article className="border border-white/10 bg-white/[0.035] p-5">
                   <h3 className="font-serif text-2xl">Hvor kommer olivenoljen fra?</h3>
-                  <p className="mt-3 leading-7 text-white/62">Fra Doña Annas olivenlunder i Biar i Alicante, med dokumentasjon av sort, høstevindu og batch når produksjonen publiseres.</p>
+                  <p className="mt-3 leading-7 text-white/62">Fra Doña Annas olivenlunder i Biar i Alicante. Sort, høstedato, analyse og endelig kvalitetsklasse dokumenteres for den konkrete batchen når produksjonen er klar.</p>
                 </article>
                 <article className="border border-white/10 bg-white/[0.035] p-5">
                   <h3 className="font-serif text-2xl">Hva kjennetegner oljen?</h3>
-                  <p className="mt-3 leading-7 text-white/62">Tidlig høsting, mekanisk kald ekstraksjon og et uttrykk bygget rundt grønn fruktighet, bitterhet, pepperfinish og tydelig opprinnelse.</p>
+                  <p className="mt-3 leading-7 text-white/62">Verde Vivo utvikles rundt tidlig høsting og tydelig opprinnelse. Ekstraksjon, sensorisk profil, analyseverdier og endelig kvalitetsklasse dokumenteres først for den faktiske batchen.</p>
                 </article>
                 <article className="border border-white/10 bg-white/[0.035] p-5">
                   <h3 className="font-serif text-2xl">Kan restauranter få smaksprøve?</h3>
@@ -560,9 +560,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 {[
                   ['Parsell', signal.heroMetric],
                   ['Høsting', signal.latestHarvestDate || 'Oktober-november'],
-                  ['Sort', 'Changlot Real / gårdsblanding'],
+                  ['Sort', 'Publiseres per batch'],
                   ['Polyfenoler', 'Oppgis med batchanalyse'],
-                  ['Ekstraksjon', 'Mekanisk · under 27°C'],
+                  ['Ekstraksjon', 'Dokumenteres per batch'],
                   ['Dokumentasjon', signal.isLive ? 'Aktiv batch' : 'Publiseres ved lansering'],
                 ].map(([label, value]) => (
                   <div key={label} className="border border-white/10 bg-white/[0.04] p-4">
@@ -695,7 +695,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 </button>
               </div>
             </div>
-            <form className="border border-black/12 bg-white p-5 shadow-2xl shadow-black/10" onSubmit={handleTastingRequest}>
+            <form data-testid="tasting-request-form" className="border border-black/12 bg-white p-5 shadow-2xl shadow-black/10" onSubmit={handleTastingRequest}>
               <label htmlFor="tasting-company" className="block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Restaurant / virksomhet</label>
               <input id="tasting-company" required value={tastingRequest.company} onChange={(event) => setTastingRequest({ ...tastingRequest, company: event.target.value })} className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
               <label htmlFor="tasting-role" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Rolle</label>
