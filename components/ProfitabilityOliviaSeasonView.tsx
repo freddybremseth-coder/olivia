@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Euro, Loader2, RefreshCcw, TrendingUp } from 'lucide-react';
+import ExpenseCapturePanel from './ExpenseCapturePanel';
 import type { Language, Parcel } from '../types';
 import {
   fetchOliviaExpenses,
@@ -93,7 +94,8 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
           <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3"><Euro className="text-green-400" /> Økonomi</h2>
           <p className="text-slate-400 text-sm mt-1">Henter fra olivia.harvest_records, olivia.farm_expenses og olivia.subsidy_income. Viser automatisk nyeste sesong med data.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-end gap-2">
+          <ExpenseCapturePanel parcels={parcels} onSaved={load} />
           <button onClick={load} className="p-3 rounded-2xl bg-white/5 border border-white/10 text-green-400">{loading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}</button>
           <label className="flex flex-col gap-1 text-[10px] text-slate-500 uppercase font-bold tracking-widest">
             Sesong
