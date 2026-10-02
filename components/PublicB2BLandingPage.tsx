@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { fetchPublicEstateSignal, PublicEstateSignal } from '../services/publicEstate';
 import { fetchPublicCommerceProducts, type PublicCommerceProduct } from '../services/publicCommerce';
+import { DONA_ANNA_PRODUCTS, donaAnnaProductByName } from '../content/donaAnnaProducts';
 
 interface LandingPageProps {
   onLogin: () => void;
@@ -53,52 +54,24 @@ type ProductMedia = {
   availability: 'current' | 'planned';
 };
 
-const PRODUCT_MEDIA: Record<string, ProductMedia> = {
-  'verde vivo': {
-    slug: 'verde-vivo',
-    approvedProductImage: null,
-    safeContextImage: imagePaths.harvestHands,
-    labelStatus: 'verified',
-    availability: 'current',
-  },
-  'verde alto': {
-    slug: 'verde-alto',
-    approvedProductImage: null,
-    safeContextImage: imagePaths.oliveGrove,
-    labelStatus: 'pending',
-    availability: 'current',
-  },
-  'raíz antigua': {
-    slug: 'raiz-antigua',
-    approvedProductImage: null,
-    safeContextImage: imagePaths.oliveGrove,
-    labelStatus: 'pending',
-    availability: 'current',
-  },
-  'cocina viva': {
-    slug: 'cocina-viva',
-    approvedProductImage: null,
-    safeContextImage: imagePaths.harvestClose,
-    labelStatus: 'pending',
-    availability: 'current',
-  },
-  'mesa · gordal noble': {
-    slug: 'mesa-gordal-noble',
-    approvedProductImage: null,
-    safeContextImage: imagePaths.harvestHands,
-    labelStatus: 'pending',
-    availability: 'planned',
-  },
+const productMedia = (name: string): ProductMedia => {
+  const product = donaAnnaProductByName(name);
+  return product
+    ? {
+        slug: product.slug,
+        approvedProductImage: product.approvedProductImage,
+        safeContextImage: product.safeContextImage,
+        labelStatus: product.labelStatus,
+        availability: product.availability,
+      }
+    : {
+        slug: 'produkter',
+        approvedProductImage: null,
+        safeContextImage: imagePaths.oliveGrove,
+        labelStatus: 'pending',
+        availability: 'planned',
+      };
 };
-
-const productMedia = (name: string): ProductMedia =>
-  PRODUCT_MEDIA[name.trim().toLowerCase()] || {
-    slug: 'produkter',
-    approvedProductImage: null,
-    safeContextImage: imagePaths.oliveGrove,
-    labelStatus: 'pending',
-    availability: 'planned',
-  };
 
 const portfolio = [
   {
@@ -106,7 +79,7 @@ const portfolio = [
     labelName: 'DOÑA ANNA · VERDE VIVO',
     format: '500 ml · Cosecha temprana',
     role: 'Tidlig høstet olivenolje · mål om extra virgin-kvalitet',
-    photo: PRODUCT_MEDIA['verde vivo'].safeContextImage,
+    photo: productMedia('Verde Vivo').safeContextImage,
     text: 'Verde Vivo er produktet for tidlig høsting. Endelig kvalitetsklasse, sensorikk, analyse, høstedato og tilgjengelighet publiseres for den konkrete batchen.',
   },
   {
@@ -114,7 +87,7 @@ const portfolio = [
     labelName: 'DOÑA ANNA · VERDE ALTO',
     format: 'Olivenolje · format bekreftes per produksjon',
     role: 'Balansert premiumprodukt · egen produktidentitet',
-    photo: PRODUCT_MEDIA['verde alto'].safeContextImage,
+    photo: productMedia('Verde Alto').safeContextImage,
     text: 'Verde Alto er et eget produkt i Doña Anna-porteføljen. Smaksprofil, format, kvalitetsklasse og batchdata skal beskrives ut fra den faktiske produksjonen – ikke gjenbrukes fra Verde Vivo.',
   },
   {
@@ -122,7 +95,7 @@ const portfolio = [
     labelName: 'DOÑA ANNA · RAÍZ ANTIGUA',
     format: 'Olivenolje · opprinnelse dokumenteres per batch',
     role: 'Heritage-produkt · egen produktidentitet',
-    photo: PRODUCT_MEDIA['raíz antigua'].safeContextImage,
+    photo: productMedia('Raíz Antigua').safeContextImage,
     text: 'Raíz Antigua er et separat olivenoljeprodukt med egen historie og etikett. Påstander om trær, sorter, smak og begrenset produksjon publiseres først når de kan knyttes til den konkrete batchen.',
   },
   {
@@ -130,7 +103,7 @@ const portfolio = [
     labelName: 'DOÑA ANNA · COCINA VIVA',
     format: 'Profesjonelt kjøkkenformat · størrelse bekreftes',
     role: 'Restaurant og profesjonelt kjøkken · egen produktidentitet',
-    photo: PRODUCT_MEDIA['cocina viva'].safeContextImage,
+    photo: productMedia('Cocina Viva').safeContextImage,
     text: 'Cocina Viva er Doña Annas separate produktspor for profesjonelle kjøkken. Format, pris, tekniske egenskaper og leveringsopplegg bekreftes før det markedsføres som tilgjengelig.',
   },
   {
@@ -138,7 +111,7 @@ const portfolio = [
     labelName: 'DOÑA ANNA · MESA · GORDAL NOBLE',
     format: 'Bordoliven · planlagt produkt',
     role: 'Aperitivo og bordoliven · ikke tilgjengelig ennå',
-    photo: PRODUCT_MEDIA['mesa · gordal noble'].safeContextImage,
+    photo: productMedia('Mesa · Gordal Noble').safeContextImage,
     text: 'Mesa · Gordal Noble er et eget planlagt bordolivenprodukt. Det skal ikke fremstilles som lansert før råvare, prosess, format, etikett, pris og tilgjengelighet er endelig dokumentert.',
   },
 ];
@@ -282,7 +255,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     }
   }, []);
 
-  const approvedNames = new Set(['verde vivo', 'verde alto', 'raíz antigua', 'raiz antigua', 'cocina viva', 'mesa · gordal noble', 'mesa gordal noble']);
+  const approvedNames = new Set(
+    DONA_ANNA_PRODUCTS.flatMap(product => [product.name.toLowerCase(), ...product.aliases])
+  );
   const approvedLivePortfolio = livePortfolio.filter(item => approvedNames.has(item.name.trim().toLowerCase()));
   const portfolioItems = approvedLivePortfolio.length >= 4 ? approvedLivePortfolio : portfolio;
 
