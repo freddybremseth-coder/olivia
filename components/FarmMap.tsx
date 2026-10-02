@@ -9,6 +9,7 @@ import {
 import React, { useState, useEffect, useRef } from 'react';
 import { Parcel, Language } from '../types';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { geminiService, CadastralDetails } from '../services/geminiService';
 import { sedecService } from '../services/sedecService';
 import { useTranslation } from '../services/i18nService';
