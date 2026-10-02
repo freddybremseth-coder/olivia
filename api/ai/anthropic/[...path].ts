@@ -37,10 +37,10 @@ export default async function handler(
     return;
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
   if (!apiKey) {
     res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'ANTHROPIC_API_KEY is not configured on the server' }));
+    res.end(JSON.stringify({ error: 'Anthropic API key is not configured on the server (checked ANTHROPIC_API_KEY, CLAUDE_API_KEY)' }));
     return;
   }
 
