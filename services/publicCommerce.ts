@@ -7,6 +7,8 @@ export interface PublicCommerceProduct {
   format: string;
   role: string;
   photo: string;
+  photoApproved: boolean;
+  productSlug: string;
   text: string;
   priceLabel: string;
   stockLabel: string;
@@ -18,9 +20,34 @@ function text(value: unknown): string {
   return String(value || '').trim();
 }
 
-function productPhoto(row: any): string {
+const PRODUCT_SLUGS: Record<string, string> = {
+  'verde vivo': 'verde-vivo',
+  'verde alto': 'verde-alto',
+  'raíz antigua': 'raiz-antigua',
+  'raiz antigua': 'raiz-antigua',
+  'cocina viva': 'cocina-viva',
+  'mesa · gordal noble': 'mesa-gordal-noble',
+  'mesa gordal noble': 'mesa-gordal-noble',
+};
+
+function canonicalProductSlug(name: unknown): string {
+  return PRODUCT_SLUGS[text(name).toLowerCase()] || '';
+}
+
+function productPhoto(row: any): { url: string; approved: boolean } {
   const image = text(row.image_url);
-  return image && !image.includes('/donaanna/product-design/') ? image : BRAND_SAFE_FALLBACK;
+  const metadata = row.metadata || {};
+  const productSlug = canonicalProductSlug(row.name);
+  const mediaSlug = text(metadata.product_slug || metadata.productSlug).toLowerCase();
+  const explicitlyApproved = metadata.product_image_approved === true || metadata.productImageApproved === true;
+  const exactProductMatch = Boolean(productSlug && mediaSlug === productSlug);
+  const safeUrl = image && !image.includes('/donaanna/product-design/');
+
+  if (safeUrl && explicitlyApproved && exactProductMatch) {
+    return { url: image, approved: true };
+  }
+
+  return { url: BRAND_SAFE_FALLBACK, approved: false };
 }
 
 function priceLabel(row: any): string {
@@ -46,6 +73,7 @@ function toPublicProduct(row: any): PublicCommerceProduct {
   const size = text(row.size);
   const harvest = row.harvest_year ? `${row.harvest_year}` : '';
   const category = text(row.category);
+  const media = productPhoto(row);
 
   return {
     sku: text(row.sku),
@@ -53,7 +81,9 @@ function toPublicProduct(row: any): PublicCommerceProduct {
     labelName: `DOÑA ANNA · ${text(row.name).toUpperCase()}`,
     format: [size, harvest, category].filter(Boolean).join(' · ') || 'Doña Anna estate product',
     role: text(row.channel) || text(row.status) || 'Estate product',
-    photo: productPhoto(row),
+    photo: media.url,
+    photoApproved: media.approved,
+    productSlug: canonicalProductSlug(row.name),
     text: text(row.public_story) || text(row.description) || 'Doña Anna-produkt med sporbar opprinnelse fra Olivia OS.',
     priceLabel: priceLabel(row),
     stockLabel: stockLabel(row),
