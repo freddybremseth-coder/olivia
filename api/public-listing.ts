@@ -92,7 +92,7 @@ export default async function handler(
         name: config.heading,
         description: config.description,
         isPartOf: { '@id': SITE + '/#website' },
-        creator: { '@id': 'https://www.freddybremseth.com/#person' },
+        creator: { '@id': SITE + '/#organization' },
         publisher: { '@id': SITE + '/#organization' },
       },
       {
@@ -100,7 +100,16 @@ export default async function handler(
         '@id': SITE + '/#organization',
         name: 'Doña Anna',
         url: SITE + '/',
-        founder: { '@id': 'https://www.freddybremseth.com/#person' },
+        member: [
+          { '@id': SITE + '/#anna-bremseth' },
+          { '@id': 'https://www.freddybremseth.com/#person' },
+        ],
+      },
+      {
+        '@type': 'Person',
+        '@id': SITE + '/#anna-bremseth',
+        name: 'Anna Bremseth',
+        affiliation: { '@id': SITE + '/#organization' },
       },
       {
         '@type': 'Person',
