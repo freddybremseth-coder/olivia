@@ -317,7 +317,7 @@ function escapeHtml(value: unknown) {
 
 function pageHtml(page: EvergreenPage) {
   const canonical = SITE + '/' + page.slug;
-  const schema = {
+  const schema: any = {
     '@context': 'https://schema.org',
     '@graph': [
       {
@@ -379,7 +379,7 @@ function pageHtml(page: EvergreenPage) {
       url: SITE + '/verde-vivo',
       brand: { '@id': ORG },
       size: '500 ml',
-    } as never);
+    });
   }
 
   const sections = page.sections.map(section =>
