@@ -39,7 +39,9 @@ if (!index.includes('/guider') || !index.includes('/om-dona-anna') || !index.inc
 
 if (!index.includes(FREDDY) || !index.includes(ANNA)) fail('Homepage schema must identify Anna and Freddy Bremseth.');
 if (!index.includes('"name": "Anna Bremseth"') || !index.includes('"name": "Freddy Bremseth"')) fail('Both people must be named in structured data.');
-if (!index.includes('"@type": "Product"') || !index.includes('"name": "Doña Anna Verde Vivo"')) fail('Homepage schema must expose the real Verde Vivo product.');
+for (const productName of ['Doña Anna Verde Vivo','Doña Anna Verde Alto','Doña Anna Raíz Antigua','Doña Anna Cocina Viva','Doña Anna Mesa · Gordal Noble']) {
+  if (!index.includes('"name": "' + productName + '"')) fail('Homepage schema missing distinct product: ' + productName);
+}
 if (index.includes('/donaanna/product-design/')) fail('Homepage social preview must not use unapproved bottle imagery.');
 if (!index.includes('<link rel="preload" as="image" href="/donaanna/hero-image.jpg" fetchpriority="high">')) {
   fail('Homepage must preload the lightweight LCP hero image.');
@@ -58,18 +60,22 @@ if (!landing.includes('id="customer-path"') || !landing.includes('Hva vil du bru
   fail('Homepage must retain the intent-first customer journey.');
 }
 if (!landing.includes('Anna Bremseth og Freddy Bremseth driver Doña Anna sammen')) fail('Visible trust copy must name Anna and Freddy together.');
-if (!landing.includes("name.trim().toLowerCase() === 'verde vivo'")) fail('Public commerce must allow only the approved Verde Vivo product.');
+for (const productName of ['VERDE VIVO','VERDE ALTO','RAÍZ ANTIGUA','COCINA VIVA','MESA · GORDAL NOBLE']) {
+  if (!landing.includes(productName)) fail('Visible portfolio missing distinct Doña Anna product: ' + productName);
+}
 if (!landing.includes('VERDE VIVO · 500 ml')) fail('Visible product card must match the approved current format.');
 if (!landing.includes('mål om extra virgin-kvalitet') || landing.includes("role: 'Extra virgin olivenolje'")) {
   fail('Visible product copy must keep final extra virgin classification pending batch analysis.');
 }
 if (!landing.includes('data-testid="tasting-request-form"')) fail('Tasting form must expose a stable submit-measurement hook.');
-if (!landing.includes('href="/verde-vivo"')) fail('Homepage product card must link to the dedicated Verde Vivo page.');
+for (const productPath of ['/verde-vivo','/verde-alto','/raiz-antigua','/cocina-viva','/mesa-gordal-noble']) {
+  if (!landing.includes(productPath)) fail('Homepage product routing missing ' + productPath);
+}
 if (!commerce.includes("public_site_approved === true")) fail('Live commerce data must require explicit public-site approval.');
 if (!commerce.includes("const BRAND_SAFE_FALLBACK = '/donaanna/olive-trees.jpg'")) fail('Public commerce service must retain a brand-safe image fallback.');
 if (!commerce.includes("!image.includes('/donaanna/product-design/')")) fail('Public commerce service must reject legacy product-design imagery.');
-if (landing.includes('DOÑA ANNA · VERDE ALTO') || landing.includes('Raíz Antigua') || landing.includes('Cocina Viva') || landing.includes('Doña Anna Mesa')) {
-  fail('Unapproved product lines must not be marketed as current products.');
+if (!commerce.includes("'verde alto'") || !commerce.includes("'raíz antigua'") || !commerce.includes("'cocina viva'") || !commerce.includes("'mesa · gordal noble'")) {
+  fail('Public commerce allowlist must support the distinct approved Doña Anna product names.');
 }
 if (landing.includes('/donaanna/product-design/') || landing.includes('michelin-chef-uses-dona-anna.mp4') || landing.includes('video-av-flasken-klar.mp4')) {
   fail('Public landing must not use unapproved bottle imagery or old bottle videos.');
@@ -82,6 +88,10 @@ if (!landing.includes("harvestHands: '/donaanna/hero-image.jpg'") || !landing.in
 }
 if (landing.includes('<video')) fail('Public landing should avoid heavyweight autoplay/product video until approved brand media is ready.');
 if (!landing.includes('ca. 60 000 m²') || !landing.includes('1500')) fail('Homepage should retain the verified estate scale.');
+if (!landing.includes('Én merkevare. Flere tydelige produkter.')) fail('Homepage must present Doña Anna as a multi-product brand.');
+if (!index.includes('Verde Alto') || !index.includes('Raíz Antigua') || !index.includes('Cocina Viva') || !index.includes('Mesa · Gordal Noble')) {
+  fail('Crawlable first-response homepage must expose the distinct product line.');
+}
 if (!landing.includes('/om-dona-anna') || !landing.includes('/personvern')) fail('Visible homepage must expose trust and privacy pages.');
 
 if (!article.includes("'@type': 'BreadcrumbList'")) fail('Articles must retain BreadcrumbList schema.');
@@ -105,7 +115,12 @@ if (!listing.includes('Fra kunnskap til neste steg')) fail('Editorial hubs must 
 
 const evergreenSlugs = [
   'guider',
+  'produkter',
   'verde-vivo',
+  'verde-alto',
+  'raiz-antigua',
+  'cocina-viva',
+  'mesa-gordal-noble',
   'olivenolje-fra-biar',
   'tidlig-hostet-olivenolje',
   'olivenolje-for-restauranter',
@@ -117,10 +132,10 @@ const routeRewrites = Array.isArray(vercel.rewrites) ? vercel.rewrites : [];
 const routeRedirects = Array.isArray(vercel.redirects) ? vercel.redirects : [];
 const legacyRedirects = {
   '/product-verde-vivo.html': '/verde-vivo',
-  '/product-verde-alto.html': '/verde-vivo',
-  '/product-raiz-antigua.html': '/verde-vivo',
-  '/product-cocina-viva.html': '/verde-vivo',
-  '/product-mesa-gordal-noble.html': '/verde-vivo',
+  '/product-verde-alto.html': '/verde-alto',
+  '/product-raiz-antigua.html': '/raiz-antigua',
+  '/product-cocina-viva.html': '/cocina-viva',
+  '/product-mesa-gordal-noble.html': '/mesa-gordal-noble',
   '/organic-extra-virgin-olive-oil.html': '/olivenolje-fra-biar',
   '/olive-oil-for-restaurants.html': '/olivenolje-for-restauranter',
   '/b2b-olive-oil.html': '/olivenolje-for-restauranter',
@@ -148,7 +163,10 @@ if (evergreenDescriptions.length < 8 || evergreenDescriptions.some(value => valu
   fail('Every evergreen meta description must stay within the 120–160 character target.');
 }
 if (!evergreen.includes("'@type': 'FAQPage'")) fail('Evergreen pages must include FAQPage schema.');
-if (!evergreen.includes("page.slug === 'verde-vivo'") || !evergreen.includes("'@type': 'Product'")) fail('Verde Vivo page must expose Product schema.');
+if (!evergreen.includes("const productSchema: Record<string") || !evergreen.includes("'@type': 'Product'")) fail('Distinct product pages must expose Product schema.');
+for (const productSlug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa-gordal-noble']) {
+  if (!evergreen.includes("'" + productSlug + "': { name:")) fail('Product schema map missing ' + productSlug);
+}
 if (!evergreen.includes("'@type': 'BreadcrumbList'")) fail('Evergreen pages must include breadcrumb schema.');
 if (!evergreen.includes("author: { '@id': ORG }")) fail('Evergreen pages must use Doña Anna as the page author entity.');
 if (!evergreen.includes("name: 'Anna Bremseth'") || !evergreen.includes("name: 'Freddy Bremseth'")) fail('Evergreen schema must expose both people.');
