@@ -23,6 +23,15 @@ if (title.length < 35 || title.length > 65) fail('Homepage title should stay con
 if (description.length < 120 || description.length > 175) fail('Homepage meta description should stay useful and compact.');
 if ((index.match(/<h1\b/gi) || []).length !== 1) fail('First-response homepage must contain exactly one H1.');
 if (!index.includes('Hva er Doña Anna?')) fail('First-response homepage must expose a direct AEO answer.');
+if (!index.includes('Hva vil du bruke Doña Anna til?') || !index.includes('Restaurant eller hotell') || !index.includes('Butikk eller import') || !index.includes('Matinteressert')) {
+  fail('First-response homepage must expose the complete intent-first customer journey.');
+}
+if (!index.includes('mål om extra virgin-kvalitet') || index.includes('Verde Vivo er vår 500 ml extra virgin olivenolje')) {
+  fail('Homepage must not present extra virgin as confirmed before batch classification.');
+}
+if (index.includes('unpkg.com/leaflet') || index.includes('family=Fira+Code') || index.includes('family=Montserrat') || index.includes('family=Roboto')) {
+  fail('Public shell must not globally load map CSS or unused font families.');
+}
 if (!index.includes('/guider') || !index.includes('/om-dona-anna') || !index.includes('/personvern')) {
   fail('First-response homepage must expose guide, trust and privacy navigation.');
 }
@@ -41,6 +50,10 @@ if (!landing.includes('id="customer-path"') || !landing.includes('Hva vil du bru
 if (!landing.includes('Anna Bremseth og Freddy Bremseth driver Doña Anna sammen')) fail('Visible trust copy must name Anna and Freddy together.');
 if (!landing.includes("name.trim().toLowerCase() === 'verde vivo'")) fail('Public commerce must allow only the approved Verde Vivo product.');
 if (!landing.includes('VERDE VIVO · 500 ml')) fail('Visible product card must match the approved current format.');
+if (!landing.includes('mål om extra virgin-kvalitet') || landing.includes("role: 'Extra virgin olivenolje'")) {
+  fail('Visible product copy must keep final extra virgin classification pending batch analysis.');
+}
+if (!landing.includes('data-testid="tasting-request-form"')) fail('Tasting form must expose a stable submit-measurement hook.');
 if (!landing.includes('href="/verde-vivo"')) fail('Homepage product card must link to the dedicated Verde Vivo page.');
 if (!commerce.includes("public_site_approved === true")) fail('Live commerce data must require explicit public-site approval.');
 if (!commerce.includes("const BRAND_SAFE_FALLBACK = '/donaanna/olive-trees.jpg'")) fail('Public commerce service must retain a brand-safe image fallback.');
@@ -103,8 +116,11 @@ if (!routeRewrites.some((row) => row.source === '/sitemap.xml' && String(row.des
 }
 if (!analytics.includes('/api/public/search-discovery')) fail('Public measurement must capture privacy-minimal search/AI arrivals.');
 if (!analytics.includes('/api/public/conversion-event')) fail('Public measurement must capture coarse CTA progression.');
-for (const target of ['tasting_interest','verde_vivo','restaurant_guide','guide_hub','b2b_portal']) {
+for (const target of ['tasting_interest','tasting_request_submitted','verde_vivo','restaurant_guide','guide_hub','b2b_portal']) {
   if (!analytics.includes(target)) fail('Public measurement missing coarse CTA target ' + target);
+}
+if (!analytics.includes('addEventListener("submit"') || !analytics.includes('tasting-request-form')) {
+  fail('Public measurement must distinguish actual tasting request submission from CTA interest.');
 }
 if (analytics.includes('tastingRequest') || analytics.includes('email.value') || analytics.includes('company.value')) {
   fail('Public measurement must never read visitor form values.');
