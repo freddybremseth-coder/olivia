@@ -1,5 +1,121 @@
 {
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/magasin",
+      "destination": "/api/public-listing?destination=magasin"
+    },
+    {
+      "source": "/magasin/",
+      "destination": "/api/public-listing?destination=magasin"
+    },
+    {
+      "source": "/artikler",
+      "destination": "/api/public-listing?destination=artikler"
+    },
+    {
+      "source": "/artikler/",
+      "destination": "/api/public-listing?destination=artikler"
+    },
+    {
+      "source": "/blogg",
+      "destination": "/api/public-listing?destination=blogg"
+    },
+    {
+      "source": "/blogg/",
+      "destination": "/api/public-listing?destination=blogg"
+    },
+    {
+      "source": "/oppskrifter",
+      "destination": "/api/public-listing?destination=oppskrifter"
+    },
+    {
+      "source": "/oppskrifter/",
+      "destination": "/api/public-listing?destination=oppskrifter"
+    },
+    {
+      "source": "/magasin/:slug",
+      "destination": "/api/public-article?destination=magasin&slug=:slug"
+    },
+    {
+      "source": "/artikler/:slug",
+      "destination": "/api/public-article?destination=artikler&slug=:slug"
+    },
+    {
+      "source": "/blogg/:slug",
+      "destination": "/api/public-article?destination=blogg&slug=:slug"
+    },
+    {
+      "source": "/oppskrifter/:slug",
+      "destination": "/api/public-article?destination=oppskrifter&slug=:slug"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
+      "source": "/api/ai/gemini/:path*",
+      "destination": "/api/ai/gemini?path=:path*"
+    },
+    {
+      "source": "/api/ai/openai/:path*",
+      "destination": "/api/ai/openai?path=:path*"
+    },
+    {
+      "source": "/api/ai/anthropic/:path*",
+      "destination": "/api/ai/anthropic?path=:path*"
+    },
+    {
+      "source": "/api/catastro/:path*",
+      "destination": "/api/catastro?path=:path*"
+    },
+    {
+      "source": "/olivenolje-fra-biar",
+      "destination": "/api/public-evergreen?page=olivenolje-fra-biar"
+    },
+    {
+      "source": "/tidlig-hostet-olivenolje",
+      "destination": "/api/public-evergreen?page=tidlig-hostet-olivenolje"
+    },
+    {
+      "source": "/olivenolje-for-restauranter",
+      "destination": "/api/public-evergreen?page=olivenolje-for-restauranter"
+    },
+    {
+      "source": "/bordoliven-fra-biar",
+      "destination": "/api/public-evergreen?page=bordoliven-fra-biar"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/app/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
+    },
+    {
+      "source": "/olivia/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
+    },
+    {
+      "source": "/b2b/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
+    }
   ]
 }
