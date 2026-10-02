@@ -219,7 +219,7 @@ export default async function handler(
     '<a href="/om-dona-anna">Om Doña Anna</a>' +
     '<a href="https://www.freddybremseth.com/">FreddyBremseth.com</a>' +
     '<a href="https://www.pinosoecolife.com/">Pinoso Eco Life</a>' +
-    '<a href="/personvern">Personvern</a></footer></body></html>';
+    '<a href="/personvern">Personvern</a></footer><script src="/donaanna-analytics.js" defer></script></body></html>';
 
   res.writeHead(200, {
     'Content-Type': 'text/html; charset=utf-8',
