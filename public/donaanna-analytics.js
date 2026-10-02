@@ -117,7 +117,18 @@
   document.addEventListener("submit", function (event) {
     var form = event.target;
     if (!form || !form.matches || !form.matches('form[data-testid="tasting-request-form"]')) return;
-    sendConversion({ eventType: "contact", target: "tasting_request_submitted" });
+
+    var productSlug = "";
+    try {
+      var rawProduct = new URLSearchParams(window.location.search).get("product") || "";
+      var allowedProducts = ["verde-vivo", "verde-alto", "raiz-antigua", "cocina-viva", "mesa-gordal-noble"];
+      if (allowedProducts.indexOf(rawProduct) !== -1) productSlug = rawProduct;
+    } catch (_) {}
+
+    sendConversion({
+      eventType: "contact",
+      target: productSlug ? "tasting_request_submitted_" + productSlug : "tasting_request_submitted"
+    });
   });
 
   document.addEventListener("click", function (event) {
