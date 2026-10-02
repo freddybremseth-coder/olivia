@@ -86,6 +86,16 @@
     return null;
   }
 
+  function sendConversion(eventInfo) {
+    sendConversion(eventInfo);
+  }
+
+  document.addEventListener("submit", function (event) {
+    var form = event.target;
+    if (!form || !form.matches || !form.matches('form[data-testid="tasting-request-form"]')) return;
+    sendConversion({ eventType: "contact", target: "tasting_request_submitted" });
+  });
+
   document.addEventListener("click", function (event) {
     var target = event.target;
     if (!target || typeof target.closest !== "function") return;
@@ -94,30 +104,6 @@
     var eventInfo = classify(node);
     if (!eventInfo) return;
 
-    var dedupeKey = "donaanna:conversion:" + path + ":" + eventInfo.target;
-    try { if (window.sessionStorage.getItem(dedupeKey)) return; } catch (_) {}
-
-    var discoverySource = null;
-    var landingPath = null;
-    try {
-      discoverySource = window.sessionStorage.getItem("donaanna:discovery-source") || null;
-      landingPath = window.sessionStorage.getItem("donaanna:discovery-landing") || null;
-    } catch (_) {}
-
-    void fetch("https://realtyflow.chatgenius.pro/api/public/conversion-event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        eventType: eventInfo.eventType,
-        target: eventInfo.target,
-        path: path,
-        discoverySource: discoverySource,
-        landingPath: landingPath
-      }),
-      keepalive: true
-    }).then(function (response) {
-      if (response.status !== 204) return;
-      try { window.sessionStorage.setItem(dedupeKey, "1"); } catch (_) {}
-    }).catch(function () {});
+    sendConversion(eventInfo);
   }, { passive: true });
 })();
