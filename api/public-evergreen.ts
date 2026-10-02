@@ -553,12 +553,38 @@ function pageHtml(page: EvergreenPage) {
     ],
   };
 
-  const productSchema: Record<string, { name: string; category: string; size?: string }> = {
-    'verde-vivo': { name: 'Doña Anna Verde Vivo', category: 'Olive Oil', size: '500 ml' },
-    'verde-alto': { name: 'Doña Anna Verde Alto', category: 'Olive Oil' },
-    'raiz-antigua': { name: 'Doña Anna Raíz Antigua', category: 'Olive Oil' },
-    'cocina-viva': { name: 'Doña Anna Cocina Viva', category: 'Olive Oil' },
-    'mesa-gordal-noble': { name: 'Doña Anna Mesa · Gordal Noble', category: 'Table Olives' },
+  const productSchema: Record<string, { name: string; category: string; size?: string; role: string; status: string }> = {
+    'verde-vivo': {
+      name: 'Doña Anna Verde Vivo',
+      category: 'Olive Oil',
+      size: '500 ml',
+      role: 'Cosecha temprana / tidlig høstet olivenolje',
+      status: 'Produkt definert; batchdata og endelig kvalitetsklasse publiseres når produksjonen er dokumentert',
+    },
+    'verde-alto': {
+      name: 'Doña Anna Verde Alto',
+      category: 'Olive Oil',
+      role: 'Eget balansert olivenoljeprodukt i Doña Anna-porteføljen',
+      status: 'Produkt definert; etikett, format og batchdata publiseres etter godkjenning og produksjon',
+    },
+    'raiz-antigua': {
+      name: 'Doña Anna Raíz Antigua',
+      category: 'Olive Oil',
+      role: 'Heritage-produkt med egen opprinnelses- og batchfortelling',
+      status: 'Produkt definert; opprinnelse, etikett og batchpåstander dokumenteres før publisering',
+    },
+    'cocina-viva': {
+      name: 'Doña Anna Cocina Viva',
+      category: 'Olive Oil',
+      role: 'Produkt for restaurant, hotell og profesjonelle kjøkken',
+      status: 'Produkt definert; format, pris, etikett og levering bekreftes før tilgjengelighet',
+    },
+    'mesa-gordal-noble': {
+      name: 'Doña Anna Mesa · Gordal Noble',
+      category: 'Table Olives',
+      role: 'Planlagt bordolivenprodukt',
+      status: 'Planlagt; ikke tilgjengelig for salg før produkt, prosess, emballasje og lansering er dokumentert',
+    },
   };
   const productVisual: Record<string, { displayName: string; type: string; labelStatus: string; availability: string; context: string }> = {
     'verde-vivo': {
@@ -599,6 +625,23 @@ function pageHtml(page: EvergreenPage) {
   };
   const product = productSchema[page.slug];
   const visual = productVisual[page.slug];
+
+  if (page.slug === 'produkter') {
+    schema['@graph'].push({
+      '@type': 'ItemList',
+      '@id': canonical + '#products',
+      name: 'Doña Anna produktlinje',
+      numberOfItems: 5,
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Verde Vivo', url: SITE + '/verde-vivo' },
+        { '@type': 'ListItem', position: 2, name: 'Verde Alto', url: SITE + '/verde-alto' },
+        { '@type': 'ListItem', position: 3, name: 'Raíz Antigua', url: SITE + '/raiz-antigua' },
+        { '@type': 'ListItem', position: 4, name: 'Cocina Viva', url: SITE + '/cocina-viva' },
+        { '@type': 'ListItem', position: 5, name: 'Mesa · Gordal Noble', url: SITE + '/mesa-gordal-noble' },
+      ],
+    });
+  }
+
   if (product) {
     schema['@graph'].push({
       '@type': 'Product',
@@ -609,6 +652,10 @@ function pageHtml(page: EvergreenPage) {
       brand: { '@id': ORG },
       category: product.category,
       ...(product.size ? { size: product.size } : {}),
+      additionalProperty: [
+        { '@type': 'PropertyValue', name: 'Produktrolle', value: product.role },
+        { '@type': 'PropertyValue', name: 'Status', value: product.status },
+      ],
     });
   }
 
