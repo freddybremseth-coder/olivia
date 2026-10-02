@@ -77,18 +77,21 @@ const b2bPackages = [
     title: 'Meld interesse for smaksprøve',
     audience: 'Restaurant / hotell',
     image: imagePaths.b2bTraceabilityKitchen,
+    imageAlt: 'Doña Anna olivenlund i Biar, Alicante',
     text: 'Registrer interesse for Verde Vivo. Vi bekrefter først tilgjengelighet, batchdata, pris og levering når produksjonen er klar.',
   },
   {
     title: 'Produktinformasjon',
     audience: 'Kjøkken og faghandel',
     image: imagePaths.cocinaVivaChef,
+    imageAlt: 'Oliventrær på Doña Anna-gården i Biar',
     text: 'Produktark og dokumenterte batchopplysninger bygges rundt den faktiske produksjonen – ikke rundt generiske produktløfter.',
   },
   {
     title: 'Butikk og import',
     audience: 'Gourmetbutikk / import',
     image: imagePaths.raizAntiguaCleanFamily,
+    imageAlt: 'Doña Anna olivengård i Alicante-innlandet',
     text: 'Ta kontakt for dialog om Verde Vivo, format, dokumentasjon og mulig distribusjon når første produksjon er klar.',
   },
 ];
@@ -136,18 +139,21 @@ const knowledgeCards = [
     title: 'Tidlig høsting',
     kicker: 'Cosecha temprana',
     image: imagePaths.verdeVivoHero,
+    imageAlt: 'Oliventrær på Doña Anna-gården i Biar',
     text: 'Verde Vivo er utviklet som en tidlig høstet extra virgin olivenolje. Smaksprofil og analyseverdier beskrives for den faktiske batchen når den foreligger.',
   },
   {
     title: 'Våre sorter',
     kicker: 'Gården i Biar',
     image: '/donaanna/olive-trees.jpg',
+    imageAlt: 'Olivenlund med trær på Doña Anna-gården i Biar',
     text: 'Genovesa, Gordal, Changlot Real og Picual er blant sortene på gården. Vi bruker sortsinformasjon som en del av sporbarheten – ikke som generiske smakslover.',
   },
   {
     title: 'Sporbar dokumentasjon',
     kicker: 'Batch for batch',
     image: '/donaanna/olive-trees.jpg',
+    imageAlt: 'Doña Anna olivenlund i Biar før høsting',
     text: 'Høstedato, produksjonsdata, analyse og sensorikk skal knyttes til den konkrete batchen når informasjonen er klar.',
   },
 ];
@@ -280,7 +286,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             {[
               ['Sted', signal.heroMetric],
               ['Areal', 'ca. 60 000 m²'],
-              ['Trær', `ca. ${formatNumber(signal.treeCount || 1500)}`],
+              ['Trær', `ca. ${formatNumber(1500)}`],
               ['Sporbarhet', signal.isLive ? `${signal.activeBatches} aktive batcher` : 'Publiseres per batch'],
             ].map(([label, value]) => (
               <div key={label} className="border-white/12 p-4 odd:border-r md:border-r md:last:border-r-0">
@@ -422,7 +428,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 </div>
                 <div className="p-2 pt-5">
                   <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#d4af37]">{item.role}</p>
-                  <h3 className="mt-2 font-serif text-3xl">{item.name}</h3>
+                  <h3 className="mt-2 font-serif text-3xl"><a href="/verde-vivo" className="hover:text-[#d4af37]">{item.name}</a></h3>
                   <p className="mt-3 border-y border-white/10 py-3 text-[10px] font-bold uppercase tracking-[0.24em] text-white/72">{item.labelName}</p>
                   <p className="mt-1 text-xs uppercase tracking-[0.2em] text-white/48">{item.format}</p>
                   {'priceLabel' in item && (
@@ -459,7 +465,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               {knowledgeCards.map(card => (
                 <article key={card.title} className="group overflow-hidden border border-black/10 bg-white">
                   <div className="h-56 overflow-hidden bg-black">
-                    <img src={card.image} alt={card.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                    <img src={card.image} alt={card.imageAlt} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
                   </div>
                   <div className="p-6">
                     <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#8a6a19]">{card.kicker}</p>
@@ -611,7 +617,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               {b2bPackages.map(item => (
                 <article key={item.title} className="border border-black/10 bg-white">
                   <div className="h-64 overflow-hidden bg-black">
-                    <img src={item.image} alt={item.title} className="h-full w-full object-cover transition duration-700 hover:scale-105" />
+                    <img src={item.image} alt={item.imageAlt} className="h-full w-full object-cover transition duration-700 hover:scale-105" />
                   </div>
                   <div className="p-6">
                     <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#8a6a19]">{item.audience}</p>
