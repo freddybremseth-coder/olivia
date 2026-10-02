@@ -20,8 +20,8 @@ type EvergreenPage = {
 const PAGES: Record<string, EvergreenPage> = {
   guider: {
     slug: 'guider',
-    title: 'Guider om olivenolje fra Biar | Doña Anna',
-    description: 'Doña Anna-guider om olivenolje fra Biar, tidlig høsting, Verde Vivo, restaurantbruk og planene for bordoliven.',
+    title: 'Guider om olivenolje fra Biar og Alicante | Doña Anna',
+    description: 'Doña Anna-guider om olivenolje fra Biar, tidlig høsting, Verde Vivo, restaurantbruk, sporbarhet og planene for bordoliven.',
     eyebrow: 'Guidehub · olivenolje fra Biar',
     h1: 'Guider om olivenolje fra Biar',
     answer: 'Her samler Doña Anna evergreen-guider som svarer på konkrete spørsmål om gården i Biar, tidlig høsting, Verde Vivo og bruk i restaurant og faghandel.',
@@ -49,8 +49,8 @@ const PAGES: Record<string, EvergreenPage> = {
   },
   'olivenolje-fra-biar': {
     slug: 'olivenolje-fra-biar',
-    title: 'Olivenolje fra Biar, Alicante | Doña Anna',
-    description: 'Lær hvordan Doña Anna knytter Verde Vivo til gården i Biar: olivensorter, tidlig høsting, dokumentasjon og sporbarhet batch for batch.',
+    title: 'Olivenolje fra Biar i Alicante, Spania | Doña Anna',
+    description: 'Verde Vivo knyttes til gården i Biar gjennom olivensorter, tidlig høsting, dokumentasjon og sporbarhet for den konkrete batchen.',
     eyebrow: 'Opprinnelse · Biar, Alicante',
     h1: 'Olivenolje fra Biar: opprinnelse, sorter og sporbarhet',
     answer: 'Doña Anna er et olivenprosjekt fra Biar i Alicante. Verde Vivo 500 ml er første produkt, og batchdata publiseres når produksjonen er gjennomført og dokumentert.',
@@ -86,8 +86,8 @@ const PAGES: Record<string, EvergreenPage> = {
   },
   'tidlig-hostet-olivenolje': {
     slug: 'tidlig-hostet-olivenolje',
-    title: 'Tidlig høstet olivenolje | Doña Anna Verde Vivo',
-    description: 'Hva betyr tidlig høstet olivenolje, og hva kreves for extra virgin-kvalitet? Les hvordan Doña Anna bruker cosecha temprana som retning for Verde Vivo og dokumenterer batchen.',
+    title: 'Tidlig høstet olivenolje fra Biar, Alicante | Doña Anna',
+    description: 'Hva betyr tidlig høstet olivenolje, og hva kreves for extra virgin-kvalitet? Les om Verde Vivo, cosecha temprana og batchdokumentasjon.',
     eyebrow: 'Cosecha temprana · Verde Vivo',
     h1: 'Tidlig høstet olivenolje: hva betyr det for Verde Vivo?',
     answer: 'Tidlig høstet olivenolje lages av oliven som høstes tidligere i modningen. Verde Vivo er Doña Annas 500 ml produkt bygget rundt denne retningen.',
@@ -160,7 +160,7 @@ const PAGES: Record<string, EvergreenPage> = {
   },
   'bordoliven-fra-biar': {
     slug: 'bordoliven-fra-biar',
-    title: 'Bordoliven fra Biar | Planer hos Doña Anna',
+    title: 'Bordoliven fra Biar i Alicante | Planer hos Doña Anna',
     description: 'Doña Anna vurderer bordoliven som et senere produktspor. Les hva som er planlagt, hvilke sorter som finnes på gården og hva som ikke er lansert ennå.',
     eyebrow: 'Bordoliven · planlagt produktspor',
     h1: 'Bordoliven fra Biar: et mulig senere steg for Doña Anna',
@@ -197,8 +197,8 @@ const PAGES: Record<string, EvergreenPage> = {
   },
   'verde-vivo': {
     slug: 'verde-vivo',
-    title: 'Verde Vivo 500 ml | Doña Anna olivenolje fra Biar',
-    description: 'Verde Vivo er Doña Annas 500 ml tidlig høstede olivenolje fra Biar, utviklet med mål om extra virgin-kvalitet. Se hva som er definert nå og hvilke batchdata som publiseres senere.',
+    title: 'Verde Vivo 500 ml | Olivenolje fra Biar | Doña Anna',
+    description: 'Verde Vivo er Doña Annas 500 ml tidlig høstede olivenolje fra Biar, utviklet med mål om extra virgin-kvalitet. Batchdata publiseres når de er klare.',
     eyebrow: 'Verde Vivo · 500 ml · Biar',
     h1: 'Verde Vivo 500 ml – Doña Anna olivenolje fra Biar',
     answer: 'Verde Vivo er Doña Annas første produkt: en 500 ml tidlig høstet olivenolje utviklet med mål om extra virgin-kvalitet og tydelig opprinnelse i Biar. Endelig kvalitetsklasse, batchdata, analyse og tilgjengelighet publiseres når produksjonen er dokumentert.',
@@ -235,7 +235,7 @@ const PAGES: Record<string, EvergreenPage> = {
   },
   'om-dona-anna': {
     slug: 'om-dona-anna',
-    title: 'Om Doña Anna | Anna og Freddy Bremseth i Biar',
+    title: 'Om Doña Anna | Anna og Freddy Bremseth i Biar, Alicante',
     description: 'Møt Anna og Freddy Bremseth og les hvordan Doña Anna bygges rundt olivengården i Biar, Verde Vivo og langsiktig merkevarearbeid.',
     eyebrow: 'Om prosjektet · menneskene · gården',
     h1: 'Om Doña Anna: Anna og Freddy Bremseth bygger prosjektet sammen',
@@ -272,7 +272,7 @@ const PAGES: Record<string, EvergreenPage> = {
   },
   personvern: {
     slug: 'personvern',
-    title: 'Personvern og kontakt | Doña Anna',
+    title: 'Personvern og kontakt | Doña Anna olivenolje fra Biar',
     description: 'Slik fungerer kontakt og personopplysninger på DoñaAnna.com: smaksprøveforespørsler åpner e-post, og B2B-portalen er en separat innlogget tjeneste.',
     eyebrow: 'Personvern · kontakt',
     h1: 'Personvern og kontakt på DoñaAnna.com',

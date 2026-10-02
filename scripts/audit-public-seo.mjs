@@ -20,8 +20,8 @@ const ANNA = 'https://www.donaanna.com/#anna-bremseth';
 
 const title = index.match(/<title>([^<]+)<\/title>/)?.[1] || '';
 const description = index.match(/<meta name="description" content="([^"]+)"/)?.[1] || '';
-if (title.length < 35 || title.length > 65) fail('Homepage title should stay concise and descriptive.');
-if (description.length < 120 || description.length > 175) fail('Homepage meta description should stay useful and compact.');
+if (title.length < 50 || title.length > 60) fail('Homepage title must stay within the 50–60 character SEO target.');
+if (description.length < 120 || description.length > 160) fail('Homepage meta description must stay within the 120–160 character SEO target.');
 if ((index.match(/<h1\b/gi) || []).length !== 1) fail('First-response homepage must contain exactly one H1.');
 if (!index.includes('Hva er Doña Anna?')) fail('First-response homepage must expose a direct AEO answer.');
 if (!index.includes('Hva vil du bruke Doña Anna til?') || !index.includes('Restaurant eller hotell') || !index.includes('Butikk eller import') || !index.includes('Matinteressert')) {
@@ -82,6 +82,14 @@ if (!article.includes('Hva vil du gjøre videre?')) fail('Articles must expose a
 if (!article.includes('/om-dona-anna') || !article.includes('/personvern')) fail('Articles must retain trust/privacy navigation.');
 if (!article.includes("const htmlLevel = Math.min(4, Math.max(2, level));")) fail('Article headings must preserve H2/H3/H4 hierarchy.');
 
+const listingSeoTitles = [...listing.matchAll(/seoTitle:\s*'([^']+)'/g)].map(match => match[1]);
+const listingDescriptions = [...listing.matchAll(/description:\s*'([^']+)'/g)].map(match => match[1]).slice(0, 4);
+if (listingSeoTitles.length !== 4 || listingSeoTitles.some(value => value.length < 50 || value.length > 60)) {
+  fail('Editorial hub SEO titles must stay within the 50–60 character target.');
+}
+if (listingDescriptions.length !== 4 || listingDescriptions.some(value => value.length < 120 || value.length > 160)) {
+  fail('Editorial hub meta descriptions must stay within the 120–160 character target.');
+}
 if (!listing.includes("'@type': 'ItemList'")) fail('Listing pages must expose article ItemList schema.');
 if (!listing.includes("creator: { '@id': SITE + '/#organization' }")) fail('Editorial hubs must use the brand as creator.');
 if (!listing.includes('Fra kunnskap til neste steg')) fail('Editorial hubs must expose the customer next step.');
@@ -121,6 +129,14 @@ for (const slug of evergreenSlugs) {
   if (!routeRewrites.some((row) => row.source === '/' + slug && String(row.destination || '').includes('/api/public-evergreen'))) {
     fail('Evergreen route must stay server rendered: /' + slug);
   }
+}
+const evergreenTitles = [...evergreen.matchAll(/^\s{4}title:\s*'([^']+)'/gm)].map(match => match[1]);
+const evergreenDescriptions = [...evergreen.matchAll(/^\s{4}description:\s*'([^']+)'/gm)].map(match => match[1]);
+if (evergreenTitles.length < 8 || evergreenTitles.some(value => value.length < 50 || value.length > 60)) {
+  fail('Every evergreen SEO title must stay within the 50–60 character target.');
+}
+if (evergreenDescriptions.length < 8 || evergreenDescriptions.some(value => value.length < 120 || value.length > 160)) {
+  fail('Every evergreen meta description must stay within the 120–160 character target.');
 }
 if (!evergreen.includes("'@type': 'FAQPage'")) fail('Evergreen pages must include FAQPage schema.');
 if (!evergreen.includes("page.slug === 'verde-vivo'") || !evergreen.includes("'@type': 'Product'")) fail('Verde Vivo page must expose Product schema.');
