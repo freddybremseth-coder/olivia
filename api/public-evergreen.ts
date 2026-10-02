@@ -422,7 +422,7 @@ const PAGES: Record<string, EvergreenPage> = {
     description: 'Møt Anna og Freddy Bremseth og les hvordan Doña Anna bygges rundt olivengården i Biar, flere produkter, tydelig opprinnelse og langsiktig merkevarearbeid.',
     eyebrow: 'Om prosjektet · menneskene · gården',
     h1: 'Om Doña Anna: Anna og Freddy Bremseth bygger prosjektet sammen',
-    answer: 'Doña Anna er olivenprosjektet til Anna og Freddy Bremseth i Biar, Alicante. Gården, de ulike produktene og den langsiktige merkevaren utvikles sammen.'
+    answer: 'Doña Anna er olivenprosjektet til Anna og Freddy Bremseth i Biar, Alicante. Gården, de ulike produktene og den langsiktige merkevaren utvikles sammen.',
     sections: [
       {
         heading: 'Hvem driver Doña Anna?',
