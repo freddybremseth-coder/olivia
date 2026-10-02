@@ -39,17 +39,10 @@ const copy = {
 };
 
 const imagePaths = {
-  heroChefWide: '/donaanna/olive-trees.jpg',
-  b2bTraceabilityKitchen: '/donaanna/olive-trees.jpg',
-  verdeVivoHero: '/donaanna/olive-trees.jpg',
-  daBlackBottle: '/donaanna/olive-trees.jpg',
-  verdeAltoFrontBack: '/donaanna/olive-trees.jpg',
-  donaAnnaPouringBread: '/donaanna/olive-trees.jpg',
-  restaurantTablePour: '/donaanna/olive-trees.jpg',
-  raizAntiguaFamily: '/donaanna/olive-trees.jpg',
-  raizAntiguaCleanFamily: '/donaanna/olive-trees.jpg',
-  cocinaViva5l: '/donaanna/olive-trees.jpg',
-  cocinaVivaChef: '/donaanna/olive-trees.jpg',
+  estateHero: '/donaanna/olive-trees.jpg',
+  oliveGrove: '/donaanna/olive-trees.jpg',
+  harvestHands: '/donaanna/hero-image.jpg',
+  harvestClose: '/donaanna/farming-2.jpg',
 };
 
 const portfolio = [
@@ -58,7 +51,7 @@ const portfolio = [
     labelName: 'DOÑA ANNA · VERDE VIVO',
     format: '500 ml · Cosecha temprana',
     role: 'Tidlig høstet olivenolje · mål om extra virgin-kvalitet',
-    photo: imagePaths.verdeVivoHero,
+    photo: imagePaths.oliveGrove,
     text: 'Verde Vivo er Doña Annas første produkt. Den endelige batchinformasjonen – blant annet høstedato, analyseverdier og tilgjengelighet – publiseres når produksjonen er ferdig og dokumentert.',
   },
 ];
@@ -76,21 +69,21 @@ const b2bPackages = [
   {
     title: 'Meld interesse for smaksprøve',
     audience: 'Restaurant / hotell',
-    image: imagePaths.b2bTraceabilityKitchen,
-    imageAlt: 'Doña Anna olivenlund i Biar, Alicante',
+    image: imagePaths.harvestHands,
+    imageAlt: 'Grønne oliven ved innhøsting for Doña Anna',
     text: 'Registrer interesse for Verde Vivo. Vi bekrefter først tilgjengelighet, batchdata, pris og levering når produksjonen er klar.',
   },
   {
     title: 'Produktinformasjon',
     audience: 'Kjøkken og faghandel',
-    image: imagePaths.cocinaVivaChef,
-    imageAlt: 'Oliventrær på Doña Anna-gården i Biar',
+    image: imagePaths.harvestClose,
+    imageAlt: 'Håndplukkede grønne oliven fra innhøstingen',
     text: 'Produktark og dokumenterte batchopplysninger bygges rundt den faktiske produksjonen – ikke rundt generiske produktløfter.',
   },
   {
     title: 'Butikk og import',
     audience: 'Gourmetbutikk / import',
-    image: imagePaths.raizAntiguaCleanFamily,
+    image: imagePaths.oliveGrove,
     imageAlt: 'Doña Anna olivengård i Alicante-innlandet',
     text: 'Ta kontakt for dialog om Verde Vivo, format, dokumentasjon og mulig distribusjon når første produksjon er klar.',
   },
@@ -138,15 +131,15 @@ const knowledgeCards = [
   {
     title: 'Tidlig høsting',
     kicker: 'Cosecha temprana',
-    image: imagePaths.verdeVivoHero,
-    imageAlt: 'Oliventrær på Doña Anna-gården i Biar',
+    image: imagePaths.harvestHands,
+    imageAlt: 'Grønne oliven ved tidlig innhøsting',
     text: 'Verde Vivo er utviklet som en tidlig høstet olivenolje med mål om extra virgin-kvalitet. Endelig kvalitetsklasse, smaksprofil og analyseverdier beskrives for den faktiske batchen når den foreligger.',
   },
   {
     title: 'Våre sorter',
     kicker: 'Gården i Biar',
-    image: '/donaanna/olive-trees.jpg',
-    imageAlt: 'Olivenlund med trær på Doña Anna-gården i Biar',
+    image: imagePaths.harvestClose,
+    imageAlt: 'Håndplukkede oliven som illustrerer råvaren fra gården',
     text: 'Genovesa, Gordal, Changlot Real og Picual er blant sortene på gården. Vi bruker sortsinformasjon som en del av sporbarheten – ikke som generiske smakslover.',
   },
   {
@@ -263,7 +256,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       </nav>
 
       <header id="top" className="relative min-h-screen overflow-hidden">
-        <img src={imagePaths.heroChefWide} alt="Doña Anna olivenlund i Biar, Alicante" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-42" />
+        <img src={imagePaths.estateHero} alt="Doña Anna olivenlund i Biar, Alicante" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-42" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_42%,rgba(212,175,55,.16),transparent_34%),linear-gradient(90deg,rgba(13,13,13,.98),rgba(13,13,13,.78),rgba(13,13,13,.42))]" />
         <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col justify-end px-5 pb-12 pt-28 md:px-8">
           <div className="max-w-4xl animate-in fade-in duration-700">
@@ -477,7 +470,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             </div>
             <div className="mt-10 grid gap-5 border border-black/10 bg-[#111111] p-5 text-white lg:grid-cols-[0.82fr_1.18fr]">
               <div className="relative min-h-[360px] overflow-hidden">
-                <img src={imagePaths.donaAnnaPouringBread} alt="Doña Anna olivenolje helles over brød" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-72" />
+                <img src={imagePaths.harvestClose} alt="Håndplukkede grønne oliven fra innhøstingen" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-72" />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.78))]" />
                 <div className="absolute bottom-0 p-6">
                   <Sparkles className="text-[#d4af37]" size={26} />
@@ -503,7 +496,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
         <section className="relative overflow-hidden bg-[#0d0d0d] py-24">
           <div className="absolute inset-0 opacity-24">
-            <img src={imagePaths.verdeVivoHero} alt="Doña Anna Verde Vivo i Biar" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+            <img src={imagePaths.oliveGrove} alt="Doña Anna Verde Vivo i Biar" loading="lazy" decoding="async" className="h-full w-full object-cover" />
           </div>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,#0d0d0d,rgba(13,13,13,.78),#0d0d0d)]" />
           <div className="relative mx-auto grid max-w-7xl gap-10 px-5 md:grid-cols-[0.8fr_1.2fr] md:px-8">

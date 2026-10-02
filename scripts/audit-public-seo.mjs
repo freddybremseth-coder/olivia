@@ -65,6 +65,12 @@ if (landing.includes('DOÑA ANNA · VERDE ALTO') || landing.includes('Raíz Anti
 if (landing.includes('/donaanna/product-design/') || landing.includes('michelin-chef-uses-dona-anna.mp4') || landing.includes('video-av-flasken-klar.mp4')) {
   fail('Public landing must not use unapproved bottle imagery or old bottle videos.');
 }
+if (landing.includes('alt="Doña Anna olivenolje helles over brød"')) {
+  fail('Public image alt text must describe the image actually shown.');
+}
+if (!landing.includes("harvestHands: '/donaanna/hero-image.jpg'") || !landing.includes("harvestClose: '/donaanna/farming-2.jpg'")) {
+  fail('Public landing must retain the approved product-free harvest image variety.');
+}
 if (landing.includes('<video')) fail('Public landing should avoid heavyweight autoplay/product video until approved brand media is ready.');
 if (!landing.includes('ca. 60 000 m²') || !landing.includes('1500')) fail('Homepage should retain the verified estate scale.');
 if (!landing.includes('/om-dona-anna') || !landing.includes('/personvern')) fail('Visible homepage must expose trust and privacy pages.');
