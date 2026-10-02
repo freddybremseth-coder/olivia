@@ -55,7 +55,7 @@ export async function fetchProfile(userId: string, fallbackEmail = ''): Promise<
     .maybeSingle();
   if (error) {
     console.warn('fetchProfile', error);
-    return null;
+    throw error;
   }
   if (!data) return null;
   return rowToProfile(data, fallbackEmail);
@@ -97,10 +97,28 @@ function fallbackProfileFromAuth(user: any, fallbackEmail = ''): UserProfile {
 
 async function profileOrFallback(user: any, fallbackEmail = '', saveFallback = false): Promise<AuthResult> {
   const fallback = fallbackProfileFromAuth(user, fallbackEmail);
-  const profile = await withTimeout(fetchProfile(user.id, user.email ?? fallbackEmail), 6000, 'Henting av profil').catch(error => {
-    console.warn('profile lookup timed out/failed, using auth profile', error);
-    return null;
-  });
+  let profile: UserProfile | null = null;
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      profile = await withTimeout(fetchProfile(user.id, user.email ?? fallbackEmail), 12000, 'Henting av profil');
+      lastError = null;
+      break;
+    } catch (error) {
+      lastError = error;
+      console.warn(`profile lookup failed (attempt ${attempt + 1})`, error);
+      if (attempt === 0) await delay(500);
+    }
+  }
+
+  if (lastError) {
+    // Never reinterpret an existing authenticated user as a B2B customer merely
+    // because the profile service is slow or temporarily unavailable. That can
+    // redirect internal Olivia users to /b2b and hide farm/economy data.
+    throw lastError;
+  }
+
   const finalProfile = profile ?? fallback;
   if (!profile && saveFallback) upsertProfile(finalProfile).catch(err => console.warn('profile fallback save failed', err));
   return { user: finalProfile, isAdmin: finalProfile.role === 'super_admin' };
