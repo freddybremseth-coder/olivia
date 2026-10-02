@@ -117,8 +117,8 @@ export default async function handler(
   const url = new URL(req.url || '/', 'http://localhost');
   const probe = url.searchParams.get('probe') === '1';
 
-  const geminiKey    = process.env.GEMINI_API_KEY;
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const geminiKey    = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.API_KEY;
+  const anthropicKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
   const openaiKey    = process.env.OPENAI_API_KEY;
 
   const result: Record<string, ProviderHealth> = {
