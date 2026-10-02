@@ -513,9 +513,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                       />
                     ) : (
                       <>
-                        <img src="/labels/dona-anna-figure.svg" alt="" className="h-36 w-36 object-contain opacity-80" />
+                        <img
+                          src={productMedia(item.name).safeContextImage}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className="absolute inset-0 h-full w-full object-cover opacity-16 grayscale"
+                        />
+                        <div className="absolute inset-0 bg-[#e9e1cf]/72" />
+                        <img src="/labels/dona-anna-figure.svg" alt="" className="relative h-36 w-36 object-contain opacity-85" />
                         <div className="absolute inset-x-4 top-4 flex justify-end">
-                          <span className="border border-black/15 bg-white/75 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.16em] text-black/55">
+                          <span className="border border-black/15 bg-white/80 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.16em] text-black/55 backdrop-blur">
                             {productMedia(item.name).labelStatus === 'verified' ? 'Etikett verifisert · produktfoto venter' : 'Produktfoto venter på godkjent etikett'}
                           </span>
                         </div>
