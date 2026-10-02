@@ -77,6 +77,15 @@ for (const productPath of ['/verde-vivo','/verde-alto','/raiz-antigua','/cocina-
 if (!commerce.includes("public_site_approved === true")) fail('Live commerce data must require explicit public-site approval.');
 if (!commerce.includes("const BRAND_SAFE_FALLBACK = '/donaanna/olive-trees.jpg'")) fail('Public commerce service must retain a brand-safe image fallback.');
 if (!commerce.includes("!image.includes('/donaanna/product-design/')")) fail('Public commerce service must reject legacy product-design imagery.');
+if (!commerce.includes('product_image_approved') || !commerce.includes('product_slug') || !commerce.includes('exactProductMatch')) {
+  fail('Public commerce product imagery must require explicit approval and an exact product-slug match.');
+}
+if (!landing.includes('const PRODUCT_MEDIA: Record<string, ProductMedia>') || !landing.includes("approvedProductImage: null")) {
+  fail('Homepage must keep a product-specific media registry with safe fallback states.');
+}
+for (const slug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa-gordal-noble']) {
+  if (!landing.includes("slug: '" + slug + "'")) fail('Product media registry missing ' + slug);
+}
 if (!commerce.includes("'verde alto'") || !commerce.includes("'raíz antigua'") || !commerce.includes("'cocina viva'") || !commerce.includes("'mesa · gordal noble'")) {
   fail('Public commerce allowlist must support the distinct approved Doña Anna product names.');
 }
