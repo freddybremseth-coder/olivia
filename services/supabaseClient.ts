@@ -4,8 +4,8 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 const LEGACY_SUPABASE_REF = 'jvcdkclfcaccogmvvkrs';
 const REQUIRED_SUPABASE_REF = 'ereapsfcsqtdmzosgnnn';
-const fallbackSupabaseUrl = 'http://127.0.0.1:54321';
-const fallbackSupabaseAnonKey = 'public-site-placeholder-key';
+const fallbackSupabaseUrl = 'https://ereapsfcsqtdmzosgnnn.supabase.co';
+const fallbackSupabaseAnonKey = 'sb_publishable_KTywNu5kx3HfcOLInKOUjA_5Py79jZm';
 
 /**
  * Olivia uses the RealtyFlow Supabase database, where the farm app tables live
@@ -26,9 +26,12 @@ export const supabaseEnvStatus = {
 };
 
 export const isSupabaseConfigured: boolean = Boolean(
-  supabaseEnvStatus.urlConfigured &&
-  supabaseEnvStatus.anonKeyConfigured &&
-  !supabaseEnvStatus.legacyProjectDetected
+  (
+    supabaseEnvStatus.urlConfigured &&
+    supabaseEnvStatus.anonKeyConfigured &&
+    supabaseEnvStatus.expectedProjectDetected
+  ) ||
+  (fallbackSupabaseUrl && fallbackSupabaseAnonKey)
 );
 
 if (!isSupabaseConfigured) {
@@ -61,8 +64,17 @@ async function inMemoryLock<R>(
   }
 }
 
-const url = isSupabaseConfigured ? supabaseUrl! : fallbackSupabaseUrl;
-const key = isSupabaseConfigured ? supabaseAnonKey! : fallbackSupabaseAnonKey;
+const useExpectedEnv = Boolean(
+  supabaseEnvStatus.urlConfigured &&
+  supabaseEnvStatus.anonKeyConfigured &&
+  supabaseEnvStatus.expectedProjectDetected
+);
+const url = useExpectedEnv ? supabaseUrl! : fallbackSupabaseUrl;
+const key = useExpectedEnv ? supabaseAnonKey! : fallbackSupabaseAnonKey;
+
+if (!useExpectedEnv && typeof window !== 'undefined') {
+  console.warn('[Olivia] Vercel Supabase-miljø peker ikke eksplisitt mot RealtyFlowPRO. Bruker sikker frontend-fallback til forventet prosjekt.');
+}
 
 export const supabase = createClient(url, key, {
   db: { schema: OLIVIA_SCHEMA },
