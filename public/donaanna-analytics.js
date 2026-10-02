@@ -75,11 +75,20 @@
       return { eventType: "contact", target: "tasting_interest" };
     }
     if (href === "#portfolio" || href === "/#portfolio") {
-      return { eventType: "next_step", target: "verde_vivo" };
+      return { eventType: "next_step", target: "product_portfolio" };
     }
     try {
       var url = new URL(href, current.origin);
       if (url.origin !== current.origin) return null;
+      var productTargets = {
+        "/produkter": "product_hub",
+        "/verde-vivo": "verde_vivo",
+        "/verde-alto": "verde_alto",
+        "/raiz-antigua": "raiz_antigua",
+        "/cocina-viva": "cocina_viva",
+        "/mesa-gordal-noble": "mesa_gordal_noble"
+      };
+      if (productTargets[url.pathname]) return { eventType: "next_step", target: productTargets[url.pathname] };
       if (url.pathname === "/guider") return { eventType: "next_step", target: "guide_hub" };
       if (url.pathname === "/olivenolje-for-restauranter") return { eventType: "next_step", target: "restaurant_guide" };
     } catch (_) {}
@@ -117,7 +126,22 @@
   document.addEventListener("submit", function (event) {
     var form = event.target;
     if (!form || !form.matches || !form.matches('form[data-testid="tasting-request-form"]')) return;
-    sendConversion({ eventType: "contact", target: "tasting_request_submitted" });
+
+    // Product is a coarse non-personal category. Never read name, company, email,
+    // address or other visitor-entered fields into analytics.
+    var productSelect = form.querySelector && form.querySelector("#tasting-product");
+    var productValue = productSelect && typeof productSelect.value === "string" ? productSelect.value : "";
+    var productSubmissionTargets = {
+      "Verde Vivo": "tasting_request_verde_vivo",
+      "Verde Alto": "tasting_request_verde_alto",
+      "Raíz Antigua": "tasting_request_raiz_antigua",
+      "Cocina Viva": "tasting_request_cocina_viva",
+      "Mesa · Gordal Noble (planlagt)": "tasting_request_mesa_gordal_noble"
+    };
+    sendConversion({
+      eventType: "contact",
+      target: productSubmissionTargets[productValue] || "tasting_request_submitted"
+    });
   });
 
   document.addEventListener("click", function (event) {
