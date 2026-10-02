@@ -28,193 +28,138 @@ interface LandingPageProps {
 }
 
 const copy = {
-  eyebrow: 'Estate-olje fra Biar · Alicante · Freddy Bremseth',
+  eyebrow: 'Olivenprosjekt fra Biar · Alicante · Anna & Freddy Bremseth',
   headline: 'Doña Anna – tidlig høstet olivenolje fra Biar.',
-  subhead: 'Tidlig høstet olivenolje og bordoliven fra våre lunder i Biar. Skapt for kjøkken som verdsetter smak, opprinnelse, sporbarhet og en historie gjestene kan kjenne igjen ved bordet.',
-  cta: 'Be om smaksprøve',
+  subhead: 'Doña Anna er vårt felles olivenprosjekt i Biar. Verde Vivo er første produkt: 500 ml extra virgin olivenolje med tydelig opprinnelse. Batchdata, analyser og tilgjengelighet publiseres når produksjonen er klar.',
+  cta: 'Meld interesse for smaksprøve',
   portal: 'B2B portal',
-  specTitle: 'Tekniske data for innkjøpere',
-  traceTitle: 'Sporbarhet gjort konkret',
-  traceText: 'Når en batch er publisert, viser QR-sporingen høstedato, parsell, sort, sensorisk profil og analyseverdier for kokk, innkjøper og gjest.',
+  specTitle: 'Produktdata for Verde Vivo',
+  traceTitle: 'Sporbarhet når batchen er klar',
+  traceText: 'Når en batch er produsert og publisert, skal informasjon om høstedato, parsell, sort, sensorisk profil og analyseverdier knyttes til batchen.',
 };
 
 const imagePaths = {
-  heroChefWide: '/donaanna/product-design/cocina-viva-kitchen-wide.jpg',
-  b2bTraceabilityKitchen: '/donaanna/product-design/cocina-viva-chef.jpg',
-  verdeVivoHero: '/donaanna/product-design/verde-vivo-estate-arches.jpg',
-  daBlackBottle: '/donaanna/product-design/product-family-studio.jpg',
-  verdeAltoFrontBack: '/donaanna/product-design/verde-alto-rustic-room.jpg',
-  donaAnnaPouringBread: '/donaanna/product-design/verde-vivo-breakfast-collage.jpg',
-  restaurantTablePour: '/donaanna/product-design/portfolio-slate-mesa.jpg',
-  raizAntiguaFamily: '/donaanna/product-design/raiz-antigua-cellar.jpg',
-  raizAntiguaCleanFamily: '/donaanna/product-design/raiz-antigua-paella.jpg',
-  cocinaViva5l: '/donaanna/product-design/cocina-viva-b2b-collage.jpg',
-  cocinaVivaChef: '/donaanna/product-design/cocina-viva-chef.jpg',
+  heroChefWide: '/donaanna/olive-trees.jpg',
+  b2bTraceabilityKitchen: '/donaanna/olive-trees.jpg',
+  verdeVivoHero: '/donaanna/olive-trees.jpg',
+  daBlackBottle: '/donaanna/olive-trees.jpg',
+  verdeAltoFrontBack: '/donaanna/olive-trees.jpg',
+  donaAnnaPouringBread: '/donaanna/olive-trees.jpg',
+  restaurantTablePour: '/donaanna/olive-trees.jpg',
+  raizAntiguaFamily: '/donaanna/olive-trees.jpg',
+  raizAntiguaCleanFamily: '/donaanna/olive-trees.jpg',
+  cocinaViva5l: '/donaanna/olive-trees.jpg',
+  cocinaVivaChef: '/donaanna/olive-trees.jpg',
 };
 
 const portfolio = [
   {
     name: 'Verde Vivo',
     labelName: 'DOÑA ANNA · VERDE VIVO',
-    format: '250 ml / 500 ml · Cosecha Temprana I',
-    role: 'Intens finisholje',
+    format: '500 ml · Cosecha temprana',
+    role: 'Extra virgin olivenolje',
     photo: imagePaths.verdeVivoHero,
-    text: 'Vår mest intense tidlig-høstede olje. Grønn fruktighet, tydelig bitterhet og lang pepperfinish gjør den sterk på grillet fisk, tomat, brød, salater og retter som trenger en frisk avslutning.',
-  },
-  {
-    name: 'Verde Alto',
-    labelName: 'DOÑA ANNA · VERDE ALTO',
-    format: '500 ml · Cosecha Temprana II',
-    role: 'Balansert finisholje',
-    photo: imagePaths.verdeAltoFrontBack,
-    text: 'Tidlig høstet, men rundere i uttrykket enn Verde Vivo. En premium bord- og kjøkkenolje for restauranter som ønsker grønn karakter uten at oljen dominerer retten.',
-  },
-  {
-    name: 'Raíz Antigua',
-    labelName: 'DOÑA ANNA · RAÍZ ANTIGUA',
-    format: '500 ml · utvalg fra gamle trær',
-    role: 'Utvalg fra gamle trær',
-    photo: imagePaths.raizAntiguaFamily,
-    text: 'En begrenset seleksjon fra eldre trær på gården. Dypere, mer moden fruktighet og en roligere eleganse gjør den egnet for menyer, gavepakker og restauranter som vil fortelle historien om lunden.',
-  },
-  {
-    name: 'Monovarietal Collection',
-    labelName: 'DOÑA ANNA · MONOVARIETAL COLLECTION',
-    format: 'Genovesa · Gordal · Changlot Real · Picual',
-    role: 'Sortssmaking',
-    photo: imagePaths.daBlackBottle,
-    text: 'Små batcher som viser hvordan sort, jord og høstetidspunkt påvirker aroma og struktur. En naturlig smaksreise for sommelierer, kokker og spesialbutikker.',
-  },
-  {
-    name: 'Cocina Viva',
-    labelName: 'DOÑA ANNA · COCINA VIVA',
-    format: '2 L / 5 L · format for profesjonelle kjøkken',
-    role: 'Format for kjøkken',
-    photo: imagePaths.cocinaViva5l,
-    text: 'Større format for profesjonelle kjøkken som bruker olivenolje hver dag, men fortsatt vil ha kontroll på kvalitet, opprinnelse og batch. Utviklet for service, mise en place og varme retter.',
-  },
-  {
-    name: 'Mesa',
-    labelName: 'DOÑA ANNA · MESA',
-    format: 'Aceitunas de mesa',
-    role: 'Bordoliven',
-    photo: imagePaths.restaurantTablePour,
-    text: 'Bordoliven for aperitivo, markeder, barer og restauranter. En mer uformell inngang til Doña Anna, med samme fokus på råvare, tekstur og opprinnelse.',
+    text: 'Verde Vivo er Doña Annas første produkt. Den endelige batchinformasjonen – blant annet høstedato, analyseverdier og tilgjengelighet – publiseres når produksjonen er ferdig og dokumentert.',
   },
 ];
 
 const specs = [
-  ['Høsting', 'Tidlig høsting i to passeringer for ulik intensitet og polyfenolprofil'],
-  ['Ekstraksjon', 'Mekanisk kald ekstraksjon under 27°C'],
-  ['Kvalitet', 'Extra virgin med sensorisk kontroll og analyse per batch'],
-  ['Polyfenoler', 'Måles per premiumbatch og knyttes til sporbar dokumentasjon'],
-  ['Sorter', 'Genovesa · Gordal · Changlot Real · Picual'],
-  ['Formater', '250 ml · 500 ml · 2 L · 5 L · bordoliven'],
+  ['Produkt', 'Verde Vivo'],
+  ['Format', '500 ml'],
+  ['Type', 'Extra virgin olivenolje · cosecha temprana'],
+  ['Opprinnelse', 'Biar · Alicante · Spania'],
+  ['Sorter på gården', 'Genovesa · Gordal · Changlot Real · Picual'],
+  ['Batchdata', 'Høstedato, analyser og tilgjengelighet publiseres når produksjonen er klar'],
 ];
 
 const b2bPackages = [
   {
-    title: 'Smaksprøve for kjøkken',
+    title: 'Meld interesse for smaksprøve',
     audience: 'Restaurant / hotell',
     image: imagePaths.b2bTraceabilityKitchen,
-    text: 'Verde Vivo, Verde Alto og Mesa med produktark, batchhistorie og forslag til bruk på brød, tomat, fisk, grønnsaker og service.',
+    text: 'Registrer interesse for Verde Vivo. Vi bekrefter først tilgjengelighet, batchdata, pris og levering når produksjonen er klar.',
   },
   {
-    title: 'Restaurant startpakke',
-    audience: 'Kjøkken og bordservering',
+    title: 'Produktinformasjon',
+    audience: 'Kjøkken og faghandel',
     image: imagePaths.cocinaVivaChef,
-    text: '500 ml finisholjer til bordet og Cocina Viva i større format for mise en place, varme retter og daglig bruk.',
+    text: 'Produktark og dokumenterte batchopplysninger bygges rundt den faktiske produksjonen – ikke rundt generiske produktløfter.',
   },
   {
     title: 'Butikk og import',
     audience: 'Gourmetbutikk / import',
     image: imagePaths.raizAntiguaCleanFamily,
-    text: 'Hylleklar portefølje med produktbilder, produktark, QR-sporbarhet og tydelig informasjon om opprinnelse og bruk.',
+    text: 'Ta kontakt for dialog om Verde Vivo, format, dokumentasjon og mulig distribusjon når første produksjon er klar.',
   },
 ];
 
 const buyerProof: Array<{ icon: React.ElementType; title: string; text: string }> = [
-  { icon: Building2, title: 'Priser for faghandel', text: 'Egne vilkår for restaurant, butikk og distributør.' },
-  { icon: Package, title: 'Salgbare formater', text: '250 ml, 500 ml, bordoliven og 2 L / 5 L chef-format.' },
-  { icon: QrCode, title: 'QR-sporbarhet', text: 'Batchhistorie fra parsell og høsting til flaske.' },
-  { icon: ShieldCheck, title: 'Klar for vurdering', text: 'Produktark, sensorikk og logistikkdata samlet.' },
+  { icon: Package, title: 'Ett tydelig startprodukt', text: 'Verde Vivo 500 ml er produktet som kommuniseres offentlig nå.' },
+  { icon: QrCode, title: 'Batchdata etter produksjon', text: 'Sporbar informasjon publiseres når den konkrete batchen er dokumentert.' },
+  { icon: ShieldCheck, title: 'Ingen oppdiktede produktdata', text: 'Pris, analyse og tilgjengelighet oppgis først når de faktisk finnes.' },
+  { icon: Building2, title: 'B2B-dialog', text: 'Restaurant, hotell, butikk og import kan melde interesse før lansering.' },
 ];
 
 const estateMoments = [
   {
-    title: 'Biar-terroir',
-    text: 'Tørre somre, kalkholdig jord og høydeforskjeller gir oliven med konsentrert grønn fruktighet, bitterhet og struktur.',
+    title: 'Biar, Alicante',
+    text: 'Doña Anna bygges rundt vår egen olivengård i Biar og den konkrete historien om sted, råvare og produksjon.',
     icon: SunMedium,
   },
   {
     title: 'Fire sorter',
-    text: 'Genovesa, Gordal, Changlot Real og Picual gir oss et bredt sensorisk register for både olje og bordoliven.',
+    text: 'På gården arbeider vi blant annet med Genovesa, Gordal, Changlot Real og Picual.',
     icon: Leaf,
   },
   {
-    title: 'Tidlig høsting',
-    text: 'To tidlige høstinger gir to nivåer av intensitet: Verde Vivo som mest kompromissløs, Verde Alto som mer anvendelig.',
-    icon: Sprout,
+    title: 'Ca. 1 500 trær',
+    text: 'Gården har om lag 1 500 oliventrær fordelt på et større areal i Biar.',
+    icon: Trees,
   },
   {
-    title: 'Gamle trær',
-    text: 'Raíz Antigua reserveres til små batcher der gamle trær gir en historie, en struktur og en knapphet som faktisk merkes.',
-    icon: Trees,
+    title: 'Dryppvanning og økologisk retning',
+    text: 'Driften bruker dryppvanning, og Doña Anna utvikles som en økologisk merkevare med dokumentasjon som publiseres når den er klar.',
+    icon: Sprout,
   },
 ];
 
 const livingTimeline = [
-  ['Soloppgang', 'Dagen starter i lunden med kontroll av temperatur, jordfuktighet og modenhet.'],
-  ['Utvalg', 'Trær og parseller velges etter sort, fruktens tilstand og ønsket sensorisk uttrykk.'],
-  ['Mølle', 'Oliven transporteres raskt videre for mekanisk kald ekstraksjon under 27°C.'],
-  ['Batch', 'Volum, høstevindu, sort og kvalitet registreres slik at hver produksjon kan følges tilbake til gården.'],
-  ['Bordet', 'Flasken får sin historie: høsting, analyse, smak og opprinnelse samlet i én sporbar batch.'],
+  ['Før høsting', 'Modning, vær og tilstanden i lunden vurderes før høstetidspunkt bestemmes.'],
+  ['Høsting', 'Verde Vivo er utviklet rundt tidlig høsting. Den konkrete høstedatoen publiseres per batch.'],
+  ['Mølle', 'Produksjonsdata fra møllen dokumenteres for den konkrete batchen når oljen er produsert.'],
+  ['Analyse', 'Analyseverdier og sensoriske notater publiseres først når resultatene foreligger.'],
+  ['Flaske', 'Verde Vivo tappes med Doña Annas faktiske etikett og batchinformasjon.'],
 ];
 
 const knowledgeCards = [
   {
-    title: 'Polyfenolens kraft',
-    kicker: 'Målt per batch',
-    image: imagePaths.donaAnnaPouringBread,
-    text: 'Tidlig høstet extra virgin olivenolje har høyere innhold av polyfenoler. De gir bitterhet og pepperfølelse, og nivået analyseres og dokumenteres for hver premiumbatch.',
-  },
-  {
-    title: 'Regenerativ drift',
-    kicker: 'Jord og biodiversitet',
-    image: '/donaanna/regenerative-farming.jpg',
-    text: 'Dekkvekster, urter, blomster og mer presis vannforvaltning styrker jordlivet i et tørt middelhavsklima. Sunnere jord gir mer robuste trær og tydeligere opprinnelse.',
-  },
-  {
     title: 'Tidlig høsting',
     kicker: 'Cosecha temprana',
     image: imagePaths.verdeVivoHero,
-    text: 'Tidlig høsting gir lavere oljeutbytte, men mer intens aroma, friskere grønn fruktighet og høyere bitterhet og skarphet. Det er kjernen i Verde Vivo og Verde Alto.',
+    text: 'Verde Vivo er utviklet som en tidlig høstet extra virgin olivenolje. Smaksprofil og analyseverdier beskrives for den faktiske batchen når den foreligger.',
+  },
+  {
+    title: 'Våre sorter',
+    kicker: 'Gården i Biar',
+    image: '/donaanna/olive-trees.jpg',
+    text: 'Genovesa, Gordal, Changlot Real og Picual er blant sortene på gården. Vi bruker sortsinformasjon som en del av sporbarheten – ikke som generiske smakslover.',
+  },
+  {
+    title: 'Sporbar dokumentasjon',
+    kicker: 'Batch for batch',
+    image: '/donaanna/olive-trees.jpg',
+    text: 'Høstedato, produksjonsdata, analyse og sensorikk skal knyttes til den konkrete batchen når informasjonen er klar.',
   },
 ];
 
 const qualitySteps = [
-  ['01', 'Skånsom høsting', 'Oliven høstes når aromatikk, bitterhet og polyfenolpotensial er på sitt beste.'],
-  ['02', 'Rask pressing', 'Kort vei fra tre til mølle bevarer friskhet, næringsstoffer og aroma.'],
-  ['03', 'Kald ekstraksjon', 'Mekanisk ekstraksjon under 27°C beskytter polyfenoler og den grønne fruktigheten.'],
-  ['04', 'Sensorisk kontroll', 'Fruktighet, bitterhet, skarphet og balanse vurderes før batchen får sin rolle i porteføljen.'],
+  ['01', 'Høsting', 'Verde Vivo er utviklet rundt tidlig høsting; dato og batch publiseres når produksjonen er gjennomført.'],
+  ['02', 'Produksjon', 'Produksjonsdata fra møllen knyttes til den faktiske batchen i stedet for å beskrives generisk på forhånd.'],
+  ['03', 'Analyse', 'Kvalitets- og analyseverdier publiseres når dokumentasjonen foreligger.'],
+  ['04', 'Merkevare', 'Flasken skal bruke Doña Annas godkjente etikett og korrekte batchinformasjon.'],
 ];
 
-const videoStories = [
-  {
-    title: 'På kjøkkenet',
-    eyebrow: 'I bruk',
-    src: '/donaanna/video/michelin-chef-uses-dona-anna.mp4',
-    poster: imagePaths.b2bTraceabilityKitchen,
-    text: 'Doña Anna er laget for kjøkken som arbeider presist. Se hvordan aroma, varme og timing avgjør hvordan retten avsluttes.',
-  },
-  {
-    title: 'Ved bordet',
-    eyebrow: 'Produktfilm',
-    src: '/donaanna/video/video-av-flasken-klar.mp4',
-    poster: imagePaths.daBlackBottle,
-    text: 'Se hvordan en siste dråpe tilfører grønn fruktighet, bitterhet og pepperfinish rett før servering.',
-  },
-];
+const videoStories: Array<{ title: string; eyebrow: string; src: string; poster: string; text: string }> = [];
 
 const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(value);
 
@@ -224,11 +169,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   const [tastingRequest, setTastingRequest] = useState({ company: '', role: '', email: '', address: '' });
   const [signal, setSignal] = useState<PublicEstateSignal>({
     isLive: false,
-    parcelCount: 2,
-    treeCount: 570,
+    parcelCount: 0,
+    treeCount: 1500,
     activeBatches: 0,
-    latestHarvestDate: 'Oktober-november',
-    nextTask: 'Sensorisk evaluering og batch-dokumentasjon',
+    latestHarvestDate: 'Publiseres per batch',
+    nextTask: 'Høsting, produksjon og batch-dokumentasjon',
     heroMetric: 'Biar, Alicante',
   });
   useEffect(() => {
@@ -236,11 +181,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     fetchPublicCommerceProducts().then(setLivePortfolio);
   }, []);
 
-  const portfolioItems = livePortfolio.length ? livePortfolio : portfolio;
+  const approvedLivePortfolio = livePortfolio.filter(item => item.name.trim().toLowerCase() === 'verde vivo');
+  const portfolioItems = approvedLivePortfolio.length ? approvedLivePortfolio : portfolio;
 
   const handleTastingRequest = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const subject = 'Forespørsel om smaksprøve – Doña Anna';
+    const subject = 'Interesse for smaksprøve – Doña Anna';
     const body = [
       `Restaurant / virksomhet: ${tastingRequest.company}`,
       `Rolle: ${tastingRequest.role}`,
@@ -255,6 +201,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     ['Gården', '#estate'],
     ['Produkter', '#portfolio'],
     ['Kunnskap', '#knowledge'],
+    ['Guider', '/guider'],
     ['Magasin', '/magasin'],
     ['For profesjonelle', '#b2b'],
     ['Om prosjektet', '#people'],
@@ -310,10 +257,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       </nav>
 
       <header id="top" className="relative min-h-screen overflow-hidden">
-        <img src={imagePaths.heroChefWide} alt="Doña Anna i bruk på restaurantkjøkken" className="absolute inset-0 h-full w-full object-cover opacity-42" />
-        <video className="absolute inset-0 h-full w-full object-cover opacity-42" autoPlay muted loop playsInline poster={imagePaths.heroChefWide}>
-          <source src="/donaanna/video/video-av-flasken-klar.mp4" type="video/mp4" />
-        </video>
+        <img src={imagePaths.heroChefWide} alt="Doña Anna olivenlund i Biar, Alicante" className="absolute inset-0 h-full w-full object-cover opacity-42" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_42%,rgba(212,175,55,.16),transparent_34%),linear-gradient(90deg,rgba(13,13,13,.98),rgba(13,13,13,.78),rgba(13,13,13,.42))]" />
         <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col justify-end px-5 pb-12 pt-28 md:px-8">
           <div className="max-w-4xl animate-in fade-in duration-700">
@@ -334,10 +278,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
           <div className="mt-12 grid max-w-5xl grid-cols-2 border border-white/12 bg-black/22 backdrop-blur md:grid-cols-4">
             {[
-              ['Estate', signal.heroMetric],
-              ['Parseller', formatNumber(signal.parcelCount)],
-              ['Trær', formatNumber(signal.treeCount)],
-              ['Sporbarhet', signal.isLive ? `${signal.activeBatches} aktive batcher` : 'Publiseres ved lansering'],
+              ['Sted', signal.heroMetric],
+              ['Areal', 'ca. 60 000 m²'],
+              ['Trær', `ca. ${formatNumber(signal.treeCount || 1500)}`],
+              ['Sporbarhet', signal.isLive ? `${signal.activeBatches} aktive batcher` : 'Publiseres per batch'],
             ].map(([label, value]) => (
               <div key={label} className="border-white/12 p-4 odd:border-r md:border-r md:last:border-r-0">
                 <p className="text-[10px] uppercase tracking-[0.24em] text-[#d4af37]">{label}</p>
@@ -356,7 +300,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Kort fortalt</p>
                 <h2 id="quick-answers-title" className="mt-3 font-serif text-3xl leading-tight md:text-5xl">Hva er Doña Anna?</h2>
                 <p className="mt-4 max-w-xl text-lg leading-8 text-white/64">
-                  Doña Anna er et olivenprosjekt i Biar, Alicante, utviklet av Freddy Bremseth. Fokus er tidlig høstet extra virgin olivenolje, bordoliven, sporbarhet og produkter for både matinteresserte og profesjonelle kjøkken.
+                  Doña Anna er olivenprosjektet til Anna og Freddy Bremseth i Biar, Alicante. Verde Vivo 500 ml er første produkt. Bordoliven er et mulig senere steg, ikke et produkt vi markedsfører som tilgjengelig nå.
                 </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -370,11 +314,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 </article>
                 <article className="border border-white/10 bg-white/[0.035] p-5">
                   <h3 className="font-serif text-2xl">Kan restauranter få smaksprøve?</h3>
-                  <p className="mt-3 leading-7 text-white/62">Ja. Restauranter, hoteller, butikker og distributører kan sende en forespørsel om smaksprøve, produktark, format, pris og levering.</p>
+                  <p className="mt-3 leading-7 text-white/62">Ja. Restauranter, hoteller, butikker og distributører kan melde interesse. Vi bekrefter tilgjengelighet, batchdata, pris og levering når produksjonen er klar.</p>
                 </article>
                 <article className="border border-white/10 bg-white/[0.035] p-5">
                   <h3 className="font-serif text-2xl">Hvem står bak?</h3>
-                  <p className="mt-3 leading-7 text-white/62">Freddy Bremseth utvikler Doña Anna som del av sin prosjektportefølje i Spania. <a className="text-[#d4af37] underline-offset-4 hover:underline" href="https://www.freddybremseth.com/olivenolje-og-dona-anna.html">Les historien bak prosjektet</a>.</p>
+                  <p className="mt-3 leading-7 text-white/62">Anna Bremseth og Freddy Bremseth driver Doña Anna sammen i Biar. <a className="text-[#d4af37] underline-offset-4 hover:underline" href="/om-dona-anna">Les om prosjektet og hvem som står bak</a>.</p>
                 </article>
               </div>
             </div>
@@ -393,13 +337,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <a href="#tasting" className="group border border-black/10 bg-white p-6 transition hover:-translate-y-1 hover:border-[#8a6a19]/55">
                   <Building2 size={24} className="text-[#8a6a19]" />
                   <h3 className="mt-8 font-serif text-3xl">Restaurant eller hotell</h3>
-                  <p className="mt-3 leading-7 text-black/62">Smaksprøve, produktark, 500 ml finisholje og større kjøkkenformat.</p>
+                  <p className="mt-3 leading-7 text-black/62">Meld interesse for Verde Vivo 500 ml og få batchinformasjon når produksjonen er klar.</p>
                   <span className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#8a6a19]">Be om smaksprøve <ArrowRight size={15} /></span>
                 </a>
                 <a href="#b2b" className="group border border-black/10 bg-white p-6 transition hover:-translate-y-1 hover:border-[#8a6a19]/55">
                   <Package size={24} className="text-[#8a6a19]" />
                   <h3 className="mt-8 font-serif text-3xl">Butikk eller import</h3>
-                  <p className="mt-3 leading-7 text-black/62">Portefølje, formater, sporbarhet og dokumentasjon for faghandel.</p>
+                  <p className="mt-3 leading-7 text-black/62">Verde Vivo, dokumentasjon, mulig distribusjon og videre dialog for faghandel.</p>
                   <span className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#8a6a19]">Se B2B-løsningen <ArrowRight size={15} /></span>
                 </a>
                 <a href="/tidlig-hostet-olivenolje" className="group border border-black/10 bg-white p-6 transition hover:-translate-y-1 hover:border-[#8a6a19]/55">
@@ -430,7 +374,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Gården</p>
                 <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">En levende olivengård, ikke bare en etikett.</h2>
                 <p className="mt-6 text-lg leading-8 text-white/66">
-                  Doña Anna ligger i Biar i Alicante, der kalkholdig jord, tørre somre og kjølige netter gir oliven med frisk grønn fruktighet, bitterhet og struktur. Gården kombinerer tradisjon, gamle trær, regenerativ praksis og presis dokumentasjon.
+                  Doña Anna ligger i Biar i Alicante og omfatter rundt 60 000 m² med om lag 1 500 oliventrær. Vi bygger merkevaren på den faktiske gården, sortene vi har og dokumentasjon fra den konkrete produksjonen – ikke på generiske smaks- eller terroirpåstander.
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                   <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
@@ -454,50 +398,26 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section className="bg-[#111111] px-5 py-24 md:px-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="mb-10 grid gap-8 md:grid-cols-[0.85fr_1.15fr]">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">I bruk</p>
-                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Se oljen i arbeid.</h2>
-              </div>
-              <p className="self-end text-lg leading-8 text-white/66">
-                Fra siste finish ved bordet til daglig service på kjøkkenet: se hvordan Doña Anna brukes når smak, temperatur og timing teller.
-              </p>
-            </div>
-            <div className="grid gap-5 lg:grid-cols-2">
-              {videoStories.map(item => (
-                <article key={item.title} className="overflow-hidden border border-white/10 bg-black">
-                  <video className="aspect-video w-full object-cover" controls muted playsInline preload="metadata" poster={item.poster}>
-                    <source src={item.src} type="video/mp4" />
-                  </video>
-                  <div className="p-6">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#d4af37]">{item.eyebrow}</p>
-                    <h3 className="mt-2 font-serif text-3xl">{item.title}</h3>
-                    <p className="mt-4 leading-7 text-white/62">{item.text}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
         <section id="portfolio" className="mx-auto max-w-7xl px-5 py-24 md:px-8">
           <div className="mb-12 grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Portefølje</p>
-              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Olje og bordoliven for bordet, kjøkkenet og hyllen.</h2>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Verde Vivo er produktet vi bygger merkevaren rundt nå.</h2>
             </div>
             <p className="self-end text-lg leading-8 text-white/66">
-              Verde Vivo og Verde Alto er 500 ml finisholjer for bord og kjøkken. Cocina Viva gir kokker større format til daglig service. Mesa gir restauranter, barer og spesialbutikker en bordoliven med tydelig opprinnelse.
+              Vi viser bare produktet som er definert nå: Verde Vivo 500 ml. Nye formater eller bordoliven legges ikke ut før de faktisk er besluttet, produsert og dokumentert.
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {portfolioItems.map(item => (
               <article key={item.name} className="group border border-white/10 bg-white/[0.035] p-4 transition hover:border-[#d4af37]/50">
                 <div className="grid gap-3">
-                  <div className="h-72 overflow-hidden bg-[#080808]">
-                    <img src={item.photo} alt={`${item.name} produktbilde`} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                  <div className="relative flex h-72 items-center justify-center overflow-hidden bg-[#e9e1cf]">
+                    <img src="/labels/dona-anna-figure.svg" alt="" className="h-36 w-36 object-contain opacity-80" />
+                    <div className="absolute bottom-5 left-5 right-5 border-t border-black/15 pt-4 text-center text-black">
+                      <p className="font-serif text-2xl">DOÑA ANNA</p>
+                      <p className="mt-1 text-xs font-bold uppercase tracking-[0.2em]">VERDE VIVO · 500 ml</p>
+                    </div>
                   </div>
                 </div>
                 <div className="p-2 pt-5">
@@ -532,7 +452,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Smak, jord og høstetid henger sammen.</h2>
               </div>
               <p className="self-end text-lg leading-8 text-black/66">
-                Premium extra virgin olivenolje handler om mer enn en grønn flaske. Høstingstidspunkt, polyfenoler, jordliv, ekstraksjon og sensorisk kontroll avgjør både smaken, holdbarheten og opplevelsen ved bordet.
+                Premium extra virgin olivenolje må beskrives med dokumentasjon fra den faktiske produksjonen. Derfor skiller vi mellom det vi vet om gården nå, og batchdata som først publiseres etter høsting og analyse.
               </p>
             </div>
             <div className="grid gap-5 lg:grid-cols-3">
@@ -657,7 +577,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#d4af37]">For restauranter og innkjøpere</p>
               <h2 className="mt-2 font-serif text-3xl md:text-4xl">Smak før du bestemmer deg.</h2>
-              <p className="mt-2 max-w-2xl text-white/62">Vi kan sette sammen en liten B2B-smakspakke med Verde Vivo, Verde Alto og Mesa-bordoliven.</p>
+              <p className="mt-2 max-w-2xl text-white/62">Meld interesse for Verde Vivo. Vi bekrefter smaksprøve, produktark, pris og levering når første batch er klar.</p>
             </div>
             <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
               {copy.cta} <ArrowRight size={17} />
@@ -674,7 +594,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               </div>
               <div className="self-end">
                 <p className="text-lg leading-8 text-black/66">
-                  For kjøkken, butikk og import samler Doña Anna produktark, formatvalg, sporbarhet og en smaksprøve som gjør vurderingen konkret.
+                  For kjøkken, butikk og import samler Doña Anna dokumentasjon rundt Verde Vivo. Smaksprøve, pris og levering bekreftes når den faktiske batchen er klar.
                 </p>
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                   <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-black px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-[#8a6a19]">
@@ -720,7 +640,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Produktdata</p>
               <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">{copy.specTitle}</h2>
               <p className="mt-6 text-lg leading-8 text-white/60">
-                Profesjonelle kjøpere trenger tydelige fakta. Doña Anna samler smaksnotater, format, høstedato, sort, batchnummer og analyseverdier slik at produktet er enkelt å vurdere, prise og servere.
+                Profesjonelle kjøpere trenger tydelige fakta. Derfor publiserer Doña Anna bare produktdata som er besluttet eller dokumentert, og legger til høstedato, batchnummer og analyseverdier når de foreligger.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -738,16 +658,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[0.78fr_1.22fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Bak Doña Anna</p>
-              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Et olivenprosjekt bygget fra Biar – med Freddy Bremseth som initiativtaker.</h2>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Anna og Freddy Bremseth bygger Doña Anna sammen i Biar.</h2>
             </div>
             <div className="self-end">
               <p className="text-lg leading-8 text-white/66">
-                Freddy Bremseth arbeider med eiendom, teknologi, forfatterskap og egne prosjekter i Spania. Doña Anna er den delen av porteføljen som handler om oliven, jord, matkultur, produktutvikling og en langsiktig merkevare med røtter i Biar.
+                Anna Bremseth og Freddy Bremseth driver Doña Anna sammen. Prosjektet handler om gården, oliventrærne, Verde Vivo, produksjonen og å bygge en langsiktig merkevare med tydelig opprinnelse i Biar.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
-                <a href="https://www.freddybremseth.com/" className="inline-flex h-11 items-center justify-center border border-white/16 px-5 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:border-[#d4af37]">Freddy Bremseth</a>
-                <a href="https://www.freddybremseth.com/olivenolje-og-dona-anna.html" className="inline-flex h-11 items-center justify-center border border-white/16 px-5 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:border-[#d4af37]">Historien bak Doña Anna</a>
-                <a href="https://books.freddybremseth.com/" className="inline-flex h-11 items-center justify-center border border-white/16 px-5 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:border-[#d4af37]">Bøker om oliven og Middelhavet</a>
+                <a href="/om-dona-anna" className="inline-flex h-11 items-center justify-center border border-white/16 px-5 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:border-[#d4af37]">Anna & Freddy · om prosjektet</a>
+                <a href="https://www.freddybremseth.com/" className="inline-flex h-11 items-center justify-center border border-white/16 px-5 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:border-[#d4af37]">FreddyBremseth.com</a>
               </div>
             </div>
           </div>
@@ -757,9 +676,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[1fr_0.9fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">Smaksprøve</p>
-              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Be om en smaksprøve for restauranten.</h2>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Meld interesse for smaksprøve.</h2>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-black/66">
-                Smaksprøven gir kjøkkensjefer og innkjøpere en konkret introduksjon til Doña Anna: tidlig høstet olje, bordoliven, smaksnotater og informasjon om formater og batcher.
+                Restauranter, hoteller, butikker og distributører kan melde interesse for Verde Vivo. Vi svarer med tilgjengelighet, batchdata, produktark, pris og levering når produksjonen er klar.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a href="mailto:info@donaanna.com?subject=Produktark%20Do%C3%B1a%20Anna" className="inline-flex items-center gap-2 border border-black/15 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em]">
@@ -779,7 +698,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <input id="tasting-email" required value={tastingRequest.email} onChange={(event) => setTastingRequest({ ...tastingRequest, email: event.target.value })} type="email" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
               <label htmlFor="tasting-address" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Leveringsadresse</label>
               <textarea id="tasting-address" required value={tastingRequest.address} onChange={(event) => setTastingRequest({ ...tastingRequest, address: event.target.value })} className="mt-2 h-24 w-full border border-black/12 p-3 outline-none focus:border-[#d4af37]" />
-              <p className="mt-4 text-sm leading-6 text-black/60">Forespørselen åpner en e-post til Doña Anna med opplysningene dine. Vi svarer med tilgjengelighet, pris og levering.</p>
+              <p className="mt-4 text-sm leading-6 text-black/60">Forespørselen åpner en e-post til Doña Anna. Opplysningene sendes ikke til et skjema på nettstedet. Vi svarer når vi kan bekrefte tilgjengelighet og neste steg.</p>
               <button className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-black px-5 text-xs font-bold uppercase tracking-[0.2em] text-white">
                 Send forespørsel <ArrowRight size={17} />
               </button>
@@ -796,24 +715,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
           <div className="space-y-3">
             <div className="flex flex-wrap gap-4 text-xs uppercase tracking-[0.18em] text-white/54">
+              <a href="/guider">Guider</a>
               <a href="/magasin">Magasin</a>
               <a href="/artikler">Artikler</a>
               <a href="/oppskrifter">Oppskrifter</a>
               <button data-testid="b2b-portal-footer" onClick={onLogin}>B2B Portal</button>
               <button data-testid="olivia-os-footer" onClick={onAdminLogin}>Olivia OS</button>
               <a href="mailto:info@donaanna.com">info@donaanna.com</a>
-              <a href="https://www.freddybremseth.com/olivenolje-og-dona-anna.html">Freddy Bremseth · Doña Anna</a>
+              <a href="/om-dona-anna">Anna & Freddy · om Doña Anna</a>
+              <a href="/personvern">Personvern</a>
               <span>Oppdatert 2. oktober 2026</span>
             </div>
-            <nav aria-label="Freddy Bremseth prosjektnettverk" className="flex flex-wrap gap-x-4 gap-y-2 text-[10px] uppercase tracking-[0.16em] text-white/38">
-              <span className="text-[#d4af37]">Freddy Bremseth network</span>
+            <nav aria-label="Relaterte prosjekter" className="flex flex-wrap gap-x-4 gap-y-2 text-[10px] uppercase tracking-[0.16em] text-white/38">
+              <span className="text-[#d4af37]">Relatert</span>
               <a href="https://www.freddybremseth.com/">FreddyBremseth.com</a>
-              <a href="https://www.zenecohomes.com/">Zen Eco Homes</a>
               <a href="https://www.pinosoecolife.com/">Pinoso Eco Life</a>
-              <a href="https://www.chatgenius.pro/">ChatGenius</a>
               <a href="https://books.freddybremseth.com/">Books</a>
-              <a href="https://art.freddybremseth.com/">Art</a>
-              <a href="https://remaster.freddybremseth.com/">Re-Master Freddy</a>
             </nav>
           </div>
         </div>

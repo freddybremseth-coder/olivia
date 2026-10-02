@@ -92,7 +92,7 @@ export default async function handler(
         name: config.heading,
         description: config.description,
         isPartOf: { '@id': SITE + '/#website' },
-        creator: { '@id': 'https://www.freddybremseth.com/#person' },
+        creator: { '@id': SITE + '/#organization' },
         publisher: { '@id': SITE + '/#organization' },
       },
       {
@@ -100,7 +100,16 @@ export default async function handler(
         '@id': SITE + '/#organization',
         name: 'Doña Anna',
         url: SITE + '/',
-        founder: { '@id': 'https://www.freddybremseth.com/#person' },
+        member: [
+          { '@id': SITE + '/#anna-bremseth' },
+          { '@id': 'https://www.freddybremseth.com/#person' },
+        ],
+      },
+      {
+        '@type': 'Person',
+        '@id': SITE + '/#anna-bremseth',
+        name: 'Anna Bremseth',
+        affiliation: { '@id': SITE + '/#organization' },
       },
       {
         '@type': 'Person',
@@ -131,29 +140,26 @@ export default async function handler(
     '@media(max-width:640px){header nav a:nth-child(n+4){display:none}.card img{height:190px}.hero{padding-top:64px}}';
   const html = '<!doctype html><html lang="no"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-    '<title>' + escapeHtml(config.heading) + ' | Doña Anna · Freddy Bremseth</title>' +
+    '<title>' + escapeHtml(config.heading) + ' | Doña Anna</title>' +
     '<meta name="description" content="' + escapeHtml(config.description) + '">' +
     '<link rel="canonical" href="' + canonical + '">' +
     '<meta property="og:type" content="website"><meta property="og:site_name" content="Doña Anna">' +
     '<meta property="og:url" content="' + canonical + '">' +
-    '<meta property="og:title" content="' + escapeHtml(config.heading) + ' | Doña Anna · Freddy Bremseth"><meta name="author" content="Freddy Bremseth">' +
+    '<meta property="og:title" content="' + escapeHtml(config.heading) + ' | Doña Anna"><meta name="author" content="Doña Anna">' +
     '<script type="application/ld+json">' + JSON.stringify(schema).replace(/</g, '\\u003c') + '</script>' +
     '<style>' + css + '</style></head><body>' +
-    '<header><nav><a href="/">DOÑA ANNA</a><a href="/magasin">Magasin</a>' +
-    '<a href="/artikler">Artikler</a><a href="/blogg">Blogg</a><a href="/oppskrifter">Oppskrifter</a><a href="/#tasting">Smaksprøve</a></nav></header>' +
-    '<section class="hero"><div class="hero-inner"><p class="eyebrow">Doña Anna · kunnskap</p><h1>' + escapeHtml(config.heading) + '</h1><p class="intro">' + escapeHtml(config.description) + '</p><div class="direct"><strong>Kort fortalt:</strong> ' + escapeHtml(config.description) + '</div><p class="byline">Redaksjonelt innhold fra Doña Anna · <a href="https://www.freddybremseth.com/olivenolje-og-dona-anna.html">Freddy Bremseth</a></p></div></section>' +
+    '<header><nav><a href="/">DOÑA ANNA</a><a href="/guider">Guider</a><a href="/magasin">Magasin</a>' +
+    '<a href="/artikler">Artikler</a><a href="/blogg">Blogg</a><a href="/oppskrifter">Oppskrifter</a><a href="/#tasting">Kontakt</a></nav></header>' +
+    '<section class="hero"><div class="hero-inner"><p class="eyebrow">Doña Anna · kunnskap</p><h1>' + escapeHtml(config.heading) + '</h1><p class="intro">' + escapeHtml(config.description) + '</p><div class="direct"><strong>Kort fortalt:</strong> ' + escapeHtml(config.description) + '</div><p class="byline">Redaksjonelt innhold fra Doña Anna · <a href="/om-dona-anna">Anna og Freddy Bremseth</a></p></div></section>' +
     '<main>' +
     (cards ? '<section class="cards" aria-label="' + escapeHtml(config.label) + '">' + cards + '</section>'
       : '<p>Her finner du publiserte saker når de er klare.</p>') +
-    '<section class="journey"><h2>Fra kunnskap til neste steg</h2><p>Les videre om opprinnelse og tidlig høsting, se produktene eller be om smaksprøve dersom du vurderer Doña Anna for restaurant, hotell, butikk eller import.</p><div class="journey-links"><a href="/#portfolio">Se produktene</a><a href="/#tasting">Be om smaksprøve</a><a href="/#estate">Gården i Biar</a></div><nav class="guides" aria-label="Doña Anna guider"><a href="/olivenolje-fra-biar">Olivenolje fra Biar</a><a href="/tidlig-hostet-olivenolje">Tidlig høstet olivenolje</a><a href="/olivenolje-for-restauranter">For restauranter</a><a href="/bordoliven-fra-biar">Bordoliven fra Biar</a></nav></section>' +
-    '</main><footer class="network"><strong>Freddy Bremseth network</strong>' +
+    '<section class="journey"><h2>Fra kunnskap til neste steg</h2><p>Les videre om opprinnelse og tidlig høsting, se Verde Vivo eller meld interesse for smaksprøve dersom du vurderer Doña Anna for restaurant, hotell, butikk eller import.</p><div class="journey-links"><a href="/#portfolio">Se Verde Vivo</a><a href="/#tasting">Meld interesse</a><a href="/#estate">Gården i Biar</a></div><nav class="guides" aria-label="Doña Anna guider"><a href="/olivenolje-fra-biar">Olivenolje fra Biar</a><a href="/tidlig-hostet-olivenolje">Tidlig høstet olivenolje</a><a href="/olivenolje-for-restauranter">For restauranter</a><a href="/bordoliven-fra-biar">Bordoliven – planlagt</a></nav></section>' +
+    '</main><footer class="network"><strong>Relatert</strong>' +
+    '<a href="/om-dona-anna">Om Doña Anna</a>' +
     '<a href="https://www.freddybremseth.com/">FreddyBremseth.com</a>' +
-    '<a href="https://www.zenecohomes.com/">Zen Eco Homes</a>' +
     '<a href="https://www.pinosoecolife.com/">Pinoso Eco Life</a>' +
-    '<a href="https://www.chatgenius.pro/">ChatGenius</a>' +
-    '<a href="https://books.freddybremseth.com/">Books</a>' +
-    '<a href="https://art.freddybremseth.com/">Art</a>' +
-    '<a href="https://remaster.freddybremseth.com/">Re-Master Freddy</a></footer></body></html>';
+    '<a href="/personvern">Personvern</a></footer><script src="/donaanna-analytics.js" defer></script></body></html>';
 
   res.writeHead(200, {
     'Content-Type': 'text/html; charset=utf-8',

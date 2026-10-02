@@ -85,6 +85,18 @@
       "destination": "/api/public-evergreen?page=bordoliven-fra-biar"
     },
     {
+      "source": "/personvern",
+      "destination": "/api/public-evergreen?page=personvern"
+    },
+    {
+      "source": "/om-dona-anna",
+      "destination": "/api/public-evergreen?page=om-dona-anna"
+    },
+    {
+      "source": "/guider",
+      "destination": "/api/public-evergreen?page=guider"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
