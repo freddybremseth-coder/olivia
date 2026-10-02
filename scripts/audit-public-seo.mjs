@@ -43,7 +43,8 @@ if (!landing.includes("name.trim().toLowerCase() === 'verde vivo'")) fail('Publi
 if (!landing.includes('VERDE VIVO · 500 ml')) fail('Visible product card must match the approved current format.');
 if (!landing.includes('href="/verde-vivo"')) fail('Homepage product card must link to the dedicated Verde Vivo page.');
 if (!commerce.includes("public_site_approved === true")) fail('Live commerce data must require explicit public-site approval.');
-if (commerce.includes('/donaanna/product-design/')) fail('Public commerce service must not fall back to unapproved bottle imagery.');
+if (!commerce.includes("const BRAND_SAFE_FALLBACK = '/donaanna/olive-trees.jpg'")) fail('Public commerce service must retain a brand-safe image fallback.');
+if (!commerce.includes("!image.includes('/donaanna/product-design/')")) fail('Public commerce service must reject legacy product-design imagery.');
 if (landing.includes('DOÑA ANNA · VERDE ALTO') || landing.includes('Raíz Antigua') || landing.includes('Cocina Viva') || landing.includes('Doña Anna Mesa')) {
   fail('Unapproved product lines must not be marketed as current products.');
 }
