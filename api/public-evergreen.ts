@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http';
+import { DONA_ANNA_PRODUCTS, DONA_ANNA_PRODUCTS_BY_SLUG } from '../content/donaAnnaProducts';
 
 const SITE = 'https://www.donaanna.com';
 const FREDDY = 'https://www.freddybremseth.com/#person';
@@ -553,92 +554,38 @@ function pageHtml(page: EvergreenPage) {
     ],
   };
 
-  const productSchema: Record<string, { name: string; category: string; size?: string; role: string; status: string }> = {
-    'verde-vivo': {
-      name: 'Doña Anna Verde Vivo',
-      category: 'Olive Oil',
-      size: '500 ml',
-      role: 'Cosecha temprana / tidlig høstet olivenolje',
-      status: 'Produkt definert; batchdata og endelig kvalitetsklasse publiseres når produksjonen er dokumentert',
-    },
-    'verde-alto': {
-      name: 'Doña Anna Verde Alto',
-      category: 'Olive Oil',
-      role: 'Eget balansert olivenoljeprodukt i Doña Anna-porteføljen',
-      status: 'Produkt definert; etikett, format og batchdata publiseres etter godkjenning og produksjon',
-    },
-    'raiz-antigua': {
-      name: 'Doña Anna Raíz Antigua',
-      category: 'Olive Oil',
-      role: 'Heritage-produkt med egen opprinnelses- og batchfortelling',
-      status: 'Produkt definert; opprinnelse, etikett og batchpåstander dokumenteres før publisering',
-    },
-    'cocina-viva': {
-      name: 'Doña Anna Cocina Viva',
-      category: 'Olive Oil',
-      role: 'Produkt for restaurant, hotell og profesjonelle kjøkken',
-      status: 'Produkt definert; format, pris, etikett og levering bekreftes før tilgjengelighet',
-    },
-    'mesa-gordal-noble': {
-      name: 'Doña Anna Mesa · Gordal Noble',
-      category: 'Table Olives',
-      role: 'Planlagt bordolivenprodukt',
-      status: 'Planlagt; ikke tilgjengelig for salg før produkt, prosess, emballasje og lansering er dokumentert',
-    },
-  };
-  const productVisual: Record<string, { displayName: string; type: string; labelStatus: string; availability: string; context: string }> = {
-    'verde-vivo': {
-      displayName: 'Verde Vivo',
-      type: 'Tidlig høstet olivenolje',
-      labelStatus: 'Etikett verifisert · produktfoto venter',
-      availability: 'Produksjon og batchdata publiseres når de er dokumentert',
-      context: 'Cosecha temprana · 500 ml',
-    },
-    'verde-alto': {
-      displayName: 'Verde Alto',
-      type: 'Eget olivenoljeprodukt',
-      labelStatus: 'Etikett venter på godkjenning',
-      availability: 'Format, kvalitetsklasse og batchdata bekreftes per produksjon',
-      context: 'Balansert og bredt anvendelig posisjon',
-    },
-    'raiz-antigua': {
-      displayName: 'Raíz Antigua',
-      type: 'Eget heritage-produkt',
-      labelStatus: 'Etikett venter på godkjenning',
-      availability: 'Opprinnelse og batchpåstander dokumenteres før publisering',
-      context: 'Heritage · opprinnelse · egen produktfortelling',
-    },
-    'cocina-viva': {
-      displayName: 'Cocina Viva',
-      type: 'Produkt for profesjonelle kjøkken',
-      labelStatus: 'Etikett venter på godkjenning',
-      availability: 'Format, pris og levering bekreftes før lansering',
-      context: 'Restaurant · hotell · profesjonelt kjøkken',
-    },
-    'mesa-gordal-noble': {
-      displayName: 'Mesa · Gordal Noble',
-      type: 'Planlagt bordolivenprodukt',
-      labelStatus: 'Etikett og emballasje venter på godkjenning',
-      availability: 'Planlagt · ikke tilgjengelig for salg ennå',
-      context: 'Bordoliven · eget produktspor',
-    },
-  };
-  const product = productSchema[page.slug];
-  const visual = productVisual[page.slug];
+  const productDefinition = DONA_ANNA_PRODUCTS_BY_SLUG[page.slug];
+  const product = productDefinition
+    ? {
+        name: 'Doña Anna ' + productDefinition.name,
+        category: productDefinition.category,
+        size: productDefinition.size,
+        role: productDefinition.role,
+        status: productDefinition.status,
+      }
+    : undefined;
+  const visual = productDefinition
+    ? {
+        displayName: productDefinition.name,
+        type: productDefinition.typeLabel,
+        labelStatus: productDefinition.labelStatusText,
+        availability: productDefinition.availabilityText,
+        context: productDefinition.context,
+      }
+    : undefined;
 
   if (page.slug === 'produkter') {
     schema['@graph'].push({
       '@type': 'ItemList',
       '@id': canonical + '#products',
       name: 'Doña Anna produktlinje',
-      numberOfItems: 5,
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Verde Vivo', url: SITE + '/verde-vivo' },
-        { '@type': 'ListItem', position: 2, name: 'Verde Alto', url: SITE + '/verde-alto' },
-        { '@type': 'ListItem', position: 3, name: 'Raíz Antigua', url: SITE + '/raiz-antigua' },
-        { '@type': 'ListItem', position: 4, name: 'Cocina Viva', url: SITE + '/cocina-viva' },
-        { '@type': 'ListItem', position: 5, name: 'Mesa · Gordal Noble', url: SITE + '/mesa-gordal-noble' },
-      ],
+      numberOfItems: DONA_ANNA_PRODUCTS.length,
+      itemListElement: DONA_ANNA_PRODUCTS.map((item, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: item.name,
+        url: SITE + '/' + item.slug,
+      })),
     });
   }
 
@@ -668,13 +615,13 @@ function pageHtml(page: EvergreenPage) {
     '<details><summary>' + escapeHtml(item.question) + '</summary><p>' + escapeHtml(item.answer) + '</p></details>'
   ).join('');
 
-  const productHubCards = [
-    { slug: 'verde-vivo', name: 'Verde Vivo', type: 'Tidlig høstet olivenolje', role: 'Cosecha temprana · 500 ml', status: 'Etikett verifisert · produktfoto venter' },
-    { slug: 'verde-alto', name: 'Verde Alto', type: 'Eget olivenoljeprodukt', role: 'Balansert og bredt anvendelig posisjon', status: 'Etikett venter på godkjenning' },
-    { slug: 'raiz-antigua', name: 'Raíz Antigua', type: 'Eget heritage-produkt', role: 'Heritage · opprinnelse · egen produktfortelling', status: 'Etikett venter på godkjenning' },
-    { slug: 'cocina-viva', name: 'Cocina Viva', type: 'Profesjonelt kjøkken', role: 'Restaurant · hotell · profesjonell bruk', status: 'Etikett venter på godkjenning' },
-    { slug: 'mesa-gordal-noble', name: 'Mesa · Gordal Noble', type: 'Planlagt bordolivenprodukt', role: 'Bordoliven · eget produktspor', status: 'Planlagt · ikke tilgjengelig for salg ennå' },
-  ];
+  const productHubCards = DONA_ANNA_PRODUCTS.map(item => ({
+    slug: item.slug,
+    name: item.name,
+    type: item.typeLabel,
+    role: item.context,
+    status: item.availability === 'planned' ? item.availabilityText : item.labelStatusText,
+  }));
   const productHub = page.slug === 'produkter'
     ? '<section class="product-hub" aria-label="Doña Anna produktlinje"><div class="product-hub-grid">' +
       productHubCards.map(item =>

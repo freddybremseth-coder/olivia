@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase as supabaseOlivia } from './supabaseClient';
+import { canonicalDonaAnnaProductSlug, DONA_ANNA_PRODUCTS } from '../content/donaAnnaProducts';
 
 export interface PublicCommerceProduct {
   sku: string;
@@ -20,19 +21,7 @@ function text(value: unknown): string {
   return String(value || '').trim();
 }
 
-const PRODUCT_SLUGS: Record<string, string> = {
-  'verde vivo': 'verde-vivo',
-  'verde alto': 'verde-alto',
-  'raíz antigua': 'raiz-antigua',
-  'raiz antigua': 'raiz-antigua',
-  'cocina viva': 'cocina-viva',
-  'mesa · gordal noble': 'mesa-gordal-noble',
-  'mesa gordal noble': 'mesa-gordal-noble',
-};
-
-function canonicalProductSlug(name: unknown): string {
-  return PRODUCT_SLUGS[text(name).toLowerCase()] || '';
-}
+const canonicalProductSlug = canonicalDonaAnnaProductSlug;
 
 function productPhoto(row: any): { url: string; approved: boolean } {
   const image = text(row.image_url);
@@ -104,15 +93,9 @@ export async function fetchPublicCommerceProducts(): Promise<PublicCommerceProdu
     return [];
   }
 
-  const approvedNames = new Set([
-    'verde vivo',
-    'verde alto',
-    'raíz antigua',
-    'raiz antigua',
-    'cocina viva',
-    'mesa · gordal noble',
-    'mesa gordal noble',
-  ]);
+  const approvedNames = new Set(
+    DONA_ANNA_PRODUCTS.flatMap(product => [product.name.toLowerCase(), ...product.aliases])
+  );
 
   return (data || [])
     .filter((row: any) =>
