@@ -45,13 +45,68 @@ const imagePaths = {
   harvestClose: '/donaanna/farming-2.jpg',
 };
 
+type ProductMedia = {
+  slug: string;
+  approvedProductImage: string | null;
+  safeContextImage: string;
+  labelStatus: 'verified' | 'pending';
+  availability: 'current' | 'planned';
+};
+
+const PRODUCT_MEDIA: Record<string, ProductMedia> = {
+  'verde vivo': {
+    slug: 'verde-vivo',
+    approvedProductImage: null,
+    safeContextImage: imagePaths.harvestHands,
+    labelStatus: 'verified',
+    availability: 'current',
+  },
+  'verde alto': {
+    slug: 'verde-alto',
+    approvedProductImage: null,
+    safeContextImage: imagePaths.oliveGrove,
+    labelStatus: 'pending',
+    availability: 'current',
+  },
+  'raíz antigua': {
+    slug: 'raiz-antigua',
+    approvedProductImage: null,
+    safeContextImage: imagePaths.oliveGrove,
+    labelStatus: 'pending',
+    availability: 'current',
+  },
+  'cocina viva': {
+    slug: 'cocina-viva',
+    approvedProductImage: null,
+    safeContextImage: imagePaths.harvestClose,
+    labelStatus: 'pending',
+    availability: 'current',
+  },
+  'mesa · gordal noble': {
+    slug: 'mesa-gordal-noble',
+    approvedProductImage: null,
+    safeContextImage: imagePaths.harvestHands,
+    labelStatus: 'pending',
+    availability: 'planned',
+  },
+};
+
+const productMedia = (name: string): ProductMedia =>
+  PRODUCT_MEDIA[name.trim().toLowerCase()] || {
+    slug: 'produkter',
+    approvedProductImage: null,
+    safeContextImage: imagePaths.oliveGrove,
+    labelStatus: 'pending',
+    availability: 'planned',
+  };
+
 const portfolio = [
   {
     name: 'Verde Vivo',
     labelName: 'DOÑA ANNA · VERDE VIVO',
     format: '500 ml · Cosecha temprana',
     role: 'Tidlig høstet olivenolje · mål om extra virgin-kvalitet',
-    photo: imagePaths.oliveGrove,
+    photo: PRODUCT_MEDIA['verde vivo'].safeContextImage,
     text: 'Verde Vivo er produktet for tidlig høsting. Endelig kvalitetsklasse, sensorikk, analyse, høstedato og tilgjengelighet publiseres for den konkrete batchen.',
   },
   {
@@ -59,7 +114,7 @@ const portfolio = [
     labelName: 'DOÑA ANNA · VERDE ALTO',
     format: 'Olivenolje · format bekreftes per produksjon',
     role: 'Balansert premiumprodukt · egen produktidentitet',
-    photo: imagePaths.harvestHands,
+    photo: PRODUCT_MEDIA['verde alto'].safeContextImage,
     text: 'Verde Alto er et eget produkt i Doña Anna-porteføljen. Smaksprofil, format, kvalitetsklasse og batchdata skal beskrives ut fra den faktiske produksjonen – ikke gjenbrukes fra Verde Vivo.',
   },
   {
@@ -67,7 +122,7 @@ const portfolio = [
     labelName: 'DOÑA ANNA · RAÍZ ANTIGUA',
     format: 'Olivenolje · opprinnelse dokumenteres per batch',
     role: 'Heritage-produkt · egen produktidentitet',
-    photo: imagePaths.oliveGrove,
+    photo: PRODUCT_MEDIA['raíz antigua'].safeContextImage,
     text: 'Raíz Antigua er et separat olivenoljeprodukt med egen historie og etikett. Påstander om trær, sorter, smak og begrenset produksjon publiseres først når de kan knyttes til den konkrete batchen.',
   },
   {
@@ -75,7 +130,7 @@ const portfolio = [
     labelName: 'DOÑA ANNA · COCINA VIVA',
     format: 'Profesjonelt kjøkkenformat · størrelse bekreftes',
     role: 'Restaurant og profesjonelt kjøkken · egen produktidentitet',
-    photo: imagePaths.harvestClose,
+    photo: PRODUCT_MEDIA['cocina viva'].safeContextImage,
     text: 'Cocina Viva er Doña Annas separate produktspor for profesjonelle kjøkken. Format, pris, tekniske egenskaper og leveringsopplegg bekreftes før det markedsføres som tilgjengelig.',
   },
   {
@@ -83,21 +138,12 @@ const portfolio = [
     labelName: 'DOÑA ANNA · MESA · GORDAL NOBLE',
     format: 'Bordoliven · planlagt produkt',
     role: 'Aperitivo og bordoliven · ikke tilgjengelig ennå',
-    photo: imagePaths.harvestHands,
+    photo: PRODUCT_MEDIA['mesa · gordal noble'].safeContextImage,
     text: 'Mesa · Gordal Noble er et eget planlagt bordolivenprodukt. Det skal ikke fremstilles som lansert før råvare, prosess, format, etikett, pris og tilgjengelighet er endelig dokumentert.',
   },
 ];
 
-const PRODUCT_HREFS: Record<string, string> = {
-  'verde vivo': '/verde-vivo',
-  'verde alto': '/verde-alto',
-  'raíz antigua': '/raiz-antigua',
-  'cocina viva': '/cocina-viva',
-  'mesa · gordal noble': '/mesa-gordal-noble',
-  'mesa gordal noble': '/mesa-gordal-noble',
-};
-
-const productHref = (name: string) => PRODUCT_HREFS[name.trim().toLowerCase()] || '#portfolio';
+const productHref = (name: string) => '/' + productMedia(name).slug;
 
 const specs = [
   ['Produkt', 'Verde Vivo'],
@@ -457,10 +503,30 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <article key={item.name} className="group border border-white/10 bg-white/[0.035] p-4 transition hover:border-[#d4af37]/50">
                 <div className="grid gap-3">
                   <div className="relative flex h-72 items-center justify-center overflow-hidden bg-[#e9e1cf]">
-                    <img src="/labels/dona-anna-figure.svg" alt="" className="h-36 w-36 object-contain opacity-80" />
+                    {productMedia(item.name).approvedProductImage ? (
+                      <img
+                        src={productMedia(item.name).approvedProductImage as string}
+                        alt={`Doña Anna ${item.name}`}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <>
+                        <img src="/labels/dona-anna-figure.svg" alt="" className="h-36 w-36 object-contain opacity-80" />
+                        <div className="absolute inset-x-4 top-4 flex justify-end">
+                          <span className="border border-black/15 bg-white/75 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.16em] text-black/55">
+                            {productMedia(item.name).labelStatus === 'verified' ? 'Etikett verifisert · produktfoto venter' : 'Produktfoto venter på godkjent etikett'}
+                          </span>
+                        </div>
+                      </>
+                    )}
                     <div className="absolute bottom-5 left-5 right-5 border-t border-black/15 pt-4 text-center text-black">
                       <p className="font-serif text-2xl">DOÑA ANNA</p>
-                      <p className="mt-1 text-xs font-bold uppercase tracking-[0.2em]">VERDE VIVO · 500 ml</p>
+                      <p className="mt-1 text-xs font-bold uppercase tracking-[0.2em]">{item.name}</p>
+                      {productMedia(item.name).availability === 'planned' && (
+                        <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-black/55">Planlagt · ikke tilgjengelig ennå</p>
+                      )}
                     </div>
                   </div>
                 </div>
