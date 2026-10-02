@@ -200,6 +200,15 @@ if (evergreenDescriptions.length < 8 || evergreenDescriptions.some(value => valu
 }
 if (!evergreen.includes("'@type': 'FAQPage'")) fail('Evergreen pages must include FAQPage schema.');
 if (!evergreen.includes("const productSchema: Record<string") || !evergreen.includes("'@type': 'Product'")) fail('Distinct product pages must expose Product schema.');
+if (!evergreen.includes("additionalProperty: [") || !evergreen.includes("name: 'Produktrolle'") || !evergreen.includes("name: 'Status'")) {
+  fail('Product schema must expose product-specific role and status without collapsing products into variants.');
+}
+if (!evergreen.includes("page.slug === 'produkter'") || !evergreen.includes("name: 'Doña Anna produktlinje'") || !evergreen.includes("numberOfItems: 5")) {
+  fail('Products hub must expose a five-item structured product list.');
+}
+if (evergreen.includes("'isVariantOf'") || evergreen.includes('"isVariantOf"')) {
+  fail('Distinct Doña Anna products must never be modeled as variants of each other.');
+}
 if (!evergreen.includes("const productVisual: Record<string") || !evergreen.includes('Etikett verifisert · produktfoto venter')) {
   fail('Distinct product pages must expose product-specific visual/label status.');
 }
