@@ -6,6 +6,7 @@ export type DonaAnnaProductDefinition = {
   name: string;
   aliases: string[];
   category: 'Olive Oil' | 'Table Olives';
+  typeLabel: string;
   size?: string;
   role: string;
   status: string;
@@ -24,6 +25,7 @@ export const DONA_ANNA_PRODUCTS: DonaAnnaProductDefinition[] = [
     name: 'Verde Vivo',
     aliases: ['verde vivo'],
     category: 'Olive Oil',
+    typeLabel: 'Tidlig høstet olivenolje',
     size: '500 ml',
     role: 'Cosecha temprana / tidlig høstet olivenolje',
     status: 'Produkt definert; batchdata og endelig kvalitetsklasse publiseres når produksjonen er dokumentert',
@@ -40,6 +42,7 @@ export const DONA_ANNA_PRODUCTS: DonaAnnaProductDefinition[] = [
     name: 'Verde Alto',
     aliases: ['verde alto'],
     category: 'Olive Oil',
+    typeLabel: 'Eget olivenoljeprodukt',
     role: 'Eget balansert olivenoljeprodukt i Doña Anna-porteføljen',
     status: 'Produkt definert; etikett, format og batchdata publiseres etter godkjenning og produksjon',
     labelStatus: 'pending',
@@ -55,6 +58,7 @@ export const DONA_ANNA_PRODUCTS: DonaAnnaProductDefinition[] = [
     name: 'Raíz Antigua',
     aliases: ['raíz antigua', 'raiz antigua'],
     category: 'Olive Oil',
+    typeLabel: 'Eget heritage-produkt',
     role: 'Heritage-produkt med egen opprinnelses- og batchfortelling',
     status: 'Produkt definert; opprinnelse, etikett og batchpåstander dokumenteres før publisering',
     labelStatus: 'pending',
@@ -70,6 +74,7 @@ export const DONA_ANNA_PRODUCTS: DonaAnnaProductDefinition[] = [
     name: 'Cocina Viva',
     aliases: ['cocina viva'],
     category: 'Olive Oil',
+    typeLabel: 'Produkt for profesjonelle kjøkken',
     role: 'Produkt for restaurant, hotell og profesjonelle kjøkken',
     status: 'Produkt definert; format, pris, etikett og levering bekreftes før tilgjengelighet',
     labelStatus: 'pending',
@@ -85,6 +90,7 @@ export const DONA_ANNA_PRODUCTS: DonaAnnaProductDefinition[] = [
     name: 'Mesa · Gordal Noble',
     aliases: ['mesa · gordal noble', 'mesa gordal noble'],
     category: 'Table Olives',
+    typeLabel: 'Planlagt bordolivenprodukt',
     role: 'Planlagt bordolivenprodukt',
     status: 'Planlagt; ikke tilgjengelig for salg før produkt, prosess, emballasje og lansering er dokumentert',
     labelStatus: 'pending',
