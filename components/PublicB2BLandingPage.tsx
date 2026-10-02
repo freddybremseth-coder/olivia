@@ -33,7 +33,7 @@ const copy = {
   subhead: 'Doña Anna er vårt felles olivenprosjekt i Biar. Produktlinjen består av Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva som egne olivenoljeprodukter. Mesa · Gordal Noble er et eget bordolivenprodukt som foreløpig står som planlagt. Batchdata, analyser, format og tilgjengelighet publiseres per produkt når produksjonen er dokumentert.',
   cta: 'Meld interesse for smaksprøve',
   portal: 'B2B portal',
-  specTitle: 'Produktdata for Verde Vivo',
+  specTitle: 'Produktdata publiseres per produkt',
   traceTitle: 'Sporbarhet når batchen er klar',
   traceText: 'Når en batch er produsert og publisert, skal informasjon om høstedato, parsell, sort, sensorisk profil og analyseverdier knyttes til batchen.',
 };
@@ -146,12 +146,12 @@ const portfolio = [
 const productHref = (name: string) => '/' + productMedia(name).slug;
 
 const specs = [
-  ['Produkt', 'Verde Vivo'],
-  ['Format', '500 ml'],
-  ['Type', 'Tidlig høstet olivenolje · mål om extra virgin-kvalitet'],
+  ['Produkter', 'Verde Vivo · Verde Alto · Raíz Antigua · Cocina Viva · Mesa · Gordal Noble'],
+  ['Format', 'Oppgis separat for hvert produkt når emballasje er bekreftet'],
+  ['Kvalitetsklasse', 'Dokumenteres per oljeprodukt og batch før den publiseres som faktum'],
   ['Opprinnelse', 'Biar · Alicante · Spania'],
-  ['Sorter på gården', 'Genovesa · Gordal · Changlot Real · Picual'],
-  ['Batchdata', 'Høstedato, analyser og tilgjengelighet publiseres når produksjonen er klar'],
+  ['Etikett', 'Hvert produkt bruker sin egen godkjente etikett'],
+  ['Batchdata', 'Høstedato, analyse, sensorikk, pris og tilgjengelighet knyttes til riktig produkt og batch'],
 ];
 
 const b2bPackages = [
@@ -210,10 +210,10 @@ const estateMoments = [
 
 const livingTimeline = [
   ['Før høsting', 'Modning, vær og tilstanden i lunden vurderes før høstetidspunkt bestemmes.'],
-  ['Høsting', 'Verde Vivo er utviklet rundt tidlig høsting. Den konkrete høstedatoen publiseres per batch.'],
-  ['Mølle', 'Produksjonsdata fra møllen dokumenteres for den konkrete batchen når oljen er produsert.'],
-  ['Analyse', 'Analyseverdier og sensoriske notater publiseres først når resultatene foreligger.'],
-  ['Flaske', 'Verde Vivo tappes med Doña Annas faktiske etikett og batchinformasjon.'],
+  ['Høsting', 'Høstedato og råvaregrunnlag dokumenteres for det produktet og den batchen de faktisk gjelder.'],
+  ['Mølle', 'Produksjonsdata fra møllen knyttes til riktig oljeprodukt og konkret batch når oljen er produsert.'],
+  ['Analyse', 'Analyseverdier og sensoriske notater publiseres først når resultatene foreligger, produkt for produkt.'],
+  ['Emballasje', 'Hvert produkt bruker sin egen godkjente etikett, format og korrekte batchinformasjon.'],
 ];
 
 const knowledgeCards = [
@@ -427,13 +427,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <a href="#tasting" className="group border border-black/10 bg-white p-6 transition hover:-translate-y-1 hover:border-[#8a6a19]/55">
                   <Building2 size={24} className="text-[#8a6a19]" />
                   <h3 className="mt-8 font-serif text-3xl">Restaurant eller hotell</h3>
-                  <p className="mt-3 leading-7 text-black/62">Meld interesse for Verde Vivo 500 ml og få batchinformasjon når produksjonen er klar.</p>
+                  <p className="mt-3 leading-7 text-black/62">Velg produktet du er interessert i og få relevant batch- og produktinformasjon når den er klar.</p>
                   <span className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#8a6a19]">Be om smaksprøve <ArrowRight size={15} /></span>
                 </a>
                 <a href="#b2b" className="group border border-black/10 bg-white p-6 transition hover:-translate-y-1 hover:border-[#8a6a19]/55">
                   <Package size={24} className="text-[#8a6a19]" />
                   <h3 className="mt-8 font-serif text-3xl">Butikk eller import</h3>
-                  <p className="mt-3 leading-7 text-black/62">Verde Vivo, dokumentasjon, mulig distribusjon og videre dialog for faghandel.</p>
+                  <p className="mt-3 leading-7 text-black/62">Se de ulike produktene, dokumentasjonen og mulig distribusjon for faghandel og import.</p>
                   <span className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#8a6a19]">Se B2B-løsningen <ArrowRight size={15} /></span>
                 </a>
                 <a href="/tidlig-hostet-olivenolje" className="group border border-black/10 bg-white p-6 transition hover:-translate-y-1 hover:border-[#8a6a19]/55">
@@ -615,7 +615,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
         <section className="relative overflow-hidden bg-[#0d0d0d] py-24">
           <div className="absolute inset-0 opacity-24">
-            <img src={imagePaths.oliveGrove} alt="Doña Anna Verde Vivo i Biar" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+            <img src={imagePaths.oliveGrove} alt="Doña Anna olivenlund og råvare fra Biar" loading="lazy" decoding="async" className="h-full w-full object-cover" />
           </div>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,#0d0d0d,rgba(13,13,13,.78),#0d0d0d)]" />
           <div className="relative mx-auto grid max-w-7xl gap-10 px-5 md:grid-cols-[0.8fr_1.2fr] md:px-8">
@@ -664,12 +664,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <div className="flex items-center justify-between border-b border-white/10 pb-5">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#d4af37]">Batchpass</p>
-                  <h3 className="mt-1 font-serif text-3xl">Verde Vivo · tidlig høst</h3>
+                  <h3 className="mt-1 font-serif text-3xl">Produktspesifikt batchpass</h3>
                 </div>
                 <QrCode className="text-[#d4af37]" size={34} />
               </div>
               <div className="grid gap-3 py-6 sm:grid-cols-2">
                 {[
+                  ['Produkt', 'Velges per produkt'],
                   ['Parsell', signal.heroMetric],
                   ['Høsting', signal.latestHarvestDate || 'Oktober-november'],
                   ['Sort', 'Publiseres per batch'],
@@ -695,7 +696,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#d4af37]">For restauranter og innkjøpere</p>
               <h2 className="mt-2 font-serif text-3xl md:text-4xl">Smak før du bestemmer deg.</h2>
-              <p className="mt-2 max-w-2xl text-white/62">Meld interesse for Verde Vivo. Vi bekrefter smaksprøve, produktark, pris og levering når første batch er klar.</p>
+              <p className="mt-2 max-w-2xl text-white/62">Velg produktet du er interessert i. Vi bekrefter smaksprøve, produktark, pris og levering når den aktuelle produksjonen er klar.</p>
             </div>
             <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
               {copy.cta} <ArrowRight size={17} />
@@ -712,7 +713,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               </div>
               <div className="self-end">
                 <p className="text-lg leading-8 text-black/66">
-                  For kjøkken, butikk og import samler Doña Anna dokumentasjon rundt Verde Vivo. Smaksprøve, pris og levering bekreftes når den faktiske batchen er klar.
+                  For kjøkken, butikk og import samler Doña Anna dokumentasjon separat for hvert produkt. Smaksprøve, pris, format, produktark og levering bekreftes for riktig produkt og batch.
                 </p>
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                   <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-black px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-[#8a6a19]">
@@ -780,7 +781,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             </div>
             <div className="self-end">
               <p className="text-lg leading-8 text-white/66">
-                Anna Bremseth og Freddy Bremseth driver Doña Anna sammen. Prosjektet handler om gården, oliventrærne, Verde Vivo, produksjonen og å bygge en langsiktig merkevare med tydelig opprinnelse i Biar.
+                Anna Bremseth og Freddy Bremseth driver Doña Anna sammen. Prosjektet handler om gården, oliventrærne og en portefølje med egne produkter, etiketter og bruksområder – bygget som én langsiktig merkevare med tydelig opprinnelse i Biar.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <a href="/om-dona-anna" className="inline-flex h-11 items-center justify-center border border-white/16 px-5 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:border-[#d4af37]">Anna & Freddy · om prosjektet</a>
@@ -796,7 +797,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">Smaksprøve</p>
               <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Meld interesse for smaksprøve.</h2>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-black/66">
-                Restauranter, hoteller, butikker og distributører kan melde interesse for Verde Vivo. Vi svarer med tilgjengelighet, batchdata, produktark, pris og levering når produksjonen er klar.
+                Restauranter, hoteller, butikker og distributører kan velge hvilket Doña Anna-produkt de er interessert i. Vi svarer med relevant tilgjengelighet, batchdata, produktark, pris og levering når opplysningene er klare.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a href="mailto:info@donaanna.com?subject=Produktark%20Do%C3%B1a%20Anna" className="inline-flex items-center gap-2 border border-black/15 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em]">
