@@ -23,6 +23,8 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+      - name: Validate public measurement script
+        run: node --check public/donaanna-analytics.js
       - name: Compile public SEO handlers
         run: |
           npx esbuild api/public-article.ts api/public-listing.ts api/public-evergreen.ts api/sitemap.ts api/realtyflow/publish.ts \
