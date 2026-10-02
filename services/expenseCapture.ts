@@ -104,30 +104,7 @@ function normalizeCategory(value: string): ExpenseCategory {
   return 'annet';
 }
 
-export async function analyzeExpenseDocument(file: File): Promise<ExpenseScanResult> {
-  const b64 = await fileToBase64(file);
-  const mimeType = file.type || 'application/octet-stream';
-  const response = await fetch('/api/ai/gemini/v1beta/models/gemini-2.5-flash:generateContent', {
-    method: 'POST',
-    headers: await authHeaders(),
-    body: JSON.stringify({
-      contents: [{
-        parts: [
-          { inlineData: { mimeType, data: b64 } },
-          { text: EXPENSE_PROMPT },
-        ],
-      }],
-      generationConfig: { responseMimeType: 'application/json' },
-    }),
-  });
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error?.error?.message || `AI-analyse feilet (HTTP ${response.status})`);
-  }
-  const payload = await response.json();
-  const text = payload?.candidates?.[0]?.content?.parts?.map((part: any) => part.text || '').join('\n');
-  if (!text) throw new Error('AI returnerte ikke lesbare bilagsdata.');
-  const raw = extractJson(text);
+function normalizeExpenseScan(raw: any): ExpenseScanResult {
   const total = Number(raw.totalAmount ?? raw.amount ?? 0);
   return {
     vendor: String(raw.vendor || raw.supplier || 'Ukjent leverandør'),
@@ -148,6 +125,115 @@ export async function analyzeExpenseDocument(file: File): Promise<ExpenseScanRes
     confidence: Number(raw.confidence || 0),
     note: raw.note ? String(raw.note) : '',
   };
+}
+
+function aiErrorMessage(payload: any, status: number, provider: string): string {
+  const message =
+    payload?.error?.message ||
+    (typeof payload?.error === 'string' ? payload.error : '') ||
+    payload?.message ||
+    '';
+  return message ? `${provider}: ${message}` : `${provider}: HTTP ${status}`;
+}
+
+async function analyzeWithGemini(b64: string, mimeType: string): Promise<any> {
+  const response = await fetch('/api/ai/gemini/v1beta/models/gemini-2.5-flash:generateContent', {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { inlineData: { mimeType, data: b64 } },
+          { text: EXPENSE_PROMPT },
+        ],
+      }],
+      generationConfig: { responseMimeType: 'application/json' },
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(aiErrorMessage(payload, response.status, 'Gemini'));
+  const text = payload?.candidates?.[0]?.content?.parts?.map((part: any) => part.text || '').join('\n');
+  if (!text) throw new Error('Gemini: tom respons.');
+  return extractJson(text);
+}
+
+async function analyzeWithClaude(b64: string, mimeType: string): Promise<any> {
+  const content = mimeType === 'application/pdf'
+    ? [
+        { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } },
+        { type: 'text', text: EXPENSE_PROMPT + '\n\nSvar KUN med gyldig JSON.' },
+      ]
+    : [
+        { type: 'image', source: { type: 'base64', media_type: mimeType || 'image/jpeg', data: b64 } },
+        { type: 'text', text: EXPENSE_PROMPT + '\n\nSvar KUN med gyldig JSON.' },
+      ];
+
+  const response = await fetch('/api/ai/anthropic/v1/messages', {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 2500,
+      temperature: 0,
+      messages: [{ role: 'user', content }],
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(aiErrorMessage(payload, response.status, 'Claude'));
+  const text = Array.isArray(payload?.content) ? payload.content.map((part: any) => part.text || '').join('\n') : '';
+  if (!text) throw new Error('Claude: tom respons.');
+  return extractJson(text);
+}
+
+async function analyzeWithOpenAI(b64: string, mimeType: string): Promise<any> {
+  if (mimeType === 'application/pdf') throw new Error('OpenAI: PDF brukes ikke i denne fallback-ruten.');
+  const response = await fetch('/api/ai/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      max_tokens: 2500,
+      response_format: { type: 'json_object' },
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${b64}` } },
+          { type: 'text', text: EXPENSE_PROMPT + '\n\nSvar KUN med gyldig JSON.' },
+        ],
+      }],
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(aiErrorMessage(payload, response.status, 'OpenAI'));
+  const text = payload?.choices?.[0]?.message?.content || '';
+  if (!text) throw new Error('OpenAI: tom respons.');
+  return extractJson(text);
+}
+
+export async function analyzeExpenseDocument(file: File): Promise<ExpenseScanResult> {
+  const b64 = await fileToBase64(file);
+  const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+  const errors: string[] = [];
+
+  for (const attempt of [
+    () => analyzeWithGemini(b64, mimeType),
+    () => analyzeWithClaude(b64, mimeType),
+    ...(mimeType === 'application/pdf' ? [] : [() => analyzeWithOpenAI(b64, mimeType)]),
+  ]) {
+    try {
+      const raw = await attempt();
+      const normalized = normalizeExpenseScan(raw);
+      if (normalized.totalAmount > 0 || normalized.vendor !== 'Ukjent leverandør') return normalized;
+      errors.push('AI svarte, men fant ingen brukbare bilagsdata.');
+    } catch (error) {
+      errors.push(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  throw new Error(
+    'AI klarte ikke å lese bilaget. ' +
+    errors.join(' | ')
+  );
 }
 
 async function authHeaders(): Promise<Record<string,string>> {
