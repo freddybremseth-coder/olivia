@@ -33,6 +33,9 @@ function getSupabase() {
 export default async function handler(_req: IncomingMessage, res: ServerResponse) {
   const staticPaths = [
     '/',
+    '/guider',
+    '/om-dona-anna',
+    '/personvern',
     '/olivenolje-fra-biar',
     '/tidlig-hostet-olivenolje',
     '/olivenolje-for-restauranter',
