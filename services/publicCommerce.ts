@@ -1,4 +1,4 @@
-import { isSupabaseConfigured, supabaseOlivia } from './supabaseClient';
+import { isSupabaseConfigured, supabase as supabaseOlivia } from './supabaseClient';
 
 export interface PublicCommerceProduct {
   sku: string;
