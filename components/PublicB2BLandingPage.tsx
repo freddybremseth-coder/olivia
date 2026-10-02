@@ -267,6 +267,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   useEffect(() => {
     fetchPublicEstateSignal().then(setSignal);
     fetchPublicCommerceProducts().then(setLivePortfolio);
+
+    const productParam = new URLSearchParams(window.location.search).get('product');
+    const productNames: Record<string, string> = {
+      'verde-vivo': 'Verde Vivo',
+      'verde-alto': 'Verde Alto',
+      'raiz-antigua': 'Raíz Antigua',
+      'cocina-viva': 'Cocina Viva',
+      'mesa-gordal-noble': 'Mesa · Gordal Noble (planlagt)',
+    };
+    if (productParam && productNames[productParam]) {
+      setTastingRequest(current => ({ ...current, product: productNames[productParam] }));
+    }
   }, []);
 
   const approvedNames = new Set(['verde vivo', 'verde alto', 'raíz antigua', 'raiz antigua', 'cocina viva', 'mesa · gordal noble', 'mesa gordal noble']);
@@ -289,7 +301,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
   const navLinks = [
     ['Gården', '#estate'],
-    ['Produkter', '#portfolio'],
+    ['Produkter', '/produkter'],
     ['Kunnskap', '#knowledge'],
     ['Guider', '/guider'],
     ['Magasin', '/magasin'],
@@ -359,7 +371,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 {copy.cta} <ArrowRight size={17} />
               </a>
               <a href="#portfolio" className="inline-flex h-12 items-center justify-center gap-2 border border-white/18 px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-white/8">
-                Se kolleksjonen
+                Se produktene
               </a>
               <a href="#b2b" className="inline-flex h-12 items-center justify-center gap-2 border border-[#d4af37]/60 px-6 text-xs font-bold uppercase tracking-[0.2em] text-[#f7f1df] transition hover:bg-[#d4af37] hover:text-black">
                 For restaurant og faghandel <Building2 size={16} />

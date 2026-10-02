@@ -212,14 +212,28 @@ if (!routeRewrites.some((row) => row.source === '/sitemap.xml' && String(row.des
 }
 if (!analytics.includes('/api/public/search-discovery')) fail('Public measurement must capture privacy-minimal search/AI arrivals.');
 if (!analytics.includes('/api/public/conversion-event')) fail('Public measurement must capture coarse CTA progression.');
-for (const target of ['tasting_interest','tasting_request_submitted','verde_vivo','restaurant_guide','guide_hub','b2b_portal']) {
+for (const target of [
+  'tasting_interest','product_portfolio','product_hub',
+  'verde_vivo','verde_alto','raiz_antigua','cocina_viva','mesa_gordal_noble',
+  'tasting_request_verde_vivo','tasting_request_verde_alto','tasting_request_raiz_antigua',
+  'tasting_request_cocina_viva','tasting_request_mesa_gordal_noble',
+  'restaurant_guide','guide_hub','b2b_portal'
+]) {
   if (!analytics.includes(target)) fail('Public measurement missing coarse CTA target ' + target);
 }
 if (!analytics.includes('addEventListener("submit"') || !analytics.includes('tasting-request-form')) {
   fail('Public measurement must distinguish actual tasting request submission from CTA interest.');
 }
-if (analytics.includes('tastingRequest') || analytics.includes('email.value') || analytics.includes('company.value')) {
-  fail('Public measurement must never read visitor form values.');
+if (analytics.includes('tastingRequest') || analytics.includes('email.value') || analytics.includes('company.value') || analytics.includes('address.value')) {
+  fail('Public measurement must never read visitor personal/contact form values.');
+}
+if (!analytics.includes('productSubmissionTargets') || !analytics.includes('#tasting-product')) {
+  fail('Public measurement must classify tasting submissions by coarse product category only.');
+}
+for (const productQuery of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva']) {
+  if (!evergreen.includes('/?product=' + productQuery + '#tasting')) {
+    fail('Product page must preserve product context into tasting journey: ' + productQuery);
+  }
 }
 if (!index.includes('/donaanna-analytics.js') || !evergreen.includes('/donaanna-analytics.js') || !article.includes('/donaanna-analytics.js') || !listing.includes('/donaanna-analytics.js')) {
   fail('All public surfaces must load the privacy-minimal measurement layer.');
