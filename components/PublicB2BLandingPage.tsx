@@ -263,7 +263,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       </nav>
 
       <header id="top" className="relative min-h-screen overflow-hidden">
-        <img src={imagePaths.heroChefWide} alt="Doña Anna olivenlund i Biar, Alicante" className="absolute inset-0 h-full w-full object-cover opacity-42" />
+        <img src={imagePaths.heroChefWide} alt="Doña Anna olivenlund i Biar, Alicante" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-42" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_42%,rgba(212,175,55,.16),transparent_34%),linear-gradient(90deg,rgba(13,13,13,.98),rgba(13,13,13,.78),rgba(13,13,13,.42))]" />
         <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col justify-end px-5 pb-12 pt-28 md:px-8">
           <div className="max-w-4xl animate-in fade-in duration-700">
@@ -371,7 +371,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
         <section id="estate" className="relative overflow-hidden border-y border-white/10 bg-[#111111] py-24">
           <div className="absolute inset-y-0 right-0 hidden w-1/2 md:block">
-            <img src="/donaanna/olive-trees.jpg" alt="Doña Anna olivenlund i Biar" className="h-full w-full object-cover opacity-38" />
+            <img src="/donaanna/olive-trees.jpg" alt="Doña Anna olivenlund i Biar" loading="lazy" decoding="async" className="h-full w-full object-cover opacity-38" />
             <div className="absolute inset-0 bg-[linear-gradient(90deg,#111111,rgba(17,17,17,.42),rgba(17,17,17,.72))]" />
           </div>
           <div className="relative mx-auto max-w-7xl px-5 md:px-8">
@@ -465,7 +465,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               {knowledgeCards.map(card => (
                 <article key={card.title} className="group overflow-hidden border border-black/10 bg-white">
                   <div className="h-56 overflow-hidden bg-black">
-                    <img src={card.image} alt={card.imageAlt} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                    <img src={card.image} alt={card.imageAlt} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
                   </div>
                   <div className="p-6">
                     <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#8a6a19]">{card.kicker}</p>
@@ -477,7 +477,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             </div>
             <div className="mt-10 grid gap-5 border border-black/10 bg-[#111111] p-5 text-white lg:grid-cols-[0.82fr_1.18fr]">
               <div className="relative min-h-[360px] overflow-hidden">
-                <img src={imagePaths.donaAnnaPouringBread} alt="Doña Anna olivenolje helles over brød" className="absolute inset-0 h-full w-full object-cover opacity-72" />
+                <img src={imagePaths.donaAnnaPouringBread} alt="Doña Anna olivenolje helles over brød" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-72" />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.78))]" />
                 <div className="absolute bottom-0 p-6">
                   <Sparkles className="text-[#d4af37]" size={26} />
@@ -503,7 +503,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
         <section className="relative overflow-hidden bg-[#0d0d0d] py-24">
           <div className="absolute inset-0 opacity-24">
-            <img src={imagePaths.verdeVivoHero} alt="Doña Anna Verde Vivo i Biar" className="h-full w-full object-cover" />
+            <img src={imagePaths.verdeVivoHero} alt="Doña Anna Verde Vivo i Biar" loading="lazy" decoding="async" className="h-full w-full object-cover" />
           </div>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,#0d0d0d,rgba(13,13,13,.78),#0d0d0d)]" />
           <div className="relative mx-auto grid max-w-7xl gap-10 px-5 md:grid-cols-[0.8fr_1.2fr] md:px-8">
@@ -617,7 +617,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               {b2bPackages.map(item => (
                 <article key={item.title} className="border border-black/10 bg-white">
                   <div className="h-64 overflow-hidden bg-black">
-                    <img src={item.image} alt={item.imageAlt} className="h-full w-full object-cover transition duration-700 hover:scale-105" />
+                    <img src={item.image} alt={item.imageAlt} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-700 hover:scale-105" />
                   </div>
                   <div className="p-6">
                     <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#8a6a19]">{item.audience}</p>
