@@ -204,13 +204,21 @@ export function onAuthChange(
   onPasswordRecovery?: () => void,
 ): () => void {
   if (!isSupabaseConfigured) return () => {};
-  const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+  let active = true;
+  let revision = 0;
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    const currentRevision = ++revision;
     if (event === 'PASSWORD_RECOVERY') onPasswordRecovery?.();
     if (!session?.user) { callback(null); return; }
-    const result = await profileOrFallback(session.user, session.user.email ?? '');
-    callback(result);
+    // Finish the Auth callback before profile queries request the same session lock.
+    setTimeout(() => {
+      if (!active || currentRevision !== revision) return;
+      profileOrFallback(session.user, session.user.email ?? '').then(result => {
+        if (active && currentRevision === revision) callback(result);
+      }).catch(error => console.warn('[auth] profile resolution failed', error));
+    }, 0);
   });
-  return () => data.subscription.unsubscribe();
+  return () => { active = false; data.subscription.unsubscribe(); };
 }
 
 function translateAuthError(message: string): string {

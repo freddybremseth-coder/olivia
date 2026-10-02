@@ -14,9 +14,11 @@ interface LoginModalProps {
   onLogin: (user: StoredUser, isAdmin: boolean) => void;
   defaultMode?: 'login' | 'register';
   allowRegister?: boolean;
+  portalContext?: 'b2b' | 'olivia';
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode = 'login', allowRegister = true }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode = 'login', allowRegister = true, portalContext = 'olivia' }) => {
+  const portalName = portalContext === 'b2b' ? 'Doña Anna B2B Portal' : 'Olivia OS';
   const [mode, setMode] = useState<'login' | 'register' | 'reset'>(defaultMode === 'register' && !allowRegister ? 'login' : defaultMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -87,7 +89,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center">
             <Sprout size={20} className="text-black" />
           </div>
-          <h1 className="text-xl font-bold text-white">Olivia <span className="text-green-400">AI</span></h1>
+          <h1 className="text-xl font-bold text-white">{portalName}</h1>
         </div>
 
         {/* Config missing banner (surfaces the real cause of "spinner hangs forever") */}
@@ -217,7 +219,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin, defaultMode =
             {loading && <Loader2 size={16} className="animate-spin" />}
             {loading
               ? (mode === 'login' ? 'Logger inn...' : mode === 'register' ? 'Oppretter konto...' : 'Sender e-post...')
-              : (mode === 'login' ? 'Logg inn' : mode === 'register' ? 'Opprett konto' : 'Send tilbakestillingslenke')}
+              : (mode === 'login' ? `Logg inn i ${portalName}` : mode === 'register' ? 'Opprett B2B-konto' : 'Send tilbakestillingslenke')}
           </button>
         </div>
 

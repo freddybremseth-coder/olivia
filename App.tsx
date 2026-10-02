@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import LandingPage from './components/PublicB2BLandingPage';
 import LoginModal, { StoredUser } from './components/LoginModal';
 import ResetPasswordPage from './components/ResetPasswordPage';
@@ -44,14 +44,13 @@ const DonaAnnaDailyDashboard = lazy(() => import('./components/DonaAnnaDailyDash
 const CommerceHub = lazy(() => import('./components/CommerceHub'));
 const ProfitabilityPage = lazy(() => import('./pages/Profitability'));
 
-const OWNER_EMAILS = ['freddy.bremseth@gmail.com'];
+import { portalForPath, resolvePortalNavigation, type PortalMode } from './services/portalRouting';
 
 function isRecoveryUrl(): boolean {
   if (typeof window === 'undefined') return false;
   return /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
 }
 
-const LEGACY_APP_PATH = '/app';
 const B2B_PORTAL_PATH = '/b2b';
 const OLIVIA_OS_PATH = '/olivia';
 
@@ -61,11 +60,11 @@ function currentPath(): string {
 }
 
 function isB2BUrl(): boolean {
-  return currentPath() === B2B_PORTAL_PATH;
+  return portalForPath(currentPath()) === 'b2b';
 }
 
 function isOliviaUrl(): boolean {
-  return currentPath() === OLIVIA_OS_PATH || currentPath() === LEGACY_APP_PATH;
+  return portalForPath(currentPath()) === 'olivia';
 }
 
 function isPortalUrl(): boolean {
@@ -85,16 +84,6 @@ function getTraceSlug(): string | undefined {
   if (typeof window === 'undefined') return undefined;
   const parts = window.location.pathname.split('/').filter(Boolean);
   return parts[0] === 'trace' ? parts[1] : undefined;
-}
-
-function isOwnerEmail(email?: string): boolean {
-  return !!email && OWNER_EMAILS.includes(email.trim().toLowerCase());
-}
-
-function resolvePostLoginTab(targetTab: string, storedUser: Pick<UserProfile, 'email'>, admin: boolean): string {
-  if (isOwnerEmail(storedUser.email)) return 'dashboard';
-  if (targetTab === 'admin' && !admin) return 'dashboard';
-  return targetTab;
 }
 
 function PublicMobileLoginDock({ onLogin, onAdminLogin }: { onLogin: () => void; onAdminLogin: () => void }) {
@@ -121,6 +110,10 @@ const App: React.FC = () => {
   const [showLogin, setShowLogin] = useState(() => isPortalUrl() && !isRecoveryUrl());
   const [loginDefaultMode, setLoginDefaultMode] = useState<'login' | 'register'>('login');
   const [postLoginTab, setPostLoginTab] = useState(() => isB2BUrl() ? 'b2b_portal' : 'dashboard');
+  const navigationRef = useRef(isB2BUrl() ? 'b2b_portal' : 'dashboard');
+  const [portalMode, setPortalMode] = useState<PortalMode>(() => isB2BUrl() ? 'b2b' : 'olivia');
+  const [authReady, setAuthReady] = useState(false);
+  const [parcelError, setParcelError] = useState('');
   const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(isRecoveryUrl);
   const [weatherData, setWeatherData] = useState<any>(null);
   const [locationName] = useState(BIAR_DEFAULT_LOCATION_NAME);
@@ -131,12 +124,41 @@ const App: React.FC = () => {
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [, setParcelsLoaded] = useState(false);
 
+  const activateTab = (target: string, profile = user) => {
+    const next = resolvePortalNavigation(target, profile.role, portalForPath(currentPath()) ?? portalMode);
+    navigationRef.current = next.tab;
+    setPostLoginTab(next.portal === 'b2b' ? 'b2b_portal' : 'dashboard');
+    setActiveTab(next.tab);
+    setPortalMode(next.portal);
+    if (currentPath() !== next.path) window.history.replaceState({}, '', next.path);
+  };
+
   useEffect(() => {
-    if (showPublicSite || isTraceUrl() || !isLoggedIn) {
+    const onPopState = () => {
+      const portal = portalForPath(currentPath());
+      setShowPublicSite(!portal);
+      if (portal) {
+        const target = portal === 'b2b' ? 'b2b_portal' : 'dashboard';
+        navigationRef.current = target;
+        setPostLoginTab(target);
+        setPortalMode(portal);
+        if (isLoggedIn) activateTab(target);
+        else setShowLogin(true);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [isLoggedIn, user.role]);
+
+  useEffect(() => {
+    if (showPublicSite || isTraceUrl() || !isLoggedIn || portalMode === 'b2b' || !['farmer', 'super_admin'].includes(user.role)) {
       setParcelsLoaded(false);
+      setParcels(EMPTY_OLIVIA_PARCELS);
+      setSelectedParcel(null);
       return;
     }
     let cancelled = false;
+    setParcelError('');
     import('./services/db').then(async ({ fetchParcels, fetchSettings }) => {
       try {
         const rows = await fetchParcels();
@@ -146,7 +168,7 @@ const App: React.FC = () => {
         setParcelsLoaded(true);
       } catch (err) {
         console.warn('[parcels] failed', err);
-        if (!cancelled) setParcelsLoaded(true);
+        if (!cancelled) { setParcelsLoaded(true); setParcelError('Kunne ikke hente gårdsdata. Last siden på nytt eller kontroller tilgangen til Olivia OS.'); }
       }
 
       fetchSettings().then(settings => {
@@ -155,7 +177,7 @@ const App: React.FC = () => {
       }).catch(err => console.warn('[settings] failed', err));
     }).catch(err => console.warn('[data] failed', err));
     return () => { cancelled = true; };
-  }, [showPublicSite, isLoggedIn]);
+  }, [showPublicSite, isLoggedIn, portalMode, user.id, user.role]);
 
   const handleParcelSave = async (parcel: Parcel) => {
     const { upsertParcel } = await import('./services/db');
@@ -194,44 +216,52 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isTraceUrl()) return;
     let cancelled = false;
-    if (!isRecoveryUrl()) getCurrentSession().then(result => {
-      if (cancelled || !result) return;
-      const target = resolvePostLoginTab(postLoginTab, result.user, result.isAdmin);
-      setUser(result.user); setIsAdmin(result.isAdmin); setIsLoggedIn(true); setShowLogin(false); setActiveTab(target);
+    const applySession = (result: Awaited<ReturnType<typeof getCurrentSession>>) => {
+      if (cancelled) return;
+      setAuthReady(true);
+      if (result) {
+        setUser(result.user); setIsAdmin(result.isAdmin); setIsLoggedIn(true); setShowLogin(false);
+        if (isPortalUrl()) activateTab(navigationRef.current, result.user);
+      } else {
+        setIsLoggedIn(false); setIsAdmin(false); setUser(OLIVIA_FALLBACK_USER);
+        setParcels(EMPTY_OLIVIA_PARCELS); setSelectedParcel(null);
+        if (isPortalUrl()) setShowLogin(true);
+      }
+    };
+    if (!isRecoveryUrl()) getCurrentSession().then(applySession).catch(error => {
+      console.warn('[auth] session failed', error);
+      if (!cancelled) setAuthReady(true);
     });
-    const unsubscribe = onAuthChange(
-      result => {
-        if (cancelled) return;
-        if (result) {
-          const target = resolvePostLoginTab(postLoginTab, result.user, result.isAdmin);
-          setUser(result.user); setIsAdmin(result.isAdmin); setIsLoggedIn(true); setShowLogin(false); setActiveTab(target);
-        }
-        else { setIsLoggedIn(false); setIsAdmin(false); }
-      },
-      () => { if (!cancelled) setIsPasswordRecovery(true); },
-    );
+    else setAuthReady(true);
+    const unsubscribe = onAuthChange(applySession,
+      () => { if (!cancelled) setIsPasswordRecovery(true); });
     return () => { cancelled = true; unsubscribe(); };
-  }, [postLoginTab]);
+  }, []);
 
   const handleLoginSuccess = (storedUser: StoredUser, admin: boolean) => {
-    setUser(storedUser); setIsAdmin(admin); setIsLoggedIn(true); setActiveTab(resolvePostLoginTab(postLoginTab, storedUser, admin)); setShowLogin(false);
+    setUser(storedUser); setIsAdmin(admin); setIsLoggedIn(true); setAuthReady(true);
+    activateTab(navigationRef.current, storedUser); setShowLogin(false);
   };
 
   const handleLogout = async () => { await authSignOut(); setIsLoggedIn(false); setIsAdmin(false); setUser(OLIVIA_FALLBACK_USER); setParcels(EMPTY_OLIVIA_PARCELS); setSelectedParcel(null); setActiveTab('dashboard'); };
   const updateLanguage = (newLang: Language) => { setLanguage(newLang); };
-  const openLogin = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => { setShowPublicSite(false); const targetPath = pathForTargetTab(targetTab); if (typeof window !== 'undefined' && window.location.pathname !== targetPath) window.history.pushState({}, '', targetPath); setPostLoginTab(targetTab); setLoginDefaultMode(mode); setShowLogin(true); };
-  const openApp = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => { setShowPublicSite(false); const targetPath = pathForTargetTab(targetTab); if (typeof window !== 'undefined' && window.location.pathname !== targetPath) window.history.pushState({}, '', targetPath); setPostLoginTab(targetTab); if (isLoggedIn) { setActiveTab(resolvePostLoginTab(targetTab, user, isAdmin)); return; } openLogin(mode, targetTab); };
+  const openLogin = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => { setShowPublicSite(false); const targetPath = pathForTargetTab(targetTab); if (typeof window !== 'undefined' && window.location.pathname !== targetPath) window.history.pushState({}, '', targetPath); navigationRef.current = targetTab; setPostLoginTab(targetTab); setPortalMode(targetTab === 'b2b_portal' ? 'b2b' : 'olivia'); setLoginDefaultMode(mode); setShowLogin(true); };
+  const openApp = (mode: 'login' | 'register' = 'login', targetTab = 'dashboard') => { setShowPublicSite(false); const targetPath = pathForTargetTab(targetTab); if (typeof window !== 'undefined' && window.location.pathname !== targetPath) window.history.pushState({}, '', targetPath); navigationRef.current = targetTab; setPostLoginTab(targetTab); setPortalMode(targetTab === 'b2b_portal' ? 'b2b' : 'olivia'); if (isLoggedIn) { activateTab(targetTab); return; } openLogin(mode, targetTab); };
 
   if (isTraceUrl()) return <Suspense fallback={<div className="min-h-screen bg-[#060807] p-8 text-slate-300">Laster DonaAnna sporbarhet...</div>}><PublicTracePage slug={getTraceSlug()} /></Suspense>;
   if (isPasswordRecovery) return <ResetPasswordPage onDone={() => setIsPasswordRecovery(false)} />;
-  if (showPublicSite) return <><LandingPage onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'dashboard')} onRegister={() => openApp('register', 'b2b_portal')} /><PublicMobileLoginDock onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'dashboard')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} allowRegister={postLoginTab === 'b2b_portal'} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
-  if (!isLoggedIn) return <><LandingPage onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'dashboard')} onRegister={() => openLogin('register', 'b2b_portal')} /><PublicMobileLoginDock onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'dashboard')} />{showLogin && <LoginModal defaultMode={loginDefaultMode} allowRegister={postLoginTab === 'b2b_portal'} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
+  if (showPublicSite) return <><LandingPage onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'dashboard')} onRegister={() => openApp('register', 'b2b_portal')} /><PublicMobileLoginDock onLogin={() => openApp('login', 'b2b_portal')} onAdminLogin={() => openApp('login', 'dashboard')} />{showLogin && <LoginModal portalContext={postLoginTab === 'b2b_portal' ? 'b2b' : 'olivia'} defaultMode={loginDefaultMode} allowRegister={postLoginTab === 'b2b_portal'} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
+  if (!authReady) return <div className="min-h-screen bg-[#060807] p-8 text-white">Kontrollerer innlogging...</div>;
+  if (!isLoggedIn) return <><LandingPage onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'dashboard')} onRegister={() => openLogin('register', 'b2b_portal')} /><PublicMobileLoginDock onLogin={() => openLogin('login', 'b2b_portal')} onAdminLogin={() => openLogin('login', 'dashboard')} />{showLogin && <LoginModal portalContext={postLoginTab === 'b2b_portal' ? 'b2b' : 'olivia'} defaultMode={loginDefaultMode} allowRegister={postLoginTab === 'b2b_portal'} onClose={() => setShowLogin(false)} onLogin={handleLoginSuccess} />}</>;
 
   const parcelCoords = selectedParcel ? { lat: selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0] ?? BIAR_DEFAULT_COORDS.lat, lon: selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1] ?? BIAR_DEFAULT_COORDS.lon } : coords;
   const renderContent = () => {
+    if (portalMode === 'b2b' || !['farmer', 'super_admin'].includes(user.role)) {
+      return activeTab === 'settings' ? <SettingsView language={language} onLanguageChange={updateLanguage} /> : <CommerceHub user={user} mode="customer" />;
+    }
     if (isAdmin && activeTab === 'admin') return <AdminDashboard />;
     switch (activeTab) {
-      case 'dashboard': return <FarmOverview language={language} weatherData={weatherData} locationName={selectedParcel?.name || locationName} parcels={parcels} onNavigate={setActiveTab} />;
+      case 'dashboard': return <FarmOverview language={language} weatherData={weatherData} locationName={selectedParcel?.name || locationName} parcels={parcels} onNavigate={activateTab} />;
       case 'dona_anna_daily': return <DonaAnnaDailyDashboard />;
       case 'farm_advisor': return <FarmAdvisorView />;
       case 'dashboard_classic': return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;
@@ -266,11 +296,11 @@ const App: React.FC = () => {
       case 'tasks': return <TasksView parcels={parcels} />;
       case 'iot': return <IoTDashboard />;
       case 'settings': return <SettingsView language={language} onLanguageChange={updateLanguage} />;
-      default: return <FarmOverview language={language} weatherData={weatherData} locationName={selectedParcel?.name || locationName} parcels={parcels} onNavigate={setActiveTab} />;
+      default: return <FarmOverview language={language} weatherData={weatherData} locationName={selectedParcel?.name || locationName} parcels={parcels} onNavigate={activateTab} />;
     }
   };
 
-  return <Suspense fallback={<div className="min-h-screen bg-[#0a0a0b] p-8 text-slate-300">Laster Olivia OS...</div>}><Layout user={user} activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} language={language}><Suspense fallback={<div className="p-8 text-slate-400">Laster modul...</div>}>{renderContent()}</Suspense></Layout></Suspense>;
+  return <Suspense fallback={<div className="min-h-screen bg-[#0a0a0b] p-8 text-slate-300">{portalMode === 'b2b' ? 'Laster B2B-portalen...' : 'Laster Olivia OS...'}</div>}><Layout user={user} activeTab={activeTab} portalMode={portalMode} onTabChange={activateTab} onLogout={handleLogout} language={language}><Suspense fallback={<div className="p-8 text-slate-400">Laster modul...</div>}>{parcelError && portalMode === 'olivia' && <div role="alert" className="mb-4 rounded-xl bg-amber-950 p-4 text-amber-200">{parcelError}</div>}{renderContent()}</Suspense></Layout></Suspense>;
 };
 
 export default App;
