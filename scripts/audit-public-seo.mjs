@@ -73,6 +73,14 @@ if (!landing.includes('data-testid="tasting-request-form"')) fail('Tasting form 
 if (!landing.includes('id="tasting-product"') || !landing.includes('Mesa · Gordal Noble (planlagt)')) {
   fail('Tasting/customer journey must capture which distinct Doña Anna product the lead is interested in.');
 }
+if (!landing.includes("new URLSearchParams(window.location.search).get('product')") || !landing.includes("'mesa-gordal-noble': 'Mesa · Gordal Noble (planlagt)'")) {
+  fail('Product landing pages must be able to preselect the correct product in the tasting journey.');
+}
+for (const slug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa-gordal-noble']) {
+  if (!evergreen.includes("href: '/?product=" + slug + "#tasting'")) {
+    fail('Product page CTA must deep-link to the matching tasting selection: ' + slug);
+  }
+}
 for (const productSlug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa-gordal-noble']) {
   if (!landing.includes("slug: '" + productSlug + "'")) fail('Homepage product media/routing registry missing ' + productSlug);
 }
