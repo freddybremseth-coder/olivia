@@ -68,6 +68,9 @@ if (!landing.includes('mål om extra virgin-kvalitet') || landing.includes("role
   fail('Visible product copy must keep final extra virgin classification pending batch analysis.');
 }
 if (!landing.includes('data-testid="tasting-request-form"')) fail('Tasting form must expose a stable submit-measurement hook.');
+if (!landing.includes('id="tasting-product"') || !landing.includes('Mesa · Gordal Noble (planlagt)')) {
+  fail('Tasting/customer journey must capture which distinct Doña Anna product the lead is interested in.');
+}
 for (const productPath of ['/verde-vivo','/verde-alto','/raiz-antigua','/cocina-viva','/mesa-gordal-noble']) {
   if (!landing.includes(productPath)) fail('Homepage product routing missing ' + productPath);
 }
