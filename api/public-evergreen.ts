@@ -376,7 +376,7 @@ function pageHtml(page: EvergreenPage) {
     '<p class="author">Oppdatert 2. oktober 2026 · Innhold fra Doña Anna. <a href="/om-dona-anna">Anna og Freddy Bremseth driver prosjektet sammen.</a></p></article>' +
     '<aside class="aside"><strong>Utforsk Doña Anna</strong><nav><a href="/">Forsiden</a><a href="/guider">Guider</a><a href="/#estate">Gården i Biar</a><a href="/#portfolio">Verde Vivo</a><a href="/#traceability">Sporbarhet</a><a href="/#b2b">For profesjonelle</a><a href="/om-dona-anna">Om Anna og Freddy</a><a href="/#tasting">Kontakt</a></nav></aside></div></main>' +
     '<footer class="footer"><a href="/om-dona-anna">Anna & Freddy</a><a href="/personvern">Personvern</a><a href="https://www.freddybremseth.com/">FreddyBremseth.com</a><a href="https://www.pinosoecolife.com/">Pinoso Eco Life</a></footer>' +
-    '</body></html>';
+    '<script src="/donaanna-analytics.js" defer></script></body></html>';
 }
 
 export default function handler(
