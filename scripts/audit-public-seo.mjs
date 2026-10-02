@@ -106,6 +106,17 @@ if (!landing.includes("harvestHands: '/donaanna/hero-image.jpg'") || !landing.in
 if (landing.includes('<video')) fail('Public landing should avoid heavyweight autoplay/product video until approved brand media is ready.');
 if (!landing.includes('ca. 60 000 m²') || !landing.includes('1500')) fail('Homepage should retain the verified estate scale.');
 if (!landing.includes('Én merkevare. Flere tydelige produkter.')) fail('Homepage must present Doña Anna as a multi-product brand.');
+for (const staleHomepageCopy of [
+  'Meld interesse for Verde Vivo. Vi bekrefter smaksprøve',
+  'dokumentasjon rundt Verde Vivo. Smaksprøve',
+  'kan melde interesse for Verde Vivo. Vi svarer',
+  'Prosjektet handler om gården, oliventrærne, Verde Vivo'
+]) {
+  if (landing.includes(staleHomepageCopy)) fail('Homepage customer journey must not collapse the portfolio into Verde Vivo.');
+}
+if (!landing.includes('Produktspesifikt batchpass') || !landing.includes('Hvert produkt bruker sin egen godkjente etikett')) {
+  fail('Homepage traceability and product-data sections must be product-specific.');
+}
 if (!index.includes('Verde Alto') || !index.includes('Raíz Antigua') || !index.includes('Cocina Viva') || !index.includes('Mesa · Gordal Noble')) {
   fail('Crawlable first-response homepage must expose the distinct product line.');
 }
