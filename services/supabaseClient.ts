@@ -74,12 +74,5 @@ export const supabase = createClient(url, key, {
   },
 });
 
-export const supabasePublic = createClient(url, key, {
-  db: { schema: 'public' },
-  auth: {
-    lock: inMemoryLock,
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
-});
+// Share one Auth session across both database schemas.
+export const supabasePublic = supabase.schema('public');

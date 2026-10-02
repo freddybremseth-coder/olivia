@@ -52,7 +52,7 @@ export async function fetchParcels(): Promise<Parcel[]> {
     .from('parcels')
     .select('*')
     .order('created_at', { ascending: true });
-  if (error) { console.error('fetchParcels', error); return []; }
+  if (error) throw error;
   return (data ?? []).map(rowToParcel);
 }
 

@@ -1,4 +1,4 @@
-import { isSupabaseConfigured, supabasePublic } from './supabaseClient';
+import { isSupabaseConfigured, supabase, supabasePublic } from './supabaseClient';
 
 export type PublicTraceBatch = {
   id: string;
@@ -54,7 +54,7 @@ export async function fetchPublicTraceBatch(slug: string): Promise<PublicTraceBa
 export async function publishTraceBatch(batch: Omit<PublicTraceBatch, 'id' | 'created_at' | 'updated_at'>): Promise<PublicTraceBatch> {
   if (!isSupabaseConfigured) throw new Error('Supabase er ikke konfigurert.');
 
-  const { data: userResult, error: userError } = await supabasePublic.auth.getUser();
+  const { data: userResult, error: userError } = await supabase.auth.getUser();
   if (userError || !userResult.user) {
     throw new Error('Du må være innlogget i Olivia OS for å publisere QR-batcher.');
   }

@@ -15,12 +15,15 @@ interface LayoutProps {
   onTabChange: (tab: string) => void;
   onLogout: () => void;
   language: Language;
+  portalMode?: 'b2b' | 'olivia';
 }
 
 type MenuItem = { id: string; icon: React.ElementType; label: string };
 type MenuGroup = { id: string; label: string; icon: React.ElementType; items: MenuItem[] };
 
-const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange, onLogout, language }) => {
+const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange, onLogout, language, portalMode = 'olivia' }) => {
+  const isB2B = portalMode === 'b2b';
+  const portalName = isB2B ? 'Doña Anna B2B' : 'Olivia OS';
   const { t } = useTranslation(language);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -33,7 +36,13 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
     reports: false,
   });
 
-  const menuGroups: MenuGroup[] = [
+  const menuGroups: MenuGroup[] = isB2B ? [{
+    id: 'main', label: 'Salgsportal', icon: Store,
+    items: [
+      { id: 'b2b_portal', icon: Store, label: 'B2B Portal' },
+      ...(['farmer', 'super_admin'].includes(user.role) ? [{ id: 'dashboard', icon: Sprout, label: 'Åpne Olivia OS' }] : []),
+    ],
+  }] : [
     {
       id: 'main',
       label: 'Hovedoversikt',
@@ -89,7 +98,8 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
       label: 'Salg og commerce',
       icon: Store,
       items: [
-        { id: 'commerce', icon: Store, label: 'B2B & Commerce' },
+        { id: 'commerce', icon: Store, label: 'Salgsadministrasjon' },
+        { id: 'b2b_portal', icon: Store, label: 'Åpne B2B Portal' },
         { id: 'sales_inventory', icon: ShoppingBag, label: 'Salg / lager' },
         { id: 'order_documents', icon: ReceiptText, label: 'Ordredokumenter' },
         { id: 'economy', icon: TrendingUp, label: t('economy') },
@@ -110,7 +120,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
     },
   ];
 
-  const adminItems: MenuItem[] = user.role === 'super_admin' ? [
+  const adminItems: MenuItem[] = !isB2B && user.role === 'super_admin' ? [
     { id: 'admin', icon: ShieldCheck, label: t('admin') }
   ] : [];
 
@@ -172,7 +182,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 border-b border-white/10 bg-black/80 backdrop-blur-lg z-50 px-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center font-bold text-black text-sm">O</div>
-          <span className="font-bold text-white tracking-tight">Olivia AI</span>
+          <span className="font-bold text-white tracking-tight">{portalName}</span>
         </div>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-slate-400">
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -196,7 +206,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
       <aside className={`hidden lg:flex flex-col border-r border-white/10 bg-[#0d0d0f] transition-all duration-300 relative ${isSidebarOpen ? 'w-80' : 'w-20'}`}>
         <div className="p-6 flex items-center gap-4 mb-4">
           <div className="min-w-[40px] h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center neon-glow-green shadow-lg"><span className="font-bold text-xl text-black">O</span></div>
-          {isSidebarOpen && <h1 className="text-xl font-bold tracking-tight text-white whitespace-nowrap overflow-hidden">Olivia <span className="text-green-400">AI</span></h1>}
+          {isSidebarOpen && <h1 className="text-xl font-bold tracking-tight text-white whitespace-nowrap overflow-hidden">{portalName}</h1>}
         </div>
 
         <nav className="flex-1 px-4 space-y-3 overflow-y-auto custom-scrollbar">
