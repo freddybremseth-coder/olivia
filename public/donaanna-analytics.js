@@ -86,14 +86,7 @@
     return null;
   }
 
-  document.addEventListener("click", function (event) {
-    var target = event.target;
-    if (!target || typeof target.closest !== "function") return;
-    var node = target.closest("a[href],button[data-testid]");
-    if (!node) return;
-    var eventInfo = classify(node);
-    if (!eventInfo) return;
-
+  function sendConversion(eventInfo) {
     var dedupeKey = "donaanna:conversion:" + path + ":" + eventInfo.target;
     try { if (window.sessionStorage.getItem(dedupeKey)) return; } catch (_) {}
 
@@ -119,5 +112,22 @@
       if (response.status !== 204) return;
       try { window.sessionStorage.setItem(dedupeKey, "1"); } catch (_) {}
     }).catch(function () {});
+  }
+
+  document.addEventListener("submit", function (event) {
+    var form = event.target;
+    if (!form || !form.matches || !form.matches('form[data-testid="tasting-request-form"]')) return;
+    sendConversion({ eventType: "contact", target: "tasting_request_submitted" });
+  });
+
+  document.addEventListener("click", function (event) {
+    var target = event.target;
+    if (!target || typeof target.closest !== "function") return;
+    var node = target.closest("a[href],button[data-testid]");
+    if (!node) return;
+    var eventInfo = classify(node);
+    if (!eventInfo) return;
+
+    sendConversion(eventInfo);
   }, { passive: true });
 })();
