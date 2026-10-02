@@ -200,6 +200,20 @@ if (evergreenDescriptions.length < 8 || evergreenDescriptions.some(value => valu
 }
 if (!evergreen.includes("'@type': 'FAQPage'")) fail('Evergreen pages must include FAQPage schema.');
 if (!evergreen.includes("const productSchema: Record<string") || !evergreen.includes("'@type': 'Product'")) fail('Distinct product pages must expose Product schema.');
+if (!evergreen.includes("const productVisual: Record<string") || !evergreen.includes('Etikett verifisert · produktfoto venter')) {
+  fail('Distinct product pages must expose product-specific visual/label status.');
+}
+for (const labelStatus of [
+  'Etikett verifisert · produktfoto venter',
+  'Etikett venter på godkjenning',
+  'Etikett og emballasje venter på godkjenning',
+  'Planlagt · ikke tilgjengelig for salg ennå'
+]) {
+  if (!evergreen.includes(labelStatus)) fail('Product identity status missing: ' + labelStatus);
+}
+if (!evergreen.includes('Doña Anna bruker ikke gamle AI-flasker eller etiketter fra andre produkter som erstatning')) {
+  fail('Product pages must retain the brand-safe image policy.');
+}
 for (const productSlug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa-gordal-noble']) {
   if (!evergreen.includes("'" + productSlug + "': { name:")) fail('Product schema map missing ' + productSlug);
 }
