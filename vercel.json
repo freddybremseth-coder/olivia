@@ -133,5 +133,57 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/product-verde-vivo.html",
+      "destination": "/verde-vivo",
+      "permanent": true
+    },
+    {
+      "source": "/product-verde-alto.html",
+      "destination": "/verde-vivo",
+      "permanent": true
+    },
+    {
+      "source": "/product-raiz-antigua.html",
+      "destination": "/verde-vivo",
+      "permanent": true
+    },
+    {
+      "source": "/product-cocina-viva.html",
+      "destination": "/verde-vivo",
+      "permanent": true
+    },
+    {
+      "source": "/product-mesa-gordal-noble.html",
+      "destination": "/verde-vivo",
+      "permanent": true
+    },
+    {
+      "source": "/organic-extra-virgin-olive-oil.html",
+      "destination": "/olivenolje-fra-biar",
+      "permanent": true
+    },
+    {
+      "source": "/olive-oil-for-restaurants.html",
+      "destination": "/olivenolje-for-restauranter",
+      "permanent": true
+    },
+    {
+      "source": "/b2b-olive-oil.html",
+      "destination": "/olivenolje-for-restauranter",
+      "permanent": true
+    },
+    {
+      "source": "/olive-oil-traceability.html",
+      "destination": "/verde-vivo",
+      "permanent": true
+    },
+    {
+      "source": "/tasting-kit.html",
+      "destination": "/olivenolje-for-restauranter",
+      "permanent": true
+    }
   ]
 }
