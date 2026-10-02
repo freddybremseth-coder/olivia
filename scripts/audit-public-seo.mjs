@@ -11,6 +11,7 @@ const evergreen = read('api/public-evergreen.ts');
 const sitemap = read('api/sitemap.ts');
 const robots = read('public/robots.txt');
 const analytics = read('public/donaanna-analytics.js');
+if (!fs.existsSync('public/labels/dona-anna-figure.svg')) fail('Canonical Doña Anna figure asset is missing.');
 const commerce = read('services/publicCommerce.ts');
 const vercel = JSON.parse(read('vercel.json'));
 
