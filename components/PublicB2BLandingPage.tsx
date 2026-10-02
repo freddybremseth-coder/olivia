@@ -277,10 +277,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
           <div className="mt-12 grid max-w-5xl grid-cols-2 border border-white/12 bg-black/22 backdrop-blur md:grid-cols-4">
             {[
-              ['Estate', signal.heroMetric],
-              ['Parseller', formatNumber(signal.parcelCount)],
-              ['Trær', formatNumber(signal.treeCount)],
-              ['Sporbarhet', signal.isLive ? `${signal.activeBatches} aktive batcher` : 'Publiseres ved lansering'],
+              ['Sted', signal.heroMetric],
+              ['Areal', 'ca. 60 000 m²'],
+              ['Trær', `ca. ${formatNumber(signal.treeCount || 1500)}`],
+              ['Sporbarhet', signal.isLive ? `${signal.activeBatches} aktive batcher` : 'Publiseres per batch'],
             ].map(([label, value]) => (
               <div key={label} className="border-white/12 p-4 odd:border-r md:border-r md:last:border-r-0">
                 <p className="text-[10px] uppercase tracking-[0.24em] text-[#d4af37]">{label}</p>
@@ -373,7 +373,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Gården</p>
                 <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">En levende olivengård, ikke bare en etikett.</h2>
                 <p className="mt-6 text-lg leading-8 text-white/66">
-                  Doña Anna ligger i Biar i Alicante, der kalkholdig jord, tørre somre og kjølige netter gir oliven med frisk grønn fruktighet, bitterhet og struktur. Gården kombinerer tradisjon, gamle trær, regenerativ praksis og presis dokumentasjon.
+                  Doña Anna ligger i Biar i Alicante og omfatter rundt 60 000 m² med om lag 1 500 oliventrær. Vi bygger merkevaren på den faktiske gården, sortene vi har og dokumentasjon fra den konkrete produksjonen – ikke på generiske smaks- eller terroirpåstander.
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                   <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
@@ -393,34 +393,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   </article>
                 ))}
               </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-[#111111] px-5 py-24 md:px-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="mb-10 grid gap-8 md:grid-cols-[0.85fr_1.15fr]">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">I bruk</p>
-                <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Se oljen i arbeid.</h2>
-              </div>
-              <p className="self-end text-lg leading-8 text-white/66">
-                Fra siste finish ved bordet til daglig service på kjøkkenet: se hvordan Doña Anna brukes når smak, temperatur og timing teller.
-              </p>
-            </div>
-            <div className="grid gap-5 lg:grid-cols-2">
-              {videoStories.map(item => (
-                <article key={item.title} className="overflow-hidden border border-white/10 bg-black">
-                  <video className="aspect-video w-full object-cover" controls muted playsInline preload="metadata" poster={item.poster}>
-                    <source src={item.src} type="video/mp4" />
-                  </video>
-                  <div className="p-6">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#d4af37]">{item.eyebrow}</p>
-                    <h3 className="mt-2 font-serif text-3xl">{item.title}</h3>
-                    <p className="mt-4 leading-7 text-white/62">{item.text}</p>
-                  </div>
-                </article>
-              ))}
             </div>
           </div>
         </section>
