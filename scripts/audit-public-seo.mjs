@@ -279,6 +279,10 @@ for (const target of ['tasting_interest','tasting_request_submitted','verde_vivo
 if (!analytics.includes('addEventListener("submit"') || !analytics.includes('tasting-request-form')) {
   fail('Public measurement must distinguish actual tasting request submission from CTA interest.');
 }
+if (!analytics.includes('allowedProducts = ["verde-vivo", "verde-alto", "raiz-antigua", "cocina-viva", "mesa-gordal-noble"]') ||
+    !analytics.includes('"tasting_request_submitted_" + productSlug')) {
+  fail('Tasting conversion attribution must preserve non-personal product identity from approved deep links.');
+}
 if (analytics.includes('tastingRequest') || analytics.includes('email.value') || analytics.includes('company.value')) {
   fail('Public measurement must never read visitor form values.');
 }
