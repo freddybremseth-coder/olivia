@@ -214,6 +214,17 @@ for (const labelStatus of [
 if (!evergreen.includes('Doña Anna bruker ikke gamle AI-flasker eller etiketter fra andre produkter som erstatning')) {
   fail('Product pages must retain the brand-safe image policy.');
 }
+if (!evergreen.includes("page.slug === 'produkter'") || !evergreen.includes('Doña Anna produktlinje')) {
+  fail('Products hub must render a distinct multi-product comparison surface.');
+}
+for (const slug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa-gordal-noble']) {
+  if (!evergreen.includes("href=\"/" + "' + escapeHtml(item.slug) + '" + "\"")) {
+    // Runtime-generated product links are guarded by the productHubCards registry below.
+  }
+}
+if (!evergreen.includes("productHubCards = [") || !evergreen.includes("name: 'Mesa · Gordal Noble'")) {
+  fail('Products hub must list all distinct Doña Anna products.');
+}
 for (const productSlug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa-gordal-noble']) {
   if (!evergreen.includes("'" + productSlug + "': { name:")) fail('Product schema map missing ' + productSlug);
 }

@@ -621,6 +621,26 @@ function pageHtml(page: EvergreenPage) {
     '<details><summary>' + escapeHtml(item.question) + '</summary><p>' + escapeHtml(item.answer) + '</p></details>'
   ).join('');
 
+  const productHubCards = [
+    { slug: 'verde-vivo', name: 'Verde Vivo', type: 'Tidlig høstet olivenolje', role: 'Cosecha temprana · 500 ml', status: 'Etikett verifisert · produktfoto venter' },
+    { slug: 'verde-alto', name: 'Verde Alto', type: 'Eget olivenoljeprodukt', role: 'Balansert og bredt anvendelig posisjon', status: 'Etikett venter på godkjenning' },
+    { slug: 'raiz-antigua', name: 'Raíz Antigua', type: 'Eget heritage-produkt', role: 'Heritage · opprinnelse · egen produktfortelling', status: 'Etikett venter på godkjenning' },
+    { slug: 'cocina-viva', name: 'Cocina Viva', type: 'Profesjonelt kjøkken', role: 'Restaurant · hotell · profesjonell bruk', status: 'Etikett venter på godkjenning' },
+    { slug: 'mesa-gordal-noble', name: 'Mesa · Gordal Noble', type: 'Planlagt bordolivenprodukt', role: 'Bordoliven · eget produktspor', status: 'Planlagt · ikke tilgjengelig for salg ennå' },
+  ];
+  const productHub = page.slug === 'produkter'
+    ? '<section class="product-hub" aria-label="Doña Anna produktlinje"><div class="product-hub-grid">' +
+      productHubCards.map(item =>
+        '<article class="product-hub-card"><div class="product-hub-mark"><img src="/labels/dona-anna-figure.svg" alt="" width="90" height="150"></div>' +
+        '<p class="product-hub-type">' + escapeHtml(item.type) + '</p>' +
+        '<h2><a href="/' + escapeHtml(item.slug) + '">' + escapeHtml(item.name) + '</a></h2>' +
+        '<p class="product-hub-role">' + escapeHtml(item.role) + '</p>' +
+        '<p class="product-hub-status">' + escapeHtml(item.status) + '</p>' +
+        '<div class="product-hub-actions"><a href="/' + escapeHtml(item.slug) + '">Se produktet</a>' +
+        '<a href="/?product=' + escapeHtml(item.slug) + '#tasting">Meld interesse</a></div></article>'
+      ).join('') + '</div></section>'
+    : '';
+
   const productIdentity = visual
     ? '<section class="product-identity" aria-label="Produktidentitet">' +
       '<div class="product-mark"><img src="/labels/dona-anna-figure.svg" alt="" width="180" height="300"></div>' +
@@ -643,6 +663,7 @@ function pageHtml(page: EvergreenPage) {
     .hero-inner{max-width:1120px;margin:auto}.eyebrow{color:var(--gold2);font-size:12px;font-weight:800;letter-spacing:.24em;text-transform:uppercase}.hero h1{max-width:900px;margin:18px 0 0;font:600 clamp(44px,7vw,84px)/.98 Georgia,serif;letter-spacing:-.035em}.lead{max-width:780px;margin:28px 0 0;color:#d7d0c4;font-size:clamp(18px,2.1vw,24px)}
     .answer{max-width:900px;margin:34px 0 0;padding:22px 24px;border:1px solid rgba(212,175,55,.35);background:rgba(255,255,255,.045);font-size:17px}.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}.button{display:inline-flex;min-height:48px;align-items:center;padding:0 20px;text-decoration:none;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.14em}.primary{background:var(--gold2);color:#111}.secondary{border:1px solid rgba(255,255,255,.2);color:#fff}
     .product-identity{display:grid;grid-template-columns:minmax(220px,.65fr) minmax(0,1.35fr);max-width:1120px;margin:0 auto;padding:42px clamp(20px,5vw,54px);gap:34px;align-items:stretch}.product-mark{min-height:350px;display:flex;align-items:center;justify-content:center;background:#e9e1cf;border:1px solid rgba(30,24,15,.12)}.product-mark img{width:150px;height:250px;object-fit:contain;filter:invert(1)}.product-copy{padding:10px 0}.product-kicker{margin:0;color:#8a6a19;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.22em}.product-copy h2{margin:8px 0 2px;font:600 clamp(34px,5vw,58px)/1 Georgia,serif}.product-type{margin:0 0 24px;color:#655d51}.product-copy dl{display:grid;gap:0;margin:0;border-top:1px solid var(--line)}.product-copy dl div{display:grid;grid-template-columns:110px 1fr;gap:18px;padding:14px 0;border-bottom:1px solid var(--line)}.product-copy dt{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:#8a6a19}.product-copy dd{margin:0;color:#463f35}.product-note{margin-top:20px;padding:16px 18px;background:#fff;border:1px solid var(--line);color:#655d51;font-size:14px}
+    .product-hub{max-width:1120px;margin:0 auto;padding:42px clamp(20px,5vw,54px) 10px}.product-hub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.product-hub-card{display:flex;flex-direction:column;min-height:430px;padding:20px;border:1px solid var(--line);background:#fff}.product-hub-mark{height:150px;display:flex;align-items:center;justify-content:center;background:#e9e1cf}.product-hub-mark img{width:80px;height:130px;object-fit:contain;filter:invert(1)}.product-hub-type{margin:18px 0 0;color:#8a6a19;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.16em}.product-hub-card h2{margin:6px 0 0;font:600 30px/1.05 Georgia,serif}.product-hub-card h2 a{text-decoration:none}.product-hub-role{margin:10px 0 0;color:#514a40}.product-hub-status{margin:14px 0 0;padding-top:12px;border-top:1px solid var(--line);font-size:13px;color:#746b5e}.product-hub-actions{display:flex;flex-wrap:wrap;gap:10px 14px;margin-top:auto;padding-top:18px}.product-hub-actions a{color:#705515;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;text-underline-offset:3px}
     main{max-width:1120px;margin:auto;padding:clamp(52px,7vw,88px) clamp(20px,5vw,54px)}.article-grid{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:clamp(36px,7vw,86px);align-items:start}.article-section{padding:0 0 46px;border-bottom:1px solid var(--line);margin-bottom:46px}.article-section h2,.faq h2,.next h2{font:600 clamp(30px,4vw,48px)/1.08 Georgia,serif;margin:0 0 18px}.article-section p{font-size:17px;color:#4f493f}.aside{position:sticky;top:92px;border:1px solid var(--line);background:#fff;padding:24px}.aside strong{display:block;font:600 24px Georgia,serif}.aside nav{display:grid;gap:12px;margin-top:18px}.aside a{color:#705515;text-underline-offset:3px}
     .faq{padding:20px 0 58px}.faq details{border-top:1px solid var(--line);padding:18px 0}.faq details:last-child{border-bottom:1px solid var(--line)}.faq summary{cursor:pointer;font-weight:800}.faq details p{color:#554e43}
     .next{margin-top:16px;padding:34px;background:#15120e;color:#fff}.next p{color:#cfc6b6;max-width:720px}.next .button{margin-top:10px}.cluster{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:26px}.cluster a{color:#d4af37}
@@ -665,6 +686,7 @@ function pageHtml(page: EvergreenPage) {
     '<header class="topbar"><a class="brand" href="/">DOÑA ANNA</a><nav class="topnav" aria-label="Hovedmeny"><a href="/produkter">Produkter</a><a href="/guider">Guider</a><a href="/magasin">Magasin</a><a href="/om-dona-anna">Om oss</a><a href="/#tasting">Kontakt</a></nav></header>' +
     '<section class="hero"><div class="hero-inner"><p class="eyebrow">' + escapeHtml(page.eyebrow) + '</p><h1>' + escapeHtml(page.h1) + '</h1><p class="lead">' + escapeHtml(page.description) + '</p><div class="answer"><strong>Kort svar:</strong> ' + escapeHtml(page.answer) + '</div><div class="actions"><a class="button primary" href="' + escapeHtml(page.primaryCta.href) + '">' + escapeHtml(page.primaryCta.label) + '</a><a class="button secondary" href="/magasin">Les magasinet</a></div></div></section>' +
     productIdentity +
+    productHub +
     '<main><div class="article-grid"><article>' + sections +
     '<section class="faq"><h2>Vanlige spørsmål</h2>' + faq + '</section>' +
     '<section class="next"><h2>Neste steg</h2><p>Se riktig produkt, les mer om gården eller meld interesse dersom du vurderer Doña Anna for restaurant, hotell, butikk eller import.</p><a class="button primary" href="' + escapeHtml(page.primaryCta.href) + '">' + escapeHtml(page.primaryCta.label) + '</a><div class="cluster"><a href="/produkter">Alle produkter</a><a href="/verde-vivo">Verde Vivo</a><a href="/verde-alto">Verde Alto</a><a href="/raiz-antigua">Raíz Antigua</a><a href="/cocina-viva">Cocina Viva</a><a href="/mesa-gordal-noble">Mesa · Gordal Noble</a></div></section>' +
