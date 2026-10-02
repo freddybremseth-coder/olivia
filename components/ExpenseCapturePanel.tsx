@@ -146,9 +146,9 @@ const ExpenseCapturePanel: React.FC<Props> = ({ parcels, onSaved }) => {
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-[2500] flex items-end justify-center bg-black/80 p-0 backdrop-blur-md md:items-center md:p-4">
-          <div className="max-h-[94vh] w-full overflow-y-auto rounded-t-[2rem] border border-white/15 bg-[#0b0d0c] p-5 shadow-2xl md:max-w-5xl md:rounded-[2rem] md:p-7">
-            <div className="flex items-start justify-between gap-4">
+        <div className="fixed inset-0 z-[2500] flex items-end justify-center bg-black/80 p-0 backdrop-blur-md md:items-start md:px-4 md:pt-14">
+          <div className="flex max-h-[calc(100vh-3.5rem)] w-full flex-col overflow-hidden rounded-t-[2rem] border border-white/15 bg-[#0b0d0c] shadow-2xl md:max-w-5xl md:rounded-[2rem]">
+            <div className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-white/10 bg-[#0b0d0c]/95 p-5 backdrop-blur-xl md:p-7">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-amber-300">Doña Anna · Olivia Økonomi</p>
                 <h3 className="mt-1 text-2xl font-bold text-white">{mode === 'scan' ? 'Scan og bokfør bilag' : 'Registrer ny kostnad'}</h3>
@@ -157,6 +157,7 @@ const ExpenseCapturePanel: React.FC<Props> = ({ parcels, onSaved }) => {
               <button onClick={() => { setOpen(false); reset(); }} className="rounded-xl p-2 text-slate-400 hover:bg-white/10 hover:text-white"><X size={22} /></button>
             </div>
 
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 md:px-7 md:pb-7">
             {mode === 'scan' && (
               <div className="mt-6 grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
@@ -180,8 +181,9 @@ const ExpenseCapturePanel: React.FC<Props> = ({ parcels, onSaved }) => {
             {mode === 'manual' && <div className="mt-6"><ExpenseForm draft={draft} setDraft={setDraft} parcels={parcels} isWork={isWork} /></div>}
 
             {status && <div className="mt-5 rounded-xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">{status}</div>}
+            </div>
 
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <div className="sticky bottom-0 z-20 flex flex-col-reverse gap-3 border-t border-white/10 bg-[#0b0d0c]/95 p-5 backdrop-blur-xl sm:flex-row sm:justify-end md:px-7">
               <button onClick={() => { setOpen(false); reset(); }} className="rounded-xl border border-white/10 px-5 py-3 text-sm font-bold text-slate-300 hover:bg-white/5">Avbryt</button>
               <button onClick={save} disabled={saving || scanning} className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-400 px-6 py-3 text-sm font-bold text-black disabled:opacity-50">
                 {saving ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />} Godkjenn og bokfør

@@ -125,7 +125,7 @@ export async function fetchOliviaParcels(): Promise<Parcel[]> {
 }
 
 export async function fetchOliviaHarvests(): Promise<HarvestRecord[]> {
-  const { data, error } = await supabase.from('harvest_records').select('*').order('harvest_date', { ascending: false });
+  const { data, error } = await supabase.from('harvest_records').select('*').order('date', { ascending: false });
   if (error) {
     console.error('[oliviaSchemaData] fetchOliviaHarvests', error);
     return [];
