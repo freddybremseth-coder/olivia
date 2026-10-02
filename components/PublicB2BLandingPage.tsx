@@ -39,7 +39,7 @@ const copy = {
 };
 
 const imagePaths = {
-  estateHero: '/donaanna/olive-trees.jpg',
+  estateHero: '/donaanna/hero-image.jpg',
   oliveGrove: '/donaanna/olive-trees.jpg',
   harvestHands: '/donaanna/hero-image.jpg',
   harvestClose: '/donaanna/farming-2.jpg',
