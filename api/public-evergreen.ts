@@ -87,7 +87,7 @@ const PAGES: Record<string, EvergreenPage> = {
   'tidlig-hostet-olivenolje': {
     slug: 'tidlig-hostet-olivenolje',
     title: 'Tidlig høstet olivenolje | Doña Anna Verde Vivo',
-    description: 'Hva betyr tidlig høstet extra virgin olivenolje? Les hvordan Doña Anna bruker cosecha temprana som retning for Verde Vivo og dokumenterer batchen.',
+    description: 'Hva betyr tidlig høstet olivenolje, og hva kreves for extra virgin-kvalitet? Les hvordan Doña Anna bruker cosecha temprana som retning for Verde Vivo og dokumenterer batchen.',
     eyebrow: 'Cosecha temprana · Verde Vivo',
     h1: 'Tidlig høstet olivenolje: hva betyr det for Verde Vivo?',
     answer: 'Tidlig høstet olivenolje lages av oliven som høstes tidligere i modningen. Verde Vivo er Doña Annas 500 ml produkt bygget rundt denne retningen.',
@@ -116,7 +116,7 @@ const PAGES: Record<string, EvergreenPage> = {
     ],
     faqs: [
       { question: 'Hva er tidlig høstet olivenolje?', answer: 'Det er olje laget av oliven som høstes tidligere i modningen.' },
-      { question: 'Er Verde Vivo tidlig høstet?', answer: 'Ja. Verde Vivo er utviklet som cosecha temprana / tidlig høstet extra virgin olivenolje.' },
+      { question: 'Er Verde Vivo tidlig høstet?', answer: 'Ja. Verde Vivo er utviklet som cosecha temprana / tidlig høstet olivenolje med mål om extra virgin-kvalitet. Endelig kvalitetsklasse bekreftes først etter analyse og sensorisk vurdering.' },
       { question: 'Er polyfenoltall publisert nå?', answer: 'Doña Anna publiserer analyseverdier når den konkrete batchen er analysert og dokumentert.' }
     ],
     primaryCta: { label: 'Se Verde Vivo', href: '/#portfolio' }
@@ -198,10 +198,10 @@ const PAGES: Record<string, EvergreenPage> = {
   'verde-vivo': {
     slug: 'verde-vivo',
     title: 'Verde Vivo 500 ml | Doña Anna olivenolje fra Biar',
-    description: 'Verde Vivo er Doña Annas 500 ml tidlig høstede extra virgin olivenolje fra Biar. Se hva som er definert nå og hvilke batchdata som publiseres senere.',
+    description: 'Verde Vivo er Doña Annas 500 ml tidlig høstede olivenolje fra Biar, utviklet med mål om extra virgin-kvalitet. Se hva som er definert nå og hvilke batchdata som publiseres senere.',
     eyebrow: 'Verde Vivo · 500 ml · Biar',
     h1: 'Verde Vivo 500 ml – Doña Anna olivenolje fra Biar',
-    answer: 'Verde Vivo er Doña Annas første produkt: en 500 ml extra virgin olivenolje utviklet rundt tidlig høsting og tydelig opprinnelse i Biar. Batchdata, analyse og tilgjengelighet publiseres når produksjonen er dokumentert.',
+    answer: 'Verde Vivo er Doña Annas første produkt: en 500 ml tidlig høstet olivenolje utviklet med mål om extra virgin-kvalitet og tydelig opprinnelse i Biar. Endelig kvalitetsklasse, batchdata, analyse og tilgjengelighet publiseres når produksjonen er dokumentert.',
     sections: [
       {
         heading: 'Hva er Verde Vivo?',
@@ -213,7 +213,7 @@ const PAGES: Record<string, EvergreenPage> = {
       {
         heading: 'Hva vet vi om produktet før batchen er klar?',
         body: [
-          'Produktretningen er extra virgin olivenolje med cosecha temprana / tidlig høsting og opprinnelse i Biar.',
+          'Produktretningen er cosecha temprana / tidlig høstet olivenolje fra Biar, utviklet med mål om extra virgin-kvalitet. Endelig kvalitetsklasse bekreftes først når den konkrete batchen er analysert og sensorisk vurdert.',
           'Høstedato, konkrete sorter i batchen, analyseverdier, sensoriske notater, pris og tilgjengelighet publiseres først når den faktiske produksjonen er dokumentert.'
         ]
       },
