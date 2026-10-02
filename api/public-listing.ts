@@ -162,7 +162,7 @@ export default async function handler(
     '<a href="https://www.chatgenius.pro/">ChatGenius</a>' +
     '<a href="https://books.freddybremseth.com/">Books</a>' +
     '<a href="https://art.freddybremseth.com/">Art</a>' +
-    '<a href="https://remaster.freddybremseth.com/">Re-Master Freddy</a></footer></body></html>';
+    '<a href="https://remaster.freddybremseth.com/">Re-Master Freddy</a></footer><script src="/donaanna-analytics.js" defer></script></body></html>';
 
   res.writeHead(200, {
     'Content-Type': 'text/html; charset=utf-8',
