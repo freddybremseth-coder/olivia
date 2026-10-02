@@ -1,4 +1,15 @@
 User-agent: *
 Allow: /
+Disallow: /app
+Disallow: /olivia
+Disallow: /b2b
+Disallow: /api/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /app
+Disallow: /olivia
+Disallow: /b2b
+Disallow: /api/
 
 Sitemap: https://www.donaanna.com/sitemap.xml
