@@ -2,11 +2,31 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { createClient } from '@supabase/supabase-js';
 
 const SITE = 'https://www.donaanna.com';
-const DESTINATIONS: Record<string, { label: string; heading: string; description: string }> = {
-  magasin: { label: 'Magasin', heading: 'Doña Anna Magasin', description: 'Olivenolje, kvalitet, gårdsliv og smaker fra Biar i Alicante.' },
-  artikler: { label: 'Artikler', heading: 'Kunnskap om olivenolje', description: 'Fagartikler, råvarer og praktisk veiledning for kokker og matinteresserte.' },
-  blogg: { label: 'Blogg', heading: 'Notater fra gården', description: 'Historier fra olivenlunden, kjøkkenet og markedet.' },
-  oppskrifter: { label: 'Oppskrifter', heading: 'Oppskrifter med olivenolje', description: 'Serveringsideer, smakskombinasjoner og praktiske oppskrifter.' },
+const DESTINATIONS: Record<string, { label: string; heading: string; seoTitle: string; description: string }> = {
+  magasin: {
+    label: 'Magasin',
+    heading: 'Doña Anna Magasin',
+    seoTitle: 'Doña Anna Magasin | Olivenolje og gårdsliv fra Biar',
+    description: 'Les Doña Anna Magasin om olivenolje, kvalitet, gårdsliv, høsting, mat og smak fra Biar i Alicante, med konkrete råd og dokumenterte erfaringer.',
+  },
+  artikler: {
+    label: 'Artikler',
+    heading: 'Kunnskap om olivenolje',
+    seoTitle: 'Artikler om olivenolje, råvarer og kvalitet | Doña Anna',
+    description: 'Fagartikler fra Doña Anna om olivenolje, råvarer, kvalitet, høsting og kjøkkenbruk for kokker, innkjøpere og matinteresserte.',
+  },
+  blogg: {
+    label: 'Blogg',
+    heading: 'Notater fra gården',
+    seoTitle: 'Blogg fra olivengården i Biar, Alicante | Doña Anna',
+    description: 'Følg livet på Doña Anna-gården i Biar: olivenlund, sesong, høsting, produksjon og erfaringer fra arbeidet med Verde Vivo.',
+  },
+  oppskrifter: {
+    label: 'Oppskrifter',
+    heading: 'Oppskrifter med olivenolje',
+    seoTitle: 'Oppskrifter med olivenolje fra Biar, Alicante | Doña Anna',
+    description: 'Oppskrifter og serveringsideer med olivenolje fra Doña Anna i Biar, med smakskombinasjoner, råvarer og praktiske tips til kjøkkenet.',
+  },
 };
 
 function escapeHtml(value: unknown) {
@@ -140,12 +160,12 @@ export default async function handler(
     '@media(max-width:640px){header nav a:nth-child(n+4){display:none}.card img{height:190px}.hero{padding-top:64px}}';
   const html = '<!doctype html><html lang="no"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-    '<title>' + escapeHtml(config.heading) + ' | Doña Anna</title>' +
+    '<title>' + escapeHtml(config.seoTitle) + '</title>' +
     '<meta name="description" content="' + escapeHtml(config.description) + '">' +
     '<link rel="canonical" href="' + canonical + '">' +
     '<meta property="og:type" content="website"><meta property="og:site_name" content="Doña Anna">' +
     '<meta property="og:url" content="' + canonical + '">' +
-    '<meta property="og:title" content="' + escapeHtml(config.heading) + ' | Doña Anna"><meta name="author" content="Doña Anna">' +
+    '<meta property="og:title" content="' + escapeHtml(config.seoTitle) + '"><meta name="author" content="Doña Anna">' +
     '<script type="application/ld+json">' + JSON.stringify(schema).replace(/</g, '\\u003c') + '</script>' +
     '<style>' + css + '</style></head><body>' +
     '<header><nav><a href="/">DOÑA ANNA</a><a href="/guider">Guider</a><a href="/magasin">Magasin</a>' +
