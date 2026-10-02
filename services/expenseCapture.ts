@@ -215,6 +215,22 @@ export async function analyzeExpenseDocument(file: File): Promise<ExpenseScanRes
   const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
   const errors: string[] = [];
 
+  try {
+    const { data, error } = await supabase.functions.invoke('olivia-expense-scan', {
+      body: { file: b64, mimeType },
+    });
+    if (error) throw new Error(error.message || 'Supabase AI scan feilet.');
+    if (data?.result) {
+      const normalized = normalizeExpenseScan(data.result);
+      if (normalized.totalAmount > 0 || normalized.vendor !== 'Ukjent leverandør') return normalized;
+      errors.push('Supabase AI svarte, men fant ingen brukbare bilagsdata.');
+    } else if (data?.error) {
+      errors.push(`Supabase AI: ${data.error}${Array.isArray(data.details) ? ' · ' + data.details.join(' | ') : ''}`);
+    }
+  } catch (error) {
+    errors.push(`Supabase AI: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
   for (const attempt of [
     () => analyzeWithGemini(b64, mimeType),
     () => analyzeWithClaude(b64, mimeType),
