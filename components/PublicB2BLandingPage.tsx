@@ -40,16 +40,18 @@ const copy = {
 
 const imagePaths = {
   heroChefWide: '/donaanna/olive-trees.jpg',
-  b2bTraceabilityKitchen: '/donaanna/olive-trees.jpg',
+  harvestHands: '/donaanna/hero-image.jpg',
+  harvestClose: '/donaanna/farming-2.jpg',
+  b2bTraceabilityKitchen: '/donaanna/hero-image.jpg',
   verdeVivoHero: '/donaanna/olive-trees.jpg',
   daBlackBottle: '/donaanna/olive-trees.jpg',
   verdeAltoFrontBack: '/donaanna/olive-trees.jpg',
-  donaAnnaPouringBread: '/donaanna/olive-trees.jpg',
-  restaurantTablePour: '/donaanna/olive-trees.jpg',
+  donaAnnaPouringBread: '/donaanna/farming-2.jpg',
+  restaurantTablePour: '/donaanna/hero-image.jpg',
   raizAntiguaFamily: '/donaanna/olive-trees.jpg',
   raizAntiguaCleanFamily: '/donaanna/olive-trees.jpg',
   cocinaViva5l: '/donaanna/olive-trees.jpg',
-  cocinaVivaChef: '/donaanna/olive-trees.jpg',
+  cocinaVivaChef: '/donaanna/farming-2.jpg',
 };
 
 const portfolio = [
@@ -77,14 +79,14 @@ const b2bPackages = [
     title: 'Meld interesse for smaksprøve',
     audience: 'Restaurant / hotell',
     image: imagePaths.b2bTraceabilityKitchen,
-    imageAlt: 'Doña Anna olivenlund i Biar, Alicante',
+    imageAlt: 'Grønne oliven ved innhøsting for Doña Anna',
     text: 'Registrer interesse for Verde Vivo. Vi bekrefter først tilgjengelighet, batchdata, pris og levering når produksjonen er klar.',
   },
   {
     title: 'Produktinformasjon',
     audience: 'Kjøkken og faghandel',
     image: imagePaths.cocinaVivaChef,
-    imageAlt: 'Oliventrær på Doña Anna-gården i Biar',
+    imageAlt: 'Håndplukkede grønne oliven fra innhøstingen',
     text: 'Produktark og dokumenterte batchopplysninger bygges rundt den faktiske produksjonen – ikke rundt generiske produktløfter.',
   },
   {
@@ -138,15 +140,15 @@ const knowledgeCards = [
   {
     title: 'Tidlig høsting',
     kicker: 'Cosecha temprana',
-    image: imagePaths.verdeVivoHero,
-    imageAlt: 'Oliventrær på Doña Anna-gården i Biar',
+    image: imagePaths.harvestHands,
+    imageAlt: 'Grønne oliven ved tidlig innhøsting',
     text: 'Verde Vivo er utviklet som en tidlig høstet olivenolje med mål om extra virgin-kvalitet. Endelig kvalitetsklasse, smaksprofil og analyseverdier beskrives for den faktiske batchen når den foreligger.',
   },
   {
     title: 'Våre sorter',
     kicker: 'Gården i Biar',
-    image: '/donaanna/olive-trees.jpg',
-    imageAlt: 'Olivenlund med trær på Doña Anna-gården i Biar',
+    image: imagePaths.harvestClose,
+    imageAlt: 'Håndplukkede oliven som illustrerer råvaren fra gården',
     text: 'Genovesa, Gordal, Changlot Real og Picual er blant sortene på gården. Vi bruker sortsinformasjon som en del av sporbarheten – ikke som generiske smakslover.',
   },
   {
@@ -477,7 +479,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             </div>
             <div className="mt-10 grid gap-5 border border-black/10 bg-[#111111] p-5 text-white lg:grid-cols-[0.82fr_1.18fr]">
               <div className="relative min-h-[360px] overflow-hidden">
-                <img src={imagePaths.donaAnnaPouringBread} alt="Doña Anna olivenolje helles over brød" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-72" />
+                <img src={imagePaths.donaAnnaPouringBread} alt="Håndplukkede grønne oliven fra innhøstingen" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-72" />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.78))]" />
                 <div className="absolute bottom-0 p-6">
                   <Sparkles className="text-[#d4af37]" size={26} />
