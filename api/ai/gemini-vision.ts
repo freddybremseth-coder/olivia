@@ -41,9 +41,9 @@ export default async function handler(req: IncomingMessage & { method?: string; 
     return;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.API_KEY;
   if (!apiKey) {
-    sendJson(req, res, 503, { error: { message: 'Gemini er ikke konfigurert: legg inn GEMINI_API_KEY eller GOOGLE_API_KEY i Vercel Environment Variables.' } });
+    sendJson(req, res, 503, { error: { message: 'Gemini er ikke konfigurert: legg inn GEMINI_API_KEY, GOOGLE_API_KEY eller API_KEY i Vercel Environment Variables.' } });
     return;
   }
 

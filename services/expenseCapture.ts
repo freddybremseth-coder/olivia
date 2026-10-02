@@ -230,9 +230,27 @@ export async function analyzeExpenseDocument(file: File): Promise<ExpenseScanRes
     }
   }
 
+  let health = '';
+  try {
+    const healthRes = await fetch('/api/ai/health?probe=1', { headers: await authHeaders() });
+    if (healthRes.ok) {
+      const status = await healthRes.json();
+      const fmt = (name: string, item: any) =>
+        `${name}: ${item?.configured ? (item?.ok ? 'OK' : `feil${item?.status ? ` ${item.status}` : ''}`) : 'ikke konfigurert'}`;
+      health = ' AI-status: ' + [
+        fmt('Gemini', status?.gemini),
+        fmt('Claude', status?.anthropic),
+        fmt('OpenAI', status?.openai),
+      ].join(' · ');
+    }
+  } catch {
+    // Keep the original provider errors if the health endpoint is unavailable.
+  }
+
   throw new Error(
     'AI klarte ikke å lese bilaget. ' +
-    errors.join(' | ')
+    errors.join(' | ') +
+    health
   );
 }
 

@@ -42,10 +42,10 @@ export default async function handler(
     return;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.API_KEY;
   if (!apiKey) {
     res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'GEMINI_API_KEY is not configured on the server' }));
+    res.end(JSON.stringify({ error: 'Gemini API key is not configured on the server (checked GEMINI_API_KEY, GOOGLE_API_KEY, API_KEY)' }));
     return;
   }
 
