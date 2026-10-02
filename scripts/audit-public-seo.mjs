@@ -13,6 +13,7 @@ const robots = read('public/robots.txt');
 const analytics = read('public/donaanna-analytics.js');
 if (!fs.existsSync('public/labels/dona-anna-figure.svg')) fail('Canonical Doña Anna figure asset is missing.');
 const commerce = read('services/publicCommerce.ts');
+const products = read('content/donaAnnaProducts.ts');
 const vercel = JSON.parse(read('vercel.json'));
 
 const FREDDY = 'https://www.freddybremseth.com/#person';
@@ -82,7 +83,7 @@ for (const slug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa
   }
 }
 for (const productSlug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa-gordal-noble']) {
-  if (!landing.includes("slug: '" + productSlug + "'")) fail('Homepage product media/routing registry missing ' + productSlug);
+  if (!products.includes("slug: '" + productSlug + "'")) fail('Canonical product registry missing ' + productSlug);
 }
 if (!landing.includes("const productHref = (name: string) => '/' + productMedia(name).slug;")) {
   fail('Homepage product links must resolve through the product-specific media registry.');
@@ -93,14 +94,17 @@ if (!commerce.includes("!image.includes('/donaanna/product-design/')")) fail('Pu
 if (!commerce.includes('product_image_approved') || !commerce.includes('product_slug') || !commerce.includes('exactProductMatch')) {
   fail('Public commerce product imagery must require explicit approval and an exact product-slug match.');
 }
-if (!landing.includes('const PRODUCT_MEDIA: Record<string, ProductMedia>') || !landing.includes("approvedProductImage: null")) {
-  fail('Homepage must keep a product-specific media registry with safe fallback states.');
+if (!landing.includes("import { DONA_ANNA_PRODUCTS, donaAnnaProductByName } from '../content/donaAnnaProducts';")) {
+  fail('Homepage must use the canonical Doña Anna product registry.');
 }
-for (const slug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa-gordal-noble']) {
-  if (!landing.includes("slug: '" + slug + "'")) fail('Product media registry missing ' + slug);
+if (!commerce.includes("import { canonicalDonaAnnaProductSlug, DONA_ANNA_PRODUCTS } from '../content/donaAnnaProducts';")) {
+  fail('Public commerce must use the canonical Doña Anna product registry.');
 }
-if (!commerce.includes("'verde alto'") || !commerce.includes("'raíz antigua'") || !commerce.includes("'cocina viva'") || !commerce.includes("'mesa · gordal noble'")) {
-  fail('Public commerce allowlist must support the distinct approved Doña Anna product names.');
+if (!products.includes("approvedProductImage: null") || !products.includes("labelStatus: 'verified'") || !products.includes("labelStatus: 'pending'")) {
+  fail('Canonical product registry must retain explicit safe media and label approval states.');
+}
+for (const productName of ['Verde Vivo','Verde Alto','Raíz Antigua','Cocina Viva','Mesa · Gordal Noble']) {
+  if (!products.includes("name: '" + productName + "'")) fail('Canonical product registry missing ' + productName);
 }
 if (landing.includes('/donaanna/product-design/') || landing.includes('michelin-chef-uses-dona-anna.mp4') || landing.includes('video-av-flasken-klar.mp4')) {
   fail('Public landing must not use unapproved bottle imagery or old bottle videos.');
@@ -199,18 +203,18 @@ if (evergreenDescriptions.length < 8 || evergreenDescriptions.some(value => valu
   fail('Every evergreen meta description must stay within the 120–160 character target.');
 }
 if (!evergreen.includes("'@type': 'FAQPage'")) fail('Evergreen pages must include FAQPage schema.');
-if (!evergreen.includes("const productSchema: Record<string") || !evergreen.includes("'@type': 'Product'")) fail('Distinct product pages must expose Product schema.');
+if (!evergreen.includes("DONA_ANNA_PRODUCTS_BY_SLUG[page.slug]") || !evergreen.includes("'@type': 'Product'")) fail('Distinct product pages must expose Product schema from the canonical registry.');
 if (!evergreen.includes("additionalProperty: [") || !evergreen.includes("name: 'Produktrolle'") || !evergreen.includes("name: 'Status'")) {
   fail('Product schema must expose product-specific role and status without collapsing products into variants.');
 }
-if (!evergreen.includes("page.slug === 'produkter'") || !evergreen.includes("name: 'Doña Anna produktlinje'") || !evergreen.includes("numberOfItems: 5")) {
-  fail('Products hub must expose a five-item structured product list.');
+if (!evergreen.includes("page.slug === 'produkter'") || !evergreen.includes("name: 'Doña Anna produktlinje'") || !evergreen.includes("numberOfItems: DONA_ANNA_PRODUCTS.length")) {
+  fail('Products hub must expose the canonical structured product list.');
 }
 if (evergreen.includes("'isVariantOf'") || evergreen.includes('"isVariantOf"')) {
   fail('Distinct Doña Anna products must never be modeled as variants of each other.');
 }
-if (!evergreen.includes("const productVisual: Record<string") || !evergreen.includes('Etikett verifisert · produktfoto venter')) {
-  fail('Distinct product pages must expose product-specific visual/label status.');
+if (!evergreen.includes("const visual = productDefinition") || !evergreen.includes("labelStatus: productDefinition.labelStatusText")) {
+  fail('Distinct product pages must render visual/label status from the canonical registry.');
 }
 for (const labelStatus of [
   'Etikett verifisert · produktfoto venter',
@@ -218,7 +222,7 @@ for (const labelStatus of [
   'Etikett og emballasje venter på godkjenning',
   'Planlagt · ikke tilgjengelig for salg ennå'
 ]) {
-  if (!evergreen.includes(labelStatus)) fail('Product identity status missing: ' + labelStatus);
+  if (!products.includes(labelStatus)) fail('Canonical product identity status missing: ' + labelStatus);
 }
 if (!evergreen.includes('Doña Anna bruker ikke gamle AI-flasker eller etiketter fra andre produkter som erstatning')) {
   fail('Product pages must retain the brand-safe image policy.');
@@ -231,19 +235,11 @@ for (const slug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa
     // Runtime-generated product links are guarded by the productHubCards registry below.
   }
 }
-if (!evergreen.includes("productHubCards = [") || !evergreen.includes("name: 'Mesa · Gordal Noble'")) {
-  fail('Products hub must list all distinct Doña Anna products.');
+if (!evergreen.includes("productHubCards = DONA_ANNA_PRODUCTS.map")) {
+  fail('Products hub must render directly from the canonical Doña Anna product registry.');
 }
-for (const [productSlug, productName] of [
-  ['verde-vivo', 'Doña Anna Verde Vivo'],
-  ['verde-alto', 'Doña Anna Verde Alto'],
-  ['raiz-antigua', 'Doña Anna Raíz Antigua'],
-  ['cocina-viva', 'Doña Anna Cocina Viva'],
-  ['mesa-gordal-noble', 'Doña Anna Mesa · Gordal Noble'],
-]) {
-  if (!evergreen.includes("'" + productSlug + "': {") || !evergreen.includes("name: '" + productName + "'")) {
-    fail('Product schema map missing distinct product ' + productSlug);
-  }
+for (const productName of ['Verde Vivo','Verde Alto','Raíz Antigua','Cocina Viva','Mesa · Gordal Noble']) {
+  if (!products.includes("name: '" + productName + "'")) fail('Canonical product entity missing ' + productName);
 }
 if (!evergreen.includes("'@type': 'BreadcrumbList'")) fail('Evergreen pages must include breadcrumb schema.');
 if (!evergreen.includes("author: { '@id': ORG }")) fail('Evergreen pages must use Doña Anna as the page author entity.');
