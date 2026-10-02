@@ -29,8 +29,8 @@ interface LandingPageProps {
 
 const copy = {
   eyebrow: 'Olivenprosjekt fra Biar · Alicante · Anna & Freddy Bremseth',
-  headline: 'Doña Anna – tidlig høstet olivenolje fra Biar.',
-  subhead: 'Doña Anna er vårt felles olivenprosjekt i Biar. Verde Vivo er første produkt: 500 ml tidlig høstet olivenolje, utviklet med mål om extra virgin-kvalitet og tydelig opprinnelse. Endelig kvalitetsklasse, batchdata, analyser og tilgjengelighet publiseres når produksjonen er klar.',
+  headline: 'Doña Anna – olivenolje og produkter fra Biar.',
+  subhead: 'Doña Anna er vårt felles olivenprosjekt i Biar. Produktlinjen består av Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva som egne olivenoljeprodukter. Mesa · Gordal Noble er et eget bordolivenprodukt som foreløpig står som planlagt. Batchdata, analyser, format og tilgjengelighet publiseres per produkt når produksjonen er dokumentert.',
   cta: 'Meld interesse for smaksprøve',
   portal: 'B2B portal',
   specTitle: 'Produktdata for Verde Vivo',
@@ -52,9 +52,52 @@ const portfolio = [
     format: '500 ml · Cosecha temprana',
     role: 'Tidlig høstet olivenolje · mål om extra virgin-kvalitet',
     photo: imagePaths.oliveGrove,
-    text: 'Verde Vivo er Doña Annas første produkt. Den endelige batchinformasjonen – blant annet høstedato, analyseverdier og tilgjengelighet – publiseres når produksjonen er ferdig og dokumentert.',
+    text: 'Verde Vivo er produktet for tidlig høsting. Endelig kvalitetsklasse, sensorikk, analyse, høstedato og tilgjengelighet publiseres for den konkrete batchen.',
+  },
+  {
+    name: 'Verde Alto',
+    labelName: 'DOÑA ANNA · VERDE ALTO',
+    format: 'Olivenolje · format bekreftes per produksjon',
+    role: 'Balansert premiumprodukt · egen produktidentitet',
+    photo: imagePaths.harvestHands,
+    text: 'Verde Alto er et eget produkt i Doña Anna-porteføljen. Smaksprofil, format, kvalitetsklasse og batchdata skal beskrives ut fra den faktiske produksjonen – ikke gjenbrukes fra Verde Vivo.',
+  },
+  {
+    name: 'Raíz Antigua',
+    labelName: 'DOÑA ANNA · RAÍZ ANTIGUA',
+    format: 'Olivenolje · opprinnelse dokumenteres per batch',
+    role: 'Heritage-produkt · egen produktidentitet',
+    photo: imagePaths.oliveGrove,
+    text: 'Raíz Antigua er et separat olivenoljeprodukt med egen historie og etikett. Påstander om trær, sorter, smak og begrenset produksjon publiseres først når de kan knyttes til den konkrete batchen.',
+  },
+  {
+    name: 'Cocina Viva',
+    labelName: 'DOÑA ANNA · COCINA VIVA',
+    format: 'Profesjonelt kjøkkenformat · størrelse bekreftes',
+    role: 'Restaurant og profesjonelt kjøkken · egen produktidentitet',
+    photo: imagePaths.harvestClose,
+    text: 'Cocina Viva er Doña Annas separate produktspor for profesjonelle kjøkken. Format, pris, tekniske egenskaper og leveringsopplegg bekreftes før det markedsføres som tilgjengelig.',
+  },
+  {
+    name: 'Mesa · Gordal Noble',
+    labelName: 'DOÑA ANNA · MESA · GORDAL NOBLE',
+    format: 'Bordoliven · planlagt produkt',
+    role: 'Aperitivo og bordoliven · ikke tilgjengelig ennå',
+    photo: imagePaths.harvestHands,
+    text: 'Mesa · Gordal Noble er et eget planlagt bordolivenprodukt. Det skal ikke fremstilles som lansert før råvare, prosess, format, etikett, pris og tilgjengelighet er endelig dokumentert.',
   },
 ];
+
+const PRODUCT_HREFS: Record<string, string> = {
+  'verde vivo': '/verde-vivo',
+  'verde alto': '/verde-alto',
+  'raíz antigua': '/raiz-antigua',
+  'cocina viva': '/cocina-viva',
+  'mesa · gordal noble': '/mesa-gordal-noble',
+  'mesa gordal noble': '/mesa-gordal-noble',
+};
+
+const productHref = (name: string) => PRODUCT_HREFS[name.trim().toLowerCase()] || '#portfolio';
 
 const specs = [
   ['Produkt', 'Verde Vivo'],
@@ -90,7 +133,7 @@ const b2bPackages = [
 ];
 
 const buyerProof: Array<{ icon: React.ElementType; title: string; text: string }> = [
-  { icon: Package, title: 'Ett tydelig startprodukt', text: 'Verde Vivo 500 ml er produktet som kommuniseres offentlig nå.' },
+  { icon: Package, title: 'Flere tydelige produkter', text: 'Hvert produkt har eget navn, rolle, produktside og etikett. Batchdata og tilgjengelighet holdes adskilt.' },
   { icon: QrCode, title: 'Batchdata etter produksjon', text: 'Sporbar informasjon publiseres når den konkrete batchen er dokumentert.' },
   { icon: ShieldCheck, title: 'Ingen oppdiktede produktdata', text: 'Pris, analyse og tilgjengelighet oppgis først når de faktisk finnes.' },
   { icon: Building2, title: 'B2B-dialog', text: 'Restaurant, hotell, butikk og import kan melde interesse før lansering.' },
@@ -180,8 +223,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     fetchPublicCommerceProducts().then(setLivePortfolio);
   }, []);
 
-  const approvedLivePortfolio = livePortfolio.filter(item => item.name.trim().toLowerCase() === 'verde vivo');
-  const portfolioItems = approvedLivePortfolio.length ? approvedLivePortfolio : portfolio;
+  const approvedNames = new Set(['verde vivo', 'verde alto', 'raíz antigua', 'raiz antigua', 'cocina viva', 'mesa · gordal noble', 'mesa gordal noble']);
+  const approvedLivePortfolio = livePortfolio.filter(item => approvedNames.has(item.name.trim().toLowerCase()));
+  const portfolioItems = approvedLivePortfolio.length >= 4 ? approvedLivePortfolio : portfolio;
 
   const handleTastingRequest = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -299,7 +343,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Kort fortalt</p>
                 <h2 id="quick-answers-title" className="mt-3 font-serif text-3xl leading-tight md:text-5xl">Hva er Doña Anna?</h2>
                 <p className="mt-4 max-w-xl text-lg leading-8 text-white/64">
-                  Doña Anna er olivenprosjektet til Anna og Freddy Bremseth i Biar, Alicante. Verde Vivo 500 ml er første produkt. Bordoliven er et mulig senere steg, ikke et produkt vi markedsfører som tilgjengelig nå.
+                  Doña Anna er olivenprosjektet til Anna og Freddy Bremseth i Biar, Alicante. Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva er separate olivenoljeprodukter med egne roller og etiketter. Mesa · Gordal Noble er et eget planlagt bordolivenprodukt og markedsføres ikke som tilgjengelig ennå.
                 </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -401,10 +445,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="mb-12 grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Portefølje</p>
-              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Verde Vivo er produktet vi bygger merkevaren rundt nå.</h2>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Én merkevare. Flere tydelige produkter.</h2>
             </div>
             <p className="self-end text-lg leading-8 text-white/66">
-              Vi viser bare produktet som er definert nå: Verde Vivo 500 ml. Nye formater eller bordoliven legges ikke ut før de faktisk er besluttet, produsert og dokumentert.
+              Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva skal behandles som separate olivenoljeprodukter – aldri som varianter av samme side eller etikett. Mesa · Gordal Noble er et eget bordolivenprodukt som står som planlagt frem til produksjon og tilgjengelighet er bekreftet.
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -421,7 +465,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 </div>
                 <div className="p-2 pt-5">
                   <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#d4af37]">{item.role}</p>
-                  <h3 className="mt-2 font-serif text-3xl"><a href="/verde-vivo" className="hover:text-[#d4af37]">{item.name}</a></h3>
+                  <h3 className="mt-2 font-serif text-3xl"><a href={productHref(item.name)} className="hover:text-[#d4af37]">{item.name}</a></h3>
                   <p className="mt-3 border-y border-white/10 py-3 text-[10px] font-bold uppercase tracking-[0.24em] text-white/72">{item.labelName}</p>
                   <p className="mt-1 text-xs uppercase tracking-[0.2em] text-white/48">{item.format}</p>
                   {'priceLabel' in item && (
