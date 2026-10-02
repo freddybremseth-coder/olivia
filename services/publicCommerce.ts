@@ -74,9 +74,19 @@ export async function fetchPublicCommerceProducts(): Promise<PublicCommerceProdu
     return [];
   }
 
+  const approvedNames = new Set([
+    'verde vivo',
+    'verde alto',
+    'raíz antigua',
+    'raiz antigua',
+    'cocina viva',
+    'mesa · gordal noble',
+    'mesa gordal noble',
+  ]);
+
   return (data || [])
     .filter((row: any) =>
-      text(row.name).toLowerCase() === 'verde vivo' &&
+      approvedNames.has(text(row.name).toLowerCase()) &&
       row?.metadata?.public_site_approved === true
     )
     .map(toPublicProduct);
