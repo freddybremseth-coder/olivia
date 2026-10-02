@@ -87,7 +87,31 @@
   }
 
   function sendConversion(eventInfo) {
-    sendConversion(eventInfo);
+    var dedupeKey = "donaanna:conversion:" + path + ":" + eventInfo.target;
+    try { if (window.sessionStorage.getItem(dedupeKey)) return; } catch (_) {}
+
+    var discoverySource = null;
+    var landingPath = null;
+    try {
+      discoverySource = window.sessionStorage.getItem("donaanna:discovery-source") || null;
+      landingPath = window.sessionStorage.getItem("donaanna:discovery-landing") || null;
+    } catch (_) {}
+
+    void fetch("https://realtyflow.chatgenius.pro/api/public/conversion-event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventType: eventInfo.eventType,
+        target: eventInfo.target,
+        path: path,
+        discoverySource: discoverySource,
+        landingPath: landingPath
+      }),
+      keepalive: true
+    }).then(function (response) {
+      if (response.status !== 204) return;
+      try { window.sessionStorage.setItem(dedupeKey, "1"); } catch (_) {}
+    }).catch(function () {});
   }
 
   document.addEventListener("submit", function (event) {
