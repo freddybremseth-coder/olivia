@@ -234,8 +234,16 @@ for (const slug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa
 if (!evergreen.includes("productHubCards = [") || !evergreen.includes("name: 'Mesa · Gordal Noble'")) {
   fail('Products hub must list all distinct Doña Anna products.');
 }
-for (const productSlug of ['verde-vivo','verde-alto','raiz-antigua','cocina-viva','mesa-gordal-noble']) {
-  if (!evergreen.includes("'" + productSlug + "': { name:")) fail('Product schema map missing ' + productSlug);
+for (const [productSlug, productName] of [
+  ['verde-vivo', 'Doña Anna Verde Vivo'],
+  ['verde-alto', 'Doña Anna Verde Alto'],
+  ['raiz-antigua', 'Doña Anna Raíz Antigua'],
+  ['cocina-viva', 'Doña Anna Cocina Viva'],
+  ['mesa-gordal-noble', 'Doña Anna Mesa · Gordal Noble'],
+]) {
+  if (!evergreen.includes("'" + productSlug + "': {") || !evergreen.includes("name: '" + productName + "'")) {
+    fail('Product schema map missing distinct product ' + productSlug);
+  }
 }
 if (!evergreen.includes("'@type': 'BreadcrumbList'")) fail('Evergreen pages must include breadcrumb schema.');
 if (!evergreen.includes("author: { '@id': ORG }")) fail('Evergreen pages must use Doña Anna as the page author entity.');
