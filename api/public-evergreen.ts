@@ -231,7 +231,7 @@ const PAGES: Record<string, EvergreenPage> = {
       { question: 'Er analyseverdier publisert?', answer: 'Analyseverdier publiseres når den konkrete batchen er produsert og dokumentert.' },
       { question: 'Kan profesjonelle kjøpere melde interesse?', answer: 'Ja. Restaurant, hotell, butikk og import kan melde interesse før lansering.' }
     ],
-    primaryCta: { label: 'Meld interesse for Verde Vivo', href: '/#tasting' }
+    primaryCta: { label: 'Meld interesse for Verde Vivo', href: '/?product=verde-vivo#tasting' }
   },
   produkter: {
     slug: 'produkter',
@@ -304,7 +304,7 @@ const PAGES: Record<string, EvergreenPage> = {
       { question: 'Er kvalitetsklasse og smak bekreftet?', answer: 'Disse opplysningene publiseres først når den konkrete batchen er produsert og dokumentert.' },
       { question: 'Kan profesjonelle kjøpere melde interesse?', answer: 'Ja. Restaurant, butikk, import og andre profesjonelle kjøpere kan melde interesse før tilgjengelighet er bekreftet.' }
     ],
-    primaryCta: { label: 'Meld interesse for Verde Alto', href: '/#tasting' }
+    primaryCta: { label: 'Meld interesse for Verde Alto', href: '/?product=verde-alto#tasting' }
   },
   'raiz-antigua': {
     slug: 'raiz-antigua',
@@ -341,7 +341,7 @@ const PAGES: Record<string, EvergreenPage> = {
       { question: 'Kommer Raíz Antigua fra gamle trær?', answer: 'Dette beskrives først når opprinnelsen til den konkrete batchen kan dokumenteres.' },
       { question: 'Når publiseres sensoriske data?', answer: 'Sensorikk og analyseverdier publiseres per batch etter produksjon og vurdering.' }
     ],
-    primaryCta: { label: 'Meld interesse for Raíz Antigua', href: '/#tasting' }
+    primaryCta: { label: 'Meld interesse for Raíz Antigua', href: '/?product=raiz-antigua#tasting' }
   },
   'cocina-viva': {
     slug: 'cocina-viva',
@@ -377,7 +377,7 @@ const PAGES: Record<string, EvergreenPage> = {
       { question: 'Hvilket format får Cocina Viva?', answer: 'Det endelige kjøkkenformatet publiseres når produkt og emballasje er bekreftet.' },
       { question: 'Kan restauranter melde interesse?', answer: 'Ja. Profesjonelle kjøpere kan melde interesse før endelig tilgjengelighet og pris er publisert.' }
     ],
-    primaryCta: { label: 'Kontakt oss om Cocina Viva', href: '/#tasting' }
+    primaryCta: { label: 'Kontakt oss om Cocina Viva', href: '/?product=cocina-viva#tasting' }
   },
   'mesa-gordal-noble': {
     slug: 'mesa-gordal-noble',
@@ -414,7 +414,7 @@ const PAGES: Record<string, EvergreenPage> = {
       { question: 'Er det tilgjengelig nå?', answer: 'Nei. Lansering og tilgjengelighet publiseres først når produktet er ferdig definert og dokumentert.' },
       { question: 'Hvilken olivensort skal brukes?', answer: 'Sort og produksjonsmetode bekreftes ut fra den faktiske produksjonen før lansering.' }
     ],
-    primaryCta: { label: 'Se resten av produktlinjen', href: '/produkter' }
+    primaryCta: { label: 'Meld interesse for Mesa · Gordal Noble', href: '/?product=mesa-gordal-noble#tasting' }
   },
   'om-dona-anna': {
     slug: 'om-dona-anna',
