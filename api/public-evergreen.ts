@@ -560,7 +560,45 @@ function pageHtml(page: EvergreenPage) {
     'cocina-viva': { name: 'Doña Anna Cocina Viva', category: 'Olive Oil' },
     'mesa-gordal-noble': { name: 'Doña Anna Mesa · Gordal Noble', category: 'Table Olives' },
   };
+  const productVisual: Record<string, { displayName: string; type: string; labelStatus: string; availability: string; context: string }> = {
+    'verde-vivo': {
+      displayName: 'Verde Vivo',
+      type: 'Tidlig høstet olivenolje',
+      labelStatus: 'Etikett verifisert · produktfoto venter',
+      availability: 'Produksjon og batchdata publiseres når de er dokumentert',
+      context: 'Cosecha temprana · 500 ml',
+    },
+    'verde-alto': {
+      displayName: 'Verde Alto',
+      type: 'Eget olivenoljeprodukt',
+      labelStatus: 'Etikett venter på godkjenning',
+      availability: 'Format, kvalitetsklasse og batchdata bekreftes per produksjon',
+      context: 'Balansert og bredt anvendelig posisjon',
+    },
+    'raiz-antigua': {
+      displayName: 'Raíz Antigua',
+      type: 'Eget heritage-produkt',
+      labelStatus: 'Etikett venter på godkjenning',
+      availability: 'Opprinnelse og batchpåstander dokumenteres før publisering',
+      context: 'Heritage · opprinnelse · egen produktfortelling',
+    },
+    'cocina-viva': {
+      displayName: 'Cocina Viva',
+      type: 'Produkt for profesjonelle kjøkken',
+      labelStatus: 'Etikett venter på godkjenning',
+      availability: 'Format, pris og levering bekreftes før lansering',
+      context: 'Restaurant · hotell · profesjonelt kjøkken',
+    },
+    'mesa-gordal-noble': {
+      displayName: 'Mesa · Gordal Noble',
+      type: 'Planlagt bordolivenprodukt',
+      labelStatus: 'Etikett og emballasje venter på godkjenning',
+      availability: 'Planlagt · ikke tilgjengelig for salg ennå',
+      context: 'Bordoliven · eget produktspor',
+    },
+  };
   const product = productSchema[page.slug];
+  const visual = productVisual[page.slug];
   if (product) {
     schema['@graph'].push({
       '@type': 'Product',
@@ -583,6 +621,19 @@ function pageHtml(page: EvergreenPage) {
     '<details><summary>' + escapeHtml(item.question) + '</summary><p>' + escapeHtml(item.answer) + '</p></details>'
   ).join('');
 
+  const productIdentity = visual
+    ? '<section class="product-identity" aria-label="Produktidentitet">' +
+      '<div class="product-mark"><img src="/labels/dona-anna-figure.svg" alt="" width="180" height="300"></div>' +
+      '<div class="product-copy"><p class="product-kicker">Eget Doña Anna-produkt</p>' +
+      '<h2>' + escapeHtml(visual.displayName) + '</h2>' +
+      '<p class="product-type">' + escapeHtml(visual.type) + '</p>' +
+      '<dl><div><dt>Rolle</dt><dd>' + escapeHtml(visual.context) + '</dd></div>' +
+      '<div><dt>Etikett</dt><dd>' + escapeHtml(visual.labelStatus) + '</dd></div>' +
+      '<div><dt>Status</dt><dd>' + escapeHtml(visual.availability) + '</dd></div></dl>' +
+      '<p class="product-note">Doña Anna bruker ikke gamle AI-flasker eller etiketter fra andre produkter som erstatning. Endelig produktfoto publiseres først når riktig etikett og emballasje er verifisert.</p>' +
+      '</div></section>'
+    : '';
+
   const css = `
     :root{--ink:#0d0d0d;--paper:#f4efe3;--gold:#9a741d;--gold2:#d4af37;--line:rgba(30,24,15,.14);--muted:#6b6255}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:#191713;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.7}
@@ -591,11 +642,12 @@ function pageHtml(page: EvergreenPage) {
     .hero{background:radial-gradient(circle at 78% 20%,rgba(212,175,55,.18),transparent 28rem),var(--ink);color:#fff;padding:clamp(64px,9vw,128px) clamp(20px,7vw,96px)}
     .hero-inner{max-width:1120px;margin:auto}.eyebrow{color:var(--gold2);font-size:12px;font-weight:800;letter-spacing:.24em;text-transform:uppercase}.hero h1{max-width:900px;margin:18px 0 0;font:600 clamp(44px,7vw,84px)/.98 Georgia,serif;letter-spacing:-.035em}.lead{max-width:780px;margin:28px 0 0;color:#d7d0c4;font-size:clamp(18px,2.1vw,24px)}
     .answer{max-width:900px;margin:34px 0 0;padding:22px 24px;border:1px solid rgba(212,175,55,.35);background:rgba(255,255,255,.045);font-size:17px}.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}.button{display:inline-flex;min-height:48px;align-items:center;padding:0 20px;text-decoration:none;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.14em}.primary{background:var(--gold2);color:#111}.secondary{border:1px solid rgba(255,255,255,.2);color:#fff}
+    .product-identity{display:grid;grid-template-columns:minmax(220px,.65fr) minmax(0,1.35fr);max-width:1120px;margin:0 auto;padding:42px clamp(20px,5vw,54px);gap:34px;align-items:stretch}.product-mark{min-height:350px;display:flex;align-items:center;justify-content:center;background:#e9e1cf;border:1px solid rgba(30,24,15,.12)}.product-mark img{width:150px;height:250px;object-fit:contain;filter:invert(1)}.product-copy{padding:10px 0}.product-kicker{margin:0;color:#8a6a19;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.22em}.product-copy h2{margin:8px 0 2px;font:600 clamp(34px,5vw,58px)/1 Georgia,serif}.product-type{margin:0 0 24px;color:#655d51}.product-copy dl{display:grid;gap:0;margin:0;border-top:1px solid var(--line)}.product-copy dl div{display:grid;grid-template-columns:110px 1fr;gap:18px;padding:14px 0;border-bottom:1px solid var(--line)}.product-copy dt{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:#8a6a19}.product-copy dd{margin:0;color:#463f35}.product-note{margin-top:20px;padding:16px 18px;background:#fff;border:1px solid var(--line);color:#655d51;font-size:14px}
     main{max-width:1120px;margin:auto;padding:clamp(52px,7vw,88px) clamp(20px,5vw,54px)}.article-grid{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:clamp(36px,7vw,86px);align-items:start}.article-section{padding:0 0 46px;border-bottom:1px solid var(--line);margin-bottom:46px}.article-section h2,.faq h2,.next h2{font:600 clamp(30px,4vw,48px)/1.08 Georgia,serif;margin:0 0 18px}.article-section p{font-size:17px;color:#4f493f}.aside{position:sticky;top:92px;border:1px solid var(--line);background:#fff;padding:24px}.aside strong{display:block;font:600 24px Georgia,serif}.aside nav{display:grid;gap:12px;margin-top:18px}.aside a{color:#705515;text-underline-offset:3px}
     .faq{padding:20px 0 58px}.faq details{border-top:1px solid var(--line);padding:18px 0}.faq details:last-child{border-bottom:1px solid var(--line)}.faq summary{cursor:pointer;font-weight:800}.faq details p{color:#554e43}
     .next{margin-top:16px;padding:34px;background:#15120e;color:#fff}.next p{color:#cfc6b6;max-width:720px}.next .button{margin-top:10px}.cluster{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:26px}.cluster a{color:#d4af37}
     .author{margin-top:46px;padding-top:24px;border-top:1px solid var(--line);color:#655d51;font-size:14px}.footer{padding:30px clamp(20px,5vw,72px);background:#0d0d0d;color:#8f8678;font-size:12px}.footer a{color:#c8b477;margin-right:14px;white-space:nowrap}
-    @media(max-width:820px){.topnav{display:none}.article-grid{grid-template-columns:1fr}.aside{position:static}.hero{padding-top:74px}.hero h1{font-size:clamp(40px,13vw,62px)}}
+    @media(max-width:820px){.topnav{display:none}.article-grid{grid-template-columns:1fr}.aside{position:static}.hero{padding-top:74px}.hero h1{font-size:clamp(40px,13vw,62px)}.product-identity{grid-template-columns:1fr}.product-mark{min-height:280px}.product-copy dl div{grid-template-columns:1fr;gap:4px}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
   `;
 
@@ -612,6 +664,7 @@ function pageHtml(page: EvergreenPage) {
     '<style>' + css + '</style></head><body>' +
     '<header class="topbar"><a class="brand" href="/">DOÑA ANNA</a><nav class="topnav" aria-label="Hovedmeny"><a href="/produkter">Produkter</a><a href="/guider">Guider</a><a href="/magasin">Magasin</a><a href="/om-dona-anna">Om oss</a><a href="/#tasting">Kontakt</a></nav></header>' +
     '<section class="hero"><div class="hero-inner"><p class="eyebrow">' + escapeHtml(page.eyebrow) + '</p><h1>' + escapeHtml(page.h1) + '</h1><p class="lead">' + escapeHtml(page.description) + '</p><div class="answer"><strong>Kort svar:</strong> ' + escapeHtml(page.answer) + '</div><div class="actions"><a class="button primary" href="' + escapeHtml(page.primaryCta.href) + '">' + escapeHtml(page.primaryCta.label) + '</a><a class="button secondary" href="/magasin">Les magasinet</a></div></div></section>' +
+    productIdentity +
     '<main><div class="article-grid"><article>' + sections +
     '<section class="faq"><h2>Vanlige spørsmål</h2>' + faq + '</section>' +
     '<section class="next"><h2>Neste steg</h2><p>Se riktig produkt, les mer om gården eller meld interesse dersom du vurderer Doña Anna for restaurant, hotell, butikk eller import.</p><a class="button primary" href="' + escapeHtml(page.primaryCta.href) + '">' + escapeHtml(page.primaryCta.label) + '</a><div class="cluster"><a href="/produkter">Alle produkter</a><a href="/verde-vivo">Verde Vivo</a><a href="/verde-alto">Verde Alto</a><a href="/raiz-antigua">Raíz Antigua</a><a href="/cocina-viva">Cocina Viva</a><a href="/mesa-gordal-noble">Mesa · Gordal Noble</a></div></section>' +
