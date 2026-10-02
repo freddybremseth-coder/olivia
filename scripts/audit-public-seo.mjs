@@ -10,6 +10,7 @@ const listing = read('api/public-listing.ts');
 const evergreen = read('api/public-evergreen.ts');
 const sitemap = read('api/sitemap.ts');
 const robots = read('public/robots.txt');
+const analytics = read('public/donaanna-analytics.js');
 const vercel = JSON.parse(read('vercel.json'));
 
 const FREDDY = 'https://www.freddybremseth.com/#person';
@@ -28,6 +29,7 @@ if (!index.includes('/guider') || !index.includes('/om-dona-anna') || !index.inc
 if (!index.includes(FREDDY) || !index.includes(ANNA)) fail('Homepage schema must identify Anna and Freddy Bremseth.');
 if (!index.includes('"name": "Anna Bremseth"') || !index.includes('"name": "Freddy Bremseth"')) fail('Both people must be named in structured data.');
 if (!index.includes('"@type": "Product"') || !index.includes('"name": "Doña Anna Verde Vivo"')) fail('Homepage schema must expose the real Verde Vivo product.');
+if (index.includes('/donaanna/product-design/')) fail('Homepage social preview must not use unapproved bottle imagery.');
 if (!index.includes('"@type": "FAQPage"') && !index.includes('"@type":"FAQPage"')) fail('Homepage must include matching FAQ schema.');
 if (!index.includes('"@type": "ItemList"') && !index.includes('"@type":"ItemList"')) fail('Homepage must include product ItemList schema.');
 if (!index.includes('"@type": "Place"') && !index.includes('"@type":"Place"')) fail('Homepage must identify Biar as a Place entity.');
@@ -92,6 +94,18 @@ if (!routeRewrites.some((row) => row.source === '/magasin/:slug' && String(row.d
 if (!routeRewrites.some((row) => row.source === '/sitemap.xml' && String(row.destination || '').includes('/api/sitemap'))) {
   fail('Sitemap must stay dynamic.');
 }
+if (!analytics.includes('/api/public/search-discovery')) fail('Public measurement must capture privacy-minimal search/AI arrivals.');
+if (!analytics.includes('/api/public/conversion-event')) fail('Public measurement must capture coarse CTA progression.');
+for (const target of ['tasting_interest','verde_vivo','restaurant_guide','guide_hub','b2b_portal']) {
+  if (!analytics.includes(target)) fail('Public measurement missing coarse CTA target ' + target);
+}
+if (analytics.includes('tastingRequest') || analytics.includes('email.value') || analytics.includes('company.value')) {
+  fail('Public measurement must never read visitor form values.');
+}
+if (!index.includes('/donaanna-analytics.js') || !evergreen.includes('/donaanna-analytics.js') || !article.includes('/donaanna-analytics.js') || !listing.includes('/donaanna-analytics.js')) {
+  fail('All public surfaces must load the privacy-minimal measurement layer.');
+}
+
 if (!robots.includes('Sitemap: https://www.donaanna.com/sitemap.xml')) fail('robots.txt must advertise the sitemap.');
 for (const path of ['/app','/olivia','/b2b','/api/']) {
   if (!robots.includes('Disallow: ' + path)) fail('robots.txt must protect private/internal route ' + path);
