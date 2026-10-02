@@ -12,22 +12,15 @@ export interface PublicCommerceProduct {
   stockLabel: string;
 }
 
-const fallbackPhotos: Record<string, string> = {
-  'verde vivo': '/donaanna/product-design/verde-vivo-estate-arches.jpg',
-  'verde alto': '/donaanna/product-design/verde-alto-rustic-room.jpg',
-  'raiz antigua': '/donaanna/product-design/raiz-antigua-cellar.jpg',
-  'raíz antigua': '/donaanna/product-design/raiz-antigua-cellar.jpg',
-  'cocina viva': '/donaanna/product-design/cocina-viva-b2b-collage.jpg',
-  mesa: '/donaanna/product-design/portfolio-slate-mesa.jpg',
-};
+const BRAND_SAFE_FALLBACK = '/donaanna/olive-trees.jpg';
 
 function text(value: unknown): string {
   return String(value || '').trim();
 }
 
 function productPhoto(row: any): string {
-  const key = text(row.name).toLowerCase();
-  return fallbackPhotos[key] || text(row.image_url) || '/donaanna/product-design/raiz-antigua-paella.jpg';
+  const image = text(row.image_url);
+  return image && !image.includes('/donaanna/product-design/') ? image : BRAND_SAFE_FALLBACK;
 }
 
 function priceLabel(row: any): string {
@@ -81,5 +74,10 @@ export async function fetchPublicCommerceProducts(): Promise<PublicCommerceProdu
     return [];
   }
 
-  return (data || []).map(toPublicProduct);
+  return (data || [])
+    .filter((row: any) =>
+      text(row.name).toLowerCase() === 'verde vivo' &&
+      row?.metadata?.public_site_approved === true
+    )
+    .map(toPublicProduct);
 }
