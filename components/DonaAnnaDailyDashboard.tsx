@@ -273,6 +273,74 @@ function buildDelaySummary(farmTruth:any):DelaySummary {
   return summary;
 }
 
+type ParcelAttentionRow = {
+  parcelId:string;
+  parcelName:string;
+  critical:number;
+  overdue:number;
+  inProgress:number;
+  postponed:number;
+  score:number;
+};
+
+function buildParcelAttention(farmTruth:any):ParcelAttentionRow[] {
+  const today=new Date();today.setHours(12,0,0,0);
+  const parcelNames=new Map<string,string>((farmTruth?.parcels||[]).map((p:any)=>[String(p.id),String(p.name||p.id)] as [string,string]));
+  const rows=new Map<string,ParcelAttentionRow>();
+
+  const ensure=(parcelId:string)=>{
+    const id=parcelId||'farm';
+    if(!rows.has(id))rows.set(id,{
+      parcelId:id,
+      parcelName:id==='farm'?'Hele gården':(parcelNames.get(id)||id),
+      critical:0,overdue:0,inProgress:0,postponed:0,score:0,
+    });
+    return rows.get(id)!;
+  };
+
+  for(const item of farmTruth?.yearWheel||[]){
+    if(['done','skipped','suggested'].includes(item.status))continue;
+    const row=ensure(item.parcel_id||'farm');
+    if(item.status==='in_progress'){
+      row.inProgress++;
+      row.score+=8;
+    }
+    if(item.status==='postponed'){
+      row.postponed++;
+      row.score+=4;
+      if(item.postponed_until){
+        const followUp=new Date(item.postponed_until+'T12:00:00');
+        if(!Number.isNaN(followUp.getTime())){
+          const days=Math.round((followUp.getTime()-today.getTime())/86400000);
+          if(days<0){
+            row.overdue++;
+            row.score+=12;
+            if(Math.abs(days)>=3){row.critical++;row.score+=20;}
+          }
+        }
+      }
+      continue;
+    }
+
+    const hasExactDay=Boolean(item.target_day);
+    const target=hasExactDay
+      ?new Date(item.target_year,item.target_month-1,item.target_day)
+      :new Date(item.target_year,item.target_month,0);
+    target.setHours(12,0,0,0);
+    const days=Math.round((target.getTime()-today.getTime())/86400000);
+    if(days<0){
+      row.overdue++;
+      row.score+=12;
+      if(hasExactDay&&Math.abs(days)>=3){row.critical++;row.score+=20;}
+    }
+  }
+
+  return Array.from(rows.values())
+    .filter(row=>row.critical||row.overdue||row.inProgress||row.postponed)
+    .sort((a,b)=>b.score-a.score||a.parcelName.localeCompare(b.parcelName,'no'))
+    .slice(0,8);
+}
+
 function buildDailyTopFive(params:{
   farmTruth:any;
   farmQuestions:FarmQuestion[];
@@ -488,6 +556,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   const actions = buildActionCards(advice, readings, alerts, irrigationEvents, observations);
   const topFive = buildDailyTopFive({farmTruth,farmQuestions,seasonExecution,actions});
   const delaySummary = buildDelaySummary(farmTruth);
+  const parcelAttention = buildParcelAttention(farmTruth);
   const currentMonth = new Date().getMonth() + 1;
   const oilWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_oil;
   const tableWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_table_olives;
@@ -536,6 +605,31 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       {isLoading && loadState === 'loading' ? (
         <div className="glass rounded-[2rem] p-8 border border-white/10 text-slate-400 flex items-center gap-3"><Loader2 size={18} className="animate-spin" /> Henter dagsdata fra Supabase...</div>
       ) : null}
+
+      {farmTruth&&<div className="glass rounded-[2rem] p-6 border border-white/10">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.24em] font-black text-cyan-300">Oppmerksomhet per parsell</p>
+            <h3 className="text-xl font-black text-white mt-1">Hvor på gården må dere se først?</h3>
+            <p className="text-xs text-slate-500 mt-2">Kun parseller med forsinket, pågående eller utsatt arbeid vises her.</p>
+          </div>
+          {onNavigate&&<button onClick={()=>onNavigate('farm_journal:yearwheel')} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white">Åpne årshjul →</button>}
+        </div>
+        {parcelAttention.length>0?<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-5">
+          {parcelAttention.map(row=><button key={row.parcelId} onClick={()=>onNavigate?.('farm_journal:yearwheel')} className={'rounded-2xl border p-4 text-left transition hover:bg-white/[0.05] '+(row.critical?'border-red-500/25 bg-red-500/[0.06]':row.overdue?'border-amber-400/20 bg-amber-400/[0.05]':'border-white/10 bg-black/20')}>
+            <div className="flex items-start justify-between gap-3">
+              <div><p className="text-sm font-black text-white">{row.parcelName}</p><p className="text-[10px] uppercase tracking-widest text-slate-600 mt-1">Driftsoppfølging</p></div>
+              <div className={'rounded-full px-2.5 py-1 text-[10px] font-black '+(row.critical?'bg-red-500/15 text-red-300':row.overdue?'bg-amber-400/10 text-amber-200':'bg-cyan-500/10 text-cyan-200')}>{row.score}</div>
+            </div>
+            <div className="grid grid-cols-4 gap-2 mt-4">
+              <div><p className="text-[9px] text-slate-600 uppercase">Kritisk</p><p className={'font-black mt-1 '+(row.critical?'text-red-300':'text-slate-500')}>{row.critical}</p></div>
+              <div><p className="text-[9px] text-slate-600 uppercase">Forsinket</p><p className={'font-black mt-1 '+(row.overdue?'text-amber-200':'text-slate-500')}>{row.overdue}</p></div>
+              <div><p className="text-[9px] text-slate-600 uppercase">Pågår</p><p className={'font-black mt-1 '+(row.inProgress?'text-cyan-200':'text-slate-500')}>{row.inProgress}</p></div>
+              <div><p className="text-[9px] text-slate-600 uppercase">Utsatt</p><p className={'font-black mt-1 '+(row.postponed?'text-amber-100':'text-slate-500')}>{row.postponed}</p></div>
+            </div>
+          </button>)}
+        </div>:<div className="mt-5 rounded-2xl border border-green-500/15 bg-green-500/[0.04] p-4 text-sm text-green-100"><p className="font-bold">Ingen parseller krever særskilt oppfølging akkurat nå.</p><p className="text-xs text-slate-500 mt-1">Årshjulet har ingen aktive forsinkelser, pågående eller utsatte punkter per parsell.</p></div>}
+      </div>}
 
       <div className="glass rounded-[2rem] p-6 border border-[#d9b657]/20 bg-[#d9b657]/[0.035]">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
