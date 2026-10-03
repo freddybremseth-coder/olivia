@@ -312,7 +312,7 @@ export async function saveFarmSource(params:{
     throw new Error(docError.message);
   }
 
-  const sourceEvents=scan.events.length?scan.events:[{
+  const sourceEvents:FarmScannedEvent[]=scan.events.length?scan.events:[{
     eventType:'inspection' as FarmEventType,
     eventStatus:(scan.evidenceStatus==='completed'?'completed':scan.evidenceStatus==='planned'?'planned':scan.evidenceStatus==='recommended'?'recommended':scan.evidenceStatus==='ordered'?'ordered':scan.evidenceStatus==='purchased'?'purchased':'observed') as FarmEventStatus,
     title:scan.title,
@@ -320,7 +320,7 @@ export async function saveFarmSource(params:{
     occurredOn:scan.evidenceStatus==='observed'||scan.evidenceStatus==='completed'?scan.documentDate:null,
     plannedFor:scan.evidenceStatus==='planned'||scan.evidenceStatus==='recommended'?scan.documentDate:null,
     periodLabel:scan.documentDate?undefined:'Dato ikke dokumentert',
-    datePrecision:scan.documentDate?'exact':'unknown' as const,
+    datePrecision:scan.documentDate?'exact':'unknown',
     recurrenceCandidate:false,
     products:scan.products,
     confidence:scan.confidence,
@@ -424,6 +424,22 @@ export async function fetchRainMeasurements(limit=365):Promise<RainMeasurement[]
   const {data,error}=await supabase.from('rain_measurements').select('*').order('measured_on',{ascending:false}).limit(limit);
   if(error)throw new Error(error.message);
   return(data||[]) as RainMeasurement[];
+}
+
+export async function fetchFarmContextImages(parcelId?:string,limit=6):Promise<Array<{url:string;title:string;observedAt:string;parcelId?:string}>>{
+  let query=supabase.from('farm_observations').select('title,observed_at,parcel_id,image_urls').not('image_urls','is',null).order('observed_at',{ascending:false}).limit(30);
+  if(parcelId)query=query.or('parcel_id.eq.'+parcelId+',parcel_id.is.null');
+  const {data,error}=await query;
+  if(error)throw new Error(error.message);
+  const out:Array<{url:string;title:string;observedAt:string;parcelId?:string}>=[];
+  for(const row of data||[]){
+    for(const url of Array.isArray((row as any).image_urls)?(row as any).image_urls:[]){
+      if(!url)continue;
+      out.push({url:String(url),title:String((row as any).title||'Feltbilde'),observedAt:String((row as any).observed_at||''),parcelId:(row as any).parcel_id||undefined});
+      if(out.length>=limit)return out;
+    }
+  }
+  return out;
 }
 
 export async function getFarmDocumentUrl(doc:Pick<FarmDocument,'storage_bucket'|'storage_path'>):Promise<string|null>{
