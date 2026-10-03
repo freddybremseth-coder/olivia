@@ -140,13 +140,16 @@ export async function createProductLot(params: {
   productId: string;
   lotCode: string;
   units: number;
-  batchIds: string[];
+  batchIds?: string[];
+  batchSources?: Array<{ batchId: string; inputKg?: number; inputLiters?: number }>;
   traceabilitySlug?: string;
   notes?: string;
+  packedAt?: string;
+  bestBefore?: string;
 }) {
   if (!isSupabaseConfigured) throw new Error('Supabase er ikke konfigurert.');
   const lotId = `lot-${Date.now()}`;
-  const now = new Date().toISOString();
+  const now = params.packedAt || new Date().toISOString();
 
   const { error: lotError } = await supabase.from('product_lots').insert({
     id: lotId,
@@ -154,15 +157,24 @@ export async function createProductLot(params: {
     lot_code: params.lotCode,
     status: 'active',
     packed_at: now,
+    best_before: params.bestBefore || null,
     initial_units: params.units,
     traceability_slug: params.traceabilitySlug || null,
     notes: params.notes || null,
   });
   if (lotError) throw lotError;
 
-  if (params.batchIds.length) {
+  const sources = params.batchSources?.length
+    ? params.batchSources
+    : (params.batchIds || []).map(batchId => ({ batchId }));
+  if (sources.length) {
     const { error: sourceError } = await supabase.from('product_lot_sources').insert(
-      params.batchIds.map(batchId => ({ lot_id: lotId, batch_id: batchId }))
+      sources.map(source => ({
+        lot_id: lotId,
+        batch_id: source.batchId,
+        input_kg: source.inputKg ?? null,
+        input_liters: source.inputLiters ?? null,
+      }))
     );
     if (sourceError) throw sourceError;
   }

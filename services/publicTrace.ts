@@ -78,6 +78,8 @@ export type PublicTraceLotSource = {
   yield_type?: string;
   kg_harvested?: number;
   liters_oil?: number;
+  input_kg?: number;
+  input_liters?: number;
   quality?: string;
   quality_score?: number;
   acidity_percent?: number;
@@ -156,7 +158,7 @@ export async function publishProductLotTrace(lotId: string): Promise<PublicTrace
   if (productError || !product) throw productError || new Error('Produkt ble ikke funnet.');
 
   const { data: links, error: linksError } = await supabase
-    .from('product_lot_sources').select('batch_id').eq('lot_id', lotId);
+    .from('product_lot_sources').select('batch_id,input_kg,input_liters').eq('lot_id', lotId);
   if (linksError) throw linksError;
   const batchIds = (links || []).map((row: any) => row.batch_id);
   if (!batchIds.length) throw new Error('Pakkelot mangler dokumenterte kildebatcher og kan ikke publiseres.');
@@ -179,8 +181,10 @@ export async function publishProductLotTrace(lotId: string): Promise<PublicTrace
     (parcels || []).forEach((parcel: any) => parcelMap.set(parcel.id, parcel));
   }
 
+  const allocationMap = new Map<string, any>((links || []).map((link: any) => [link.batch_id, link]));
   const sources: PublicTraceLotSource[] = (batches || []).map((batch: any) => {
     const parcel = parcelMap.get(batch.parcel_id);
+    const allocation = allocationMap.get(batch.id);
     const metrics = batch.quality_metrics || {};
     const sigpacParcel = parcel?.metadata?.sigpac?.parcel;
     return {
@@ -191,6 +195,8 @@ export async function publishProductLotTrace(lotId: string): Promise<PublicTrace
       yield_type: batch.yield_type || undefined,
       kg_harvested: Number(batch.weight || 0) || undefined,
       liters_oil: Number(batch.oil_yield_liters || 0) || undefined,
+      input_kg: allocation?.input_kg == null ? undefined : Number(allocation.input_kg),
+      input_liters: allocation?.input_liters == null ? undefined : Number(allocation.input_liters),
       quality: batch.quality || undefined,
       quality_score: batch.quality_score == null ? undefined : Number(batch.quality_score),
       acidity_percent: metrics.acidity == null ? undefined : Number(metrics.acidity),
@@ -225,8 +231,8 @@ export async function publishProductLotTrace(lotId: string): Promise<PublicTrace
       harvest_dates: unique(sources.map(source => source.harvest_date)),
       varieties: unique(sources.map(source => source.variety)),
       parcels: unique(sources.map(source => source.parcel_name)),
-      total_source_kg: sources.reduce((sum, source) => sum + Number(source.kg_harvested || 0), 0),
-      total_source_liters: sources.reduce((sum, source) => sum + Number(source.liters_oil || 0), 0),
+      total_source_kg: sources.some(source => source.input_kg != null) ? sources.reduce((sum, source) => sum + Number(source.input_kg || 0), 0) : undefined,
+      total_source_liters: sources.some(source => source.input_liters != null) ? sources.reduce((sum, source) => sum + Number(source.input_liters || 0), 0) : undefined,
     },
     published_at: new Date().toISOString(),
     created_by: userResult.user.id,
