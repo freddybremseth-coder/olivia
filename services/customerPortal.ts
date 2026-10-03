@@ -398,6 +398,7 @@ function customerToRow(customer: B2BCustomerProfile) {
     price_tier: customer.priceTier,
     payment_terms: customer.paymentTerms,
     payment_terms_days: (customer as any).paymentTermsDays ?? null,
+    preferred_locale: (customer as any).preferredLocale ?? 'no',
     billing_address: customer.billingAddress ?? null,
     shipping_address: customer.shippingAddress ?? null,
     tax_id: customer.taxId ?? null,
@@ -418,6 +419,7 @@ function rowToCustomer(row: any): B2BCustomerProfile {
     priceTier: row.price_tier ?? 'b2b',
     paymentTerms: row.payment_terms ?? 'card',
     paymentTermsDays: row.payment_terms_days ?? undefined,
+    preferredLocale: row.preferred_locale ?? 'no',
     billingAddress: row.billing_address ?? '',
     shippingAddress: row.shipping_address ?? '',
     taxId: row.tax_id ?? '',
@@ -632,6 +634,7 @@ function customerToAdminRow(row: any): Record<string, string | number> {
     type: row.customer_type,
     status: row.status,
     betaling: row.payment_terms_days != null ? `${row.payment_terms_days} dager` : (row.payment_terms ?? '-'),
+    språk: row.preferred_locale ?? 'no',
   };
 }
 
