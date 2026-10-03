@@ -1,263 +1,140 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Award,
-  CalendarDays,
-  CheckCircle2,
-  Factory,
-  FlaskConical,
-  Leaf,
-  Loader2,
-  MapPin,
-  Mountain,
-  PackageCheck,
-  QrCode,
-  Scale,
-  ShieldCheck,
-  Sparkles,
+  Award, CalendarDays, CheckCircle2, Factory, FlaskConical, Leaf, Loader2,
+  MapPin, PackageCheck, QrCode, Scale, ShieldCheck, Sprout
 } from 'lucide-react';
-import { fetchPublicTraceBatch, type PublicTraceBatch } from '../services/publicTrace';
+import {
+  fetchPublicTraceBatch, fetchPublicTraceLot,
+  type PublicTraceBatch, type PublicTraceLot, type PublicTraceLotSource
+} from '../services/publicTrace';
 
-type PublicBatch = PublicTraceBatch & {
-  product_status?: string;
-};
+interface PublicTracePageProps { slug?: string; }
 
-const demoBatch: PublicBatch = {
-  id: 'public-demo',
-  batch_code: 'DA-BIAR-2026-EVOO-001',
-  type: 'evoo',
-  status: 'published',
-  product_status: 'quality_checked',
-  harvest_date: '2026-11-25',
-  parcel_id: 'biar-main',
-  zone_id: 'zone-b',
-  variety: 'Changlot Real / Genovesa',
-  altitude_m: 650,
-  kg_harvested: 5200,
-  kg_processed: 5100,
-  liters_oil: 780,
-  yield_percent: 15.3,
-  acidity_percent: 0.18,
-  peroxide_value: 6.4,
-  polyphenols_mg_kg: 520,
-  sensory_profile: 'Grønn frukt, urter, medium bitterhet og tydelig pepperfinish.',
-  processing_location: 'Cooperativa / ekstern presse',
-  lot_notes: 'Demo-batch for premium EVOO-sporbarhet.',
-  public_story: 'DonaAnna bygger sporbarhet fra felt til ferdig produkt i Biar, Alicante.',
-  organic_note: 'Økologisk status og dokumentasjon bør bekreftes per batch før kommersiell bruk.',
-  qr_slug: 'da-biar-2026-evoo-001',
-  created_at: new Date().toISOString(),
-};
+const value = (v: unknown, suffix='') => v === undefined || v === null || v === '' ? '—' : `${v}${suffix}`;
 
-function getLocalBatches(): PublicBatch[] {
-  try {
-    const raw = localStorage.getItem('olivia_traceability_batches');
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as PublicBatch[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+function dateLabel(raw?: string) {
+  if (!raw) return '—';
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? raw : date.toLocaleDateString('nb-NO');
 }
 
-function normalizeLocalBatch(batch: PublicBatch): PublicBatch {
-  return {
-    ...batch,
-    status: batch.status === 'published' || batch.status === 'draft' || batch.status === 'archived' ? batch.status : 'published',
-    product_status: batch.product_status || batch.status,
-  };
-}
-
-function typeLabel(type: PublicBatch['type']): string {
-  if (type === 'evoo') return 'Extra Virgin Olive Oil';
-  if (type === 'table_olives') return 'Bordoliven';
-  return 'Rå oliven';
-}
-
-function statusLabel(status?: string): string {
-  const labels: Record<string, string> = {
-    planned: 'Planlagt',
-    harvested: 'Høstet',
-    processing: 'Under prosessering',
-    quality_checked: 'Kvalitetstestet',
-    packed: 'Pakket',
-    ready_for_sale: 'Klar for salg',
-    published: 'Publisert',
-  };
-  return labels[status || ''] || status || 'Publisert';
-}
-
-function statValue(value: unknown, suffix = ''): string {
-  if (value === undefined || value === null || value === '') return '—';
-  return `${value}${suffix}`;
-}
-
-interface PublicTracePageProps {
-  slug?: string;
+function avg(sources: PublicTraceLotSource[], key: 'acidity_percent'|'peroxide_value'|'polyphenols_mg_kg') {
+  const vals=sources.map(s=>s[key]).filter((v):v is number=>typeof v==='number');
+  return vals.length ? Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*100)/100 : undefined;
 }
 
 const PublicTracePage: React.FC<PublicTracePageProps> = ({ slug }) => {
-  const [remoteBatch, setRemoteBatch] = useState<PublicBatch | null>(null);
-  const [isLoading, setIsLoading] = useState(Boolean(slug));
-  const [source, setSource] = useState<'supabase' | 'local' | 'demo'>('demo');
+  const [lot,setLot]=useState<PublicTraceLot|null>(null);
+  const [batch,setBatch]=useState<PublicTraceBatch|null>(null);
+  const [loading,setLoading]=useState(Boolean(slug));
+  const [loaded,setLoaded]=useState(false);
 
-  const localBatch = useMemo(() => {
-    const batches = getLocalBatches();
-    const found = batches.find(item => item.qr_slug === slug || item.batch_code?.toLowerCase() === slug);
-    return found ? normalizeLocalBatch(found) : null;
-  }, [slug]);
+  useEffect(()=>{
+    let cancelled=false;
+    (async()=>{
+      if(!slug){setLoading(false);setLoaded(true);return;}
+      setLoading(true);
+      const productLot=await fetchPublicTraceLot(slug);
+      if(cancelled)return;
+      if(productLot){setLot(productLot);setBatch(null);setLoading(false);setLoaded(true);return;}
+      const legacyBatch=await fetchPublicTraceBatch(slug);
+      if(cancelled)return;
+      setBatch(legacyBatch);setLot(null);setLoading(false);setLoaded(true);
+    })();
+    return()=>{cancelled=true;};
+  },[slug]);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      if (!slug) {
-        setIsLoading(false);
-        return;
-      }
-      setIsLoading(true);
-      const fetched = await fetchPublicTraceBatch(slug);
-      if (cancelled) return;
-      if (fetched) {
-        setRemoteBatch(fetched);
-        setSource('supabase');
-      } else if (localBatch) {
-        setSource('local');
-      } else {
-        setSource('demo');
-      }
-      setIsLoading(false);
-    }
-    load();
-    return () => { cancelled = true; };
-  }, [slug, localBatch]);
+  const sources=lot?.source_batches||[];
+  const varieties=lot?.trace_summary?.varieties||[];
+  const parcels=lot?.trace_summary?.parcels||[];
+  const harvestDates=lot?.trace_summary?.harvest_dates||[];
+  const acidity=useMemo(()=>avg(sources,'acidity_percent'),[sources]);
+  const peroxide=useMemo(()=>avg(sources,'peroxide_value'),[sources]);
+  const phenols=useMemo(()=>avg(sources,'polyphenols_mg_kg'),[sources]);
 
-  const batch = remoteBatch || localBatch || demoBatch;
-  const isDemo = source === 'demo' && batch.id === 'public-demo' && slug !== batch.qr_slug;
+  if(loading) return <div className="min-h-screen bg-[#070907] text-white flex items-center justify-center"><div className="text-center"><Loader2 className="animate-spin text-green-400 mx-auto" size={34}/><p className="text-sm text-slate-500 mt-3">Henter dokumentert sporbarhet…</p></div></div>;
 
-  return (
-    <div className="min-h-screen bg-[#060807] text-white overflow-hidden">
-      <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 20% 10%, #22c55e 0, transparent 30%), radial-gradient(circle at 90% 20%, #84cc16 0, transparent 24%), radial-gradient(circle at 50% 90%, #14532d 0, transparent 28%)' }} />
+  if(loaded&&!lot&&!batch) return <div className="min-h-screen bg-[#070907] text-white flex items-center justify-center p-6"><div className="max-w-xl text-center rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-9"><QrCode className="mx-auto text-slate-500" size={42}/><h1 className="text-3xl font-black mt-5">Ingen publisert sporbarhet</h1><p className="text-slate-400 mt-3 leading-relaxed">Denne QR-koden er ikke koblet til en publisert Doña Anna-lot. Vi viser ikke eksempeldata eller antatt opprinnelse.</p><p className="text-xs text-slate-600 mt-5">Kode: {slug||'mangler'}</p></div></div>;
 
-      <main className="relative max-w-6xl mx-auto px-5 py-10 md:py-16 space-y-10">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-green-500 text-black flex items-center justify-center font-black text-2xl shadow-2xl shadow-green-500/20">D</div>
-            <div>
-              <p className="text-xs text-green-400 uppercase tracking-[0.35em] font-black">DonaAnna Trace</p>
-              <h1 className="text-3xl md:text-5xl font-black tracking-tight">Fra tre til produkt</h1>
-            </div>
+  if(batch&&!lot) return <div className="min-h-screen bg-[#070907] text-white"><main className="max-w-5xl mx-auto px-5 py-12 space-y-6"><header><p className="text-xs uppercase tracking-[.3em] font-black text-green-400">Doña Anna · dokumentert batch</p><h1 className="text-4xl md:text-6xl font-black mt-2">{batch.variety}</h1><p className="text-slate-400 mt-3">{batch.public_story||'Publisert råvarebatch fra Doña Anna i Biar, Alicante.'}</p></header><section className="grid grid-cols-2 md:grid-cols-4 gap-3">{[['Batch',batch.batch_code],['Høst',dateLabel(batch.harvest_date)],['Mengde',value(batch.kg_harvested,' kg')],['Status',batch.product_status||batch.status]].map(([a,b])=><div key={String(a)} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"><p className="text-[10px] uppercase tracking-widest text-slate-500">{a}</p><p className="font-bold mt-1">{b}</p></div>)}</section><p className="text-xs text-slate-600">Dette er en publisert råvarebatch. Ferdig produktsporbarhet bruker pakkelot.</p></main></div>;
+
+  if(!lot) return null;
+
+  return <div className="min-h-screen bg-[#070907] text-white overflow-hidden">
+    <div className="absolute inset-0 opacity-20 pointer-events-none" style={{backgroundImage:'radial-gradient(circle at 15% 5%, #365c2c 0, transparent 30%), radial-gradient(circle at 85% 20%, #76643a 0, transparent 24%)'}}/>
+    <main className="relative max-w-6xl mx-auto px-5 py-10 md:py-16 space-y-8">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+        <div><p className="text-xs uppercase tracking-[.32em] font-black text-green-400">Doña Anna · Biar, Alicante</p><h1 className="text-4xl md:text-6xl font-black mt-2">Fra olivenlund til {lot.product_category?.toLowerCase().includes('table')?'glass':'flaske'}</h1></div>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 flex items-center gap-3"><QrCode className="text-green-400"/><div><p className="text-[9px] uppercase tracking-widest text-slate-500">Produktlot</p><p className="font-bold">{lot.lot_code}</p></div></div>
+      </header>
+
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-5 rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-7 flex items-center justify-center min-h-[360px]">
+          {lot.product_image_url?<img src={lot.product_image_url} alt={lot.product_name} className="max-h-[430px] max-w-full object-contain rounded-2xl"/>:<PackageCheck size={80} className="text-slate-700"/>}
+        </div>
+        <div className="lg:col-span-7 rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-8 md:p-10">
+          <div className="flex items-center gap-2 text-green-400"><Leaf size={18}/><span className="text-xs uppercase tracking-[.25em] font-black">{lot.product_category||'Doña Anna'}</span></div>
+          <h2 className="text-4xl md:text-6xl font-black mt-5">{lot.product_name}</h2>
+          <p className="text-lg text-slate-300 mt-4">{lot.product_size} · {lot.product_sku}</p>
+          <p className="text-slate-400 mt-5 leading-relaxed">{lot.product_description||lot.product_story||'Dokumentert produktlot fra Doña Anna.'}</p>
+          {lot.product_story&&lot.product_description&&<p className="text-green-100/80 mt-4 leading-relaxed">{lot.product_story}</p>}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
+            {[
+              ['Pakket',dateLabel(lot.packed_at),<PackageCheck size={17}/>],
+              ['Kildebatcher',sources.length,<Factory size={17}/>],
+              ['Parseller',parcels.length,<MapPin size={17}/>],
+              ['Status','Dokumentert',<CheckCircle2 size={17}/>],
+            ].map(([label,val,icon])=><div key={String(label)} className="rounded-2xl bg-black/30 border border-white/10 p-4"><div className="text-green-400 mb-2">{icon}</div><p className="text-[9px] uppercase tracking-widest text-slate-500">{label}</p><p className="font-bold mt-1">{val}</p></div>)}
           </div>
-          <div className="glass rounded-3xl border border-white/10 p-4 flex items-center gap-3 bg-white/[0.04]">
-            {isLoading ? <Loader2 className="text-green-400 animate-spin" /> : <QrCode className="text-green-400" />}
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">QR / Batch</p>
-              <p className="font-bold text-white">{batch.batch_code}</p>
+        </div>
+      </section>
+
+      <section className="rounded-[2.5rem] border border-green-500/20 bg-green-500/[0.06] p-7 md:p-9">
+        <div className="flex items-start gap-4"><ShieldCheck className="text-green-400 shrink-0 mt-1"/><div><h3 className="text-2xl font-black">Dette kan spores</h3><p className="text-slate-300 mt-2 leading-relaxed">Denne siden er laget fra den faktiske pakkeloten. Produktet er koblet til registrerte kildebatcher i Olivia. Bare publiserte, dokumenterte data vises her.</p></div></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-6">
+          <div className="rounded-2xl bg-black/20 border border-white/10 p-4"><p className="text-[10px] uppercase tracking-widest text-slate-500">Høstedato(er)</p><p className="font-bold mt-1">{harvestDates.length?harvestDates.map(dateLabel).join(' · '):'Ikke registrert'}</p></div>
+          <div className="rounded-2xl bg-black/20 border border-white/10 p-4"><p className="text-[10px] uppercase tracking-widest text-slate-500">Sort(er)</p><p className="font-bold mt-1">{varieties.length?varieties.join(' · '):'Ikke registrert'}</p></div>
+          <div className="rounded-2xl bg-black/20 border border-white/10 p-4"><p className="text-[10px] uppercase tracking-widest text-slate-500">Opprinnelse</p><p className="font-bold mt-1">{parcels.length?parcels.join(' · '):'Biar, Alicante'}</p></div>
+        </div>
+      </section>
+
+      <section>
+        <div className="flex items-center gap-3 mb-4"><Sprout className="text-green-400"/><h3 className="text-2xl font-black">Kildebatcher</h3></div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {sources.map(source=><article key={source.batch_id} className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+            <div className="flex justify-between gap-4"><div><p className="text-[10px] uppercase tracking-widest text-green-400 font-bold">Råvarebatch</p><h4 className="text-xl font-black mt-1">{source.batch_code}</h4></div><div className="text-right"><p className="text-[9px] uppercase tracking-widest text-slate-500">Høstet</p><p className="font-bold">{dateLabel(source.harvest_date)}</p></div></div>
+            <div className="grid grid-cols-2 gap-3 mt-5">
+              <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase text-slate-500">Parsell</p><p className="font-bold mt-1">{source.parcel_name||'Biar, Alicante'}</p></div>
+              <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase text-slate-500">Sort</p><p className="font-bold mt-1">{source.variety||'—'}</p></div>
+              <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase text-slate-500">Høstet</p><p className="font-bold mt-1">{value(source.kg_harvested,' kg')}</p></div>
+              <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase text-slate-500">Kvalitet</p><p className="font-bold mt-1">{source.quality||'Ikke registrert'}</p></div>
             </div>
+          </article>)}
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+          <div className="flex items-center gap-3"><FlaskConical className="text-purple-400"/><h3 className="text-xl font-black">Kvalitetsdata</h3></div>
+          <div className="grid grid-cols-3 gap-3 mt-5">
+            {[['Syre',value(acidity,'%')],['Peroksid',value(peroxide)],['Polyfenoler',value(phenols,' mg/kg')]].map(([label,val])=><div key={String(label)} className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase text-slate-500">{label}</p><p className="font-black mt-1">{val}</p></div>)}
           </div>
-        </header>
+          <p className="text-xs text-slate-600 mt-4">Verdier vises bare når de er registrert på kildebatchene. Ved flere batcher vises gjennomsnittet.</p>
+        </div>
+        <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+          <div className="flex items-center gap-3"><Scale className="text-yellow-400"/><h3 className="text-xl font-black">Dokumentert råvare</h3></div>
+          <p className="text-4xl font-black mt-5">{value(lot.trace_summary?.total_source_kg,' kg')}</p>
+          <p className="text-sm text-slate-500 mt-2">Registrert høstemengde i kildebatchene. Dette er ikke det samme som netto innhold i denne pakkeloten.</p>
+        </div>
+      </section>
 
-        {isDemo && (
-          <div className="rounded-3xl border border-yellow-500/30 bg-yellow-500/10 p-5 text-sm text-yellow-100">
-            Denne QR-siden viser demo-data fordi batch-slug ikke er publisert i Supabase ennå. Kjør migrasjonen og publiser batchen for ekte offentlig QR-visning.
-          </div>
-        )}
+      <section className="rounded-[2.5rem] border border-white/10 bg-white/[0.03] p-7">
+        <div className="flex items-start gap-4"><Award className="text-yellow-400 shrink-0"/><div><h3 className="text-xl font-black">Doña Anna i Biar</h3><p className="text-slate-400 mt-2 leading-relaxed">Vi bygger sporbarhet fra gårdsdrift og høsting til ferdig produkt. Sertifiseringer og analyseverdier vises først når dokumentasjonen for den aktuelle batchen er registrert og publisert.</p></div></div>
+      </section>
 
-        {source === 'local' && (
-          <div className="rounded-3xl border border-blue-500/30 bg-blue-500/10 p-5 text-sm text-blue-100">
-            Viser lokal batch fra denne nettleseren. For offentlig QR på etikett bør batchen publiseres i Supabase-tabellen <strong>public_trace_batches</strong>.
-          </div>
-        )}
-
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7 rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-8 md:p-10 shadow-2xl">
-            <div className="flex items-center gap-3 mb-6">
-              <Leaf className="text-green-400" />
-              <p className="text-xs text-green-400 uppercase tracking-[0.25em] font-black">{typeLabel(batch.type)}</p>
-            </div>
-            <h2 className="text-4xl md:text-6xl font-black leading-tight">{batch.variety}</h2>
-            <p className="text-slate-400 mt-5 text-lg leading-relaxed">
-              {batch.public_story || 'Denne batchen kommer fra DonaAnna-gården i Biar, Alicante. Gården ligger i fjellområdet rundt 650 meter over havet, som gir senere modning enn kyst og lavland.'}
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
-              {[
-                ['Høstedato', batch.harvest_date || '—', <CalendarDays size={18} />],
-                ['Sone', batch.zone_id || '—', <MapPin size={18} />],
-                ['Høyde', `${batch.altitude_m || 650} moh.`, <Mountain size={18} />],
-                ['Status', statusLabel(batch.product_status || batch.status), <CheckCircle2 size={18} />],
-              ].map(([label, value, icon]) => (
-                <div key={String(label)} className="rounded-2xl bg-black/30 border border-white/10 p-4">
-                  <div className="text-green-400 mb-2">{icon}</div>
-                  <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{label}</p>
-                  <p className="text-white font-bold mt-1">{value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="lg:col-span-5 space-y-6">
-            <div className="rounded-[2.5rem] border border-green-500/20 bg-green-500/10 p-7">
-              <div className="flex items-center gap-3 mb-4"><ShieldCheck className="text-green-400" /><h3 className="text-xl font-black">Sporbarhet</h3></div>
-              <p className="text-sm text-slate-300 leading-relaxed">Batchkode, sone, sort, høstedato, prosessering og kvalitetstall gjør produktet mer transparent og enklere å dokumentere.</p>
-            </div>
-
-            <div className="rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-7">
-              <div className="flex items-center gap-3 mb-4"><Sparkles className="text-yellow-400" /><h3 className="text-xl font-black">Smaksprofil</h3></div>
-              <p className="text-sm text-slate-300 leading-relaxed">{batch.sensory_profile || 'Sensorisk profil er ikke registrert ennå.'}</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            ['Kg høstet', statValue(batch.kg_harvested, ' kg'), <Scale size={18} />],
-            ['Prosessert', statValue(batch.kg_processed, ' kg'), <Factory size={18} />],
-            ['Olje', statValue(batch.liters_oil, ' L'), <PackageCheck size={18} />],
-            ['Utbytte', statValue(batch.yield_percent, '%'), <Award size={18} />],
-          ].map(([label, value, icon]) => (
-            <div key={String(label)} className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <div className="text-green-400 mb-3">{icon}</div>
-              <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{label}</p>
-              <p className="text-2xl md:text-3xl font-black mt-1">{value}</p>
-            </div>
-          ))}
-        </section>
-
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-7">
-            <div className="flex items-center gap-3 mb-5"><FlaskConical className="text-purple-400" /><h3 className="text-xl font-black">Kvalitet og labverdier</h3></div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-2xl bg-black/30 border border-white/10 p-4"><p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Syre</p><p className="text-white font-black text-xl mt-1">{statValue(batch.acidity_percent, '%')}</p></div>
-              <div className="rounded-2xl bg-black/30 border border-white/10 p-4"><p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Peroksid</p><p className="text-white font-black text-xl mt-1">{statValue(batch.peroxide_value)}</p></div>
-              <div className="rounded-2xl bg-black/30 border border-white/10 p-4"><p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Polyfenol</p><p className="text-white font-black text-xl mt-1">{statValue(batch.polyphenols_mg_kg)}</p></div>
-            </div>
-            <p className="text-xs text-slate-500 mt-4 leading-relaxed">Verdier bør oppdateres fra laboratorieanalyse når batchen er testet. Siden kan brukes som digitalt kvalitetskort for flasker og glass.</p>
-          </div>
-
-          <div className="rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-7">
-            <div className="flex items-center gap-3 mb-5"><Factory className="text-yellow-400" /><h3 className="text-xl font-black">Prosessering</h3></div>
-            <p className="text-sm text-slate-300 leading-relaxed"><strong className="text-white">Sted:</strong> {batch.processing_location || 'Ikke registrert'}</p>
-            <p className="text-sm text-slate-300 leading-relaxed mt-3"><strong className="text-white">Notat:</strong> {batch.lot_notes || 'Ingen batch-notater registrert.'}</p>
-            {batch.organic_note && <p className="text-sm text-slate-300 leading-relaxed mt-3"><strong className="text-white">Økologisk:</strong> {batch.organic_note}</p>}
-          </div>
-        </section>
-
-        <section className="rounded-[2.5rem] border border-green-500/20 bg-green-500/5 p-7 md:p-9">
-          <div className="flex items-start gap-4">
-            <PackageCheck className="text-green-400 mt-1" />
-            <div>
-              <h3 className="text-2xl font-black">DonaAnna kvalitetsfortelling</h3>
-              <p className="text-slate-300 mt-3 leading-relaxed">
-                DonaAnna bygger sporbarhet fra felt til ferdig produkt. Målet er at hver flaske olje og hvert glass bordoliven skal kunne kobles til sort, sone, høsting, prosessering og kvalitet — ikke bare en etikett, men en dokumentert historie.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <footer className="text-center text-xs text-slate-600 pb-8">
-          DonaAnna · Biar, Alicante · QR sporbarhet · {batch.batch_code}
-        </footer>
-      </main>
-    </div>
-  );
+      <footer className="text-center text-xs text-slate-600 pb-8">Doña Anna · Biar, Alicante · Lot {lot.lot_code} · publisert {dateLabel(lot.published_at)}</footer>
+    </main>
+  </div>;
 };
 
 export default PublicTracePage;
