@@ -47,7 +47,12 @@ function emptyForm(parcels: Parcel[]): Partial<HarvestPlanRecord> {
   };
 }
 
-const HarvestPlannerSupabaseView: React.FC<{ onStartHarvest?: (planId: string) => void }> = ({ onStartHarvest }) => {
+const HarvestPlannerSupabaseView: React.FC<{
+  onStartHarvest?: (planId: string) => void;
+  initialParcelId?: string | null;
+  initialPlanId?: string | null;
+  onContextConsumed?: () => void;
+}> = ({ onStartHarvest, initialParcelId, initialPlanId, onContextConsumed }) => {
   const [plans, setPlans] = useState<HarvestPlanRecord[]>([]);
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [varieties, setVarieties] = useState<string[]>(DEFAULT_VARIETIES);
@@ -57,6 +62,7 @@ const HarvestPlannerSupabaseView: React.FC<{ onStartHarvest?: (planId: string) =
   const [newVariety, setNewVariety] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [handledContextKey, setHandledContextKey] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -122,6 +128,42 @@ const HarvestPlannerSupabaseView: React.FC<{ onStartHarvest?: (planId: string) =
     setOpen(true);
   };
   const openEdit = (plan: HarvestPlanRecord) => { setEditingId(plan.id); setForm(plan); setOpen(true); };
+
+  useEffect(() => {
+    const key = initialPlanId ? 'plan:'+initialPlanId : initialParcelId ? 'parcel:'+initialParcelId : '';
+    if (!key || key === handledContextKey || loading) return;
+
+    if (initialPlanId) {
+      const plan = plans.find(row => row.id === initialPlanId);
+      if (!plan) {
+        if (plans.length || !loading) {
+          setError('Kunne ikke finne høsteplanen som ble valgt fra Olivia Daily.');
+          setHandledContextKey(key);
+          onContextConsumed?.();
+        }
+        return;
+      }
+      openEdit(plan);
+      setHandledContextKey(key);
+      onContextConsumed?.();
+      return;
+    }
+
+    if (initialParcelId) {
+      const parcel = parcels.find(row => row.id === initialParcelId);
+      if (!parcel) {
+        if (parcels.length || !loading) {
+          setError('Kunne ikke finne parsellen som ble valgt fra Olivia Daily.');
+          setHandledContextKey(key);
+          onContextConsumed?.();
+        }
+        return;
+      }
+      openNewForParcel(parcel);
+      setHandledContextKey(key);
+      onContextConsumed?.();
+    }
+  }, [initialPlanId, initialParcelId, plans, parcels, loading, handledContextKey, onContextConsumed]);
 
   const save = async () => {
     if (!form.parcel_id || !form.variety || !form.purpose || !form.planned_date) { setError('Parsell, sort, formål og planlagt dato må fylles ut.'); return; }
