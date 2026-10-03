@@ -7,10 +7,19 @@ interface ProductionViewProps {
   parcels: Parcel[];
   initialHarvestPlanId?: string | null;
   onHarvestPlanConsumed?: () => void;
+  initialBatchId?: string | null;
+  onBatchContextConsumed?: () => void;
 }
 
-const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels, initialHarvestPlanId, onHarvestPlanConsumed }) => {
-  return <ProductionOliviaView language={language} parcels={parcels} initialHarvestPlanId={initialHarvestPlanId} onHarvestPlanConsumed={onHarvestPlanConsumed} />;
+const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels, initialHarvestPlanId, onHarvestPlanConsumed, initialBatchId, onBatchContextConsumed }) => {
+  return <ProductionOliviaView
+    language={language}
+    parcels={parcels}
+    initialHarvestPlanId={initialHarvestPlanId}
+    onHarvestPlanConsumed={onHarvestPlanConsumed}
+    initialBatchId={initialBatchId}
+    onBatchContextConsumed={onBatchContextConsumed}
+  />;
 };
 
 export default ProductionView;

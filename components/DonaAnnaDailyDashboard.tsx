@@ -37,7 +37,7 @@ import { fetchCommercialReadiness, type CommercialReadiness } from '../services/
 import { fetchSeasonReadiness, type SeasonReadiness } from '../services/seasonReadiness';
 import SeasonReadinessPanel from './SeasonReadinessPanel';
 import { fetchSeasonExecution, type SeasonExecution } from '../services/seasonExecution';
-import SeasonExecutionPanel from './SeasonExecutionPanel';
+import SeasonExecutionPanel, { type SeasonExecutionAction } from './SeasonExecutionPanel';
 
 type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
 
@@ -161,7 +161,7 @@ function priorityClass(priority: ActionCard['priority']): string {
   return 'border-green-500/20 bg-green-500/10 text-green-400';
 }
 
-const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ onNavigate }) => {
+const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onSeasonAction?: (action: SeasonExecutionAction) => void }> = ({ onNavigate, onSeasonAction }) => {
   const [readings, setReadings] = useState<SensorReading[]>([]);
   const [alerts, setAlerts] = useState<SensorAlert[]>([]);
   const [irrigationEvents, setIrrigationEvents] = useState<IrrigationEvent[]>([]);
@@ -276,7 +276,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void }> =
 
       <SeasonReadinessPanel data={seasonReadiness} onNavigate={onNavigate} />
 
-      <SeasonExecutionPanel data={seasonExecution} onNavigate={onNavigate} />
+      <SeasonExecutionPanel data={seasonExecution} onNavigate={onNavigate} onAction={onSeasonAction} />
 
       <div className="glass rounded-[2rem] p-6 border border-amber-300/20 bg-amber-300/[0.04]">
         <div className="flex items-center justify-between gap-4">

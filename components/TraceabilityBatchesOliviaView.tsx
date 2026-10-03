@@ -120,9 +120,14 @@ function publicStoryForBatch(batch: TraceBatch): string {
   return `Denne batchen kommer fra Doña Anna i Biar, Alicante. Den offentlige sporbarheten viser bare opplysninger som er registrert for denne batchen.`;
 }
 
-const TraceabilityBatchesOliviaView: React.FC = () => {
+const TraceabilityBatchesOliviaView: React.FC<{
+  initialBatchId?: string | null;
+  onContextConsumed?: () => void;
+}> = ({ initialBatchId, onContextConsumed }) => {
   const [batches, setBatches] = useState<TraceBatch[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [handledInitialBatchId, setHandledInitialBatchId] = useState('');
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [publishingLotId, setPublishingLotId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -154,6 +159,7 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
       setError(err?.message || 'Kunne ikke hente batcher fra olivia.batches.');
     } finally {
       setLoading(false);
+      setLoaded(true);
     }
   };
 
@@ -179,10 +185,10 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
     [batches, lotSources],
   );
 
-  const openLotBuilder = () => {
+  const openLotBuilder = (sourceBatchId?: string) => {
     setLotCode(`DA-LOT-${harvestSeasonCode(currentHarvestSeason())}-${String(Date.now()).slice(-5)}`);
     setLotUnits('1');
-    setLotSourceIds([]);
+    setLotSourceIds(sourceBatchId ? [sourceBatchId] : []);
     setLotAllocations({});
     setLotPackedAt(new Date().toISOString().slice(0, 10));
     setLotBestBefore('');
@@ -190,6 +196,20 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
     if (!lotProductId && products[0]) setLotProductId(products[0].id);
     setLotOpen(true);
   };
+
+  useEffect(() => {
+    if (!initialBatchId || initialBatchId === handledInitialBatchId || !loaded) return;
+    const eligible = eligibleSourceBatches.find(batch => batch.id === initialBatchId);
+    if (!eligible) {
+      setError('Batchen som ble valgt fra Olivia Daily er ikke lenger klar for pakking.');
+      setHandledInitialBatchId(initialBatchId);
+      onContextConsumed?.();
+      return;
+    }
+    openLotBuilder(initialBatchId);
+    setHandledInitialBatchId(initialBatchId);
+    onContextConsumed?.();
+  }, [initialBatchId, handledInitialBatchId, loaded, eligibleSourceBatches, onContextConsumed]);
 
   const toggleLotSource = (batchId: string) => {
     setLotSourceIds(prev => {
@@ -329,7 +349,7 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
           <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">Fra olivia.batches · QR-publisering · ingen demo/localStorage</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={openLotBuilder} disabled={!eligibleSourceBatches.length || !products.length} className="px-4 py-3 rounded-2xl bg-green-500 text-black font-bold disabled:opacity-40 flex items-center gap-2"><Plus size={18}/> Ny pakkelot</button>
+          <button onClick={()=>openLotBuilder()} disabled={!eligibleSourceBatches.length || !products.length} className="px-4 py-3 rounded-2xl bg-green-500 text-black font-bold disabled:opacity-40 flex items-center gap-2"><Plus size={18}/> Ny pakkelot</button>
           <button onClick={load} className="p-3.5 glass border border-white/10 rounded-2xl text-green-400 hover:bg-white/5 transition-all">
             {loading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
           </button>
