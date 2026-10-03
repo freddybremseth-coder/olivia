@@ -98,6 +98,16 @@ export type UnifiedInvoiceRow = {
   paid_date?: string;
 };
 
+export type UnifiedOrderCustomer = {
+  company?: string;
+  contact_name?: string;
+  email?: string;
+  tax_id?: string;
+  vat_number?: string;
+  billing_address?: string;
+  shipping_address?: string;
+};
+
 export type UnifiedOrderRow = {
   id: string;
   order_number: string;
@@ -114,6 +124,7 @@ export type UnifiedOrderRow = {
   payment_status: string;
   total_amount: number;
   ordered_at?: string;
+  customer?: UnifiedOrderCustomer;
   items: UnifiedOrderItem[];
 };
 
@@ -133,7 +144,7 @@ export async function fetchUnifiedInventory() {
       .select('id,product_id,lot_code,status,packed_at,best_before,initial_units,traceability_slug,notes')
       .order('created_at', { ascending: false }),
     supabase.from('commerce_orders')
-      .select('id,order_number,customer_id,customer_name,shipping_address,billing_address,subtotal,tax_amount,shipping_cost,discount_amount,total_amount,currency,status,payment_status,ordered_at,commerce_order_items(id,order_id,product_id,lot_id,name,sku,quantity,unit_price,total_price)')
+      .select('id,order_number,customer_id,customer_name,shipping_address,billing_address,subtotal,tax_amount,shipping_cost,discount_amount,total_amount,currency,status,payment_status,ordered_at,commerce_customers(company,contact_name,email,tax_id,vat_number,billing_address,shipping_address),commerce_order_items(id,order_id,product_id,lot_id,name,sku,quantity,unit_price,total_price)')
       .order('created_at', { ascending: false }).limit(50),
     supabase.from('commerce_invoices')
       .select('id,invoice_number,order_id,customer_id,customer_name,status,payment_status,total_amount,due_date,paid_date')
@@ -172,6 +183,7 @@ export async function fetchUnifiedInventory() {
       shipping_cost: num(row.shipping_cost),
       discount_amount: num(row.discount_amount),
       total_amount: num(row.total_amount),
+      customer: Array.isArray(row.commerce_customers) ? row.commerce_customers[0] : row.commerce_customers,
       items: (row.commerce_order_items || []).map((item: any) => ({
         ...item,
         quantity: num(item.quantity),
