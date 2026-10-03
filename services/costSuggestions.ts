@@ -41,7 +41,7 @@ function containsAny(text:string,words:string[]){
 
 function relevanceForBatch(text:string,stage:string){
   const s=stage.toUpperCase();
-  const general=['innhøst','høst','arbeid','transport','levering','prosess','produksjon','almazara','mølle','molino'];
+  const general=['innhøst','høst','transport','levering','prosess','produksjon','almazara','mølle','molino'];
   const pressing=['press','almazara','molienda','mølle','molino','transport','levering','oljeproduksjon'];
   const packing=['emball','flask','etikett','label','glass','kanne','boks','kartong','pakking','packaging','tapning','fylling'];
   const analysis=['analyse','laborator','lab','kvalitet','syre','peroksid','polyfenol'];
