@@ -4,6 +4,7 @@ import type { Batch } from '../types';
 import { fetchBatches, upsertBatch } from '../services/db';
 import { publishProductLotTrace, publishTraceBatch } from '../services/publicTrace';
 import { createProductLot, fetchUnifiedInventory, type UnifiedInventoryProduct, type UnifiedProductLot } from '../services/commerceInventory';
+import CostSuggestionReview from './CostSuggestionReview';
 
 type TraceStatus = 'planned' | 'harvested' | 'processing' | 'quality_checked' | 'packed' | 'ready_for_sale';
 type TraceType = 'evoo' | 'table_olives' | 'raw_olives';
@@ -135,6 +136,7 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
   const [lotAllocations, setLotAllocations] = useState<Record<string, string>>({});
   const [lotPackedAt, setLotPackedAt] = useState(new Date().toISOString().slice(0, 10));
   const [lotBestBefore, setLotBestBefore] = useState('');
+  const [createdLotId, setCreatedLotId] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -167,6 +169,7 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
     setLotAllocations({});
     setLotPackedAt(new Date().toISOString().slice(0, 10));
     setLotBestBefore('');
+    setCreatedLotId('');
     if (!lotProductId && products[0]) setLotProductId(products[0].id);
     setLotOpen(true);
   };
@@ -198,7 +201,7 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
     setError(null);
     try {
       const traceSlug = lotCode.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      await createProductLot({
+      const newLotId = await createProductLot({
         productId: lotProductId,
         lotCode: lotCode.trim(),
         units,
@@ -214,7 +217,7 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
         bestBefore: lotBestBefore || undefined,
         notes: 'Opprettet fra Batch og sporbarhet i Olivia OS.',
       });
-      setLotOpen(false);
+      setCreatedLotId(newLotId);
       await load();
     } catch (err: any) {
       setError(err?.message || 'Kunne ikke opprette pakkelot.');
@@ -412,6 +415,7 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
               <div><h3 className="text-2xl font-black text-white">Ny pakkelot</h3><p className="text-xs text-slate-500 mt-1">Koble ferdig vare til faktisk råvarebatch.</p></div>
               <button onClick={() => setLotOpen(false)} className="p-2 text-slate-400"><X/></button>
             </div>
+            {!createdLotId ? <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">
               <label className="text-xs text-slate-400">Produkt<select value={lotProductId} onChange={e=>setLotProductId(e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-white">{products.map(p=><option key={p.id} value={p.id}>{p.name} · {p.size}</option>)}</select></label>
               <label className="text-xs text-slate-400">Antall ferdige enheter<input type="number" min="1" value={lotUnits} onChange={e=>setLotUnits(e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-white"/></label>
@@ -423,6 +427,14 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
             </div>
             <div className="mt-5"><p className="text-xs text-slate-400 font-bold mb-2">Velg kildebatch(er) og faktisk brukt mengde</p><div className="space-y-2">{eligibleSourceBatches.map(batch=>{const checked=lotSourceIds.includes(batch.id);return <div key={batch.id} className="rounded-xl border border-white/10 bg-white/5 p-3"><label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={checked} onChange={()=>toggleLotSource(batch.id)}/><div className="flex-1"><p className="text-sm font-bold text-white">{batch.batch_code}</p><p className="text-xs text-slate-500">{batch.variety} · {batch.kg_harvested} kg høstet{batch.liters_oil?' · '+batch.liters_oil+' L olje':''} · {batch.harvest_date}</p></div></label>{checked&&<label className="block text-xs text-slate-400 mt-3">Brukt i denne pakkeloten ({batch.type==='evoo'?'liter':'kg'})<input type="number" min="0" step="0.01" value={lotAllocations[batch.id]||''} onChange={e=>setLotAllocations(prev=>({...prev,[batch.id]:e.target.value}))} className="mt-1 w-full rounded-xl border border-green-500/20 bg-black/40 px-3 py-3 text-white" placeholder="Faktisk mengde"/></label>}</div>})}</div><p className="text-[10px] text-slate-600 mt-2">Mengden blir del av offentlig sporbarhet. Hele kildebatchen brukes aldri automatisk som lotmengde.</p></div>
             <button onClick={saveProductLot} disabled={lotSaving} className="mt-6 w-full rounded-2xl bg-green-500 py-4 font-black text-black flex items-center justify-center gap-2 disabled:opacity-50">{lotSaving?<Loader2 className="animate-spin" size={18}/>:<Save size={18}/>} Opprett pakkelot</button>
+            </> : <div className="mt-5 space-y-4">
+              <div className="rounded-2xl border border-green-500/20 bg-green-500/10 p-4">
+                <p className="font-black text-green-200">Pakkelot er opprettet</p>
+                <p className="text-xs text-slate-400 mt-1">Lager og sporbarhet er registrert. Kostnader under er fortsatt bare forslag til du godkjenner dem.</p>
+              </div>
+              <CostSuggestionReview targetType="lot" targetId={createdLotId} eventDate={lotPackedAt} stage="PAKKING" />
+              <button onClick={()=>setLotOpen(false)} className="w-full rounded-2xl bg-white/10 py-4 font-black text-white">Ferdig</button>
+            </div>}
           </div>
         </div>
       )}
