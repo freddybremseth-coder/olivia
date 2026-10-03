@@ -9,14 +9,28 @@ const OIL_STAGES:ProductionStage[]=['MOTTATT','PRESSING','DEKANTERING','LAGRING_
 const TABLE_STAGES:ProductionStage[]=['PLUKKING','LAKE','SKYLLING','MARINERING','LAGRING','PAKKING','SALG'];
 const label=(s?:ProductionStage)=>({MOTTATT:'Mottatt',PRESSING:'Pressing',DEKANTERING:'Dekantering',LAGRING_TANK:'Tanklagring',ANALYSE:'Analyse',PLUKKING:'Plukking',LAKE:'Lake',SKYLLING:'Skylling',MARINERING:'Marinering',LAGRING:'Lagring',PAKKING:'Pakking',SALG:'Klar for salg'} as any)[s||'']||s||'Ikke startet';
 
-const BatchProductionWorkflow:React.FC<{batches:Batch[];onSaved:()=>void}>=({batches,onSaved})=>{
+const BatchProductionWorkflow:React.FC<{
+ batches:Batch[];
+ onSaved:()=>void;
+ initialBatchId?:string|null;
+ onContextConsumed?:()=>void;
+}>=({batches,onSaved,initialBatchId,onContextConsumed})=>{
  const active=useMemo(()=>batches.filter(b=>b.status==='ACTIVE'),[batches]);
  const [selected,setSelected]=useState<Batch|null>(null),[saving,setSaving]=useState(false),[error,setError]=useState('');
+ const [handledInitialBatchId,setHandledInitialBatchId]=useState('');
  const [stage,setStage]=useState<ProductionStage>('MOTTATT'),[oilLiters,setOilLiters]=useState(''),[tableKg,setTableKg]=useState('');
  const [quality,setQuality]=useState<Batch['quality']>('Standard'),[score,setScore]=useState(''),[acidity,setAcidity]=useState(''),[peroxide,setPeroxide]=useState(''),[phenols,setPhenols]=useState(''),[k232,setK232]=useState(''),[k270,setK270]=useState(''),[deltaK,setDeltaK]=useState('');
  const [location,setLocation]=useState(''),[tank,setTank]=useState(''),[processDate,setProcessDate]=useState(new Date().toISOString().slice(0,10)),[notes,setNotes]=useState('');
 
  const open=(b:Batch)=>{setSelected(b);setStage(b.currentStage||(b.yieldType==='Oil'?'MOTTATT':'PLUKKING'));setOilLiters(b.oilYieldLiters==null?'':String(b.oilYieldLiters));setTableKg(b.tableOliveYieldKg==null?'':String(b.tableOliveYieldKg));setQuality(b.quality||'Standard');setScore(b.qualityScore==null?'':String(b.qualityScore));setAcidity(b.qualityMetrics?.acidity==null?'':String(b.qualityMetrics.acidity));setPeroxide(b.qualityMetrics?.peroxide==null?'':String(b.qualityMetrics.peroxide));setPhenols(b.qualityMetrics?.phenols==null?'':String(b.qualityMetrics.phenols));setK232(b.qualityMetrics?.k232==null?'':String(b.qualityMetrics.k232));setK270(b.qualityMetrics?.k270==null?'':String(b.qualityMetrics.k270));setDeltaK(b.qualityMetrics?.deltaK==null?'':String(b.qualityMetrics.deltaK));setLocation(String(b.metadata?.processing_location||''));setTank(String(b.metadata?.tank_id||''));setProcessDate(String(b.metadata?.last_process_date||new Date().toISOString().slice(0,10)));setNotes('');setError('');};
+ useEffect(()=>{
+  if(!initialBatchId||initialBatchId===handledInitialBatchId)return;
+  const batch=active.find(item=>item.id===initialBatchId);
+  if(!batch)return;
+  open(batch);
+  setHandledInitialBatchId(initialBatchId);
+  onContextConsumed?.();
+ },[initialBatchId,handledInitialBatchId,active,onContextConsumed]);
  const n=(v:string)=>v.trim()===''?undefined:Number(v);
  const save=async()=>{if(!selected)return;setSaving(true);setError('');try{
    const metrics={...selected.qualityMetrics,acidity:n(acidity),peroxide:n(peroxide),phenols:n(phenols),k232:n(k232),k270:n(k270),deltaK:n(deltaK)};
