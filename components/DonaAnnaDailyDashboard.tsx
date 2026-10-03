@@ -209,6 +209,26 @@ function priorityClass(priority: ActionCard['priority']): string {
   return 'border-green-500/20 bg-green-500/10 text-green-400';
 }
 
+function farmDelayConsequence(activityType:string):string {
+  const type=String(activityType||'').toLowerCase();
+  if(['irrigation'].includes(type))return'Kan påvirke vannbalanse og stress dersom behovet fortsatt er reelt.';
+  if(['pest_control','disease_control','spraying'].includes(type))return'Forsinkelse kan gi større skade dersom problemet fortsatt er aktivt. Behov må bekreftes i felt før behandling.';
+  if(['harvest'].includes(type))return'Kan påvirke modenhet, kvalitet og videre produksjonsflyt. Faktisk høstetid må styres av feltforhold.';
+  if(['maintenance'].includes(type))return'Kan påvirke driftssikkerheten dersom utstyret eller anlegget fortsatt har et avvik.';
+  if(['fertilization','soil_work','cultivation'].includes(type))return'Tidspunktet kan være viktig, men tiltaket må fortsatt vurderes mot vær, jord og faktisk behov.';
+  if(['pruning','desuckering','young_tree_care'].includes(type))return'Forsinkelsen bør avklares mot treets utvikling og arbeidsvindu før tiltaket gjennomføres.';
+  if(['inspection'].includes(type))return'En forsinket kontroll kan bety at et feltavvik ikke er avklart ennå.';
+  return'Forsinkelsen bør avklares: utført, fortsatt nødvendig, utsatt med grunn eller ikke nødvendig.';
+}
+
+function daysSince(value?:string|null):number|null {
+  if(!value)return null;
+  const date=new Date(String(value).slice(0,10)+'T12:00:00');
+  if(Number.isNaN(date.getTime()))return null;
+  const today=new Date();today.setHours(12,0,0,0);
+  return Math.max(0,Math.round((today.getTime()-date.getTime())/86400000));
+}
+
 function buildDailyTopFive(params:{
   farmTruth:any;
   farmQuestions:FarmQuestion[];
@@ -225,37 +245,43 @@ function buildDailyTopFive(params:{
     target.setHours(12,0,0,0);
     const days=Math.round((target.getTime()-today.getTime())/86400000);
     if(item.status==='in_progress'){
+      const overdueDays=days<0?Math.abs(days):0;
+      const activeDays=daysSince(item.started_at);
       items.push({
         id:'wheel-progress-'+item.id,
         title:item.title,
-        description:'Arbeidet er markert som pågår'+(days<0?' og planlagt tidspunkt er passert.':'.'),
+        description:(overdueDays>0?overdueDays+' dag'+(overdueDays===1?'':'er')+' forsinket. ':'')+(activeDays!=null?'Pågår i '+activeDays+' dag'+(activeDays===1?'':'er')+'. ':'')+farmDelayConsequence(item.activity_type),
         source:'Årshjul',
-        priority:days<0?'Kritisk':'Høy',
-        score:days<0?100:88,
+        priority:overdueDays>=3?'Kritisk':'Høy',
+        score:overdueDays>=3?104:overdueDays>0?98:88,
         targetTab:'farm_journal:yearwheel',
-        actionLabel:'Fullfør / dokumenter',
+        actionLabel:'Fullfør / avklar',
       });
     }else if(item.status==='postponed'){
+      const followUp=item.postponed_until?new Date(item.postponed_until+'T12:00:00'):null;
+      const followUpDays=followUp&&!Number.isNaN(followUp.getTime())?Math.round((followUp.getTime()-today.getTime())/86400000):null;
+      const followUpOverdue=followUpDays!=null&&followUpDays<0?Math.abs(followUpDays):0;
       items.push({
         id:'wheel-postponed-'+item.id,
         title:item.title,
-        description:'Årshjulspunktet er utsatt. Avklar ny timing eller aktiver det igjen.',
+        description:(followUpOverdue>0?'Ny oppfølgingsdato er '+followUpOverdue+' dag'+(followUpOverdue===1?'':'er')+' passert. ':followUpDays===0?'Skal følges opp i dag. ':item.postponed_until?'Utsatt til '+item.postponed_until+'. ':'')+(item.postponed_reason?'Grunn: '+item.postponed_reason+'. ':'')+farmDelayConsequence(item.activity_type),
         source:'Årshjul',
-        priority:days<0?'Høy':'Middels',
-        score:days<0?84:68,
+        priority:followUpOverdue>=3?'Kritisk':followUpOverdue>0?'Høy':'Middels',
+        score:followUpOverdue>=3?101:followUpOverdue>0?89:68,
         targetTab:'farm_journal:yearwheel',
-        actionLabel:'Åpne årshjul',
+        actionLabel:'Avklar utsettelse',
       });
     }else if(item.status==='approved'&&days<0){
+      const overdueDays=Math.abs(days);
       items.push({
         id:'wheel-overdue-'+item.id,
         title:item.title,
-        description:'Planlagt tidspunkt er passert uten at arbeidet er registrert som utført.',
+        description:overdueDays+' dag'+(overdueDays===1?'':'er')+' forsinket. '+farmDelayConsequence(item.activity_type),
         source:'Årshjul',
-        priority:'Høy',
-        score:82+Math.min(10,Math.abs(days)),
+        priority:overdueDays>=3?'Kritisk':'Høy',
+        score:overdueDays>=7?103:overdueDays>=3?99:86+overdueDays,
         targetTab:'farm_journal:yearwheel',
-        actionLabel:'Avklar status',
+        actionLabel:'Utført / pågår / utsett',
       });
     }else if(item.status==='approved'&&days<=7){
       items.push({
