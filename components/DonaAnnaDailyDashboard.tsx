@@ -197,17 +197,17 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
     setErrorMessage(null);
     try {
       const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness, seasonStatus, executionStatus, truthStatus, intelligenceStatus, questionRows] = await Promise.all([
-        fetchLatestSensorReadings(300),
-        fetchOpenSensorAlerts(),
-        fetchRecentIrrigationEvents(10),
-        fetchRecentFarmObservations(10),
-        fetchCommerceAttention(),
-        fetchCommercialReadiness(),
-        fetchSeasonReadiness(),
-        fetchSeasonExecution(),
-        fetchFarmTruthSummary(),
-        fetchFarmIntelligenceSummary(),
-        fetchOpenFarmQuestions({limit:5}),
+        safeLoad(fetchLatestSensorReadings(300),'sensor readings',[]),
+        safeLoad(fetchOpenSensorAlerts(),'sensor alerts',[]),
+        safeLoad(fetchRecentIrrigationEvents(10),'irrigation events',[]),
+        safeLoad(fetchRecentFarmObservations(10),'farm observations',[]),
+        safeLoad(fetchCommerceAttention(),'commerce attention',[]),
+        safeLoad(fetchCommercialReadiness(),'commercial readiness',null),
+        safeLoad(fetchSeasonReadiness(),'season readiness',null),
+        safeLoad(fetchSeasonExecution(),'season execution',null),
+        safeLoad(fetchFarmTruthSummary(),'farm truth',null),
+        safeLoad(fetchFarmIntelligenceSummary(),'farm intelligence',null),
+        safeLoad(fetchOpenFarmQuestions({limit:5}),'farm questions',[]),
       ]);
 
       setReadings(latestReadings);
