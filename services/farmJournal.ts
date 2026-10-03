@@ -450,13 +450,16 @@ export async function getFarmDocumentUrl(doc:Pick<FarmDocument,'storage_bucket'|
 }
 
 export async function fetchFarmTruthSummary(){
-  const [docs,events,wheel,rain,parcelsRes]=await Promise.all([
+  const currentYear=new Date().getFullYear();
+  const [docs,events,currentWheel,nextWheel,rain,parcelsRes]=await Promise.all([
     fetchFarmDocuments(50),
     fetchFarmEvents(100),
-    fetchYearWheel(new Date().getFullYear()),
+    fetchYearWheel(currentYear),
+    fetchYearWheel(currentYear+1),
     fetchRainMeasurements(120),
     supabase.from('parcels').select('id,name,tree_count,tree_variety').order('name'),
   ]);
+  const wheel=[...currentWheel,...nextWheel];
   const today=new Date();
   today.setHours(12,0,0,0);
   const since30=new Date(today);since30.setDate(since30.getDate()-30);
@@ -464,7 +467,7 @@ export async function fetchFarmTruthSummary(){
   const upcoming=wheel.filter(item=>item.status!=='done'&&item.status!=='skipped').filter(item=>{
     const target=new Date(item.target_year,item.target_month-1,item.target_day||15);
     const diff=(target.getTime()-today.getTime())/86400000;
-    return diff>=-14&&diff<=60;
+    return diff>=-14&&diff<=180;
   });
   return{
     documents:docs,
