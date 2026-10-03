@@ -309,6 +309,45 @@ async function upsertProducts(products:FarmProductEvidence[],documentId:string){
   }
 }
 
+export async function saveFarmEvidenceImage(input:{
+  file:File;
+  title:string;
+  documentDate:string;
+  parcelId?:string|null;
+  notes?:string;
+}):Promise<string>{
+  const {data:auth}=await supabase.auth.getUser();
+  if(!auth.user)throw new Error('Du må være innlogget i Olivia OS.');
+  const storage=await uploadFarmFile(input.file);
+  const documentId='farmdoc-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+  const {error}=await supabase.from('farm_documents').insert({
+    id:documentId,
+    title:input.title,
+    document_kind:'photo',
+    evidence_status:'completed',
+    document_date:input.documentDate,
+    source_name:'Olivia årshjul',
+    parcel_id:input.parcelId||null,
+    storage_bucket:storage.bucket,
+    storage_path:storage.path,
+    original_filename:input.file.name||null,
+    mime_type:input.file.type||null,
+    file_size_bytes:input.file.size||null,
+    plain_text:null,
+    extracted_summary:'Bilde lagt ved som dokumentasjon på utført arbeid.',
+    scan_json:null,
+    confidence:1,
+    review_status:'verified',
+    notes:input.notes?.trim()||null,
+    created_by:auth.user.id,
+  });
+  if(error){
+    await supabase.storage.from(storage.bucket).remove([storage.path]).catch(()=>undefined);
+    throw new Error(error.message);
+  }
+  return documentId;
+}
+
 export async function saveFarmSource(params:{
   scan:FarmScanResult;
   file?:File|null;
@@ -521,9 +560,27 @@ export async function updateYearWheelStatus(id:string,status:FarmYearWheelItem['
   if(error)throw new Error(error.message);
 }
 
-export async function completeYearWheelItem(item:FarmYearWheelItem, input:{occurredOn?:string;notes?:string}={}){
+export async function completeYearWheelItem(item:FarmYearWheelItem, input:{
+  occurredOn?:string;
+  notes?:string;
+  parcelId?:string|null;
+  productName?:string;
+  productQuantity?:number|null;
+  productUnit?:string;
+  evidenceDocumentId?:string|null;
+}={}){
   const occurredOn=input.occurredOn||new Date().toISOString().slice(0,10);
   const sourceRef='year-wheel:'+item.id;
+  const parcelId=input.parcelId===undefined?(item.parcel_id||null):input.parcelId;
+  const cleanProductName=String(input.productName||'').trim();
+  const productQuantity=input.productQuantity==null?null:Number(input.productQuantity);
+  if(productQuantity!=null&&(!Number.isFinite(productQuantity)||productQuantity<0))throw new Error('Mengde må være 0 eller mer.');
+  const products:FarmProductEvidence[]=cleanProductName?[{
+    name:cleanProductName,
+    quantity:productQuantity,
+    unit:String(input.productUnit||'').trim()||undefined,
+  }]:[];
+
   const existing=await supabase.from('farm_events').select('id').eq('source_ref',sourceRef).eq('event_status','completed').maybeSingle();
   if(existing.error)throw new Error(existing.error.message);
 
@@ -538,14 +595,14 @@ export async function completeYearWheelItem(item:FarmYearWheelItem, input:{occur
       planned_for:null,
       period_label:null,
       date_precision:'exact',
-      parcel_id:item.parcel_id||null,
-      scope:item.parcel_id?'parcel':'farm',
+      parcel_id:parcelId,
+      scope:parcelId?'parcel':'farm',
       description:[item.notes,input.notes].filter(Boolean).join(' · ')||'Utført fra Olivia årshjul.',
-      source_document_id:null,
-      source_kind:'year_wheel',
+      source_document_id:input.evidenceDocumentId||null,
+      source_kind:input.evidenceDocumentId?'photo':'year_wheel',
       source_ref:sourceRef,
       vendor:null,
-      products:[],
+      products,
       amount:null,
       currency:'EUR',
       tree_count_delta:null,
@@ -555,6 +612,7 @@ export async function completeYearWheelItem(item:FarmYearWheelItem, input:{occur
       verified:true,
     });
     if(eventError)throw new Error(eventError.message);
+    if(products.length)await upsertProducts(products,input.evidenceDocumentId||sourceRef);
   }
 
   await updateYearWheelStatus(item.id,'done');
