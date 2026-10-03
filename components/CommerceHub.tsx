@@ -51,6 +51,7 @@ import {
 } from '../services/customerPortal';
 import { fetchCommerceBusinessMetrics, type CommerceBusinessMetrics } from '../services/customerPortal';
 import { fetchUnifiedInventory } from '../services/commerceInventory';
+import CommerceReadinessPanel from './CommerceReadinessPanel';
 
 type CommerceTab = 'overview' | 'products' | 'customers' | 'orders' | 'invoices' | 'shipments' | 'messages' | 'content';
 type CustomerPortalTab = 'overview' | 'products' | 'orders' | 'invoices' | 'shipments' | 'qr' | 'messages' | 'profile';
@@ -173,6 +174,8 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
           </div>
         ))}
       </div>
+
+      <CommerceReadinessPanel />
 
       <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-2">
         <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-8">
