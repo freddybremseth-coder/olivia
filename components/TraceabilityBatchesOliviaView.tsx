@@ -5,6 +5,7 @@ import { fetchBatches, upsertBatch } from '../services/db';
 import { publishProductLotTrace, publishTraceBatch } from '../services/publicTrace';
 import { createProductLot, fetchUnifiedInventory, type UnifiedInventoryProduct, type UnifiedProductLot } from '../services/commerceInventory';
 import CostSuggestionReview from './CostSuggestionReview';
+import { currentHarvestSeason, harvestSeasonCode } from '../services/harvestSeason';
 
 type TraceStatus = 'planned' | 'harvested' | 'processing' | 'quality_checked' | 'packed' | 'ready_for_sale';
 type TraceType = 'evoo' | 'table_olives' | 'raw_olives';
@@ -162,8 +163,7 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
   );
 
   const openLotBuilder = () => {
-    const year = new Date().getFullYear();
-    setLotCode(`DA-LOT-${year}-${String(Date.now()).slice(-5)}`);
+    setLotCode(`DA-LOT-${harvestSeasonCode(currentHarvestSeason())}-${String(Date.now()).slice(-5)}`);
     setLotUnits('1');
     setLotSourceIds([]);
     setLotAllocations({});

@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { harvestSeasonForDate } from './harvestSeason';
 
 export type HarvestWorkflowStatus='harvested'|'received'|'processing'|'completed';
 export type HarvestDestination='oil'|'table_olives'|'cooperative'|'other';
@@ -132,6 +133,7 @@ export async function createBatchFromHarvest(id:string):Promise<string>{
       source:'harvest_intake',source_harvest_record_id:row.id,harvest_plan_id:row.harvest_plan_id||null,
       weigh_ticket_number:row.weigh_ticket_number||null,weigh_ticket_path:row.weigh_ticket_path||null,
       gross_kg:row.gross_kg||null,tare_kg:row.tare_kg||null,net_kg:row.net_kg||row.kg||null,
+      harvest_season:row.season||harvestSeasonForDate(row.date),
     },
   });
   if(batchError)throw batchError;

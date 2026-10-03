@@ -3,6 +3,7 @@ import { BookOpen, Loader2, PackageCheck, RefreshCcw, Save, ShieldCheck } from '
 import type { Batch, BatchLog, Parcel, Recipe } from '../types';
 import { buildBalancedTableOlivePlan } from '../services/tableOliveRecipes';
 import { buildDefaultTableOliveSop, fetchProductionSops, ProductionSop, upsertProductionSop } from '../services/productionSops';
+import { harvestSeasonCode, harvestSeasonForDate } from '../services/harvestSeason';
 
 interface Props {
   parcels: Parcel[];
@@ -109,11 +110,12 @@ const TableOliveBatchPlanner: React.FC<Props> = ({ parcels, recipes, onSave }) =
       status: 'ACTIVE',
       yieldType: 'Table',
       tableOliveYieldKg: Number(form.weight),
-      traceabilityCode: `DA-${form.harvestDate.slice(0, 4)}-${String(Date.now()).slice(-5)}`,
+      traceabilityCode: `DA-${harvestSeasonCode(harvestSeasonForDate(form.harvestDate))}-${String(Date.now()).slice(-5)}`,
       currentStage: 'PLUKKING',
       stageStartDate: form.harvestDate,
       completedStages: [],
       logs: logsWithSop,
+      metadata: { harvest_season: harvestSeasonForDate(form.harvestDate) },
     };
 
     setIsSaving(true);
