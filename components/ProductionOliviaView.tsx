@@ -125,6 +125,7 @@ const ProductionOliviaView: React.FC<Props> = ({ parcels }) => {
       traceabilityCode: newBatch.traceabilityCode || `DA-${harvestSeasonCode(harvestSeasonForDate(newBatch.harvestDate))}-${String(Date.now()).slice(-5)}`,
       currentStage: newBatch.currentStage,
       logs: [],
+      metadata: { harvest_season: harvestSeasonForDate(newBatch.harvestDate) },
     };
     try {
       await upsertBatch(batch);
@@ -140,8 +141,8 @@ const ProductionOliviaView: React.FC<Props> = ({ parcels }) => {
     setError('');
     await upsertBatch(batch);
     setBatches(prev => [batch, ...prev]);
-    const batchYear = (batch.harvestDate || '').slice(0, 4);
-    if (batchYear) setSeason(batchYear);
+    const batchSeason = harvestSeasonForDate(batch.harvestDate);
+    if (batchSeason) setSeason(batchSeason);
   };
 
   const addRecipe = async () => {
