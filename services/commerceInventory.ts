@@ -56,11 +56,41 @@ export type UnifiedOrderItem = {
   total_price: number;
 };
 
+export type UnifiedShipmentRow = {
+  id: string;
+  order_id?: string;
+  customer_id?: string;
+  carrier?: string;
+  tracking_number?: string;
+  tracking_url?: string;
+  status: string;
+  shipped_at?: string;
+  delivered_at?: string;
+};
+
+export type CommerceBusinessSettings = {
+  id: string;
+  display_name: string;
+  legal_name: string;
+  tax_id: string;
+  address: string;
+  postal_code: string;
+  city: string;
+  province: string;
+  country: string;
+  email: string;
+  phone: string;
+  iban: string;
+  invoice_prefix: string;
+  invoice_notes: string;
+};
+
 export type UnifiedInvoiceRow = {
   id: string;
   invoice_number: string;
   order_id?: string;
   customer_name?: string;
+  customer_id?: string;
   status: string;
   payment_status: string;
   total_amount: number;
@@ -71,7 +101,15 @@ export type UnifiedInvoiceRow = {
 export type UnifiedOrderRow = {
   id: string;
   order_number: string;
+  customer_id?: string;
   customer_name?: string;
+  shipping_address?: string;
+  billing_address?: string;
+  subtotal: number;
+  tax_amount: number;
+  shipping_cost: number;
+  discount_amount: number;
+  currency: string;
   status: string;
   payment_status: string;
   total_amount: number;
@@ -82,9 +120,9 @@ export type UnifiedOrderRow = {
 const num = (value: unknown) => Number(value || 0);
 
 export async function fetchUnifiedInventory() {
-  if (!isSupabaseConfigured) return { products: [], movements: [], lots: [], orders: [], invoices: [] };
+  if (!isSupabaseConfigured) return { products: [], movements: [], lots: [], orders: [], invoices: [], shipments: [], businessSettings: null };
 
-  const [productsRes, movementsRes, lotsRes, ordersRes, invoicesRes] = await Promise.all([
+  const [productsRes, movementsRes, lotsRes, ordersRes, invoicesRes, shipmentsRes, settingsRes] = await Promise.all([
     supabase.from('commerce_products')
       .select('id,sku,name,category,size,stock_quantity,reserved_quantity,inventory_verified,inventory_verified_at,price_retail,price_b2b,cost,batch_id,active,status')
       .eq('active', true).order('name'),
@@ -95,14 +133,18 @@ export async function fetchUnifiedInventory() {
       .select('id,product_id,lot_code,status,packed_at,best_before,initial_units,traceability_slug,notes')
       .order('created_at', { ascending: false }),
     supabase.from('commerce_orders')
-      .select('id,order_number,customer_name,status,payment_status,total_amount,ordered_at,commerce_order_items(id,order_id,product_id,lot_id,name,sku,quantity,unit_price,total_price)')
+      .select('id,order_number,customer_id,customer_name,shipping_address,billing_address,subtotal,tax_amount,shipping_cost,discount_amount,total_amount,currency,status,payment_status,ordered_at,commerce_order_items(id,order_id,product_id,lot_id,name,sku,quantity,unit_price,total_price)')
       .order('created_at', { ascending: false }).limit(50),
     supabase.from('commerce_invoices')
-      .select('id,invoice_number,order_id,customer_name,status,payment_status,total_amount,due_date,paid_date')
+      .select('id,invoice_number,order_id,customer_id,customer_name,status,payment_status,total_amount,due_date,paid_date')
       .order('created_at', { ascending: false }).limit(50),
+    supabase.from('commerce_shipments')
+      .select('id,order_id,customer_id,carrier,tracking_number,tracking_url,status,shipped_at,delivered_at')
+      .order('created_at', { ascending: false }).limit(50),
+    supabase.from('commerce_business_settings').select('*').eq('id','default').maybeSingle(),
   ]);
 
-  const error = productsRes.error || movementsRes.error || lotsRes.error || ordersRes.error || invoicesRes.error;
+  const error = productsRes.error || movementsRes.error || lotsRes.error || ordersRes.error || invoicesRes.error || shipmentsRes.error || settingsRes.error;
   if (error) throw error;
 
   return {
@@ -125,6 +167,10 @@ export async function fetchUnifiedInventory() {
     })) as UnifiedProductLot[],
     orders: (ordersRes.data || []).map((row: any) => ({
       ...row,
+      subtotal: num(row.subtotal),
+      tax_amount: num(row.tax_amount),
+      shipping_cost: num(row.shipping_cost),
+      discount_amount: num(row.discount_amount),
       total_amount: num(row.total_amount),
       items: (row.commerce_order_items || []).map((item: any) => ({
         ...item,
@@ -137,6 +183,8 @@ export async function fetchUnifiedInventory() {
       ...row,
       total_amount: num(row.total_amount),
     })) as UnifiedInvoiceRow[],
+    shipments: (shipmentsRes.data || []) as UnifiedShipmentRow[],
+    businessSettings: (settingsRes.data || null) as CommerceBusinessSettings | null,
   };
 }
 
@@ -266,5 +314,34 @@ export async function markCommerceInvoicePaid(invoiceId: string, paymentMethod?:
     p_payment_method: paymentMethod || null,
     p_paid_date: paidDate || new Date().toISOString().slice(0, 10),
   });
+  if (error) throw error;
+}
+
+
+export async function shipCommerceOrder(orderId: string, carrier?: string, trackingNumber?: string, trackingUrl?: string) {
+  if (!isSupabaseConfigured) throw new Error('Supabase er ikke konfigurert.');
+  const { data, error } = await supabase.rpc('upsert_order_shipment', {
+    p_order_id: orderId,
+    p_carrier: carrier || null,
+    p_tracking_number: trackingNumber || null,
+    p_tracking_url: trackingUrl || null,
+  });
+  if (error) throw error;
+  return String(data);
+}
+
+export async function markCommerceOrderDelivered(orderId: string) {
+  if (!isSupabaseConfigured) throw new Error('Supabase er ikke konfigurert.');
+  const { error } = await supabase.rpc('mark_order_delivered', { p_order_id: orderId });
+  if (error) throw error;
+}
+
+export async function saveCommerceBusinessSettings(settings: CommerceBusinessSettings) {
+  if (!isSupabaseConfigured) throw new Error('Supabase er ikke konfigurert.');
+  const { error } = await supabase.from('commerce_business_settings').upsert({
+    ...settings,
+    id: 'default',
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'id' });
   if (error) throw error;
 }
