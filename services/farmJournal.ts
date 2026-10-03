@@ -141,7 +141,7 @@ export type FarmYearWheelItem = {
   parcel_id?:string|null;
   source_event_id?:string|null;
   basis:string;
-  status:'suggested'|'approved'|'done'|'skipped';
+  status:'suggested'|'approved'|'in_progress'|'postponed'|'done'|'skipped';
   notes?:string|null;
 };
 
