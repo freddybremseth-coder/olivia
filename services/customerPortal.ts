@@ -149,9 +149,11 @@ export async function placeCustomerOrder(customer: B2BCustomerProfile, product: 
   (order.items[0] as any).vatRate = vatRate;
   (order.items[0] as any).priceBasis = priceBasis;
 
-  const localOrders = loadLocalOrders();
-  localStorage.setItem(ORDERS_KEY, JSON.stringify([order, ...localOrders]));
-  if (!isSupabaseConfigured) return order;
+  if (!isSupabaseConfigured) {
+    const localOrders = loadLocalOrders();
+    localStorage.setItem(ORDERS_KEY, JSON.stringify([order, ...localOrders]));
+    return order;
+  }
 
   const { error: orderError } = await supabase
     .from('commerce_orders')
@@ -178,9 +180,11 @@ export async function sendCustomerMessage(customer: B2BCustomerProfile, profileI
     createdAt: new Date().toISOString(),
   };
 
-  const localMessages = loadLocalMessages();
-  localStorage.setItem(MESSAGES_KEY, JSON.stringify([message, ...localMessages]));
-  if (!isSupabaseConfigured) return message;
+  if (!isSupabaseConfigured) {
+    const localMessages = loadLocalMessages();
+    localStorage.setItem(MESSAGES_KEY, JSON.stringify([message, ...localMessages]));
+    return message;
+  }
 
   const { error } = await supabase
     .from('commerce_messages')
@@ -627,6 +631,7 @@ function customerToAdminRow(row: any): Record<string, string | number> {
     epost: row.email,
     type: row.customer_type,
     status: row.status,
+    betaling: row.payment_terms_days != null ? `${row.payment_terms_days} dager` : (row.payment_terms ?? '-'),
   };
 }
 
