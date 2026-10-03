@@ -521,9 +521,27 @@ export async function updateYearWheelStatus(id:string,status:FarmYearWheelItem['
   if(error)throw new Error(error.message);
 }
 
-export async function completeYearWheelItem(item:FarmYearWheelItem, input:{occurredOn?:string;notes?:string}={}){
+export async function completeYearWheelItem(item:FarmYearWheelItem, input:{
+  occurredOn?:string;
+  notes?:string;
+  parcelId?:string|null;
+  productName?:string;
+  productQuantity?:number|null;
+  productUnit?:string;
+  evidenceDocumentId?:string|null;
+}={}){
   const occurredOn=input.occurredOn||new Date().toISOString().slice(0,10);
   const sourceRef='year-wheel:'+item.id;
+  const parcelId=input.parcelId===undefined?(item.parcel_id||null):input.parcelId;
+  const cleanProductName=String(input.productName||'').trim();
+  const productQuantity=input.productQuantity==null?null:Number(input.productQuantity);
+  if(productQuantity!=null&&(!Number.isFinite(productQuantity)||productQuantity<0))throw new Error('Mengde må være 0 eller mer.');
+  const products:FarmProductEvidence[]=cleanProductName?[{
+    name:cleanProductName,
+    quantity:productQuantity,
+    unit:String(input.productUnit||'').trim()||undefined,
+  }]:[];
+
   const existing=await supabase.from('farm_events').select('id').eq('source_ref',sourceRef).eq('event_status','completed').maybeSingle();
   if(existing.error)throw new Error(existing.error.message);
 
@@ -538,14 +556,14 @@ export async function completeYearWheelItem(item:FarmYearWheelItem, input:{occur
       planned_for:null,
       period_label:null,
       date_precision:'exact',
-      parcel_id:item.parcel_id||null,
-      scope:item.parcel_id?'parcel':'farm',
+      parcel_id:parcelId,
+      scope:parcelId?'parcel':'farm',
       description:[item.notes,input.notes].filter(Boolean).join(' · ')||'Utført fra Olivia årshjul.',
-      source_document_id:null,
-      source_kind:'year_wheel',
+      source_document_id:input.evidenceDocumentId||null,
+      source_kind:input.evidenceDocumentId?'photo':'year_wheel',
       source_ref:sourceRef,
       vendor:null,
-      products:[],
+      products,
       amount:null,
       currency:'EUR',
       tree_count_delta:null,
@@ -555,6 +573,7 @@ export async function completeYearWheelItem(item:FarmYearWheelItem, input:{occur
       verified:true,
     });
     if(eventError)throw new Error(eventError.message);
+    if(products.length)await upsertProducts(products,input.evidenceDocumentId||sourceRef);
   }
 
   await updateYearWheelStatus(item.id,'done');
