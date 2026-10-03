@@ -873,12 +873,13 @@ Svar i JSON med feltene: amount (string), unit (string), rationale (string).`;
     );
   }
 
-  async analyzeComprehensive(imagesBase64: string[], lang: string): Promise<ComprehensiveAnalysisResult> {
+  async analyzeComprehensive(imagesBase64: string[], lang: string, farmContext = ''): Promise<ComprehensiveAnalysisResult> {
     const languageInstruction = lang === 'no' ? 'Svar på norsk.' : lang === 'es' ? 'Responde en español.' : 'Answer in English.';
     const prompt = `Du er en senior olivenagronom og beskjæringsrådgiver for profesjonell olivendrift i Alicante.
 ${languageInstruction}
 Dato for vurdering: ${new Date().toISOString().slice(0, 10)}.
 ${LOCAL_OLIVE_CONTEXT}
+${farmContext ? '\nVERIFISERT GÅRDSKONTEKST FRA OLIVIA (bruk som bakgrunn, ikke overstyr synlige funn):\n' + farmContext + '\n' : ''}
 
 Analyser bildet(ene) grundig og returner NØYAKTIG dette JSON-objektet (ingen markdown, bare ren JSON):
 
@@ -973,12 +974,13 @@ Svar i JSON med feltene: canopyDensity (string), ndviSimulated (number 0–1), w
     );
   }
 
-  async analyzePruning(image: string | string[], lang: string): Promise<PruningPlan> {
+  async analyzePruning(image: string | string[], lang: string, farmContext = ''): Promise<PruningPlan> {
     const languageInstruction = lang === 'no' ? 'Svar på norsk.' : lang === 'es' ? 'Responde en español.' : 'Answer in English.';
     const prompt = `Du er olivenbeskjæringsmester for profesjonell olivendrift i Alicante-provinsen.
 ${languageInstruction}
 Dato for vurdering: ${new Date().toISOString().slice(0, 10)}.
 ${LOCAL_OLIVE_CONTEXT}
+${farmContext ? '\nVERIFISERT GÅRDSKONTEKST FRA OLIVIA (bruk som bakgrunn; dokumentert historikk og treantall er sterkere enn gjetning fra bilde):\n' + farmContext + '\n' : ''}
 
 Analyser treet og returner NØYAKTIG dette JSON-objektet (ingen markdown, bare ren JSON):
 
