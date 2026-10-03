@@ -23,7 +23,7 @@ export async function fetchCommercialReadiness(): Promise<CommercialReadiness> {
 
   const [productsRes, settingsRes] = await Promise.all([
     supabase.from('commerce_products')
-      .select('id,name,sku,active,status,price_b2b,vat_rate,vat_configured,price_basis,inventory_verified,stock_quantity')
+      .select('id,name,sku,active,status,price_b2b,vat_rate,vat_configured,price_basis,inventory_verified,stock_quantity,cost,cost_configured')
       .eq('active',true)
       .order('name'),
     supabase.from('commerce_business_settings').select('legal_name,tax_id,address,city,iban').eq('id','default').maybeSingle(),
@@ -47,6 +47,10 @@ export async function fetchCommercialReadiness(): Promise<CommercialReadiness> {
     if(!product.inventory_verified) issues.push({
       id:'product-stock-'+product.id,severity:'warning',area:'inventory',productId:product.id,
       title:'Lager ikke fysisk bekreftet: '+product.name,detail:'Produktet er ikke salgbart før fysisk lager er bekreftet eller ny pakkelot er produsert.'
+    });
+    if(!product.cost_configured) issues.push({
+      id:'product-cost-'+product.id,severity:'warning',area:'product',productId:product.id,
+      title:'Kostpris mangler: '+product.name,detail:'Olivia kan selge produktet når pris/IVA/lager er klart, men bruttomargin vises som ukjent til kost per enhet er dokumentert.'
     });
   }
 
