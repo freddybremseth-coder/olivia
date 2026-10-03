@@ -312,7 +312,20 @@ export async function saveFarmSource(params:{
     throw new Error(docError.message);
   }
 
-  const events=scan.events.map((event,index)=>({
+  const sourceEvents=scan.events.length?scan.events:[{
+    eventType:'inspection' as FarmEventType,
+    eventStatus:(scan.evidenceStatus==='completed'?'completed':scan.evidenceStatus==='planned'?'planned':scan.evidenceStatus==='recommended'?'recommended':scan.evidenceStatus==='ordered'?'ordered':scan.evidenceStatus==='purchased'?'purchased':'observed') as FarmEventStatus,
+    title:scan.title,
+    description:scan.summary,
+    occurredOn:scan.evidenceStatus==='observed'||scan.evidenceStatus==='completed'?scan.documentDate:null,
+    plannedFor:scan.evidenceStatus==='planned'||scan.evidenceStatus==='recommended'?scan.documentDate:null,
+    periodLabel:scan.documentDate?undefined:'Dato ikke dokumentert',
+    datePrecision:scan.documentDate?'exact':'unknown' as const,
+    recurrenceCandidate:false,
+    products:scan.products,
+    confidence:scan.confidence,
+  }];
+  const events=sourceEvents.map((event,index)=>({
     id:'farmevent-'+Date.now()+'-'+index+'-'+Math.random().toString(36).slice(2,6),
     title:event.title,
     event_type:event.eventType,
