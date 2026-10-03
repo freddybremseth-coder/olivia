@@ -195,6 +195,7 @@ function rowToProduct(row: any): CommerceProduct {
     vatConfigured: Boolean(row.vat_configured),
     priceBasis: row.price_basis ?? undefined,
     stock: row.inventory_verified ? Number(row.stock_quantity ?? 0) : 0,
+    inventoryVerified: Boolean(row.inventory_verified),
     polyphenolContent: row.polyphenol_content ?? undefined,
     acidity: row.acidity ?? undefined,
     imageUrl: row.image_url ?? undefined,
