@@ -5,6 +5,7 @@ import ResetPasswordPage from './components/ResetPasswordPage';
 import { UserProfile, Language, Parcel } from './types';
 import { getCurrentSession, onAuthChange, signOut as authSignOut } from './services/auth';
 import { BIAR_DEFAULT_COORDS, BIAR_DEFAULT_LOCATION_NAME, EMPTY_OLIVIA_PARCELS, OLIVIA_FALLBACK_USER } from './services/oliviaAppDefaults';
+import type { SeasonExecutionAction } from './components/SeasonExecutionPanel';
 
 const Layout = lazy(() => import('./components/Layout'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -124,6 +125,10 @@ const App: React.FC = () => {
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [, setParcelsLoaded] = useState(false);
   const [pendingHarvestPlanId, setPendingHarvestPlanId] = useState<string | null>(null);
+  const [pendingPlannerParcelId, setPendingPlannerParcelId] = useState<string | null>(null);
+  const [pendingPlannerPlanId, setPendingPlannerPlanId] = useState<string | null>(null);
+  const [pendingProductionBatchId, setPendingProductionBatchId] = useState<string | null>(null);
+  const [pendingTraceBatchId, setPendingTraceBatchId] = useState<string | null>(null);
 
   const activateTab = (target: string, profile = user) => {
     const next = resolvePortalNavigation(target, profile.role, portalForPath(currentPath()) ?? portalMode);
@@ -135,8 +140,33 @@ const App: React.FC = () => {
   };
 
   const startHarvestFromPlan = (planId: string) => {
+    setPendingProductionBatchId(null);
     setPendingHarvestPlanId(planId);
     activateTab('production');
+  };
+
+  const handleSeasonExecutionAction = (action: SeasonExecutionAction) => {
+    if (action.tab === 'harvest_planner') {
+      setPendingPlannerPlanId(action.planId || null);
+      setPendingPlannerParcelId(action.planId ? null : action.parcelId);
+      activateTab('harvest_planner');
+      return;
+    }
+
+    if (action.tab === 'production') {
+      setPendingHarvestPlanId(action.planId || null);
+      setPendingProductionBatchId(action.batchId || null);
+      activateTab('production');
+      return;
+    }
+
+    if (action.tab === 'traceability_batches') {
+      setPendingTraceBatchId(action.batchId || null);
+      activateTab('traceability_batches');
+      return;
+    }
+
+    activateTab(action.tab);
   };
 
   useEffect(() => {
@@ -268,7 +298,7 @@ const App: React.FC = () => {
     if (isAdmin && activeTab === 'admin') return <AdminDashboard />;
     switch (activeTab) {
       case 'dashboard': return <FarmOverview language={language} weatherData={weatherData} locationName={selectedParcel?.name || locationName} parcels={parcels} onNavigate={activateTab} />;
-      case 'dona_anna_daily': return <DonaAnnaDailyDashboard onNavigate={activateTab} />;
+      case 'dona_anna_daily': return <DonaAnnaDailyDashboard onNavigate={activateTab} onSeasonAction={handleSeasonExecutionAction} />;
       case 'farm_advisor': return <FarmAdvisorView />;
       case 'dashboard_classic': return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;
       case 'consultant': return <FieldConsultantView />;
@@ -278,7 +308,14 @@ const App: React.FC = () => {
       case 'map': return <FarmMap parcels={parcels} onParcelSave={handleParcelSave} onParcelDelete={handleParcelDelete} language={language} />;
       case 'weather': return <WeatherView initialData={weatherData} initialLocationName={selectedParcel?.name || ''} initialCoords={parcelCoords} language={language} parcels={parcels} selectedParcel={selectedParcel} onParcelSelect={setSelectedParcel} />;
       case 'climate_stats': return <ClimateDecisionStats />;
-      case 'production': return <ProductionView parcels={parcels} language={language} initialHarvestPlanId={pendingHarvestPlanId} onHarvestPlanConsumed={() => setPendingHarvestPlanId(null)} />;
+      case 'production': return <ProductionView
+        parcels={parcels}
+        language={language}
+        initialHarvestPlanId={pendingHarvestPlanId}
+        onHarvestPlanConsumed={() => setPendingHarvestPlanId(null)}
+        initialBatchId={pendingProductionBatchId}
+        onBatchContextConsumed={() => setPendingProductionBatchId(null)}
+      />;
       case 'commerce': return <CommerceHub user={user} mode="backend" />;
       case 'b2b_portal': return <CommerceHub user={user} mode="customer" />;
       case 'economy': return <ProfitabilityPage language={language} parcels={parcels} />;
@@ -288,8 +325,16 @@ const App: React.FC = () => {
       case 'irrigation_log': return <IrrigationLogView />;
       case 'salinity': return <SalinityDashboard />;
       case 'zone_status': return <ZoneStatusMapView />;
-      case 'harvest_planner': return <HarvestPlannerView onStartHarvest={startHarvestFromPlan} />;
-      case 'traceability_batches': return <TraceabilityBatchesView />;
+      case 'harvest_planner': return <HarvestPlannerView
+        onStartHarvest={startHarvestFromPlan}
+        initialParcelId={pendingPlannerParcelId}
+        initialPlanId={pendingPlannerPlanId}
+        onContextConsumed={() => { setPendingPlannerParcelId(null); setPendingPlannerPlanId(null); }}
+      />;
+      case 'traceability_batches': return <TraceabilityBatchesView
+        initialBatchId={pendingTraceBatchId}
+        onContextConsumed={() => setPendingTraceBatchId(null)}
+      />;
       case 'label_qr': return <LabelQrGeneratorView />;
       case 'professional_label': return <ProfessionalLabelTemplateView />;
       case 'print_labels': return <PrintLabelTemplatesView />;
