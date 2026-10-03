@@ -925,6 +925,8 @@ Analyser bildet(ene) grundig og returner NØYAKTIG dette JSON-objektet (ingen ma
 
 Krav til faglig presisjon:
 - Ikke gjett. Hvis sort, alder, sykdom eller avling ikke kan ses tydelig, skriv "Ukjent" og forklar hva som mangler.
+- Hvis gårdskonteksten inneholder et ÅPENT SPØRSMÅL som er relevant for analysen, ikke fyll inn svaret selv. Legg behovet inn i missingDetails slik at Olivia kan spørre brukeren.
+- Tidligere AI-vurderinger er læringshistorikk, ikke fasit. Ved konflikt gjelder verifisert dokumentasjon og bekreftede brukersvar foran eldre AI-vurderinger.
 - Sortsidentifisering: bare oppgi Gordal/Gordal Sevillana, Changlot Real, Genovesa/Genoesa, Picual eller annen sort hvis synlige trekk faktisk støtter det. Hvis bare kroneform er synlig, sett varietyConfidence <= 35.
 - Alder: gi kun aldersklasse (ungt, etablering, voksent produksjonstre, gammelt/monumentalt) med lav sikkerhet hvis stammebasis/stammediameter ikke er synlig.
 - Beskjæring: hvert snitt må peke på en synlig gren i bildet. Ikke lag 3 snitt hvis bildet bare støtter 0-2 trygge tiltak.
@@ -1003,6 +1005,8 @@ Analyser treet og returner NØYAKTIG dette JSON-objektet (ingen markdown, bare r
 
 Regler:
 - Ikke gjett sort eller alder. Hvis bildet ikke viser nok, skriv "Oliven tre - sort ukjent" og "Ukjent alder - krever synlig stamme/stammediameter".
+- Hvis gårdskonteksten inneholder et ÅPENT SPØRSMÅL som er relevant for treet/parsellen, ikke anta svaret. Legg det som missingDetails så Olivia kan spørre brukeren.
+- Bekreftet brukersvar og verifiserte dokumenter veier tyngre enn tidligere AI-analyser. Hvis historikk og nytt bilde peker ulikt, si at det er en konflikt og be om avklaring fremfor å skjule forskjellen.
 - Bruk alle bilder som støtte når flere vinkler er sendt inn. Plasser x/y-koordinater på hovedbildet/første bildet.
 - Ikke tving frem snitt. Returner 0-8 pruningSteps, bare for synlige greiner der tiltaket er agronomisk begrunnet.
 - Ikke anbefal hard foryngelsesbeskjæring, toppkapping eller store strukturelle snitt hvis treets helhet, stamme og hovedgreiner ikke er synlige.
