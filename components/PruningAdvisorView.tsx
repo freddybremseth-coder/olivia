@@ -22,7 +22,7 @@ import { Language } from '../services/i18nService';
 import { filesToResizedDataUrls } from '../lib/imageUpload';
 import { deletePruningItem, fetchParcels, fetchPruningHistory, fetchSettings, upsertPruningItem, upsertTask } from '../services/db';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
-import { buildFarmContext } from '../services/farmJournal';
+import { buildFarmContext, fetchFarmContextImages } from '../services/farmJournal';
 
 function makeId(prefix: string) {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `${prefix}-${crypto.randomUUID()}`;
@@ -101,6 +101,7 @@ const PruningAdvisorView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [farmContext, setFarmContext] = useState('');
   const [contextLoading, setContextLoading] = useState(false);
+  const [historicalImages, setHistoricalImages] = useState<Array<{url:string;title:string;observedAt:string}>>([]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -160,9 +161,9 @@ const PruningAdvisorView: React.FC = () => {
     let cancelled = false;
     if (!selectedParcelId) { setFarmContext(''); return; }
     setContextLoading(true);
-    buildFarmContext(selectedParcelId)
-      .then(context => { if (!cancelled) setFarmContext(context); })
-      .catch(() => { if (!cancelled) setFarmContext(''); })
+    Promise.all([buildFarmContext(selectedParcelId), fetchFarmContextImages(selectedParcelId, 6)])
+      .then(([context, images]) => { if (!cancelled) { setFarmContext(context); setHistoricalImages(images); } })
+      .catch(() => { if (!cancelled) { setFarmContext(''); setHistoricalImages([]); } })
       .finally(() => { if (!cancelled) setContextLoading(false); });
     return () => { cancelled = true; };
   }, [selectedParcelId]);
@@ -375,6 +376,11 @@ const PruningAdvisorView: React.FC = () => {
               <p className="text-[9px] uppercase tracking-widest font-black text-green-400">Historikk som beskjæringsassistenten kjenner</p>
               {contextLoading ? <p className="text-xs text-slate-500 mt-1">Henter driftsjournal…</p> : farmContext ? <p className="text-xs text-slate-400 mt-1 line-clamp-5 whitespace-pre-line">{farmContext}</p> : <p className="text-xs text-slate-600 mt-1">Ingen verifisert historikk for valgt parsell ennå.</p>}
             </div>
+            {historicalImages.length>0&&<div>
+              <p className="text-[9px] uppercase tracking-widest font-black text-slate-500 mb-2">Siste historiske feltbilder</p>
+              <div className="grid grid-cols-3 gap-2">{historicalImages.slice(0,6).map((item,index)=><div key={item.url+'-'+index} className="relative overflow-hidden rounded-xl border border-white/10 bg-black/30"><img src={item.url} alt={item.title} className="h-24 w-full object-cover"/><div className="absolute inset-x-0 bottom-0 bg-black/70 px-2 py-1 text-[8px] text-slate-300">{item.observedAt.slice(0,10)}</div></div>)}</div>
+              <p className="text-[9px] text-slate-600 mt-2">Historiske bilder vises som referanse. De legges ikke automatisk inn som nye analysebilder.</p>
+            </div>}
           </div>
 
           <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 text-xs text-blue-100 leading-relaxed"><p className="font-bold text-white mb-2">For presise snittpunkter</p><p>Ta heltrebilde rett forfra med god avstand. Ta også sidebilde og nærbilde av hovedgreiner. AI bør ikke brukes alene for harde kutt i gamle trær.</p></div>
