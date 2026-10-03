@@ -76,6 +76,9 @@ const emptyProduct = (): CommerceProduct => ({
   price: '',
   priceRetail: 0,
   priceB2b: undefined,
+  cost: undefined,
+  costConfigured: false,
+  costSource: 'manual',
   vatRate: 0,
   vatConfigured: false,
   priceBasis: undefined,
@@ -1040,6 +1043,9 @@ function ProductEditor({ product, onClose, onSave }: {
               <Field label="B2B-pris (€)">
                 <input type="number" min="0" step="0.01" value={draft.priceB2b ?? ''} onChange={event => update('priceB2b' as any, event.target.value === '' ? undefined as any : Number(event.target.value) as any)} className="form-input" placeholder="Må settes før B2B-ordre" />
               </Field>
+              <Field label="Dokumentert kostpris / enhet (€)">
+                <input type="number" min="0" step="0.01" value={draft.cost ?? ''} onChange={event => update('cost' as any, event.target.value === '' ? undefined as any : Number(event.target.value) as any)} className="form-input" placeholder="Fylles når kost er kjent" />
+              </Field>
               <Field label="IVA-sats (%)">
                 <input type="number" min="0" max="100" step="0.01" value={(draft as any).vatRate ?? 0} onChange={event => setDraft(current => ({ ...current, vatRate: Number(event.target.value) }))} className="form-input" />
               </Field>
@@ -1068,6 +1074,13 @@ function ProductEditor({ product, onClose, onSave }: {
                 <span className="text-xs opacity-70">B2B-bestilling er blokkert til dette er bekreftet. Olivia gjetter ikke avgift.</span>
               </span>
               <input type="checkbox" checked={Boolean((draft as any).vatConfigured)} onChange={event => setDraft(current => ({ ...current, vatConfigured: event.target.checked }))} className="h-5 w-5 accent-green-500" />
+            </label>
+            <label className={`flex cursor-pointer items-center justify-between rounded-xl border px-4 py-3 text-sm ${(draft as any).costConfigured ? 'border-green-500/30 bg-green-500/10 text-green-100' : 'border-white/10 bg-black/20 text-slate-300'}`}>
+              <span>
+                <span className="block font-bold">Kostpris er dokumentert</span>
+                <span className="text-xs opacity-70">Bruttomargin beregnes bare når kost per enhet er kontrollert. Ellers vises margin som ukjent.</span>
+              </span>
+              <input type="checkbox" checked={Boolean((draft as any).costConfigured)} onChange={event => setDraft(current => ({ ...current, costConfigured: event.target.checked, costSource: event.target.checked ? ((current as any).costSource || 'manual') : undefined } as any))} className="h-5 w-5 accent-green-500" />
             </label>
             <Field label="Salgskanal / rolle">
               <input value={draft.channel} onChange={event => update('channel', event.target.value)} className="form-input" placeholder="Restaurant, retail, chef format..." />
