@@ -1,7 +1,7 @@
 import React,{useMemo,useState}from'react';
 import{CheckCircle2,CreditCard,FileCheck2,FileText,Loader2,PackageCheck,Printer,Send,Truck}from'lucide-react';
 import{
- assignOrderItemLot,createInvoiceForOrder,markCommerceInvoicePaid,markCommerceOrderDelivered,shipCommerceOrder,
+ assignOrderItemLot,createInvoiceForOrder,markCommerceInvoicePaid,markCommerceOrderDelivered,setCustomerPaymentTerms,shipCommerceOrder,
  type CommerceBusinessSettings,type UnifiedInventoryMovement,type UnifiedInvoiceRow,type UnifiedOrderRow,type UnifiedProductLot,type UnifiedShipmentRow
 }from'../services/commerceInventory';
 import{openCommerceDocument,sellerIsInvoiceReady}from'../services/commerceDocuments';
@@ -14,6 +14,7 @@ const OrderFulfillmentPanel:React.FC<{
 }>=({orders,lots,movements,invoices,shipments,businessSettings,onChanged})=>{
  const[busy,setBusy]=useState(''),[error,setError]=useState('');
  const[shipping,setShipping]=useState<Record<string,{carrier:string;tracking:string;url:string}>>({});
+ const[terms,setTerms]=useState<Record<string,string>>({});
  const real=orders.filter(o=>o.status.toLowerCase()!=='test'&&o.total_amount>0);
  const lotBalance=useMemo(()=>new Map(lots.map(lot=>{
    const rows=movements.filter(m=>m.lot_id===lot.id);
@@ -33,13 +34,24 @@ const OrderFulfillmentPanel:React.FC<{
    const sent=/sendt|shipped|levert|delivered/i.test(order.status),delivered=/levert|delivered/i.test(order.status);
    const ship=shipping[order.id]||{carrier:shipment?.carrier||'',tracking:shipment?.tracking_number||'',url:shipment?.tracking_url||''};
    return <div key={order.id} className="rounded-2xl border border-white/10 bg-black/20 p-5">
-    <div className="flex flex-col md:flex-row md:items-start justify-between gap-3"><div><p className="text-lg font-black text-white">{order.order_number}</p><p className="text-xs text-slate-500 mt-1">{order.customer?.company||order.customer_name||order.customer?.contact_name||'Kunde'} · {order.status} · {order.payment_status}</p></div><p className="text-xl font-black text-white">{eur(order.total_amount)}</p></div>
+    <div className="flex flex-col md:flex-row md:items-start justify-between gap-3"><div><p className="text-lg font-black text-white">{order.order_number}</p><p className="text-xs text-slate-500 mt-1">{order.customer?.company||order.customer_name||order.customer?.contact_name||'Kunde'} · {order.status} · {order.payment_status}</p><p className="text-[11px] text-slate-600 mt-1">Netto {eur(order.subtotal)} · IVA {eur(order.tax_amount)} · Total {eur(order.total_amount)}</p></div><p className="text-xl font-black text-white">{eur(order.total_amount)}</p></div>
     <div className="space-y-3 mt-4">{order.items.map(item=>{
       const eligible=lots.filter(l=>l.product_id===item.product_id&&l.status==='active'),selected=item.lot_id?lots.find(l=>l.id===item.lot_id):undefined;
       return <div key={item.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3"><div className="flex justify-between gap-3"><div><p className="text-sm font-bold text-white">{item.quantity} × {item.name}</p><p className="text-[11px] text-slate-500">{item.sku||item.product_id||'Produkt'}</p></div>{selected&&<span className="text-xs font-bold text-green-400 flex items-center gap-1"><PackageCheck size={14}/>{selected.lot_code}</span>}</div>
       {!sent&&<div className="mt-3 flex gap-2"><select defaultValue={item.lot_id||''} id={'lot-'+item.id} className={input}><option value="">Velg pakkelot</option>{eligible.map(l=>{const b=lotBalance.get(l.id);return <option key={l.id} value={l.id}>{l.lot_code} · {Math.max(0,b?.available||0)} tilgjengelig</option>})}</select><button disabled={busy===item.id} onClick={()=>{const el=document.getElementById('lot-'+item.id) as HTMLSelectElement|null;if(el?.value)act(item.id,()=>assignOrderItemLot(item.id,el.value));}} className="rounded-xl bg-white/10 px-3 text-xs font-bold text-white disabled:opacity-40">{busy===item.id?<Loader2 size={15} className="animate-spin"/>:'Koble'}</button></div>}
       </div>;
     })}</div>
+
+    {!invoice&&order.customer_id&&<div className="mt-4 rounded-xl border border-white/10 bg-white/[0.025] p-3">
+      <p className="text-xs font-black text-white mb-2">Betalingsfrist</p>
+      <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+        <select className={input} value={terms[order.id] ?? String(order.customer?.payment_terms_days ?? businessSettings?.default_payment_terms_days ?? 0)} onChange={e=>setTerms(prev=>({...prev,[order.id]:e.target.value}))}>
+          <option value="0">Betaling med en gang</option><option value="7">7 dager</option><option value="14">14 dager</option><option value="30">30 dager</option><option value="45">45 dager</option><option value="60">60 dager</option>
+        </select>
+        <button disabled={busy==='terms-'+order.id} onClick={()=>act('terms-'+order.id,()=>setCustomerPaymentTerms(order.customer_id!,Number(terms[order.id] ?? order.customer?.payment_terms_days ?? businessSettings?.default_payment_terms_days ?? 0)))} className="rounded-xl bg-white/10 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-40">{busy==='terms-'+order.id?<Loader2 size={14} className="animate-spin"/>:'Lagre på kunde'}</button>
+      </div>
+      <p className="text-[10px] text-slate-500 mt-2">Ny faktura bruker kundens frist. Hvis kunden ikke har egen frist, brukes standarden i Fakturainnstillinger.</p>
+    </div>}
 
     {!sent&&<div className="mt-4 rounded-xl border border-white/10 bg-white/[0.025] p-3"><p className="text-xs font-black text-white mb-2">Forsendelse</p><div className="grid gap-2 md:grid-cols-3"><input className={input} placeholder="Transportør / Hentes" value={ship.carrier} onChange={e=>patchShip(order.id,'carrier',e.target.value)}/><input className={input} placeholder="Sporingsnummer (valgfritt)" value={ship.tracking} onChange={e=>patchShip(order.id,'tracking',e.target.value)}/><input className={input} placeholder="Sporingslenke (valgfritt)" value={ship.url} onChange={e=>patchShip(order.id,'url',e.target.value)}/></div></div>}
 

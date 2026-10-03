@@ -35,7 +35,6 @@ import {
 } from '../types';
 import {
   commerceProductCollections,
-  defaultCommerceProducts,
   deleteCommerceProduct,
   fetchCommerceProducts,
   uploadCommerceProductImage,
@@ -63,30 +62,6 @@ type AdminRows = {
   messages: Array<Record<string, string | number>>;
 };
 
-const PRODUCT_STORAGE_KEY = 'olivia_commerce_products_v1';
-
-const customers = [
-  { company: 'Nordic Deli AS', contact: 'Ingrid Larsen', type: 'B2B forhandler', terms: 'Netto 14', status: 'Varm lead' },
-  { company: 'Biar Gastro S.L.', contact: 'Mateo Ruiz', type: 'Restaurant', terms: 'Kontant', status: 'Aktiv kunde' },
-  { company: 'Olive Club Norway', contact: 'Knut Berg', type: 'Abonnement', terms: 'Kort', status: 'Kundeportal' },
-];
-
-const orders = [
-  { no: 'DA-2026-0018', customer: 'Biar Gastro S.L.', items: '24 x Verde Alto · 6 x Mesa', amount: '€468.00', status: 'Pakkes', next: 'Send traceability-link' },
-  { no: 'DA-2026-0017', customer: 'Nordic Deli AS', items: '72 x Verde Alto · 12 x Verde Vivo', amount: '€1 702.80', status: 'Tilbud', next: 'Godkjenn B2B-pris' },
-  { no: 'DA-2026-0016', customer: 'Restaurante Alicante', items: '2 x Cocina Viva 5 L', amount: 'B2B quote', status: 'Tasting kit', next: 'Følg opp kjøkkensjef' },
-];
-
-const invoices = [
-  { no: 'INV-2026-0042', order: 'DA-2026-0018', customer: 'Biar Gastro S.L.', due: '02.05.2026', total: '€696.00', status: 'Utkast' },
-  { no: 'INV-2026-0041', order: 'DA-2026-0016', customer: 'Olive Club Norway', due: '30.04.2026', total: '€226.80', status: 'Sendt' },
-  { no: 'INV-2026-0040', order: 'DA-2026-0014', customer: 'Casa Verde', due: '21.04.2026', total: '€410.00', status: 'Betalt' },
-];
-
-const shipments = [
-  { order: 'DA-2026-0018', customer: 'Biar Gastro S.L.', carrier: 'DHL', tracking: 'DA-TRACE-1842', status: 'På vei' },
-];
-
 const contentItems = [
   { name: 'Ordrebekreftelse', use: 'Sendes automatisk etter B2B/kundeordre', owner: 'Admin', status: 'Må kobles' },
   { name: 'Faktura-e-post', use: 'PDF, betalingsfrist og sporingskode', owner: 'Admin', status: 'Utkast' },
@@ -102,6 +77,11 @@ const emptyProduct = (): CommerceProduct => ({
   channel: '',
   stock: 0,
   price: '',
+  priceRetail: 0,
+  priceB2b: undefined,
+  vatRate: 0,
+  vatConfigured: false,
+  priceBasis: undefined,
   status: 'Utkast',
   description: '',
   collections: [],
@@ -261,7 +241,7 @@ function CommerceOverview() {
 
 function CustomerPortal({ user }: { user: UserProfile }) {
   const [activeTab, setActiveTab] = useState<CustomerPortalTab>('overview');
-  const [products, setProducts] = useState<CommerceProduct[]>(defaultCommerceProducts);
+  const [products, setProducts] = useState<CommerceProduct[]>([]);
   const [portalData, setPortalData] = useState<CustomerPortalData>(() => ({
     customer: customerFromUser(user),
     orders: [],
@@ -269,7 +249,7 @@ function CustomerPortal({ user }: { user: UserProfile }) {
     shipments: [],
     messages: [],
   }));
-  const [selectedProductId, setSelectedProductId] = useState(defaultCommerceProducts[0]?.id ?? '');
+  const [selectedProductId, setSelectedProductId] = useState('');
   const [quantity, setQuantity] = useState(6);
   const [orderNote, setOrderNote] = useState('');
   const [messageSubject, setMessageSubject] = useState('');
@@ -472,7 +452,12 @@ function CustomerProducts(props: {
             <div className="p-5">
               <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-amber-300">{product.sku}</p>
               <h3 className="mt-2 text-xl font-bold text-white">{product.name}</h3>
-              <p className="mt-2 text-sm text-slate-400">{product.size} · {product.price}</p>
+              <p className="mt-2 text-sm text-slate-400">{product.size} · {product.priceB2b ? `B2B €${Number(product.priceB2b).toFixed(2)}` : 'B2B-pris mangler'}</p>
+              <p className={`mt-1 text-[11px] ${(product as any).vatConfigured && (product as any).priceBasis ? 'text-green-400' : 'text-amber-300'}`}>
+                {(product as any).vatConfigured && (product as any).priceBasis
+                  ? `IVA ${Number((product as any).vatRate || 0)}% · ${(product as any).priceBasis === 'gross' ? 'pris inkl. IVA' : 'pris ekskl. IVA'}`
+                  : 'IVA/prisgrunnlag ikke bekreftet'}
+              </p>
               <p className="mt-4 min-h-16 text-sm leading-6 text-slate-300">{product.publicStory || product.description}</p>
               <a
                 href={`data:text/plain;charset=utf-8,${encodeURIComponent(`${product.name}\n${product.description}\n${product.labelMaterial || ''}`)}`}
@@ -501,10 +486,11 @@ function CustomerProducts(props: {
           </Field>
           <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-300">
             <p className="font-bold text-white">{props.selectedProduct?.name}</p>
-            <p className="mt-1">{props.selectedProduct?.price} · lager {props.selectedProduct?.stock}</p>
+            <p className="mt-1">{props.selectedProduct?.priceB2b ? `B2B €${Number(props.selectedProduct.priceB2b).toFixed(2)}` : 'B2B-pris mangler'} · lager {props.selectedProduct?.stock}</p>
+            {props.selectedProduct && (!(props.selectedProduct as any).vatConfigured || !(props.selectedProduct as any).priceBasis) && <p className="mt-2 text-xs text-amber-300">Bestilling er låst til Doña Anna har bekreftet IVA og om prisen er inkl./ekskl. IVA.</p>}
           </div>
-          <button disabled={!props.selectedProduct || props.quantity <= 0 || props.quantity > Number(props.selectedProduct.stock || 0)} onClick={props.onSubmitOrder} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 text-sm font-bold text-black hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-40">
-            <Send size={17} /> {props.selectedProduct && props.selectedProduct.stock > 0 ? 'Send ordre' : 'Ikke bekreftet lager'}
+          <button disabled={!props.selectedProduct || props.quantity <= 0 || props.quantity > Number(props.selectedProduct.stock || 0) || !Number(props.selectedProduct.priceB2b || 0) || !(props.selectedProduct as any).vatConfigured || !(props.selectedProduct as any).priceBasis} onClick={props.onSubmitOrder} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 text-sm font-bold text-black hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-40">
+            <Send size={17} /> {!props.selectedProduct ? 'Velg produkt' : !props.selectedProduct.stock ? 'Ikke bekreftet lager' : !props.selectedProduct.priceB2b ? 'B2B-pris mangler' : (!(props.selectedProduct as any).vatConfigured || !(props.selectedProduct as any).priceBasis) ? 'IVA må bekreftes' : 'Send ordre'}
           </button>
         </div>
       </aside>
@@ -639,15 +625,7 @@ function formatMoney(value: number, currency = 'EUR') {
 }
 
 export function ProductCatalog() {
-  const [products, setProducts] = useState<CommerceProduct[]>(() => {
-    if (typeof localStorage === 'undefined') return defaultCommerceProducts;
-    try {
-      const stored = localStorage.getItem(PRODUCT_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : defaultCommerceProducts;
-    } catch {
-      return defaultCommerceProducts;
-    }
-  });
+  const [products, setProducts] = useState<CommerceProduct[]>([]);
   const [query, setQuery] = useState('');
   const [collectionFilter, setCollectionFilter] = useState('Alle');
   const [selectedProduct, setSelectedProduct] = useState<CommerceProduct | null>(products[0] ?? null);
@@ -673,9 +651,6 @@ export function ProductCatalog() {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(PRODUCT_STORAGE_KEY, JSON.stringify(products));
-  }, [products]);
 
   const visibleProducts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -1050,8 +1025,21 @@ function ProductEditor({ product, onClose, onSave }: {
               <Field label="Størrelse">
                 <input value={draft.size} onChange={event => update('size', event.target.value)} className="form-input" placeholder="500 ml" />
               </Field>
-              <Field label="Pris">
-                <input value={draft.price} onChange={event => update('price', event.target.value)} className="form-input" placeholder="€24.90 / B2B quote" />
+              <Field label="Retail-pris (€)">
+                <input type="number" min="0" step="0.01" value={draft.priceRetail ?? ''} onChange={event => update('priceRetail' as any, Number(event.target.value) as any)} className="form-input" placeholder="0.00" />
+              </Field>
+              <Field label="B2B-pris (€)">
+                <input type="number" min="0" step="0.01" value={draft.priceB2b ?? ''} onChange={event => update('priceB2b' as any, event.target.value === '' ? undefined as any : Number(event.target.value) as any)} className="form-input" placeholder="Må settes før B2B-ordre" />
+              </Field>
+              <Field label="IVA-sats (%)">
+                <input type="number" min="0" max="100" step="0.01" value={(draft as any).vatRate ?? 0} onChange={event => setDraft(current => ({ ...current, vatRate: Number(event.target.value) }))} className="form-input" />
+              </Field>
+              <Field label="Prisgrunnlag">
+                <select value={(draft as any).priceBasis ?? ''} onChange={event => setDraft(current => ({ ...current, priceBasis: event.target.value || undefined }))} className="form-input">
+                  <option value="">Ikke bekreftet</option>
+                  <option value="gross">Pris inkluderer IVA</option>
+                  <option value="net">Pris ekskluderer IVA</option>
+                </select>
               </Field>
               <Field label="Bekreftet lager">
                 <div className="form-input flex items-center text-slate-300">{draft.stock} <span className="ml-2 text-[10px] text-slate-500">styres i Salg og lager</span></div>
@@ -1065,6 +1053,13 @@ function ProductEditor({ product, onClose, onSave }: {
                 </select>
               </Field>
             </div>
+            <label className={`flex cursor-pointer items-center justify-between rounded-xl border px-4 py-3 text-sm ${(draft as any).vatConfigured ? 'border-green-500/30 bg-green-500/10 text-green-100' : 'border-amber-300/20 bg-amber-300/10 text-amber-100'}`}>
+              <span>
+                <span className="block font-bold">IVA og prisgrunnlag er kontrollert</span>
+                <span className="text-xs opacity-70">B2B-bestilling er blokkert til dette er bekreftet. Olivia gjetter ikke avgift.</span>
+              </span>
+              <input type="checkbox" checked={Boolean((draft as any).vatConfigured)} onChange={event => setDraft(current => ({ ...current, vatConfigured: event.target.checked }))} className="h-5 w-5 accent-green-500" />
+            </label>
             <Field label="Salgskanal / rolle">
               <input value={draft.channel} onChange={event => update('channel', event.target.value)} className="form-input" placeholder="Restaurant, retail, chef format..." />
             </Field>
