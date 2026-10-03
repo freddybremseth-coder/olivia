@@ -241,7 +241,10 @@ function buildDailyTopFive(params:{
 
   for(const item of params.farmTruth?.yearWheel||[]){
     if(['done','skipped','suggested'].includes(item.status))continue;
-    const target=new Date(item.target_year,item.target_month-1,item.target_day||15);
+    const hasExactDay=Boolean(item.target_day);
+    const target=hasExactDay
+      ?new Date(item.target_year,item.target_month-1,item.target_day)
+      :new Date(item.target_year,item.target_month,0);
     target.setHours(12,0,0,0);
     const days=Math.round((target.getTime()-today.getTime())/86400000);
     if(item.status==='in_progress'){
@@ -276,10 +279,10 @@ function buildDailyTopFive(params:{
       items.push({
         id:'wheel-overdue-'+item.id,
         title:item.title,
-        description:overdueDays+' dag'+(overdueDays===1?'':'er')+' forsinket. '+farmDelayConsequence(item.activity_type),
+        description:(hasExactDay?overdueDays+' dag'+(overdueDays===1?'':'er')+' forsinket. ':'Planlagt måned er passert. ')+farmDelayConsequence(item.activity_type),
         source:'Årshjul',
-        priority:overdueDays>=3?'Kritisk':'Høy',
-        score:overdueDays>=7?103:overdueDays>=3?99:86+overdueDays,
+        priority:hasExactDay&&overdueDays>=3?'Kritisk':'Høy',
+        score:hasExactDay?(overdueDays>=7?103:overdueDays>=3?99:86+overdueDays):90,
         targetTab:'farm_journal:yearwheel',
         actionLabel:'Utført / pågår / utsett',
       });
@@ -287,7 +290,7 @@ function buildDailyTopFive(params:{
       items.push({
         id:'wheel-soon-'+item.id,
         title:item.title,
-        description:days===0?'Planlagt tidspunkt er i dag.':'Planlagt tidspunkt er om '+days+' dag'+(days===1?'':'er')+'.',
+        description:hasExactDay?(days===0?'Planlagt tidspunkt er i dag.':'Planlagt tidspunkt er om '+days+' dag'+(days===1?'':'er')+'.'):'Planlagt i inneværende måned.',
         source:'Årshjul',
         priority:'Middels',
         score:64+(7-days),
