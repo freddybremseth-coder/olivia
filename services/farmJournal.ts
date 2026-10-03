@@ -521,6 +521,45 @@ export async function updateYearWheelStatus(id:string,status:FarmYearWheelItem['
   if(error)throw new Error(error.message);
 }
 
+export async function completeYearWheelItem(item:FarmYearWheelItem, input:{occurredOn?:string;notes?:string}={}){
+  const occurredOn=input.occurredOn||new Date().toISOString().slice(0,10);
+  const sourceRef='year-wheel:'+item.id;
+  const existing=await supabase.from('farm_events').select('id').eq('source_ref',sourceRef).eq('event_status','completed').maybeSingle();
+  if(existing.error)throw new Error(existing.error.message);
+
+  if(!existing.data){
+    const eventType=allowedEventTypes.includes(item.activity_type as FarmEventType)?item.activity_type as FarmEventType:'other';
+    const {error:eventError}=await supabase.from('farm_events').insert({
+      id:'farmevent-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),
+      title:item.title,
+      event_type:eventType,
+      event_status:'completed',
+      occurred_on:occurredOn,
+      planned_for:null,
+      period_label:null,
+      date_precision:'exact',
+      parcel_id:item.parcel_id||null,
+      scope:item.parcel_id?'parcel':'farm',
+      description:[item.notes,input.notes].filter(Boolean).join(' · ')||'Utført fra Olivia årshjul.',
+      source_document_id:null,
+      source_kind:'year_wheel',
+      source_ref:sourceRef,
+      vendor:null,
+      products:[],
+      amount:null,
+      currency:'EUR',
+      tree_count_delta:null,
+      recurrence_candidate:true,
+      recurrence_reason:'Bekreftet utført aktivitet fra årshjulet.',
+      confidence:1,
+      verified:true,
+    });
+    if(eventError)throw new Error(eventError.message);
+  }
+
+  await updateYearWheelStatus(item.id,'done');
+}
+
 export async function addRainMeasurement(input:{measuredOn:string;mm:number;parcelId?:string;notes?:string;source?:RainMeasurement['source']}){
   if(!Number.isFinite(input.mm)||input.mm<0)throw new Error('Regnmengde må være 0 mm eller mer.');
   const {data:auth}=await supabase.auth.getUser();
