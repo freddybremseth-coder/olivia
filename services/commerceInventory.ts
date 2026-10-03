@@ -44,6 +44,30 @@ export type UnifiedProductLot = {
   notes?: string;
 };
 
+export type UnifiedOrderItem = {
+  id: string;
+  order_id: string;
+  product_id?: string;
+  lot_id?: string;
+  name: string;
+  sku?: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+};
+
+export type UnifiedInvoiceRow = {
+  id: string;
+  invoice_number: string;
+  order_id?: string;
+  customer_name?: string;
+  status: string;
+  payment_status: string;
+  total_amount: number;
+  due_date?: string;
+  paid_date?: string;
+};
+
 export type UnifiedOrderRow = {
   id: string;
   order_number: string;
@@ -52,14 +76,15 @@ export type UnifiedOrderRow = {
   payment_status: string;
   total_amount: number;
   ordered_at?: string;
+  items: UnifiedOrderItem[];
 };
 
 const num = (value: unknown) => Number(value || 0);
 
 export async function fetchUnifiedInventory() {
-  if (!isSupabaseConfigured) return { products: [], movements: [], lots: [], orders: [] };
+  if (!isSupabaseConfigured) return { products: [], movements: [], lots: [], orders: [], invoices: [] };
 
-  const [productsRes, movementsRes, lotsRes, ordersRes] = await Promise.all([
+  const [productsRes, movementsRes, lotsRes, ordersRes, invoicesRes] = await Promise.all([
     supabase.from('commerce_products')
       .select('id,sku,name,category,size,stock_quantity,reserved_quantity,inventory_verified,inventory_verified_at,price_retail,price_b2b,cost,batch_id,active,status')
       .eq('active', true).order('name'),
@@ -70,11 +95,14 @@ export async function fetchUnifiedInventory() {
       .select('id,product_id,lot_code,status,packed_at,best_before,initial_units,traceability_slug,notes')
       .order('created_at', { ascending: false }),
     supabase.from('commerce_orders')
-      .select('id,order_number,customer_name,status,payment_status,total_amount,ordered_at')
+      .select('id,order_number,customer_name,status,payment_status,total_amount,ordered_at,commerce_order_items(id,order_id,product_id,lot_id,name,sku,quantity,unit_price,total_price)')
+      .order('created_at', { ascending: false }).limit(50),
+    supabase.from('commerce_invoices')
+      .select('id,invoice_number,order_id,customer_name,status,payment_status,total_amount,due_date,paid_date')
       .order('created_at', { ascending: false }).limit(50),
   ]);
 
-  const error = productsRes.error || movementsRes.error || lotsRes.error || ordersRes.error;
+  const error = productsRes.error || movementsRes.error || lotsRes.error || ordersRes.error || invoicesRes.error;
   if (error) throw error;
 
   return {
@@ -98,7 +126,17 @@ export async function fetchUnifiedInventory() {
     orders: (ordersRes.data || []).map((row: any) => ({
       ...row,
       total_amount: num(row.total_amount),
+      items: (row.commerce_order_items || []).map((item: any) => ({
+        ...item,
+        quantity: num(item.quantity),
+        unit_price: num(item.unit_price),
+        total_price: num(item.total_price),
+      })),
     })) as UnifiedOrderRow[],
+    invoices: (invoicesRes.data || []).map((row: any) => ({
+      ...row,
+      total_amount: num(row.total_amount),
+    })) as UnifiedInvoiceRow[],
   };
 }
 
@@ -195,4 +233,38 @@ export async function createProductLot(params: {
   if (movementError) throw movementError;
 
   return lotId;
+}
+
+
+export async function assignOrderItemLot(orderItemId: string, lotId: string) {
+  if (!isSupabaseConfigured) throw new Error('Supabase er ikke konfigurert.');
+  const { data, error } = await supabase.rpc('assign_order_item_lot', { p_order_item_id: orderItemId, p_lot_id: lotId });
+  if (error) throw error;
+  return data;
+}
+
+export async function updateCommerceOrderStatus(orderId: string, status: string) {
+  if (!isSupabaseConfigured) throw new Error('Supabase er ikke konfigurert.');
+  const patch: Record<string, unknown> = { status };
+  if (/sendt|shipped/i.test(status)) patch.shipped_at = new Date().toISOString();
+  if (/levert|delivered/i.test(status)) patch.delivered_at = new Date().toISOString();
+  const { error } = await supabase.from('commerce_orders').update(patch).eq('id', orderId);
+  if (error) throw error;
+}
+
+export async function createInvoiceForOrder(orderId: string, dueDate?: string) {
+  if (!isSupabaseConfigured) throw new Error('Supabase er ikke konfigurert.');
+  const { data, error } = await supabase.rpc('create_invoice_for_order', { p_order_id: orderId, p_due_date: dueDate || null });
+  if (error) throw error;
+  return String(data);
+}
+
+export async function markCommerceInvoicePaid(invoiceId: string, paymentMethod?: string, paidDate?: string) {
+  if (!isSupabaseConfigured) throw new Error('Supabase er ikke konfigurert.');
+  const { error } = await supabase.rpc('mark_commerce_invoice_paid', {
+    p_invoice_id: invoiceId,
+    p_payment_method: paymentMethod || null,
+    p_paid_date: paidDate || new Date().toISOString().slice(0, 10),
+  });
+  if (error) throw error;
 }
