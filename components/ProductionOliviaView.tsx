@@ -4,6 +4,7 @@ import type { Batch, Language, Parcel, Recipe } from '../types';
 import { deleteBatch, deleteRecipe, fetchBatches, fetchRecipes, upsertBatch, upsertRecipe } from '../services/db';
 import { fetchOliviaHarvests, HarvestRecord, SalesChannel } from '../services/oliviaSchemaData';
 import TableOliveBatchPlanner from './TableOliveBatchPlanner';
+import HarvestIntakeFlow from './HarvestIntakeFlow';
 
 interface Props {
   language: Language;
@@ -219,6 +220,7 @@ const ProductionOliviaView: React.FC<Props> = ({ parcels }) => {
 
       {activeTab === 'harvest' && (
         <div className="space-y-4">
+          <HarvestIntakeFlow parcels={parcels} onChanged={load} />
           <div className="glass rounded-[2rem] p-6 border border-white/10">
             <h3 className="text-lg text-white font-bold mb-4 flex items-center gap-2"><CalendarDays size={18} /> Høsteregistreringer fra olivia.harvest_records</h3>
             <div className="space-y-2">

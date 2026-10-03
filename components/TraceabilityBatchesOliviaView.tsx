@@ -17,7 +17,7 @@ type TraceBatch = {
   parcel_id: string;
   zone_id: string;
   variety: string;
-  altitude_m: number;
+  altitude_m?: number;
   kg_harvested: number;
   kg_processed?: number;
   liters_oil?: number;
@@ -96,7 +96,7 @@ function batchToTrace(batch: Batch): TraceBatch {
     parcel_id: batch.parcelId,
     zone_id: batch.currentStage || 'farm',
     variety: batch.oliveType || batch.recipeName || 'Blanding',
-    altitude_m: 650,
+    altitude_m: undefined,
     kg_harvested: Number(batch.weight || 0),
     kg_processed: processedKg,
     liters_oil: liters,
@@ -105,7 +105,7 @@ function batchToTrace(batch: Batch): TraceBatch {
     peroxide_value: batch.qualityMetrics?.peroxide,
     polyphenols_mg_kg: batch.qualityMetrics?.phenols,
     sensory_profile: batch.recipeName ? `Oppskrift: ${batch.recipeName}` : undefined,
-    processing_location: 'DonaAnna / Biar',
+    processing_location: undefined,
     lot_notes: batch.logs?.map(log => `${log.stage}: ${log.notes}`).join(' · '),
     qr_slug: slugify(batchCode),
     published_to_public_trace: !!batch.logs?.some(log => log.stage === 'SALG' && log.notes?.includes('published_to_public_trace')),
@@ -115,7 +115,7 @@ function batchToTrace(batch: Batch): TraceBatch {
 }
 
 function publicStoryForBatch(batch: TraceBatch): string {
-  return `Denne batchen kommer fra DonaAnna-gården i Biar, Alicante. Gården ligger rundt ${batch.altitude_m || 650} meter over havet, som gir senere modning enn kyst og lavland. Batchen er registrert med sort, sone, høstedato, prosessering og kvalitetstall.`;
+  return `Denne batchen kommer fra Doña Anna i Biar, Alicante. Den offentlige sporbarheten viser bare opplysninger som er registrert for denne batchen.`;
 }
 
 const TraceabilityBatchesOliviaView: React.FC = () => {
@@ -342,7 +342,7 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
               <div>
                 <p className="text-[10px] uppercase font-bold tracking-widest mb-1">{typeLabel(batch.type)} · {statusLabel(batch.status)}</p>
                 <h3 className="text-xl text-white font-bold">{batch.batch_code}</h3>
-                <p className="text-xs text-slate-500 mt-1">{batch.variety} · {batch.zone_id} · {batch.harvest_date} · {batch.altitude_m} moh.</p>
+                <p className="text-xs text-slate-500 mt-1">{batch.variety} · {batch.zone_id} · {batch.harvest_date}{batch.altitude_m ? ` · ${batch.altitude_m} moh.` : ''}</p>
               </div>
               <div className="text-right"><p className="text-[10px] text-slate-500">kg</p><p className="text-3xl text-white font-black">{batch.kg_harvested}</p></div>
             </div>
