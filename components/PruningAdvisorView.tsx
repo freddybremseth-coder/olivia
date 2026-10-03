@@ -25,6 +25,7 @@ import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 import { buildFarmContext, fetchFarmContextImages } from '../services/farmJournal';
 import { buildLearningContext, recordAgentAssessment } from '../services/farmIntelligence';
 import FarmQuestionsPanel from './FarmQuestionsPanel';
+import AgentFeedbackPanel from './AgentFeedbackPanel';
 
 function makeId(prefix: string) {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `${prefix}-${crypto.randomUUID()}`;
@@ -104,6 +105,7 @@ const PruningAdvisorView: React.FC = () => {
   const [farmContext, setFarmContext] = useState('');
   const [contextLoading, setContextLoading] = useState(false);
   const [historicalImages, setHistoricalImages] = useState<Array<{url:string;title:string;observedAt:string}>>([]);
+  const [lastAssessmentId,setLastAssessmentId]=useState<string|null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -240,7 +242,7 @@ const PruningAdvisorView: React.FC = () => {
         ...(normalized.missingDetails||[]),
         ...(normalized.limitations||[]).filter(item=>/mangler|ukjent|kan ikke|ikke synlig|krever/i.test(item)),
       ])).slice(0,8);
-      recordAgentAssessment({
+      const learning=await recordAgentAssessment({
         agentType:'pruning_assistant',
         parcelId:selectedParcelId||undefined,
         result:normalized,
@@ -248,7 +250,8 @@ const PruningAdvisorView: React.FC = () => {
         confidence:Math.max(0,Math.min(1,Number(normalized.confidence||0)/100)),
         uncertainties,
         sourceRef:'Beskjæringsassistent '+new Date().toISOString(),
-      }).catch(err=>console.warn('[PruningAdvisorView] learning loop',err));
+      }).catch(err=>{console.warn('[PruningAdvisorView] learning loop',err);return null;});
+      setLastAssessmentId(learning?.assessmentId||null);
       setScheduledDate(normalized.recommendedDate);
       setShowCamera(false);
       stopCamera();
@@ -325,6 +328,7 @@ const PruningAdvisorView: React.FC = () => {
   const reset = () => {
     setImages([]);
     setPlan(null);
+    setLastAssessmentId(null);
     setError(null);
     setActiveMarker(null);
     setScheduledDate('');
@@ -398,6 +402,7 @@ const PruningAdvisorView: React.FC = () => {
             </div>}
           </div>
           <FarmQuestionsPanel parcelId={selectedParcelId||undefined} agentType="pruning_assistant" title="Beskjæringsassistenten trenger avklaring" compact />
+          <AgentFeedbackPanel assessmentId={lastAssessmentId} agentType="pruning_assistant" parcelId={selectedParcelId||undefined} />
 
           <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 text-xs text-blue-100 leading-relaxed"><p className="font-bold text-white mb-2">For presise snittpunkter</p><p>Ta heltrebilde rett forfra med god avstand. Ta også sidebilde og nærbilde av hovedgreiner. AI bør ikke brukes alene for harde kutt i gamle trær.</p></div>
 
