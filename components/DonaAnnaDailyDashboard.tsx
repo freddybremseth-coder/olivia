@@ -38,6 +38,7 @@ import { fetchSeasonReadiness, type SeasonReadiness } from '../services/seasonRe
 import SeasonReadinessPanel from './SeasonReadinessPanel';
 import { fetchSeasonExecution, type SeasonExecution } from '../services/seasonExecution';
 import SeasonExecutionPanel, { type SeasonExecutionAction } from './SeasonExecutionPanel';
+import { fetchFarmTruthSummary } from '../services/farmJournal';
 
 type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
 
@@ -170,6 +171,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   const [commercialReadiness, setCommercialReadiness] = useState<CommercialReadiness | null>(null);
   const [seasonReadiness, setSeasonReadiness] = useState<SeasonReadiness | null>(null);
   const [seasonExecution, setSeasonExecution] = useState<SeasonExecution | null>(null);
+  const [farmTruth, setFarmTruth] = useState<any>(null);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -181,7 +183,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness, seasonStatus, executionStatus] = await Promise.all([
+      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness, seasonStatus, executionStatus, truthStatus] = await Promise.all([
         fetchLatestSensorReadings(300),
         fetchOpenSensorAlerts(),
         fetchRecentIrrigationEvents(10),
@@ -190,6 +192,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
         fetchCommercialReadiness(),
         fetchSeasonReadiness(),
         fetchSeasonExecution(),
+        fetchFarmTruthSummary(),
       ]);
 
       setReadings(latestReadings);
@@ -200,6 +203,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       setCommercialReadiness(readiness);
       setSeasonReadiness(seasonStatus);
       setSeasonExecution(executionStatus);
+      setFarmTruth(truthStatus);
       setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length || readiness.issues.length || seasonStatus.steps.length || executionStatus.parcels.length ? 'supabase' : 'empty');
       setLastRefresh(new Date());
     } catch (error) {
@@ -211,6 +215,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       setCommercialReadiness(null);
       setSeasonReadiness(null);
       setSeasonExecution(null);
+      setFarmTruth(null);
       setLoadState('error');
       setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente Daily Dashboard-data fra Supabase.');
     } finally {
@@ -272,6 +277,36 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
             {advice.reasons.length > 0 && <p className="text-xs text-slate-500 mt-3">Grunnlag: {advice.reasons.join(' ')}</p>}
           </>
         )}
+      </div>
+
+      {farmTruth && <div className="glass rounded-[2rem] p-6 border border-[#d9b657]/20 bg-[#d9b657]/[0.04]">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.24em] font-black text-[#d9b657]">Daglig drift · gårdens fasit</p>
+            <h3 className="text-xl font-black text-white mt-1">Hva har skjedd — og hva må følges opp?</h3>
+            <p className="text-xs text-slate-500 mt-2">Bygger på verifiserte dokumenter, meldinger, feltobservasjoner, regnmålinger og registrert treantall.</p>
+          </div>
+          {onNavigate&&<button onClick={()=>onNavigate('farm_journal')} className="rounded-xl bg-[#d9b657] px-4 py-3 text-xs font-black text-black flex items-center gap-2"><ClipboardList size={15}/> Åpne Driftsjournal</button>}
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5">
+          <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Registrerte trær</p><p className="font-black text-white mt-1">{Number(farmTruth.treeCount||0).toLocaleString('no-NO')}</p></div>
+          <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Verifiserte hendelser</p><p className="font-black text-white mt-1">{farmTruth.events?.length||0}</p></div>
+          <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Må kontrolleres</p><p className={"font-black mt-1 "+(farmTruth.needsReview?"text-amber-300":"text-white")}>{farmTruth.needsReview||0}</p></div>
+          <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Regn 30 dager</p><p className="font-black text-blue-300 mt-1">{Number(farmTruth.rain30||0).toLocaleString('no-NO')} mm</p></div>
+          <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Årshjul nærmer seg</p><p className="font-black text-white mt-1">{farmTruth.upcoming?.length||0}</p></div>
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 mt-4">
+          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <p className="text-[9px] uppercase tracking-widest text-slate-500 font-black">Siste dokumenterte arbeid / observasjon</p>
+            {(farmTruth.events||[]).slice(0,4).map((event:any)=><div key={event.id} className="mt-3 border-l-2 border-green-500/30 pl-3"><p className="text-xs font-bold text-white">{event.title}</p><p className="text-[10px] text-slate-500 mt-1">{event.occurred_on||event.planned_for||event.period_label||'dato ikke dokumentert'} · {event.event_status}</p></div>)}
+            {!farmTruth.events?.length&&<p className="text-xs text-slate-600 mt-3">Ingen verifiserte driftshendelser ennå.</p>}
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <p className="text-[9px] uppercase tracking-widest text-slate-500 font-black">Neste fra årshjul</p>
+            {(farmTruth.upcoming||[]).slice(0,4).map((item:any)=><div key={item.id} className="mt-3 border-l-2 border-[#d9b657]/40 pl-3"><p className="text-xs font-bold text-white">{item.title}</p><p className="text-[10px] text-slate-500 mt-1">{item.target_day?item.target_day+'. ':''}{new Date(2026,item.target_month-1,1).toLocaleString('no-NO',{month:'long'})} · {item.status}</p></div>)}
+            {!farmTruth.upcoming?.length&&<p className="text-xs text-slate-600 mt-3">Ingen årshjulspunkter nærmer seg akkurat nå.</p>}
+          </div>
+        </div>
       </div>
 
       <SeasonReadinessPanel data={seasonReadiness} onNavigate={onNavigate} />
