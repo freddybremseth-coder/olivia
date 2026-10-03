@@ -23,6 +23,8 @@ import { filesToResizedDataUrls } from '../lib/imageUpload';
 import { deletePruningItem, fetchParcels, fetchPruningHistory, fetchSettings, upsertPruningItem, upsertTask } from '../services/db';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 import { buildFarmContext, fetchFarmContextImages } from '../services/farmJournal';
+import { buildLearningContext, recordAgentAssessment } from '../services/farmIntelligence';
+import FarmQuestionsPanel from './FarmQuestionsPanel';
 
 function makeId(prefix: string) {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `${prefix}-${crypto.randomUUID()}`;
@@ -161,8 +163,8 @@ const PruningAdvisorView: React.FC = () => {
     let cancelled = false;
     if (!selectedParcelId) { setFarmContext(''); return; }
     setContextLoading(true);
-    Promise.all([buildFarmContext(selectedParcelId), fetchFarmContextImages(selectedParcelId, 6)])
-      .then(([context, images]) => { if (!cancelled) { setFarmContext(context); setHistoricalImages(images); } })
+    Promise.all([buildFarmContext(selectedParcelId), buildLearningContext(selectedParcelId), fetchFarmContextImages(selectedParcelId, 6)])
+      .then(([context, learningContext, images]) => { if (!cancelled) { setFarmContext([context,learningContext].filter(Boolean).join('\n\n')); setHistoricalImages(images); } })
       .catch(() => { if (!cancelled) { setFarmContext(''); setHistoricalImages([]); } })
       .finally(() => { if (!cancelled) setContextLoading(false); });
     return () => { cancelled = true; };
@@ -234,6 +236,19 @@ const PruningAdvisorView: React.FC = () => {
       const raw = await geminiService.analyzePruning(base64List, language, farmContext);
       const normalized = normalizePlan(raw);
       setPlan(normalized);
+      const uncertainties=Array.from(new Set([
+        ...(normalized.missingDetails||[]),
+        ...(normalized.limitations||[]).filter(item=>/mangler|ukjent|kan ikke|ikke synlig|krever/i.test(item)),
+      ])).slice(0,8);
+      recordAgentAssessment({
+        agentType:'pruning_assistant',
+        parcelId:selectedParcelId||undefined,
+        result:normalized,
+        contextSnapshot:farmContext,
+        confidence:Math.max(0,Math.min(1,Number(normalized.confidence||0)/100)),
+        uncertainties,
+        sourceRef:'Beskjæringsassistent '+new Date().toISOString(),
+      }).catch(err=>console.warn('[PruningAdvisorView] learning loop',err));
       setScheduledDate(normalized.recommendedDate);
       setShowCamera(false);
       stopCamera();
@@ -382,6 +397,7 @@ const PruningAdvisorView: React.FC = () => {
               <p className="text-[9px] text-slate-600 mt-2">Historiske bilder vises som referanse. De legges ikke automatisk inn som nye analysebilder.</p>
             </div>}
           </div>
+          <FarmQuestionsPanel parcelId={selectedParcelId||undefined} agentType="pruning_assistant" title="Beskjæringsassistenten trenger avklaring" compact />
 
           <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 text-xs text-blue-100 leading-relaxed"><p className="font-bold text-white mb-2">For presise snittpunkter</p><p>Ta heltrebilde rett forfra med god avstand. Ta også sidebilde og nærbilde av hovedgreiner. AI bør ikke brukes alene for harde kutt i gamle trær.</p></div>
 
