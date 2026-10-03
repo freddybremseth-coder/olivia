@@ -307,7 +307,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
             {!farmTruth.upcoming?.length&&<p className="text-xs text-slate-600 mt-3">Ingen årshjulspunkter nærmer seg akkurat nå.</p>}
           </div>
         </div>
-      </div>
+      </div>}
 
       <SeasonReadinessPanel data={seasonReadiness} onNavigate={onNavigate} />
 
