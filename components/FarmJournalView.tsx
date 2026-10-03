@@ -247,6 +247,41 @@ const FarmJournalView:React.FC<{parcels:Parcel[];initialTab?:FarmJournalTab;onIn
     }catch(e:any){setError(e?.message||'Kunne ikke åpne dokumentet.');}
   };
 
+  const yearWheelAttention=useMemo(()=>{
+    const today=new Date();today.setHours(12,0,0,0);
+    return yearWheel
+      .map(item=>{
+        const hasExactDay=Boolean(item.target_day);
+        const target=hasExactDay
+          ?new Date(item.target_year,item.target_month-1,item.target_day as number)
+          :new Date(item.target_year,item.target_month,0);
+        target.setHours(12,0,0,0);
+        const days=Math.round((target.getTime()-today.getTime())/86400000);
+
+        let level=0;
+        let message='';
+        if(item.status==='in_progress'){
+          const started=item.started_at?new Date(String(item.started_at).slice(0,10)+'T12:00:00'):null;
+          const activeDays=started&&!Number.isNaN(started.getTime())?Math.max(0,Math.round((today.getTime()-started.getTime())/86400000)):null;
+          level=days<0?3:2;
+          message=(activeDays!=null?'Pågår i '+activeDays+' dag'+(activeDays===1?'':'er')+'. ':'')+(days<0?(hasExactDay?Math.abs(days)+' dag'+(Math.abs(days)===1?'':'er')+' etter planlagt dato.':'Planlagt måned er passert.'):'');
+        }else if(item.status==='postponed'){
+          const followUp=item.postponed_until?new Date(item.postponed_until+'T12:00:00'):null;
+          const followUpDays=followUp&&!Number.isNaN(followUp.getTime())?Math.round((followUp.getTime()-today.getTime())/86400000):null;
+          level=followUpDays!=null&&followUpDays<0?3:1;
+          message=followUpDays!=null&&followUpDays<0?'Oppfølgingsdato passert med '+Math.abs(followUpDays)+' dag'+(Math.abs(followUpDays)===1?'':'er')+'.':item.postponed_until?'Utsatt til '+item.postponed_until+'.':'Utsatt.';
+        }else if(item.status==='approved'&&days<0){
+          level=hasExactDay&&Math.abs(days)>=3?3:2;
+          message=hasExactDay?Math.abs(days)+' dag'+(Math.abs(days)===1?'':'er')+' forsinket.':'Planlagt måned er passert.';
+        }
+
+        return{item,level,message};
+      })
+      .filter(row=>row.level>0)
+      .sort((a,b)=>b.level-a.level||a.item.target_month-b.item.target_month||(a.item.target_day||31)-(b.item.target_day||31))
+      .slice(0,8);
+  },[yearWheel]);
+
   const rain30=useMemo(()=>{
     const threshold=new Date();threshold.setDate(threshold.getDate()-30);threshold.setHours(0,0,0,0);
     return rain.filter(r=>new Date(r.measured_on+'T12:00:00')>=threshold).reduce((s,r)=>s+Number(r.mm||0),0);
@@ -398,6 +433,18 @@ const FarmJournalView:React.FC<{parcels:Parcel[];initialTab?:FarmJournalTab;onIn
 
     {tab==='yearwheel'&&<div className="space-y-5">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3"><div><p className="text-[10px] uppercase tracking-widest font-black text-blue-300">Årshjul {wheelYear}</p><h3 className="text-xl font-black text-white">Forslag bygget fra verifisert historikk</h3><p className="text-xs text-slate-500 mt-2">Historikk gir tidspunkt for vurdering — ikke automatisk sprøyteordre. «Legg i årshjul» betyr planlagt/akseptert, ikke utført. Først når arbeidet faktisk er gjort skal du trykke «Marker utført». Vær, fenologi og faktisk behov må bekreftes.</p></div><select value={wheelYear} onChange={e=>setWheelYear(Number(e.target.value))} className={inputClass+' md:w-auto'}><option value={currentYear}>{currentYear}</option><option value={currentYear+1}>{currentYear+1}</option><option value={currentYear+2}>{currentYear+2}</option></select></div>
+      {yearWheelAttention.length>0&&<div className="rounded-[2rem] border border-red-500/20 bg-red-500/[0.035] p-5">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="text-red-300 mt-0.5" size={18}/>
+          <div><p className="text-[10px] uppercase tracking-widest font-black text-red-300">Krever oppfølging</p><h4 className="text-lg font-black text-white mt-1">Forsinket, pågår eller utsatt</h4><p className="text-xs text-slate-500 mt-1">Disse vises før månedsoversikten fordi de trenger en avklaring.</p></div>
+        </div>
+        <div className="space-y-2 mt-4">
+          {yearWheelAttention.map(({item,level,message})=><div key={'attention-'+item.id} className={'rounded-xl border p-3 flex flex-col md:flex-row md:items-center justify-between gap-3 '+(level===3?'border-red-500/25 bg-red-500/10':level===2?'border-amber-400/20 bg-amber-400/[0.07]':'border-white/10 bg-black/20')}>
+            <div><div className="flex flex-wrap gap-2"><span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+badge(item.status)}>{statusLabel(item.status)}</span><span className="text-[9px] uppercase tracking-widest text-slate-500">{parcelName(item.parcel_id)}</span></div><p className="text-sm font-black text-white mt-2">{item.title}</p><p className="text-xs text-slate-400 mt-1">{message}</p>{item.postponed_reason&&<p className="text-[10px] text-amber-200 mt-1">Grunn: {item.postponed_reason}</p>}</div>
+            <div className="flex flex-wrap gap-2">{item.status==='approved'&&<><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'in_progress')} className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-200 disabled:opacity-40">Start arbeid</button><button disabled={yearWheelSaving===item.id} onClick={()=>openCompletion(item)} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">Marker utført</button><button disabled={yearWheelSaving===item.id} onClick={()=>openPostpone(item)} className="rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs font-bold text-amber-200 disabled:opacity-40">Utsett</button></>}{item.status==='in_progress'&&<><button disabled={yearWheelSaving===item.id} onClick={()=>openCompletion(item)} className="rounded-xl bg-green-500 px-3 py-2 text-xs font-black text-black disabled:opacity-40">Fullfør</button><button disabled={yearWheelSaving===item.id} onClick={()=>openPostpone(item)} className="rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs font-bold text-amber-200 disabled:opacity-40">Utsett</button></>}{item.status==='postponed'&&<><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'approved')} className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-200 disabled:opacity-40">Aktiver igjen</button><button disabled={yearWheelSaving===item.id} onClick={()=>openCompletion(item)} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">Marker utført</button></>}</div>
+          </div>)}
+        </div>
+      </div>}
       {MONTHS.map((month,index)=>{
         const rows=yearWheel.filter(item=>item.target_month===index+1);
         if(!rows.length)return null;
