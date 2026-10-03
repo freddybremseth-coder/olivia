@@ -167,7 +167,7 @@ export async function fetchOliviaHarvests(): Promise<HarvestRecord[]> {
 }
 
 export async function fetchOliviaExpenses(): Promise<FarmExpense[]> {
-  const { data, error } = await supabase.from('farm_expenses').select('*').order('date', { ascending: false });
+  const { data, error } = await supabase.from('farm_expenses').select('*').eq('accounting_status', 'posted').order('date', { ascending: false });
   if (error) {
     console.error('[oliviaSchemaData] fetchOliviaExpenses', error);
     return [];
