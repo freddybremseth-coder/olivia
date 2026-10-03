@@ -706,7 +706,9 @@ export async function fetchFarmTruthSummary(){
   const since30=new Date(today);since30.setDate(since30.getDate()-30);
   const rain30=rain.filter(row=>new Date(row.measured_on+'T12:00:00')>=since30).reduce((sum,row)=>sum+Number(row.mm||0),0);
   const upcoming=wheel.filter(item=>item.status!=='done'&&item.status!=='skipped').filter(item=>{
-    const target=new Date(item.target_year,item.target_month-1,item.target_day||15);
+    const target=item.target_day
+      ?new Date(item.target_year,item.target_month-1,item.target_day)
+      :new Date(item.target_year,item.target_month,0);
     const diff=(target.getTime()-today.getTime())/86400000;
     return diff>=-14&&diff<=180;
   });
