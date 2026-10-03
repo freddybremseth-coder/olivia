@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   BadgeEuro,
+  BellRing,
   Building2,
   CheckCircle2,
   Download,
@@ -52,8 +53,9 @@ import {
 import { fetchCommerceBusinessMetrics, type CommerceBusinessMetrics } from '../services/customerPortal';
 import { fetchUnifiedInventory } from '../services/commerceInventory';
 import CommerceReadinessPanel from './CommerceReadinessPanel';
+import PaymentReminderPanel from './PaymentReminderPanel';
 
-type CommerceTab = 'overview' | 'products' | 'customers' | 'orders' | 'invoices' | 'shipments' | 'messages' | 'content';
+type CommerceTab = 'overview' | 'products' | 'customers' | 'orders' | 'invoices' | 'followup' | 'shipments' | 'messages' | 'content';
 type CustomerPortalTab = 'overview' | 'products' | 'orders' | 'invoices' | 'shipments' | 'qr' | 'messages' | 'profile';
 type AdminRows = {
   customers: Array<Record<string, string | number>>;
@@ -133,6 +135,7 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
     { id: 'customers', label: 'Kunder/B2B', icon: Building2 },
     { id: 'orders', label: 'Ordre', icon: ShoppingCart },
     { id: 'invoices', label: 'Faktura', icon: ReceiptText },
+    { id: 'followup', label: 'Oppfølging', icon: BellRing },
     { id: 'shipments', label: 'Forsendelser', icon: Truck },
     { id: 'messages', label: 'Meldinger', icon: MessageSquare },
     { id: 'content', label: 'Tekster', icon: FileText },
@@ -178,7 +181,7 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
       <CommerceReadinessPanel />
 
       <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-2">
-        <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-8">
+        <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-9">
           {tabs.map(tab => (
             <button
               key={tab.id}
@@ -198,6 +201,7 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
       {activeTab === 'customers' && <DataTable title="Kunder og B2B-kontoer" rows={adminRows.customers} />}
       {activeTab === 'orders' && <DataTable title="Ordre og tilbud" rows={adminRows.orders} />}
       {activeTab === 'invoices' && <DataTable title="Faktura og betaling" rows={adminRows.invoices} />}
+      {activeTab === 'followup' && <PaymentReminderPanel />}
       {activeTab === 'shipments' && <DataTable title="Forsendelser og sporing" rows={adminRows.shipments} />}
       {activeTab === 'messages' && <DataTable title="Kundemeldinger fra B2B-portalen" rows={adminRows.messages} />}
       {activeTab === 'content' && <DataTable title="Tekster, e-postmaler og produktark" rows={contentItems} />}
