@@ -29,6 +29,7 @@ export type SeasonReadiness={
   openOrganicCases:number;
   steps:SeasonReadinessStep[];
   nextAction:string;
+  nextStepId:SeasonReadinessStep['id'];
 };
 
 const n=(v:unknown)=>Number(v||0);
@@ -133,12 +134,14 @@ export async function fetchSeasonReadiness():Promise<SeasonReadiness>{
   ];
 
   let nextAction='Sesongflyten er klar for neste faktiske hendelse.';
-  if(!plans.length)nextAction='Lag første høsteplan for '+season+' med parsell, sort, forventet kg og planlagt dato.';
-  else if(openOrganicCases)nextAction='Følg opp den åpne CAECV-saken før kommersiell bruk krever dokumentasjonen.';
-  else if(unallocated.length&&batches.length)nextAction='Gå gjennom kostnadsforslagene på aktive batcher og fordel bare dokumenterte beløp.';
-  else if(!intakes.length)nextAction='Registrer første høsting med veiing og veieseddel når råvaren tas inn.';
-  else if(!batches.length)nextAction='Opprett produksjonsbatch fra mottatt råvare som skal videreforedles.';
-  else if(!lots.length)nextAction='Opprett pakkelot når ferdig produkt faktisk pakkes, med brukt kg/liter fra kildebatch.';
+  let nextStepId:SeasonReadinessStep['id']='plan';
+  if(!plans.length){nextAction='Lag første høsteplan for '+season+' med parsell, sort, forventet kg og planlagt dato.';nextStepId='plan';}
+  else if(openOrganicCases){nextAction='Følg opp den åpne CAECV-saken før kommersiell bruk krever dokumentasjonen.';nextStepId='organic';}
+  else if(unallocated.length&&batches.length){nextAction='Gå gjennom kostnadsforslagene på aktive batcher og fordel bare dokumenterte beløp.';nextStepId='cost';}
+  else if(!intakes.length){nextAction='Registrer første høsting med veiing og veieseddel når råvaren tas inn.';nextStepId='intake';}
+  else if(!batches.length){nextAction='Opprett produksjonsbatch fra mottatt råvare som skal videreforedles.';nextStepId='production';}
+  else if(!lots.length){nextAction='Opprett pakkelot når ferdig produkt faktisk pakkes, med brukt kg/liter fra kildebatch.';nextStepId='packing';}
+  else{nextStepId='production';}
 
   return{
     season,
@@ -157,5 +160,6 @@ export async function fetchSeasonReadiness():Promise<SeasonReadiness>{
     openOrganicCases,
     steps,
     nextAction,
+    nextStepId,
   };
 }

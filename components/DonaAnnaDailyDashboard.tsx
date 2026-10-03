@@ -159,7 +159,7 @@ function priorityClass(priority: ActionCard['priority']): string {
   return 'border-green-500/20 bg-green-500/10 text-green-400';
 }
 
-const DonaAnnaDailyDashboard: React.FC = () => {
+const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ onNavigate }) => {
   const [readings, setReadings] = useState<SensorReading[]>([]);
   const [alerts, setAlerts] = useState<SensorAlert[]>([]);
   const [irrigationEvents, setIrrigationEvents] = useState<IrrigationEvent[]>([]);
@@ -268,7 +268,7 @@ const DonaAnnaDailyDashboard: React.FC = () => {
         )}
       </div>
 
-      <SeasonReadinessPanel data={seasonReadiness} />
+      <SeasonReadinessPanel data={seasonReadiness} onNavigate={onNavigate} />
 
       <div className="glass rounded-[2rem] p-6 border border-amber-300/20 bg-amber-300/[0.04]">
         <div className="flex items-center justify-between gap-4">
