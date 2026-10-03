@@ -50,6 +50,8 @@ import {
   saveCustomerProfile,
   sendCustomerMessage,
 } from '../services/customerPortal';
+import { fetchCommerceBusinessMetrics, type CommerceBusinessMetrics } from '../services/customerPortal';
+import { fetchUnifiedInventory } from '../services/commerceInventory';
 
 type CommerceTab = 'overview' | 'products' | 'customers' | 'orders' | 'invoices' | 'shipments' | 'messages' | 'content';
 type CustomerPortalTab = 'overview' | 'products' | 'orders' | 'invoices' | 'shipments' | 'qr' | 'messages' | 'profile';
@@ -122,11 +124,13 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
     shipments: [],
     messages: [],
   });
+  const [businessMetrics, setBusinessMetrics] = useState<CommerceBusinessMetrics | null>(null);
+  const [inventoryUnits, setInventoryUnits] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    fetchAdminPortalRows()
-      .then(rows => {
+    Promise.all([fetchAdminPortalRows(), fetchCommerceBusinessMetrics(), fetchUnifiedInventory()])
+      .then(([rows, metrics, inventory]) => {
         if (cancelled) return;
         setAdminRows({
           customers: rows.customers,
@@ -135,8 +139,10 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
           shipments: rows.shipments,
           messages: rows.messages,
         });
+        setBusinessMetrics(metrics);
+        setInventoryUnits(inventory.products.reduce((sum, product) => sum + product.stock_quantity, 0));
       })
-      .catch(error => console.warn('[commerce] admin rows failed', error));
+      .catch(error => console.warn('[commerce] live data failed', error));
     return () => { cancelled = true; };
   }, []);
 
@@ -173,10 +179,10 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: 'Produktverdi', value: '€12 304', icon: BadgeEuro, tone: 'text-amber-300 bg-amber-300/10' },
-          { label: 'Åpne ordre', value: '3', icon: ShoppingCart, tone: 'text-blue-300 bg-blue-300/10' },
-          { label: 'Flasker på lager', value: '1 600', icon: Package, tone: 'text-green-300 bg-green-300/10' },
-          { label: 'Faktura til oppfølging', value: '2', icon: ReceiptText, tone: 'text-purple-300 bg-purple-300/10' },
+          { label: 'Ordreverdi', value: businessMetrics ? formatMoney(businessMetrics.orderValue) : '—', icon: BadgeEuro, tone: 'text-amber-300 bg-amber-300/10' },
+          { label: 'Åpne ordre', value: businessMetrics ? String(businessMetrics.pendingOrders) : '—', icon: ShoppingCart, tone: 'text-blue-300 bg-blue-300/10' },
+          { label: 'Enheter på lager', value: inventoryUnits.toLocaleString('no-NO'), icon: Package, tone: 'text-green-300 bg-green-300/10' },
+          { label: 'Utestående faktura', value: businessMetrics ? formatMoney(businessMetrics.unpaidAmount) : '—', icon: ReceiptText, tone: 'text-purple-300 bg-purple-300/10' },
         ].map(stat => (
           <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
             <div className={`mb-5 flex h-11 w-11 items-center justify-center rounded-xl ${stat.tone}`}>

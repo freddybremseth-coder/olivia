@@ -8,9 +8,11 @@ import {
   verifyPhysicalInventory,
   type UnifiedInventoryMovement,
   type UnifiedInventoryProduct,
+  type UnifiedInvoiceRow,
   type UnifiedOrderRow,
   type UnifiedProductLot,
 } from '../services/commerceInventory';
+import OrderFulfillmentPanel from './OrderFulfillmentPanel';
 
 const eur = (value: number) => `€${value.toLocaleString('no-NO', { maximumFractionDigits: 2 })}`;
 
@@ -33,6 +35,7 @@ const DonaAnnaSalesInventoryOliviaView: React.FC = () => {
   const [movements,setMovements]=useState<UnifiedInventoryMovement[]>([]);
   const [lots,setLots]=useState<UnifiedProductLot[]>([]);
   const [orders,setOrders]=useState<UnifiedOrderRow[]>([]);
+  const [invoices,setInvoices]=useState<UnifiedInvoiceRow[]>([]);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [countingId,setCountingId]=useState<string|null>(null);
@@ -43,7 +46,7 @@ const DonaAnnaSalesInventoryOliviaView: React.FC = () => {
     setLoading(true); setError('');
     try{
       const data=await fetchUnifiedInventory();
-      setProducts(data.products); setMovements(data.movements); setLots(data.lots); setOrders(data.orders);
+      setProducts(data.products); setMovements(data.movements); setLots(data.lots); setOrders(data.orders); setInvoices(data.invoices);
     }catch(err:any){ setError(err?.message || 'Kunne ikke hente lagerdata.'); }
     finally{ setLoading(false); }
   };
@@ -131,15 +134,7 @@ const DonaAnnaSalesInventoryOliviaView: React.FC = () => {
       </section>
 
       <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-        <h3 className="text-sm font-bold text-white mb-4">Ordreflyt</h3>
-        <p className="text-xs text-slate-500 mb-4">Mottatt/bekreftet ordre reserverer varer. Lageret trekkes først når ordren blir sendt eller levert. Kansellering frigir reservasjonen.</p>
-        <div className="space-y-3">
-          {orders.filter(o=>o.status.toLowerCase()!=='test').map(order=><div key={order.id} className="rounded-2xl border border-white/10 bg-black/20 p-4 flex justify-between gap-4">
-            <div><p className="font-bold text-white">{order.order_number}</p><p className="text-xs text-slate-500 mt-1">{order.customer_name||'Kunde'} · {order.status} · {order.payment_status}</p></div>
-            <strong className="text-white">{eur(order.total_amount)}</strong>
-          </div>)}
-          {!orders.filter(o=>o.status.toLowerCase()!=='test').length&&<p className="text-sm text-slate-500">Ingen reelle commerce-ordrer ennå. Testordrene holdes utenfor lager og nøkkeltall.</p>}
-        </div>
+        <OrderFulfillmentPanel orders={orders} lots={lots} movements={movements} invoices={invoices} onChanged={load} />
       </section>
     </div>
 
