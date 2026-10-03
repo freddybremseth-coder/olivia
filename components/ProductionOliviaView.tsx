@@ -11,6 +11,8 @@ import { currentHarvestSeason, harvestSeasonCode, harvestSeasonForDate } from '.
 interface Props {
   language: Language;
   parcels: Parcel[];
+  initialHarvestPlanId?: string | null;
+  onHarvestPlanConsumed?: () => void;
 }
 
 type Tab = 'harvest' | 'batches' | 'recipes' | 'quality';
@@ -26,7 +28,7 @@ const fmtKg = (kg: number) => `${Math.round(kg).toLocaleString('no-NO')} kg`;
 const fmtEuro = (value: number) => `€${Math.round(value).toLocaleString('no-NO')}`;
 const inputClass = 'w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-green-500/50';
 
-const ProductionOliviaView: React.FC<Props> = ({ parcels }) => {
+const ProductionOliviaView: React.FC<Props> = ({ parcels, initialHarvestPlanId, onHarvestPlanConsumed }) => {
   const [activeTab, setActiveTab] = useState<Tab>('harvest');
   const [harvests, setHarvests] = useState<HarvestRecord[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -222,7 +224,7 @@ const ProductionOliviaView: React.FC<Props> = ({ parcels }) => {
 
       {activeTab === 'harvest' && (
         <div className="space-y-4">
-          <HarvestIntakeFlow parcels={parcels} onChanged={load} />
+          <HarvestIntakeFlow parcels={parcels} onChanged={load} initialPlanId={initialHarvestPlanId} onPlanConsumed={onHarvestPlanConsumed} />
           <div className="glass rounded-[2rem] p-6 border border-white/10">
             <h3 className="text-lg text-white font-bold mb-4 flex items-center gap-2"><CalendarDays size={18} /> Høsteregistreringer fra olivia.harvest_records</h3>
             <div className="space-y-2">
