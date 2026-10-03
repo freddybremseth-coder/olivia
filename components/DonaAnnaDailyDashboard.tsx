@@ -138,6 +138,8 @@ function buildActionCards(advice: FarmDecisionAdvice, readings: SensorReading[],
       description: criticalAlert.message,
       priority: 'Kritisk',
       icon: <AlertTriangle size={18} />,
+      targetTab: 'iot',
+      actionLabel: 'Åpne varselkilde',
     });
   }
 
