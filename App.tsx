@@ -131,6 +131,7 @@ const App: React.FC = () => {
   const [pendingPlannerPlanId, setPendingPlannerPlanId] = useState<string | null>(null);
   const [pendingProductionBatchId, setPendingProductionBatchId] = useState<string | null>(null);
   const [pendingTraceBatchId, setPendingTraceBatchId] = useState<string | null>(null);
+  const [pendingFarmJournalTab,setPendingFarmJournalTab]=useState<FarmJournalTab|undefined>(undefined);
 
   const activateTab = (target: string, profile = user) => {
     const next = resolvePortalNavigation(target, profile.role, portalForPath(currentPath()) ?? portalMode);
@@ -139,6 +140,16 @@ const App: React.FC = () => {
     setActiveTab(next.tab);
     setPortalMode(next.portal);
     if (currentPath() !== next.path) window.history.replaceState({}, '', next.path);
+  };
+
+  const handleDailyNavigate=(target:string)=>{
+    if(target.startsWith('farm_journal:')){
+      const requested=target.split(':')[1] as FarmJournalTab;
+      setPendingFarmJournalTab(requested);
+      activateTab('farm_journal');
+      return;
+    }
+    activateTab(target);
   };
 
   const startHarvestFromPlan = (planId: string) => {
@@ -300,8 +311,8 @@ const App: React.FC = () => {
     if (isAdmin && activeTab === 'admin') return <AdminDashboard />;
     switch (activeTab) {
       case 'dashboard': return <FarmOverview language={language} weatherData={weatherData} locationName={selectedParcel?.name || locationName} parcels={parcels} onNavigate={activateTab} />;
-      case 'dona_anna_daily': return <ModuleErrorBoundary title="Olivia Daily kunne ikke vises" onRetry={()=>activateTab('dona_anna_daily')}><DonaAnnaDailyDashboard onNavigate={activateTab} onSeasonAction={handleSeasonExecutionAction} /></ModuleErrorBoundary>;
-      case 'farm_journal': return <FarmJournalView parcels={parcels} />;
+      case 'dona_anna_daily': return <ModuleErrorBoundary title="Olivia Daily kunne ikke vises" onRetry={()=>activateTab('dona_anna_daily')}><DonaAnnaDailyDashboard onNavigate={handleDailyNavigate} onSeasonAction={handleSeasonExecutionAction} /></ModuleErrorBoundary>;
+      case 'farm_journal': return <FarmJournalView parcels={parcels} initialTab={pendingFarmJournalTab} onInitialTabConsumed={()=>setPendingFarmJournalTab(undefined)} />;
       case 'farm_advisor': return <FarmAdvisorView />;
       case 'dashboard_classic': return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;
       case 'consultant': return <FieldConsultantView />;

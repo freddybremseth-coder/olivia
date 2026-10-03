@@ -55,6 +55,17 @@ type ActionCard = {
   actionLabel?: string;
 };
 
+type DailyPriorityItem = {
+  id:string;
+  title:string;
+  description:string;
+  source:'Årshjul'|'Olivia'|'Sesong'|'Felt';
+  priority:ActionCard['priority'];
+  score:number;
+  targetTab?:string;
+  actionLabel?:string;
+};
+
 function monthName(monthIndex: number): string {
   return new Date(2026, monthIndex - 1, 1).toLocaleString('no-NO', { month: 'long' });
 }
@@ -198,6 +209,123 @@ function priorityClass(priority: ActionCard['priority']): string {
   return 'border-green-500/20 bg-green-500/10 text-green-400';
 }
 
+function buildDailyTopFive(params:{
+  farmTruth:any;
+  farmQuestions:FarmQuestion[];
+  seasonExecution:SeasonExecution|null;
+  actions:ActionCard[];
+}):DailyPriorityItem[]{
+  const items:DailyPriorityItem[]=[];
+  const today=new Date();
+  today.setHours(12,0,0,0);
+
+  for(const item of params.farmTruth?.yearWheel||[]){
+    if(['done','skipped','suggested'].includes(item.status))continue;
+    const target=new Date(item.target_year,item.target_month-1,item.target_day||15);
+    target.setHours(12,0,0,0);
+    const days=Math.round((target.getTime()-today.getTime())/86400000);
+    if(item.status==='in_progress'){
+      items.push({
+        id:'wheel-progress-'+item.id,
+        title:item.title,
+        description:'Arbeidet er markert som pågår'+(days<0?' og planlagt tidspunkt er passert.':'.'),
+        source:'Årshjul',
+        priority:days<0?'Kritisk':'Høy',
+        score:days<0?100:88,
+        targetTab:'farm_journal:yearwheel',
+        actionLabel:'Fullfør / dokumenter',
+      });
+    }else if(item.status==='postponed'){
+      items.push({
+        id:'wheel-postponed-'+item.id,
+        title:item.title,
+        description:'Årshjulspunktet er utsatt. Avklar ny timing eller aktiver det igjen.',
+        source:'Årshjul',
+        priority:days<0?'Høy':'Middels',
+        score:days<0?84:68,
+        targetTab:'farm_journal:yearwheel',
+        actionLabel:'Åpne årshjul',
+      });
+    }else if(item.status==='approved'&&days<0){
+      items.push({
+        id:'wheel-overdue-'+item.id,
+        title:item.title,
+        description:'Planlagt tidspunkt er passert uten at arbeidet er registrert som utført.',
+        source:'Årshjul',
+        priority:'Høy',
+        score:82+Math.min(10,Math.abs(days)),
+        targetTab:'farm_journal:yearwheel',
+        actionLabel:'Avklar status',
+      });
+    }else if(item.status==='approved'&&days<=7){
+      items.push({
+        id:'wheel-soon-'+item.id,
+        title:item.title,
+        description:days===0?'Planlagt tidspunkt er i dag.':'Planlagt tidspunkt er om '+days+' dag'+(days===1?'':'er')+'.',
+        source:'Årshjul',
+        priority:'Middels',
+        score:64+(7-days),
+        targetTab:'farm_journal:yearwheel',
+        actionLabel:'Åpne årshjul',
+      });
+    }
+  }
+
+  const qScore:Record<string,number>={critical:98,high:86,medium:62,low:42};
+  const qPriority:Record<string,ActionCard['priority']>={critical:'Kritisk',high:'Høy',medium:'Middels',low:'Lav'};
+  for(const q of params.farmQuestions||[]){
+    items.push({
+      id:'question-'+q.id,
+      title:q.question,
+      description:q.reason||'Olivia trenger et svar før den kan bruke informasjonen sikkert.',
+      source:'Olivia',
+      priority:qPriority[q.priority]||'Middels',
+      score:qScore[q.priority]||60,
+      targetTab:'farm_journal:learning',
+      actionLabel:'Svar Olivia',
+    });
+  }
+
+  for(const row of params.seasonExecution?.parcels||[]){
+    if(row.attentionLevel==='none')continue;
+    items.push({
+      id:'season-'+row.parcelId+'-'+row.stage,
+      title:row.parcelName+' · '+row.stageLabel,
+      description:row.attentionText||row.nextAction,
+      source:'Sesong',
+      priority:row.attentionLevel==='critical'?'Kritisk':row.attentionLevel==='warning'?'Høy':'Middels',
+      score:row.attentionLevel==='critical'?96:row.attentionLevel==='warning'?80:58,
+      targetTab:row.targetTab,
+      actionLabel:'Åpne arbeidsflate',
+    });
+  }
+
+  for(const action of params.actions){
+    if(action.priority==='Lav'&&items.length>=5)continue;
+    items.push({
+      id:'field-'+action.title,
+      title:action.title,
+      description:action.description,
+      source:'Felt',
+      priority:action.priority,
+      score:action.priority==='Kritisk'?94:action.priority==='Høy'?78:action.priority==='Middels'?56:30,
+      targetTab:action.targetTab,
+      actionLabel:action.actionLabel,
+    });
+  }
+
+  const seen=new Set<string>();
+  return items
+    .sort((a,b)=>b.score-a.score||a.title.localeCompare(b.title,'no'))
+    .filter(item=>{
+      const key=(item.title+'|'+item.targetTab).toLowerCase();
+      if(seen.has(key))return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0,5);
+}
+
 async function safeLoad<T>(promise: Promise<T>, label: string, fallback: T, failures?: string[]): Promise<T> {
   try { return await promise; }
   catch (error) {
@@ -285,6 +413,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   }, []);
 
   const actions = buildActionCards(advice, readings, alerts, irrigationEvents, observations);
+  const topFive = buildDailyTopFive({farmTruth,farmQuestions,seasonExecution,actions});
   const currentMonth = new Date().getMonth() + 1;
   const oilWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_oil;
   const tableWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_table_olives;
@@ -320,6 +449,33 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       {isLoading && loadState === 'loading' ? (
         <div className="glass rounded-[2rem] p-8 border border-white/10 text-slate-400 flex items-center gap-3"><Loader2 size={18} className="animate-spin" /> Henter dagsdata fra Supabase...</div>
       ) : null}
+
+      <div className="glass rounded-[2rem] p-6 border border-[#d9b657]/20 bg-[#d9b657]/[0.035]">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.26em] font-black text-[#d9b657]">Dette bør du gjøre i dag</p>
+            <h3 className="text-2xl font-black text-white mt-1">Olivia Top 5</h3>
+            <p className="text-xs text-slate-500 mt-2">Prioritert fra årshjul, åpne avklaringer, sesongstatus og feltdata. Utført arbeid registreres fortsatt bare når du bekrefter det.</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-400">{topFive.length} prioritert{topFive.length===1?'':'e'}</div>
+        </div>
+        <div className="space-y-3 mt-5">
+          {topFive.map((item,index)=><div key={item.id} className={`rounded-2xl border p-4 ${priorityClass(item.priority)}`}>
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+              <div className="flex gap-3 min-w-0">
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-black/20 text-xs font-black">{index+1}</div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2"><span className="text-[9px] font-black uppercase tracking-widest">{item.priority}</span><span className="rounded-full border border-white/10 bg-black/20 px-2 py-0.5 text-[9px] text-slate-400">{item.source}</span></div>
+                  <p className="text-sm font-black text-white mt-1">{item.title}</p>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">{item.description}</p>
+                </div>
+              </div>
+              {item.targetTab&&onNavigate&&<button onClick={()=>onNavigate(item.targetTab!)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs font-bold text-white hover:bg-black/30 whitespace-nowrap">{item.actionLabel||'Åpne'} →</button>}
+            </div>
+          </div>)}
+          {!topFive.length&&<div className="rounded-2xl border border-green-500/15 bg-green-500/[0.04] p-4 text-sm text-green-100 flex items-center gap-3"><CheckCircle2 size={18}/><div><p className="font-bold">Ingen prioriterte handlinger akkurat nå</p><p className="text-xs text-slate-500 mt-1">Daily finner ingen forsinkede, pågående eller kritiske oppgaver i de tilgjengelige kildene.</p></div></div>}
+        </div>
+      </div>
 
       <div className={`glass rounded-[2rem] p-6 border ${advice.severity === 'critical' ? 'border-red-500/20 bg-red-500/5' : advice.severity === 'warning' ? 'border-yellow-500/20 bg-yellow-500/5' : 'border-green-500/20 bg-green-500/5'}`}>
         <p className="text-[10px] text-green-400 font-bold uppercase tracking-widest mb-2">Dagens beslutning</p>

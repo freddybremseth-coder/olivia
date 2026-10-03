@@ -30,7 +30,8 @@ import {
 import FarmQuestionsPanel from './FarmQuestionsPanel';
 import { fetchFarmIntelligenceSummary, fetchFarmKnowledge, type FarmKnowledgeItem } from '../services/farmIntelligence';
 
-type Tab='timeline'|'inbox'|'yearwheel'|'rain'|'photos'|'inputs'|'learning';
+export type FarmJournalTab='timeline'|'inbox'|'yearwheel'|'rain'|'photos'|'inputs'|'learning';
+type Tab=FarmJournalTab;
 
 const MONTHS=['Januar','Februar','Mars','April','Mai','Juni','Juli','August','September','Oktober','November','Desember'];
 const inputClass='w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none focus:border-green-500/50';
@@ -54,8 +55,8 @@ function statusLabel(status:string){
   return map[status]||status;
 }
 
-const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
-  const [tab,setTab]=useState<Tab>('timeline');
+const FarmJournalView:React.FC<{parcels:Parcel[];initialTab?:FarmJournalTab;onInitialTabConsumed?:()=>void}>=({parcels,initialTab,onInitialTabConsumed})=>{
+  const [tab,setTab]=useState<Tab>(initialTab||'timeline');
   const [documents,setDocuments]=useState<FarmDocument[]>([]);
   const [events,setEvents]=useState<FarmEvent[]>([]);
   const [yearWheel,setYearWheel]=useState<FarmYearWheelItem[]>([]);
@@ -112,6 +113,12 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
   };
 
   useEffect(()=>{load();},[]);
+
+  useEffect(()=>{
+    if(!initialTab)return;
+    setTab(initialTab);
+    onInitialTabConsumed?.();
+  },[initialTab]);
 
   useEffect(()=>{
     fetchYearWheel(wheelYear).then(setYearWheel).catch(e=>setError(e instanceof Error?e.message:'Kunne ikke hente årshjulet.'));
