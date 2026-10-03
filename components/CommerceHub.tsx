@@ -421,6 +421,7 @@ function CustomerOverview({ data, onNavigate }: { data: CustomerPortalData; onNa
           <InfoLine label="Kontakt" value={data.customer.contactName} />
           <InfoLine label="Firma" value={data.customer.company || '-'} />
           <InfoLine label="E-post" value={data.customer.email} />
+          <InfoLine label="Språk" value={(data.customer as any).preferredLocale === 'es' ? 'Español' : (data.customer as any).preferredLocale === 'en' ? 'English' : 'Norsk'} />
           <InfoLine label="Levering" value={data.customer.shippingAddress || 'Legg inn leveringsadresse'} />
         </div>
         <button onClick={() => onNavigate('profile')} className="mt-6 inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-white hover:bg-white/10">
@@ -574,6 +575,13 @@ function CustomerProfilePanel({ customer, onSave }: { customer: B2BCustomerProfi
         <Field label="Telefon"><input value={draft.phone || ''} onChange={event => update('phone', event.target.value)} className="form-input" /></Field>
         <Field label="VAT / org.nr."><input value={draft.taxId || ''} onChange={event => update('taxId', event.target.value)} className="form-input" /></Field>
         <Field label="Betalingsvilkår"><input value={draft.paymentTerms} onChange={event => update('paymentTerms', event.target.value)} className="form-input" /></Field>
+        <Field label="Språk for meldinger">
+          <select value={(draft as any).preferredLocale || 'no'} onChange={event => setDraft(current => ({ ...current, preferredLocale: event.target.value } as any))} className="form-input">
+            <option value="no">Norsk</option>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </Field>
       </div>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Field label="Fakturaadresse"><textarea value={draft.billingAddress || ''} onChange={event => update('billingAddress', event.target.value)} className="min-h-28 w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white outline-none focus:border-amber-300/60" /></Field>
