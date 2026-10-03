@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Euro, Loader2, RefreshCcw, TrendingUp, WalletCards } from 'lucide-react';
 import ExpenseCapturePanel from './ExpenseCapturePanel';
+import CommercialFinancePanel from './CommercialFinancePanel';
 import type { Language, Parcel } from '../types';
 import {
   fetchOliviaExpenses,
@@ -183,6 +184,8 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
           </div>
         ))}
       </div>
+
+      <CommercialFinancePanel />
 
       {sIncome.length > 0 && (
         <div className="glass rounded-3xl p-6 border border-green-500/20">

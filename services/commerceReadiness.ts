@@ -23,7 +23,7 @@ export async function fetchCommercialReadiness(): Promise<CommercialReadiness> {
 
   const [productsRes, settingsRes] = await Promise.all([
     supabase.from('commerce_products')
-      .select('id,name,sku,active,status,price_b2b,vat_rate,vat_configured,price_basis,inventory_verified,stock_quantity')
+      .select('id,name,sku,active,status,price_b2b,vat_rate,vat_configured,price_basis,inventory_verified,stock_quantity,cost,cost_configured')
       .eq('active',true)
       .order('name'),
     supabase.from('commerce_business_settings').select('legal_name,tax_id,address,city,iban').eq('id','default').maybeSingle(),
@@ -48,6 +48,10 @@ export async function fetchCommercialReadiness(): Promise<CommercialReadiness> {
       id:'product-stock-'+product.id,severity:'warning',area:'inventory',productId:product.id,
       title:'Lager ikke fysisk bekreftet: '+product.name,detail:'Produktet er ikke salgbart før fysisk lager er bekreftet eller ny pakkelot er produsert.'
     });
+    if(!product.cost_configured) issues.push({
+      id:'product-cost-'+product.id,severity:'warning',area:'product',productId:product.id,
+      title:'Kostpris mangler: '+product.name,detail:'Olivia kan selge produktet når pris/IVA/lager er klart, men bruttomargin vises som ukjent til kost per enhet er dokumentert.'
+    });
   }
 
   const sellerReady=Boolean(settings?.legal_name?.trim()&&settings?.tax_id?.trim()&&settings?.address?.trim()&&settings?.city?.trim());
@@ -61,7 +65,7 @@ export async function fetchCommercialReadiness(): Promise<CommercialReadiness> {
   });
 
   const readyProductIds=new Set(products.map((p:any)=>p.id));
-  for(const issue of issues.filter(i=>i.area==='product'&&i.productId)) readyProductIds.delete(issue.productId!);
+  for(const issue of issues.filter(i=>i.area==='product'&&i.productId&&i.severity==='critical')) readyProductIds.delete(issue.productId!);
 
   return {
     ready:issues.every(i=>i.severity!=='critical'),
