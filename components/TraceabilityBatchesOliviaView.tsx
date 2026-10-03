@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ExternalLink, Factory, FlaskConical, Link2, Loader2, PackageCheck, Plus, QrCode, RefreshCcw, Save, Scale, ShieldCheck, UploadCloud, X } from 'lucide-react';
 import type { Batch } from '../types';
 import { fetchBatches, upsertBatch } from '../services/db';
-import { publishTraceBatch } from '../services/publicTrace';
+import { publishProductLotTrace, publishTraceBatch } from '../services/publicTrace';
 import { createProductLot, fetchUnifiedInventory, type UnifiedInventoryProduct, type UnifiedProductLot } from '../services/commerceInventory';
 
 type TraceStatus = 'planned' | 'harvested' | 'processing' | 'quality_checked' | 'packed' | 'ready_for_sale';
@@ -122,6 +122,7 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
   const [batches, setBatches] = useState<TraceBatch[]>([]);
   const [loading, setLoading] = useState(false);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [publishingLotId, setPublishingLotId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [products, setProducts] = useState<UnifiedInventoryProduct[]>([]);
   const [productLots, setProductLots] = useState<UnifiedProductLot[]>([]);
@@ -199,6 +200,19 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
     }
   };
 
+
+  const publishLot = async (lot: UnifiedProductLot) => {
+    setPublishingLotId(lot.id);
+    setError(null);
+    try {
+      await publishProductLotTrace(lot.id);
+      await load();
+    } catch (err: any) {
+      setError(err?.message || 'Kunne ikke publisere produktlot til offentlig QR-side.');
+    } finally {
+      setPublishingLotId(null);
+    }
+  };
 
   const stats = useMemo(() => {
     const kg = batches.reduce((acc, b) => acc + (b.kg_harvested || 0), 0);
@@ -291,7 +305,14 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
           <div className="mt-4 space-y-2">
             {productLots.map(lot => {
               const product = products.find(p => p.id === lot.product_id);
-              return <div key={lot.id} className="rounded-xl bg-black/20 border border-white/10 p-3"><div className="flex justify-between gap-3"><strong className="text-white">{lot.lot_code}</strong><span className="text-green-400 font-bold">{lot.initial_units} stk</span></div><p className="text-xs text-slate-500 mt-1">{product?.name || lot.product_id} · {lot.status}</p></div>;
+              return <div key={lot.id} className="rounded-xl bg-black/20 border border-white/10 p-3">
+                <div className="flex justify-between gap-3"><strong className="text-white">{lot.lot_code}</strong><span className="text-green-400 font-bold">{lot.initial_units} stk</span></div>
+                <p className="text-xs text-slate-500 mt-1">{product?.name || lot.product_id} · {lot.status}</p>
+                <div className="grid grid-cols-2 gap-2 mt-3">
+                  <button onClick={() => publishLot(lot)} disabled={publishingLotId===lot.id} className="rounded-xl bg-green-500 px-3 py-2 text-xs font-black text-black disabled:opacity-50 flex items-center justify-center gap-1">{publishingLotId===lot.id?<Loader2 size={14} className="animate-spin"/>:<UploadCloud size={14}/>} Publiser produkt-QR</button>
+                  <a href={`/trace/${lot.traceability_slug || lot.lot_code.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}`} target="_blank" rel="noreferrer" className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white flex items-center justify-center gap-1"><ExternalLink size={14}/> Åpne QR</a>
+                </div>
+              </div>;
             })}
             {!productLots.length && <p className="text-sm text-slate-500">Ingen ekte pakkelot registrert ennå.</p>}
           </div>
