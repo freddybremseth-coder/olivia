@@ -10,6 +10,7 @@ import { fetchRecentFarmObservations } from '../services/farmIoT';
 import {
   addRainMeasurement,
   analyzeFarmSource,
+  completeYearWheelItem,
   fetchFarmDocuments,
   fetchFarmEvents,
   fetchFarmInputs,
@@ -46,7 +47,7 @@ function statusLabel(status:string){
   const map:Record<string,string>={
     completed:'Utført',planned:'Planlagt',recommended:'Anbefalt',ordered:'Bestilt',
     purchased:'Innkjøpt',observed:'Observert',verified:'Verifisert',needs_review:'Må kontrolleres',
-    suggested:'Forslag',approved:'I årshjul',done:'Utført',skipped:'Hoppet over'
+    suggested:'Forslag',approved:'I årshjul',done:'Utført',skipped:'Ikke nødvendig'
   };
   return map[status]||status;
 }
@@ -64,6 +65,8 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
   const [intelligence,setIntelligence]=useState<any>(null);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
+  const [notice,setNotice]=useState('');
+  const [yearWheelSaving,setYearWheelSaving]=useState('');
   const [file,setFile]=useState<File|null>(null);
   const [messageText,setMessageText]=useState('');
   const [parcelId,setParcelId]=useState('');
@@ -139,6 +142,26 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
     finally{setRainSaving(false);}
   };
 
+  const changeYearWheelStatus=async(item:FarmYearWheelItem,status:'approved'|'skipped')=>{
+    setYearWheelSaving(item.id);setError('');setNotice('');
+    try{
+      await updateYearWheelStatus(item.id,status);
+      setNotice(status==='approved'?'Lagt i årshjulet. Dette er planlagt, ikke registrert som utført.':'Markert som ikke nødvendig. Ingen utført driftshendelse ble opprettet.');
+      await load();
+    }catch(e:any){setError(e?.message||'Kunne ikke oppdatere årshjulet.');}
+    finally{setYearWheelSaving('');}
+  };
+
+  const completeYearWheel=async(item:FarmYearWheelItem)=>{
+    setYearWheelSaving(item.id);setError('');setNotice('');
+    try{
+      await completeYearWheelItem(item);
+      setNotice('Utført er lagret som verifisert driftshendelse i Driftsjournalen.');
+      await load();
+    }catch(e:any){setError(e?.message||'Kunne ikke registrere arbeidet som utført.');}
+    finally{setYearWheelSaving('');}
+  };
+
   const openDoc=async(doc:FarmDocument)=>{
     try{
       const url=await getFarmDocumentUrl(doc);
@@ -172,6 +195,7 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
     </div>
 
     {error&&<div className="rounded-2xl border border-amber-400/25 bg-amber-400/10 p-4 text-sm text-amber-100 flex gap-2"><AlertTriangle size={18}/>{error}</div>}
+    {notice&&<div className="rounded-2xl border border-green-500/20 bg-green-500/[0.06] p-4 text-sm text-green-100 flex gap-2"><CheckCircle2 size={18}/>{notice}</div>}
 
     <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
       <Stat icon={<Trees size={18}/>} label="Registrerte trær" value={(summary?.treeCount||0).toLocaleString('no-NO')}/>
@@ -254,7 +278,7 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
       {MONTHS.map((month,index)=>{
         const rows=yearWheel.filter(item=>item.target_month===index+1);
         if(!rows.length)return null;
-        return <div key={month} className="glass rounded-2xl border border-white/10 p-5"><h4 className="font-black text-white">{month}</h4><div className="space-y-2 mt-3">{rows.map(item=><div key={item.id} className="rounded-xl border border-white/10 bg-black/20 p-3 flex flex-col md:flex-row md:items-center justify-between gap-3"><div><div className="flex gap-2 flex-wrap"><span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+badge(item.status)}>{statusLabel(item.status)}</span><span className="text-[9px] uppercase text-slate-600">{item.basis}</span></div><p className="text-white font-bold mt-2">{item.title}</p><p className="text-xs text-slate-500 mt-1">{item.target_day?item.target_day+'. '+month.toLowerCase():item.period_label||month} · {parcelName(item.parcel_id)}</p>{item.notes&&<p className="text-xs text-slate-400 mt-2">{item.notes}</p>}</div><div className="flex gap-2">{item.status==='suggested'&&<button onClick={async()=>{await updateYearWheelStatus(item.id,'approved');await load();}} className="rounded-xl bg-green-500 px-3 py-2 text-xs font-black text-black">Legg i årshjul</button>}{item.status==='approved'&&<button onClick={async()=>{await updateYearWheelStatus(item.id,'done');await load();}} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white">Marker utført</button>}</div></div>)}</div></div>;
+        return <div key={month} className="glass rounded-2xl border border-white/10 p-5"><h4 className="font-black text-white">{month}</h4><div className="space-y-2 mt-3">{rows.map(item=><div key={item.id} className="rounded-xl border border-white/10 bg-black/20 p-3 flex flex-col md:flex-row md:items-center justify-between gap-3"><div><div className="flex gap-2 flex-wrap"><span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+badge(item.status)}>{statusLabel(item.status)}</span><span className="text-[9px] uppercase text-slate-600">{item.basis}</span></div><p className="text-white font-bold mt-2">{item.title}</p><p className="text-xs text-slate-500 mt-1">{item.target_day?item.target_day+'. '+month.toLowerCase():item.period_label||month} · {parcelName(item.parcel_id)}</p>{item.notes&&<p className="text-xs text-slate-400 mt-2">{item.notes}</p>}</div><div className="flex flex-wrap gap-2">{item.status==='suggested'&&<><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'approved')} className="rounded-xl bg-green-500 px-3 py-2 text-xs font-black text-black disabled:opacity-40">{yearWheelSaving===item.id?'Lagrer…':'Legg i årshjul'}</button><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'skipped')} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 disabled:opacity-40">Ikke nødvendig</button></>}{item.status==='approved'&&<><button disabled={yearWheelSaving===item.id} onClick={()=>completeYearWheel(item)} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">{yearWheelSaving===item.id?'Lagrer…':'Marker utført'}</button><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'skipped')} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-400 disabled:opacity-40">Ikke nødvendig</button></>}</div></div>)}</div></div>;
       })}
       {!yearWheel.length&&<Empty icon={<CalendarDays/>} title="Årshjulet bygges fra historikken" text="Når et verifisert tilbakevendende arbeid har en dato, lager Olivia et forslag til samme periode neste år."/>}
     </div>}
