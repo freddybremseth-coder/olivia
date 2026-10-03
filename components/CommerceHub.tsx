@@ -35,7 +35,6 @@ import {
 } from '../types';
 import {
   commerceProductCollections,
-  defaultCommerceProducts,
   deleteCommerceProduct,
   fetchCommerceProducts,
   uploadCommerceProductImage,
@@ -62,8 +61,6 @@ type AdminRows = {
   shipments: Array<Record<string, string | number>>;
   messages: Array<Record<string, string | number>>;
 };
-
-const PRODUCT_STORAGE_KEY = 'olivia_commerce_products_v1';
 
 const customers = [
   { company: 'Nordic Deli AS', contact: 'Ingrid Larsen', type: 'B2B forhandler', terms: 'Netto 14', status: 'Varm lead' },
@@ -650,15 +647,7 @@ function formatMoney(value: number, currency = 'EUR') {
 }
 
 export function ProductCatalog() {
-  const [products, setProducts] = useState<CommerceProduct[]>(() => {
-    if (typeof localStorage === 'undefined') return defaultCommerceProducts;
-    try {
-      const stored = localStorage.getItem(PRODUCT_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : defaultCommerceProducts;
-    } catch {
-      return defaultCommerceProducts;
-    }
-  });
+  const [products, setProducts] = useState<CommerceProduct[]>([]);
   const [query, setQuery] = useState('');
   const [collectionFilter, setCollectionFilter] = useState('Alle');
   const [selectedProduct, setSelectedProduct] = useState<CommerceProduct | null>(products[0] ?? null);
@@ -684,9 +673,6 @@ export function ProductCatalog() {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(PRODUCT_STORAGE_KEY, JSON.stringify(products));
-  }, [products]);
 
   const visibleProducts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
