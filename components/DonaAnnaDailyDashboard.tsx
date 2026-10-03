@@ -33,6 +33,7 @@ import {
 } from '../services/farmIoT';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 import { fetchCommerceAttention, type CommerceAttention } from '../services/commerceAttention';
+import { fetchCommercialReadiness, type CommercialReadiness } from '../services/commerceReadiness';
 
 type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
 
@@ -162,6 +163,7 @@ const DonaAnnaDailyDashboard: React.FC = () => {
   const [irrigationEvents, setIrrigationEvents] = useState<IrrigationEvent[]>([]);
   const [observations, setObservations] = useState<FarmObservation[]>([]);
   const [commerceAttention, setCommerceAttention] = useState<CommerceAttention[]>([]);
+  const [commercialReadiness, setCommercialReadiness] = useState<CommercialReadiness | null>(null);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -173,12 +175,13 @@ const DonaAnnaDailyDashboard: React.FC = () => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows] = await Promise.all([
+      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness] = await Promise.all([
         fetchLatestSensorReadings(300),
         fetchOpenSensorAlerts(),
         fetchRecentIrrigationEvents(10),
         fetchRecentFarmObservations(10),
         fetchCommerceAttention(),
+        fetchCommercialReadiness(),
       ]);
 
       setReadings(latestReadings);
@@ -186,7 +189,8 @@ const DonaAnnaDailyDashboard: React.FC = () => {
       setIrrigationEvents(recentIrrigation);
       setObservations(recentObservations);
       setCommerceAttention(commerceRows);
-      setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length ? 'supabase' : 'empty');
+      setCommercialReadiness(readiness);
+      setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length || readiness.issues.length ? 'supabase' : 'empty');
       setLastRefresh(new Date());
     } catch (error) {
       setReadings([]);
@@ -194,6 +198,7 @@ const DonaAnnaDailyDashboard: React.FC = () => {
       setIrrigationEvents([]);
       setObservations([]);
       setCommerceAttention([]);
+      setCommercialReadiness(null);
       setLoadState('error');
       setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente Daily Dashboard-data fra Supabase.');
     } finally {
@@ -280,6 +285,13 @@ const DonaAnnaDailyDashboard: React.FC = () => {
             </div>
           ))}
         </div>
+        {commercialReadiness && commercialReadiness.issues.length > 0 && (
+          <div className="mt-5 rounded-2xl border border-amber-300/20 bg-black/20 p-4">
+            <p className="text-xs font-black text-amber-300">Kommersielt oppsett</p>
+            <p className="text-sm text-white mt-1">{commercialReadiness.issues.filter(issue=>issue.severity==='critical').length} kritiske felt · {commercialReadiness.productsReady}/{commercialReadiness.productCount} produkter klare</p>
+            <p className="text-xs text-slate-500 mt-1">{commercialReadiness.issues[0]?.title}</p>
+          </div>
+        )}
         {commerceAttention.length > 0 ? (
           <div className="mt-5 space-y-2">
             {commerceAttention.slice(0,6).map(item => (
