@@ -42,6 +42,7 @@ import { fetchSeasonExecution, type SeasonExecution } from '../services/seasonEx
 import SeasonExecutionPanel, { type SeasonExecutionAction } from './SeasonExecutionPanel';
 import { fetchFarmTruthSummary } from '../services/farmJournal';
 import { fetchFarmIntelligenceSummary, fetchOpenFarmQuestions, type FarmQuestion } from '../services/farmIntelligence';
+import FarmQuestionsPanel from './FarmQuestionsPanel';
 
 type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
 
@@ -165,9 +166,10 @@ function priorityClass(priority: ActionCard['priority']): string {
   return 'border-green-500/20 bg-green-500/10 text-green-400';
 }
 
-async function safeLoad<T>(promise: Promise<T>, label: string, fallback: T): Promise<T> {
+async function safeLoad<T>(promise: Promise<T>, label: string, fallback: T, failures?: string[]): Promise<T> {
   try { return await promise; }
   catch (error) {
+    failures?.push(label);
     console.warn('[DonaAnnaDailyDashboard] '+label+' failed', error);
     return fallback;
   }
@@ -189,6 +191,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [sourceFailures, setSourceFailures] = useState<string[]>([]);
 
   const advice = useMemo(() => buildDonaAnnaDecisionAdvice(readings, alerts), [readings, alerts]);
 
@@ -196,19 +199,21 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
     setIsLoading(true);
     setErrorMessage(null);
     try {
+      const failures:string[]=[];
       const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness, seasonStatus, executionStatus, truthStatus, intelligenceStatus, questionRows] = await Promise.all([
-        safeLoad(fetchLatestSensorReadings(300),'sensor readings',[]),
-        safeLoad(fetchOpenSensorAlerts(),'sensor alerts',[]),
-        safeLoad(fetchRecentIrrigationEvents(10),'irrigation events',[]),
-        safeLoad(fetchRecentFarmObservations(10),'farm observations',[]),
-        safeLoad(fetchCommerceAttention(),'commerce attention',[]),
-        safeLoad(fetchCommercialReadiness(),'commercial readiness',null),
-        safeLoad(fetchSeasonReadiness(),'season readiness',null),
-        safeLoad(fetchSeasonExecution(),'season execution',null),
-        safeLoad(fetchFarmTruthSummary(),'farm truth',null),
-        safeLoad(fetchFarmIntelligenceSummary(),'farm intelligence',null),
-        safeLoad(fetchOpenFarmQuestions({limit:5}),'farm questions',[]),
+        safeLoad(fetchLatestSensorReadings(300),'Sensorer',[],failures),
+        safeLoad(fetchOpenSensorAlerts(),'Sensorvarsler',[],failures),
+        safeLoad(fetchRecentIrrigationEvents(10),'Vanningslogg',[],failures),
+        safeLoad(fetchRecentFarmObservations(10),'Feltobservasjoner',[],failures),
+        safeLoad(fetchCommerceAttention(),'Ordre og faktura',[],failures),
+        safeLoad(fetchCommercialReadiness(),'Kommersiell klargjøring',null,failures),
+        safeLoad(fetchSeasonReadiness(),'Sesongklarhet',null,failures),
+        safeLoad(fetchSeasonExecution(),'Sesonggjennomføring',null,failures),
+        safeLoad(fetchFarmTruthSummary(),'Driftsjournal',null,failures),
+        safeLoad(fetchFarmIntelligenceSummary(),'Olivia Intelligence',null,failures),
+        safeLoad(fetchOpenFarmQuestions({limit:5}),'Olivia-spørsmål',[],failures),
       ]);
+      setSourceFailures(failures);
 
       setReadings(latestReadings);
       setAlerts(openAlerts);
@@ -235,6 +240,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       setFarmTruth(null);
       setFarmIntelligence(null);
       setFarmQuestions([]);
+      setSourceFailures(['Daily']);
       setLoadState('error');
       setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente Daily Dashboard-data fra Supabase.');
     } finally {
@@ -250,7 +256,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   const currentMonth = new Date().getMonth() + 1;
   const oilWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_oil;
   const tableWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_table_olives;
-  const sourceLabel = loadState === 'supabase' ? 'Supabase' : loadState === 'empty' ? 'Supabase · ingen data ennå' : loadState === 'error' ? 'Supabase-feil' : 'Laster Supabase';
+  const sourceLabel = loadState === 'supabase' ? (sourceFailures.length ? `Supabase · ${11-sourceFailures.length}/11 kilder` : 'Supabase · 11/11 kilder') : loadState === 'empty' ? 'Supabase · ingen data ennå' : loadState === 'error' ? 'Supabase-feil' : 'Laster Supabase';
   const orderAttention = commerceAttention.filter(item => item.event_type === 'order_process');
   const readyToShip = commerceAttention.filter(item => item.event_type === 'order_ready_to_ship');
   const overdueInvoices = commerceAttention.filter(item => item.event_type === 'invoice_overdue');
@@ -277,6 +283,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       </div>
 
       {errorMessage && <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100 flex gap-3"><AlertTriangle size={18} className="flex-shrink-0 mt-0.5" /> {errorMessage}</div>}
+      {sourceFailures.length>0&&loadState!=='error'&&<div className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] p-4"><div className="flex items-start gap-3"><AlertTriangle size={17} className="text-amber-300 mt-0.5"/><div><p className="text-sm font-bold text-white">Daily er lastet, men noen datakilder svarte ikke</p><p className="text-xs text-slate-500 mt-1">Manglende kilde skal ikke tolkes som at det ikke finnes data. Feilet nå: {sourceFailures.join(', ')}.</p></div></div></div>}
 
       {isLoading && loadState === 'loading' ? (
         <div className="glass rounded-[2rem] p-8 border border-white/10 text-slate-400 flex items-center gap-3"><Loader2 size={18} className="animate-spin" /> Henter dagsdata fra Supabase...</div>
@@ -327,13 +334,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
             {!farmTruth.upcoming?.length&&<p className="text-xs text-slate-600 mt-3">Ingen årshjulspunkter nærmer seg akkurat nå.</p>}
           </div>
         </div>
-        {farmQuestions.length>0&&<div className="mt-4 rounded-2xl border border-blue-500/20 bg-blue-500/[0.05] p-4">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
-            <div><p className="text-[9px] uppercase tracking-widest font-black text-blue-300">Olivia trenger avklaring</p><p className="text-xs text-slate-500 mt-1">Systemet har funnet usikkerhet eller konflikt og stopper gjettingen her.</p></div>
-            {onNavigate&&<button onClick={()=>onNavigate('farm_journal')} className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-xs font-bold text-blue-200 flex items-center gap-1"><HelpCircle size={14}/>Svar i Driftsjournal</button>}
-          </div>
-          <div className="space-y-2 mt-3">{farmQuestions.slice(0,3).map(q=><div key={q.id} className="rounded-xl bg-black/20 border border-white/10 p-3"><p className="text-xs font-bold text-white">{q.question}</p>{q.reason&&<p className="text-[10px] text-slate-500 mt-1">{q.reason}</p>}</div>)}</div>
-        </div>}
+        {farmQuestions.length>0&&<div className="mt-4"><FarmQuestionsPanel compact title="Svar Olivia direkte her" onAnswered={loadDashboard}/></div>}
       </div>}
 
       <SeasonReadinessPanel data={seasonReadiness} onNavigate={onNavigate} />
