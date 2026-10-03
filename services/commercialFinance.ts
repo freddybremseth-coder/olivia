@@ -54,17 +54,19 @@ export async function fetchCommercialFinanceSnapshot(): Promise<CommercialFinanc
   };
   if(!isSupabaseConfigured)return empty;
 
-  const [invoicesRes,ordersRes,productsRes]=await Promise.all([
+  const [invoicesRes,ordersRes,productsRes,lotCostRes]=await Promise.all([
     supabase.from('commerce_invoices')
       .select('id,invoice_number,order_id,customer_id,customer_name,status,payment_status,total_amount,due_date,paid_date,created_at')
       .order('created_at',{ascending:false}),
     supabase.from('commerce_orders')
-      .select('id,order_number,customer_name,status,payment_status,subtotal,total_amount,ordered_at,commerce_customers(company,contact_name),commerce_order_items(id,product_id,name,quantity,total_price)')
+      .select('id,order_number,customer_name,status,payment_status,subtotal,total_amount,ordered_at,commerce_customers(company,contact_name),commerce_order_items(id,product_id,lot_id,name,quantity,total_price)')
       .order('ordered_at',{ascending:false}),
     supabase.from('commerce_products')
       .select('id,name,cost,cost_configured,cost_source,cost_updated_at'),
+    supabase.from('product_lot_cost_summary')
+      .select('lot_id,lot_code,documented_unit_cost,cost_complete'),
   ]);
-  const error=invoicesRes.error||ordersRes.error||productsRes.error;
+  const error=invoicesRes.error||ordersRes.error||productsRes.error||lotCostRes.error;
   if(error)throw error;
 
   const aging:Record<AgingBucket['id'],AgingBucket>={
@@ -102,6 +104,7 @@ export async function fetchCommercialFinanceSnapshot(): Promise<CommercialFinanc
   }
 
   const products=new Map((productsRes.data||[]).map((p:any)=>[p.id,p]));
+  const lotCosts=new Map((lotCostRes.data||[]).map((l:any)=>[l.lot_id,l]));
   const margins:CommercialMarginRow[]=[];
   for(const order of ordersRes.data||[]){
     if(String((order as any).status||'').toLowerCase()==='test'||num((order as any).total_amount)<=0)continue;
@@ -111,11 +114,16 @@ export async function fetchCommercialFinanceSnapshot(): Promise<CommercialFinanc
     let documentedCost=0;
     for(const item of items){
       const product=products.get(item.product_id) as any;
-      if(!product||!product.cost_configured){
-        missing.push(item.name||product?.name||item.product_id||'Produkt');
+      const lot=item.lot_id?lotCosts.get(item.lot_id) as any:undefined;
+      if(lot?.cost_complete&&lot.documented_unit_cost!=null){
+        documentedCost+=num(lot.documented_unit_cost)*num(item.quantity);
         continue;
       }
-      documentedCost+=num(product.cost)*num(item.quantity);
+      if(product?.cost_configured){
+        documentedCost+=num(product.cost)*num(item.quantity);
+        continue;
+      }
+      missing.push(item.name||product?.name||item.product_id||'Produkt');
     }
     const netRevenue=num((order as any).subtotal)||items.reduce((s:number,i:any)=>s+num(i.total_price),0);
     const complete=missing.length===0;
