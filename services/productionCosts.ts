@@ -25,7 +25,7 @@ export async function fetchProductionCostData(){
   if(!isSupabaseConfigured)return{expenses:[],batches:[],batchAllocations:[],lots:[],lotCosts:[],lotSummaries:[]};
 
   const [e,b,ba,l,lc,ls]=await Promise.all([
-    supabase.from('farm_expenses').select('id,date,season,category,description,amount,currency,vendor,parcel_id').order('date',{ascending:false}),
+    supabase.from('farm_expenses').select('id,date,season,category,description,amount,currency,vendor,parcel_id').eq('accounting_status','posted').order('date',{ascending:false}),
     supabase.from('batches').select('id,parcel_id,olive_type,harvest_date,weight,yield_type,oil_yield_liters,table_olive_yield_kg,traceability_code,status').order('harvest_date',{ascending:false}),
     supabase.from('batch_cost_allocations').select('*').order('created_at',{ascending:false}),
     supabase.from('product_lots').select('id,product_id,lot_code,status,initial_units,packed_at,cost_confirmed,cost_confirmed_at,cost_notes').order('created_at',{ascending:false}),
