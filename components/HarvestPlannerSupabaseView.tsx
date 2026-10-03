@@ -61,6 +61,7 @@ const HarvestPlannerSupabaseView: React.FC<{
   const [open, setOpen] = useState(false);
   const [newVariety, setNewVariety] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
   const [handledContextKey, setHandledContextKey] = useState('');
 
@@ -79,6 +80,7 @@ const HarvestPlannerSupabaseView: React.FC<{
       setError(err?.message || 'Kunne ikke hente høsteplan. Kjør Supabase-migrasjonen for harvest_plans først.');
     } finally {
       setLoading(false);
+      setLoaded(true);
     }
   };
 
@@ -131,12 +133,12 @@ const HarvestPlannerSupabaseView: React.FC<{
 
   useEffect(() => {
     const key = initialPlanId ? 'plan:'+initialPlanId : initialParcelId ? 'parcel:'+initialParcelId : '';
-    if (!key || key === handledContextKey || loading) return;
+    if (!key || key === handledContextKey || loading || !loaded) return;
 
     if (initialPlanId) {
       const plan = plans.find(row => row.id === initialPlanId);
       if (!plan) {
-        if (plans.length || !loading) {
+        if (loaded) {
           setError('Kunne ikke finne høsteplanen som ble valgt fra Olivia Daily.');
           setHandledContextKey(key);
           onContextConsumed?.();
@@ -152,7 +154,7 @@ const HarvestPlannerSupabaseView: React.FC<{
     if (initialParcelId) {
       const parcel = parcels.find(row => row.id === initialParcelId);
       if (!parcel) {
-        if (parcels.length || !loading) {
+        if (loaded) {
           setError('Kunne ikke finne parsellen som ble valgt fra Olivia Daily.');
           setHandledContextKey(key);
           onContextConsumed?.();
@@ -163,7 +165,7 @@ const HarvestPlannerSupabaseView: React.FC<{
       setHandledContextKey(key);
       onContextConsumed?.();
     }
-  }, [initialPlanId, initialParcelId, plans, parcels, loading, handledContextKey, onContextConsumed]);
+  }, [initialPlanId, initialParcelId, plans, parcels, loading, loaded, handledContextKey, onContextConsumed]);
 
   const save = async () => {
     if (!form.parcel_id || !form.variety || !form.purpose || !form.planned_date) { setError('Parsell, sort, formål og planlagt dato må fylles ut.'); return; }
