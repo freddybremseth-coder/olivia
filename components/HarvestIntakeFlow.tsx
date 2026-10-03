@@ -10,19 +10,44 @@ const today=()=>new Date().toISOString().slice(0,10);
 function destLabel(v?:HarvestDestination){return v==='oil'?'Olje':v==='table_olives'?'Bordoliven':v==='cooperative'?'Kooperativ':v==='other'?'Annet':'—';}
 function statusLabel(v?:string){return v==='harvested'?'Høstet':v==='received'?'Mottatt':v==='processing'?'I produksjon':v==='completed'?'Ferdig':'—';}
 
-const HarvestIntakeFlow:React.FC<{parcels:Parcel[];onChanged?:()=>void}>=({parcels,onChanged})=>{
+const HarvestIntakeFlow:React.FC<{parcels:Parcel[];onChanged?:()=>void;initialPlanId?:string|null;onPlanConsumed?:()=>void}>=({parcels,onChanged,initialPlanId,onPlanConsumed})=>{
  const [rows,setRows]=useState<HarvestIntake[]>([]),[plans,setPlans]=useState<HarvestPlanRecord[]>([]);
  const [loading,setLoading]=useState(false),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const [open,setOpen]=useState(false),[file,setFile]=useState<File|null>(null);
+ const [consumedInitialPlanId,setConsumedInitialPlanId]=useState('');
  const [form,setForm]=useState({parcelId:'',date:today(),variety:'',destination:'oil' as HarvestDestination,status:'harvested' as 'harvested'|'received',grossKg:'',tareKg:'0',containerCount:'',weighTicketNumber:'',harvestPlanId:'',notes:''});
 
  const load=async()=>{setLoading(true);setError('');try{const[r,p]=await Promise.all([fetchHarvestIntakes(),fetchHarvestPlans()]);setRows(r);setPlans(p.filter(x=>x.status==='approved'&&harvestSeasonForDate(x.planned_date)===currentHarvestSeason()));}catch(e:any){setError(e?.message||'Kunne ikke hente høsteflyt.');}finally{setLoading(false);}};
  useEffect(()=>{load();},[]);
+ useEffect(()=>{
+  if(!initialPlanId||initialPlanId===consumedInitialPlanId)return;
+  const plan=plans.find(p=>p.id===initialPlanId&&p.status==='approved');
+  if(!plan)return;
+  const parcel=parcels.find(p=>p.id===plan.parcel_id);
+  setForm({
+    parcelId:plan.parcel_id,
+    date:today(),
+    variety:plan.variety||parcel?.treeVariety||'',
+    destination:destinationForPlan(plan),
+    status:'harvested',
+    grossKg:'',
+    tareKg:'0',
+    containerCount:'',
+    weighTicketNumber:'',
+    harvestPlanId:plan.id,
+    notes:'',
+  });
+  setFile(null);
+  setOpen(true);
+  setConsumedInitialPlanId(initialPlanId);
+  onPlanConsumed?.();
+ },[initialPlanId,plans,parcels,consumedInitialPlanId,onPlanConsumed]);
  const net=Math.max(0,Number(form.grossKg||0)-Number(form.tareKg||0));
  const season=harvestSeasonForDate(form.date);
  const currentRows=useMemo(()=>rows.filter(r=>r.season===currentHarvestSeason()),[rows]);
  const openNew=()=>{const p=parcels[0];setForm({parcelId:p?.id||'',date:today(),variety:p?.treeVariety||'',destination:'oil',status:'harvested',grossKg:'',tareKg:'0',containerCount:'',weighTicketNumber:'',harvestPlanId:'',notes:''});setFile(null);setOpen(true);};
- const selectPlan=(id:string)=>{const plan=plans.find(p=>p.id===id);const parcel=parcels.find(p=>p.id===plan?.parcel_id);setForm(f=>({...f,harvestPlanId:id,parcelId:plan?.parcel_id||f.parcelId,variety:plan?.variety||parcel?.treeVariety||f.variety,destination:plan?.purpose==='table_olives'?'table_olives':plan?.purpose==='oil'?'oil':f.destination}));};
+ const destinationForPlan=(plan?:HarvestPlanRecord):HarvestDestination=>plan?.purpose==='table_olives'?'table_olives':plan?.purpose==='oil'?'oil':'other';
+ const selectPlan=(id:string)=>{const plan=plans.find(p=>p.id===id);const parcel=parcels.find(p=>p.id===plan?.parcel_id);setForm(f=>({...f,harvestPlanId:id,parcelId:plan?.parcel_id||f.parcelId,variety:plan?.variety||parcel?.treeVariety||f.variety,destination:plan?destinationForPlan(plan):f.destination}));};
  const save=async()=>{setSaving(true);setError('');try{await createHarvestIntake({parcelId:form.parcelId,season,date:form.date,variety:form.variety,destination:form.destination,status:form.status,grossKg:Number(form.grossKg),tareKg:Number(form.tareKg||0),containerCount:form.containerCount?Number(form.containerCount):undefined,weighTicketNumber:form.weighTicketNumber||undefined,harvestPlanId:form.harvestPlanId||undefined,notes:form.notes||undefined},file);setOpen(false);await load();onChanged?.();}catch(e:any){setError(e?.message||'Kunne ikke lagre høstingen.');}finally{setSaving(false);}};
  const receive=async(id:string)=>{setError('');try{await markHarvestReceived(id);await load();onChanged?.();}catch(e:any){setError(e?.message||'Kunne ikke markere mottak.');}};
  const makeBatch=async(id:string)=>{setError('');try{await createBatchFromHarvest(id);await load();onChanged?.();}catch(e:any){setError(e?.message||'Kunne ikke opprette produksjonsbatch.');}};
