@@ -72,7 +72,8 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
   const [rainParcel,setRainParcel]=useState('');
   const [rainNotes,setRainNotes]=useState('');
   const [rainSaving,setRainSaving]=useState(false);
-  const year=new Date().getFullYear();
+  const currentYear=new Date().getFullYear();
+  const [wheelYear,setWheelYear]=useState(currentYear+1);
 
   const load=async()=>{
     setLoading(true);setError('');
@@ -80,7 +81,7 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
       const [docs,ev,wheel,rainRows,inputRows,obs,truth]=await Promise.all([
         fetchFarmDocuments(100),
         fetchFarmEvents(250),
-        fetchYearWheel(year),
+        fetchYearWheel(wheelYear),
         fetchRainMeasurements(365),
         fetchFarmInputs(),
         fetchRecentFarmObservations(100).catch(()=>[]),
@@ -92,6 +93,10 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
   };
 
   useEffect(()=>{load();},[]);
+
+  useEffect(()=>{
+    fetchYearWheel(wheelYear).then(setYearWheel).catch(e=>setError(e instanceof Error?e.message:'Kunne ikke hente årshjulet.'));
+  },[wheelYear]);
 
   const parcelName=(id?:string|null)=>id?parcels.find(p=>p.id===id)?.name||id:'Hele gården';
 
@@ -186,12 +191,19 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
             <h4 className="text-white font-black mt-2">{event.title}</h4>
             <p className="text-xs text-slate-500 mt-1">{event.occurred_on||event.planned_for||event.period_label||'Dato ikke dokumentert'} · {parcelName(event.parcel_id)}</p>
             {event.description&&<p className="text-sm text-slate-400 mt-3">{event.description}</p>}
+            {event.tree_count_delta!=null&&<p className="text-xs text-cyan-300 mt-2">Treantall i kilden: {event.tree_count_delta>0?'+':''}{event.tree_count_delta} trær. Endrer ikke parsellregisteret før faktisk planting/felling er verifisert.</p>}
             {event.products?.length?<div className="flex flex-wrap gap-2 mt-3">{event.products.map((p,i)=><span key={(p.name||'p')+i} className="rounded-full border border-purple-500/20 bg-purple-500/10 px-2 py-1 text-[10px] text-purple-200">{p.name}{p.dose?' · '+p.dose:''}</span>)}</div>:null}
           </div>
           {event.recurrence_candidate&&<div className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-[10px] text-blue-200 max-w-xs">Kan brukes som sammenligningspunkt i neste årshjul. Ikke automatisk ordre.</div>}
         </div>
       </div>)}
       {!events.length&&!loading&&<Empty icon={<Sprout/>} title="Ingen verifisert driftshistorikk ennå" text="Last opp første faktura, arbeidsbeskrivelse, behandling, melding eller bilde."/>}
+      {summary?.parcels?.length>0&&<div className="glass rounded-2xl border border-white/10 p-5 mt-5">
+        <p className="text-[10px] uppercase tracking-widest font-black text-cyan-300">Tregrunnlag</p>
+        <h4 className="text-lg font-black text-white mt-1">Registrert bestand per parsell</h4>
+        <p className="text-xs text-slate-500 mt-1">Dette er fasit for treantall inntil faktisk planting, felling eller telling er verifisert og registeret oppdateres.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 mt-4">{summary.parcels.map((parcel:any)=><div key={parcel.id} className="rounded-xl bg-black/20 border border-white/10 p-3"><p className="font-bold text-white">{parcel.name}</p><p className="text-xs text-slate-500 mt-1">{parcel.tree_variety||'Sort ikke registrert'}</p><p className="text-xl font-black text-cyan-300 mt-2">{Number(parcel.tree_count||0).toLocaleString('no-NO')} trær</p></div>)}</div>
+      </div>}
     </div>}
 
     {tab==='inbox'&&<div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
@@ -229,7 +241,7 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
     </div>}
 
     {tab==='yearwheel'&&<div className="space-y-5">
-      <div><p className="text-[10px] uppercase tracking-widest font-black text-blue-300">Årshjul {year}</p><h3 className="text-xl font-black text-white">Forslag bygget fra verifisert historikk</h3><p className="text-xs text-slate-500 mt-2">Historikk gir tidspunkt for vurdering — ikke automatisk sprøyteordre. Vær, fenologi og faktisk behov må bekreftes.</p></div>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3"><div><p className="text-[10px] uppercase tracking-widest font-black text-blue-300">Årshjul {wheelYear}</p><h3 className="text-xl font-black text-white">Forslag bygget fra verifisert historikk</h3><p className="text-xs text-slate-500 mt-2">Historikk gir tidspunkt for vurdering — ikke automatisk sprøyteordre. Vær, fenologi og faktisk behov må bekreftes.</p></div><select value={wheelYear} onChange={e=>setWheelYear(Number(e.target.value))} className={inputClass+' md:w-auto'}><option value={currentYear}>{currentYear}</option><option value={currentYear+1}>{currentYear+1}</option><option value={currentYear+2}>{currentYear+2}</option></select></div>
       {MONTHS.map((month,index)=>{
         const rows=yearWheel.filter(item=>item.target_month===index+1);
         if(!rows.length)return null;
