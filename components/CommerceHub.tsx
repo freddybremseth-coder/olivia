@@ -62,28 +62,6 @@ type AdminRows = {
   messages: Array<Record<string, string | number>>;
 };
 
-const customers = [
-  { company: 'Nordic Deli AS', contact: 'Ingrid Larsen', type: 'B2B forhandler', terms: 'Netto 14', status: 'Varm lead' },
-  { company: 'Biar Gastro S.L.', contact: 'Mateo Ruiz', type: 'Restaurant', terms: 'Kontant', status: 'Aktiv kunde' },
-  { company: 'Olive Club Norway', contact: 'Knut Berg', type: 'Abonnement', terms: 'Kort', status: 'Kundeportal' },
-];
-
-const orders = [
-  { no: 'DA-2026-0018', customer: 'Biar Gastro S.L.', items: '24 x Verde Alto · 6 x Mesa', amount: '€468.00', status: 'Pakkes', next: 'Send traceability-link' },
-  { no: 'DA-2026-0017', customer: 'Nordic Deli AS', items: '72 x Verde Alto · 12 x Verde Vivo', amount: '€1 702.80', status: 'Tilbud', next: 'Godkjenn B2B-pris' },
-  { no: 'DA-2026-0016', customer: 'Restaurante Alicante', items: '2 x Cocina Viva 5 L', amount: 'B2B quote', status: 'Tasting kit', next: 'Følg opp kjøkkensjef' },
-];
-
-const invoices = [
-  { no: 'INV-2026-0042', order: 'DA-2026-0018', customer: 'Biar Gastro S.L.', due: '02.05.2026', total: '€696.00', status: 'Utkast' },
-  { no: 'INV-2026-0041', order: 'DA-2026-0016', customer: 'Olive Club Norway', due: '30.04.2026', total: '€226.80', status: 'Sendt' },
-  { no: 'INV-2026-0040', order: 'DA-2026-0014', customer: 'Casa Verde', due: '21.04.2026', total: '€410.00', status: 'Betalt' },
-];
-
-const shipments = [
-  { order: 'DA-2026-0018', customer: 'Biar Gastro S.L.', carrier: 'DHL', tracking: 'DA-TRACE-1842', status: 'På vei' },
-];
-
 const contentItems = [
   { name: 'Ordrebekreftelse', use: 'Sendes automatisk etter B2B/kundeordre', owner: 'Admin', status: 'Må kobles' },
   { name: 'Faktura-e-post', use: 'PDF, betalingsfrist og sporingskode', owner: 'Admin', status: 'Utkast' },
