@@ -309,6 +309,45 @@ async function upsertProducts(products:FarmProductEvidence[],documentId:string){
   }
 }
 
+export async function saveFarmEvidenceImage(input:{
+  file:File;
+  title:string;
+  documentDate:string;
+  parcelId?:string|null;
+  notes?:string;
+}):Promise<string>{
+  const {data:auth}=await supabase.auth.getUser();
+  if(!auth.user)throw new Error('Du må være innlogget i Olivia OS.');
+  const storage=await uploadFarmFile(input.file);
+  const documentId='farmdoc-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+  const {error}=await supabase.from('farm_documents').insert({
+    id:documentId,
+    title:input.title,
+    document_kind:'photo',
+    evidence_status:'completed',
+    document_date:input.documentDate,
+    source_name:'Olivia årshjul',
+    parcel_id:input.parcelId||null,
+    storage_bucket:storage.bucket,
+    storage_path:storage.path,
+    original_filename:input.file.name||null,
+    mime_type:input.file.type||null,
+    file_size_bytes:input.file.size||null,
+    plain_text:null,
+    extracted_summary:'Bilde lagt ved som dokumentasjon på utført arbeid.',
+    scan_json:null,
+    confidence:1,
+    review_status:'verified',
+    notes:input.notes?.trim()||null,
+    created_by:auth.user.id,
+  });
+  if(error){
+    await supabase.storage.from(storage.bucket).remove([storage.path]).catch(()=>undefined);
+    throw new Error(error.message);
+  }
+  return documentId;
+}
+
 export async function saveFarmSource(params:{
   scan:FarmScanResult;
   file?:File|null;
