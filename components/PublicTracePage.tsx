@@ -106,7 +106,8 @@ const PublicTracePage: React.FC<PublicTracePageProps> = ({ slug }) => {
             <div className="grid grid-cols-2 gap-3 mt-5">
               <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase text-slate-500">Parsell</p><p className="font-bold mt-1">{source.parcel_name||'Biar, Alicante'}</p></div>
               <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase text-slate-500">Sort</p><p className="font-bold mt-1">{source.variety||'—'}</p></div>
-              <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase text-slate-500">Høstet</p><p className="font-bold mt-1">{value(source.kg_harvested,' kg')}</p></div>
+              <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase text-slate-500">Batch høstet</p><p className="font-bold mt-1">{value(source.kg_harvested,' kg')}</p></div>
+              <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase text-slate-500">Brukt i denne loten</p><p className="font-bold mt-1">{source.input_liters!=null?value(source.input_liters,' L'):source.input_kg!=null?value(source.input_kg,' kg'):'Ikke registrert'}</p></div>
               <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase text-slate-500">Kvalitet</p><p className="font-bold mt-1">{source.quality||'Ikke registrert'}</p></div>
             </div>
           </article>)}
@@ -122,9 +123,9 @@ const PublicTracePage: React.FC<PublicTracePageProps> = ({ slug }) => {
           <p className="text-xs text-slate-600 mt-4">Verdier vises bare når de er registrert på kildebatchene. Ved flere batcher vises gjennomsnittet.</p>
         </div>
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-          <div className="flex items-center gap-3"><Scale className="text-yellow-400"/><h3 className="text-xl font-black">Dokumentert råvare</h3></div>
-          <p className="text-4xl font-black mt-5">{value(lot.trace_summary?.total_source_kg,' kg')}</p>
-          <p className="text-sm text-slate-500 mt-2">Registrert høstemengde i kildebatchene. Dette er ikke det samme som netto innhold i denne pakkeloten.</p>
+          <div className="flex items-center gap-3"><Scale className="text-yellow-400"/><h3 className="text-xl font-black">Råvare brukt i loten</h3></div>
+          <p className="text-4xl font-black mt-5">{lot.trace_summary?.total_source_liters!=null?value(lot.trace_summary.total_source_liters,' L'):lot.trace_summary?.total_source_kg!=null?value(lot.trace_summary.total_source_kg,' kg'):'Ikke registrert'}</p>
+          <p className="text-sm text-slate-500 mt-2">Dette er mengden som er registrert som faktisk kilde til denne pakkeloten. Vi bruker ikke hele kildebatchens størrelse som om alt automatisk gikk inn i produktet.</p>
         </div>
       </section>
 
