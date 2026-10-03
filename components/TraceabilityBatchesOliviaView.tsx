@@ -349,7 +349,7 @@ const TraceabilityBatchesOliviaView: React.FC<{
           <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">Fra olivia.batches · QR-publisering · ingen demo/localStorage</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={openLotBuilder} disabled={!eligibleSourceBatches.length || !products.length} className="px-4 py-3 rounded-2xl bg-green-500 text-black font-bold disabled:opacity-40 flex items-center gap-2"><Plus size={18}/> Ny pakkelot</button>
+          <button onClick={()=>openLotBuilder()} disabled={!eligibleSourceBatches.length || !products.length} className="px-4 py-3 rounded-2xl bg-green-500 text-black font-bold disabled:opacity-40 flex items-center gap-2"><Plus size={18}/> Ny pakkelot</button>
           <button onClick={load} className="p-3.5 glass border border-white/10 rounded-2xl text-green-400 hover:bg-white/5 transition-all">
             {loading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
           </button>
