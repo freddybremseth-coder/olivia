@@ -6,6 +6,7 @@ import { fetchOliviaHarvests, HarvestRecord, SalesChannel } from '../services/ol
 import TableOliveBatchPlanner from './TableOliveBatchPlanner';
 import HarvestIntakeFlow from './HarvestIntakeFlow';
 import BatchProductionWorkflow from './BatchProductionWorkflow';
+import { currentHarvestSeason, harvestSeasonCode, harvestSeasonForDate } from '../services/harvestSeason';
 
 interface Props {
   language: Language;
@@ -21,7 +22,6 @@ const CHANNEL_LABELS: Record<SalesChannel, string> = {
   olje_export: 'Olje export',
 };
 
-const currentSeason = () => new Date().getFullYear().toString();
 const fmtKg = (kg: number) => `${Math.round(kg).toLocaleString('no-NO')} kg`;
 const fmtEuro = (value: number) => `€${Math.round(value).toLocaleString('no-NO')}`;
 const inputClass = 'w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-green-500/50';
@@ -31,7 +31,7 @@ const ProductionOliviaView: React.FC<Props> = ({ parcels }) => {
   const [harvests, setHarvests] = useState<HarvestRecord[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [season, setSeason] = useState(currentSeason());
+  const [season, setSeason] = useState(currentHarvestSeason());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showBatchForm, setShowBatchForm] = useState(false);
@@ -81,12 +81,12 @@ const ProductionOliviaView: React.FC<Props> = ({ parcels }) => {
   useEffect(() => { load(); }, []);
 
   const seasons = useMemo(() => {
-    const all = new Set([currentSeason(), ...harvests.map(h => h.season), ...batches.map(b => (b.harvestDate || '').slice(0, 4)).filter(Boolean)]);
+    const all = new Set([currentHarvestSeason(), ...harvests.map(h => h.season), ...batches.map(b => harvestSeasonForDate(b.harvestDate)).filter(Boolean)]);
     return [...all].sort((a, b) => b.localeCompare(a));
   }, [harvests, batches]);
 
   const seasonHarvests = harvests.filter(h => h.season === season);
-  const seasonBatches = batches.filter(b => (b.harvestDate || '').slice(0, 4) === season);
+  const seasonBatches = batches.filter(b => harvestSeasonForDate(b.harvestDate) === season);
   const totalKg = seasonHarvests.reduce((sum, h) => sum + h.kg, 0);
   const harvestRevenue = seasonHarvests.reduce((sum, h) => sum + h.kg * h.pricePerKg, 0);
   const oilLiters = seasonBatches.reduce((sum, b) => sum + Number(b.oilYieldLiters || 0), 0);
@@ -122,7 +122,7 @@ const ProductionOliviaView: React.FC<Props> = ({ parcels }) => {
       yieldType: newBatch.yieldType || 'Oil',
       oilYieldLiters: Number(newBatch.oilYieldLiters || 0) || undefined,
       tableOliveYieldKg: Number(newBatch.tableOliveYieldKg || 0) || undefined,
-      traceabilityCode: newBatch.traceabilityCode || `DA-${season}-${String(Date.now()).slice(-5)}`,
+      traceabilityCode: newBatch.traceabilityCode || `DA-${harvestSeasonCode(harvestSeasonForDate(newBatch.harvestDate))}-${String(Date.now()).slice(-5)}`,
       currentStage: newBatch.currentStage,
       logs: [],
     };
