@@ -53,6 +53,7 @@ import {
 import { fetchCommerceBusinessMetrics, type CommerceBusinessMetrics } from '../services/customerPortal';
 import { fetchUnifiedInventory } from '../services/commerceInventory';
 import CommerceReadinessPanel from './CommerceReadinessPanel';
+import CommerceTemplatePanel from './CommerceTemplatePanel';
 import PaymentReminderPanel from './PaymentReminderPanel';
 
 type CommerceTab = 'overview' | 'products' | 'customers' | 'orders' | 'invoices' | 'followup' | 'shipments' | 'messages' | 'content';
@@ -64,13 +65,6 @@ type AdminRows = {
   shipments: Array<Record<string, string | number>>;
   messages: Array<Record<string, string | number>>;
 };
-
-const contentItems = [
-  { name: 'Ordrebekreftelse', use: 'Sendes automatisk etter B2B/kundeordre', owner: 'Admin', status: 'Må kobles' },
-  { name: 'Faktura-e-post', use: 'PDF, betalingsfrist og sporingskode', owner: 'Admin', status: 'Utkast' },
-  { name: 'Produktark', use: 'Brukes på web, B2B og QR-side', owner: 'Produkt', status: 'Aktiv' },
-  { name: 'Batch-fortelling', use: 'Tekst fra Olivia-produksjon til flaskens QR-side', owner: 'Olivia OS', status: 'Ny' },
-];
 
 const emptyProduct = (): CommerceProduct => ({
   id: `p-${Date.now()}`,
@@ -204,7 +198,7 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
       {activeTab === 'followup' && <PaymentReminderPanel />}
       {activeTab === 'shipments' && <DataTable title="Forsendelser og sporing" rows={adminRows.shipments} />}
       {activeTab === 'messages' && <DataTable title="Kundemeldinger fra B2B-portalen" rows={adminRows.messages} />}
-      {activeTab === 'content' && <DataTable title="Tekster, e-postmaler og produktark" rows={contentItems} />}
+      {activeTab === 'content' && <CommerceTemplatePanel />}
     </div>
   );
 };
