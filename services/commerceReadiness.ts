@@ -65,7 +65,7 @@ export async function fetchCommercialReadiness(): Promise<CommercialReadiness> {
   });
 
   const readyProductIds=new Set(products.map((p:any)=>p.id));
-  for(const issue of issues.filter(i=>i.area==='product'&&i.productId)) readyProductIds.delete(issue.productId!);
+  for(const issue of issues.filter(i=>i.area==='product'&&i.productId&&i.severity==='critical')) readyProductIds.delete(issue.productId!);
 
   return {
     ready:issues.every(i=>i.severity!=='critical'),
