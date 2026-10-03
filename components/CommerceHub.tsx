@@ -53,6 +53,7 @@ import {
 import { fetchCommerceBusinessMetrics, type CommerceBusinessMetrics } from '../services/customerPortal';
 import { fetchUnifiedInventory } from '../services/commerceInventory';
 import CommerceReadinessPanel from './CommerceReadinessPanel';
+import CommercialFinancePanel from './CommercialFinancePanel';
 import CommerceTemplatePanel from './CommerceTemplatePanel';
 import PaymentReminderPanel from './PaymentReminderPanel';
 
@@ -208,7 +209,9 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
 
 function CommerceOverview() {
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+    <div className="space-y-6">
+      <CommercialFinancePanel />
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
       <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
         <h3 className="text-xl font-bold text-white">Anbefalt sammenslåing</h3>
         <div className="mt-5 space-y-4">
@@ -239,6 +242,7 @@ function CommerceOverview() {
           ))}
         </div>
       </div>
+    </div>
     </div>
   );
 }
