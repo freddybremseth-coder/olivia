@@ -51,6 +51,8 @@ type ActionCard = {
   description: string;
   priority: 'Lav' | 'Middels' | 'Høy' | 'Kritisk';
   icon: React.ReactNode;
+  targetTab?: string;
+  actionLabel?: string;
 };
 
 function monthName(monthIndex: number): string {
@@ -78,6 +80,8 @@ function buildActionCards(advice: FarmDecisionAdvice, readings: SensorReading[],
       description: 'Registrer sensor, manuell måling, vanning eller feltobservasjon. Dashboardet viser ikke demo-data.',
       priority: 'Høy',
       icon: <ShieldCheck size={18} />,
+      targetTab: 'field_observations',
+      actionLabel: 'Registrer første observasjon',
     });
     return cards;
   }
@@ -88,6 +92,8 @@ function buildActionCards(advice: FarmDecisionAdvice, readings: SensorReading[],
       description: 'Sjekk jordfukt på riktig dybde og vann unge/svake trær først.',
       priority: 'Kritisk',
       icon: <Droplets size={18} />,
+      targetTab: 'irrigation',
+      actionLabel: 'Åpne vanning',
     });
   }
 
@@ -97,6 +103,8 @@ function buildActionCards(advice: FarmDecisionAdvice, readings: SensorReading[],
       description: 'Lavt trykk eller avvik mellom flow og pressure kan bety lekkasje, tett filter eller ødelagt slange.',
       priority: 'Høy',
       icon: <Gauge size={18} />,
+      targetTab: 'irrigation',
+      actionLabel: 'Kontroller vanning',
     });
   }
 
@@ -106,6 +114,8 @@ function buildActionCards(advice: FarmDecisionAdvice, readings: SensorReading[],
       description: 'Sammenlign jord-EC og vann-EC før mer intensiv vanning.',
       priority: 'Høy',
       icon: <Waves size={18} />,
+      targetTab: 'salinity',
+      actionLabel: 'Åpne EC / salt',
     });
   }
 
@@ -116,6 +126,8 @@ function buildActionCards(advice: FarmDecisionAdvice, readings: SensorReading[],
       description: `${lowBattery.sensor_id} har lavt batterinivå.`,
       priority: 'Middels',
       icon: <AlertTriangle size={18} />,
+      targetTab: 'iot',
+      actionLabel: 'Åpne sensorer',
     });
   }
 
@@ -135,6 +147,8 @@ function buildActionCards(advice: FarmDecisionAdvice, readings: SensorReading[],
       description: 'Ingen vanningshendelser finnes ennå. Vanningsloggen gir Olivia bedre grunnlag for råd.',
       priority: 'Middels',
       icon: <Droplets size={18} />,
+      targetTab: 'irrigation_log',
+      actionLabel: 'Registrer vanning',
     });
   }
 
@@ -144,6 +158,8 @@ function buildActionCards(advice: FarmDecisionAdvice, readings: SensorReading[],
       description: 'Legg inn bilder/notater fra feltet slik at tall kan kobles til faktisk tilstand på trær og vanningssystem.',
       priority: 'Lav',
       icon: <Leaf size={18} />,
+      targetTab: 'field_observations',
+      actionLabel: 'Legg inn observasjon',
     });
   }
 
@@ -153,6 +169,8 @@ function buildActionCards(advice: FarmDecisionAdvice, readings: SensorReading[],
       description: 'Ingen kritiske avvik. Ta en visuell kontroll av unge trær, dryppslanger og feltobservasjoner.',
       priority: 'Lav',
       icon: <CheckCircle2 size={18} />,
+      targetTab: 'farm_journal',
+      actionLabel: 'Se driftsjournal',
     });
   }
 
@@ -417,6 +435,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
                 </div>
                 <p className="text-white font-bold">{action.title}</p>
                 <p className="text-xs text-slate-500 mt-2 leading-relaxed">{action.description}</p>
+                {action.targetTab&&onNavigate&&<button onClick={()=>onNavigate(action.targetTab!)} className="mt-4 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs font-bold text-white hover:bg-black/30">{action.actionLabel||'Åpne arbeidsflate'} →</button>}
               </div>
             ))}
           </div>
