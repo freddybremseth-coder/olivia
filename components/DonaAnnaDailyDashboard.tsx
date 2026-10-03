@@ -11,6 +11,9 @@ import {
   Mountain,
   RefreshCcw,
   ShieldCheck,
+  ShoppingCart,
+  ReceiptText,
+  Truck,
   Waves,
 } from 'lucide-react';
 import {
@@ -29,6 +32,7 @@ import {
   type FarmDecisionAdvice,
 } from '../services/farmIoT';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
+import { fetchCommerceAttention, type CommerceAttention } from '../services/commerceAttention';
 
 type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
 
@@ -157,6 +161,7 @@ const DonaAnnaDailyDashboard: React.FC = () => {
   const [alerts, setAlerts] = useState<SensorAlert[]>([]);
   const [irrigationEvents, setIrrigationEvents] = useState<IrrigationEvent[]>([]);
   const [observations, setObservations] = useState<FarmObservation[]>([]);
+  const [commerceAttention, setCommerceAttention] = useState<CommerceAttention[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -168,24 +173,27 @@ const DonaAnnaDailyDashboard: React.FC = () => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const [latestReadings, openAlerts, recentIrrigation, recentObservations] = await Promise.all([
+      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows] = await Promise.all([
         fetchLatestSensorReadings(300),
         fetchOpenSensorAlerts(),
         fetchRecentIrrigationEvents(10),
         fetchRecentFarmObservations(10),
+        fetchCommerceAttention(),
       ]);
 
       setReadings(latestReadings);
       setAlerts(openAlerts);
       setIrrigationEvents(recentIrrigation);
       setObservations(recentObservations);
-      setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length ? 'supabase' : 'empty');
+      setCommerceAttention(commerceRows);
+      setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length ? 'supabase' : 'empty');
       setLastRefresh(new Date());
     } catch (error) {
       setReadings([]);
       setAlerts([]);
       setIrrigationEvents([]);
       setObservations([]);
+      setCommerceAttention([]);
       setLoadState('error');
       setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente Daily Dashboard-data fra Supabase.');
     } finally {
@@ -202,6 +210,10 @@ const DonaAnnaDailyDashboard: React.FC = () => {
   const oilWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_oil;
   const tableWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_table_olives;
   const sourceLabel = loadState === 'supabase' ? 'Supabase' : loadState === 'empty' ? 'Supabase · ingen data ennå' : loadState === 'error' ? 'Supabase-feil' : 'Laster Supabase';
+  const orderAttention = commerceAttention.filter(item => item.event_type === 'order_process');
+  const readyToShip = commerceAttention.filter(item => item.event_type === 'order_ready_to_ship');
+  const overdueInvoices = commerceAttention.filter(item => item.event_type === 'invoice_overdue');
+  const dueSoonInvoices = commerceAttention.filter(item => item.event_type === 'invoice_due_soon');
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
@@ -214,7 +226,7 @@ const DonaAnnaDailyDashboard: React.FC = () => {
               <p className="text-xs font-bold uppercase tracking-[0.35em] text-[#d9b657]">Doña Anna · Olivia</p>
               <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3 mt-1"><Leaf className="text-green-400" /> Daily Dashboard</h2>
               <p className="text-slate-400 text-sm mt-2">Dagsbilde basert på ekte Supabase-data fra sensorer, varsler, vanning og feltobservasjoner.</p>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">Biar · {DONA_ANNA_BIAR_SEASON_SETTINGS.altitude_m} moh. · {sourceLabel} · Oppdatert {lastRefresh.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}</p>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">Biar · {sourceLabel} · Oppdatert {lastRefresh.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}</p>
             </div>
           </div>
           <button onClick={loadDashboard} className="p-3.5 glass border border-white/10 rounded-2xl text-[#d9b657] hover:bg-white/5 transition-all">
@@ -245,6 +257,41 @@ const DonaAnnaDailyDashboard: React.FC = () => {
         )}
       </div>
 
+      <div className="glass rounded-[2rem] p-6 border border-amber-300/20 bg-amber-300/[0.04]">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[10px] text-amber-300 font-bold uppercase tracking-widest">Salg og betaling</p>
+            <h3 className="text-xl font-bold text-white mt-1">Dette må følges opp</h3>
+            <p className="text-xs text-slate-500 mt-1">Automatisk fra reelle commerce-ordre og fakturaer. Testordre er ikke med.</p>
+          </div>
+          <ReceiptText className="text-amber-300" />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
+          {[
+            ['Ordre å behandle', orderAttention.length, <ShoppingCart size={17} />, 'text-yellow-300'],
+            ['Klar til sending', readyToShip.length, <Truck size={17} />, 'text-blue-300'],
+            ['Forfalte fakturaer', overdueInvoices.length, <AlertTriangle size={17} />, 'text-red-300'],
+            ['Forfaller snart', dueSoonInvoices.length, <ReceiptText size={17} />, 'text-amber-300'],
+          ].map(([label,value,icon,tone]) => (
+            <div key={String(label)} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className={String(tone)}>{icon}</div>
+              <p className="text-[9px] uppercase tracking-widest text-slate-500 mt-2">{label}</p>
+              <p className="text-2xl font-black text-white mt-1">{value}</p>
+            </div>
+          ))}
+        </div>
+        {commerceAttention.length > 0 ? (
+          <div className="mt-5 space-y-2">
+            {commerceAttention.slice(0,6).map(item => (
+              <div key={item.id} className={`rounded-xl border p-3 ${item.severity === 'critical' ? 'border-red-500/20 bg-red-500/10' : item.severity === 'warning' ? 'border-yellow-500/20 bg-yellow-500/10' : 'border-blue-500/20 bg-blue-500/10'}`}>
+                <p className="text-sm font-bold text-white">{item.title}</p>
+                <p className="text-xs text-slate-400 mt-1">{item.body}</p>
+              </div>
+            ))}
+          </div>
+        ) : <p className="text-sm text-slate-500 mt-5">Ingen ordre- eller fakturaoppfølging krever handling akkurat nå.</p>}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="glass rounded-[2rem] p-6 border border-white/10">
           <Mountain className="text-green-400 mb-3" />
@@ -257,7 +304,7 @@ const DonaAnnaDailyDashboard: React.FC = () => {
           <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Senere høsteprofil</p>
           <p className="text-white font-bold mt-2">Bordoliven: {monthName(tableWindow.start_month)}–{monthName(tableWindow.end_month)}</p>
           <p className="text-white font-bold mt-1">Olje: {monthName(oilWindow.start_month)}–{monthName(oilWindow.end_month)}</p>
-          <p className="text-xs text-slate-500 mt-2">650 moh. gjør at faktisk høsting må styres av modenhet, sort og vær.</p>
+          <p className="text-xs text-slate-500 mt-2">Faktisk høsting må styres av modenhet, sort, kvalitet og vær.</p>
         </div>
         <div className="glass rounded-[2rem] p-6 border border-white/10">
           <ShieldCheck className="text-blue-400 mb-3" />
