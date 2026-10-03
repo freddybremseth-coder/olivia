@@ -94,6 +94,7 @@ export type UnifiedInvoiceRow = {
   status: string;
   payment_status: string;
   total_amount: number;
+  issue_date?: string;
   due_date?: string;
   paid_date?: string;
 };
@@ -147,7 +148,7 @@ export async function fetchUnifiedInventory() {
       .select('id,order_number,customer_id,customer_name,shipping_address,billing_address,subtotal,tax_amount,shipping_cost,discount_amount,total_amount,currency,status,payment_status,ordered_at,commerce_customers(company,contact_name,email,tax_id,vat_number,billing_address,shipping_address),commerce_order_items(id,order_id,product_id,lot_id,name,sku,quantity,unit_price,total_price)')
       .order('created_at', { ascending: false }).limit(50),
     supabase.from('commerce_invoices')
-      .select('id,invoice_number,order_id,customer_id,customer_name,status,payment_status,total_amount,due_date,paid_date')
+      .select('id,invoice_number,order_id,customer_id,customer_name,status,payment_status,total_amount,issue_date,due_date,paid_date')
       .order('created_at', { ascending: false }).limit(50),
     supabase.from('commerce_shipments')
       .select('id,order_id,customer_id,carrier,tracking_number,tracking_url,status,shipped_at,delivered_at')
