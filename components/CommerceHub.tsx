@@ -266,7 +266,7 @@ function CommerceOverview() {
 
 function CustomerPortal({ user }: { user: UserProfile }) {
   const [activeTab, setActiveTab] = useState<CustomerPortalTab>('overview');
-  const [products, setProducts] = useState<CommerceProduct[]>(defaultCommerceProducts);
+  const [products, setProducts] = useState<CommerceProduct[]>([]);
   const [portalData, setPortalData] = useState<CustomerPortalData>(() => ({
     customer: customerFromUser(user),
     orders: [],
@@ -274,7 +274,7 @@ function CustomerPortal({ user }: { user: UserProfile }) {
     shipments: [],
     messages: [],
   }));
-  const [selectedProductId, setSelectedProductId] = useState(defaultCommerceProducts[0]?.id ?? '');
+  const [selectedProductId, setSelectedProductId] = useState('');
   const [quantity, setQuantity] = useState(6);
   const [orderNote, setOrderNote] = useState('');
   const [messageSubject, setMessageSubject] = useState('');
@@ -477,7 +477,12 @@ function CustomerProducts(props: {
             <div className="p-5">
               <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-amber-300">{product.sku}</p>
               <h3 className="mt-2 text-xl font-bold text-white">{product.name}</h3>
-              <p className="mt-2 text-sm text-slate-400">{product.size} · {product.price}</p>
+              <p className="mt-2 text-sm text-slate-400">{product.size} · {product.priceB2b ? `B2B €${Number(product.priceB2b).toFixed(2)}` : 'B2B-pris mangler'}</p>
+              <p className={`mt-1 text-[11px] ${(product as any).vatConfigured && (product as any).priceBasis ? 'text-green-400' : 'text-amber-300'}`}>
+                {(product as any).vatConfigured && (product as any).priceBasis
+                  ? `IVA ${Number((product as any).vatRate || 0)}% · ${(product as any).priceBasis === 'gross' ? 'pris inkl. IVA' : 'pris ekskl. IVA'}`
+                  : 'IVA/prisgrunnlag ikke bekreftet'}
+              </p>
               <p className="mt-4 min-h-16 text-sm leading-6 text-slate-300">{product.publicStory || product.description}</p>
               <a
                 href={`data:text/plain;charset=utf-8,${encodeURIComponent(`${product.name}\n${product.description}\n${product.labelMaterial || ''}`)}`}
@@ -506,10 +511,11 @@ function CustomerProducts(props: {
           </Field>
           <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-300">
             <p className="font-bold text-white">{props.selectedProduct?.name}</p>
-            <p className="mt-1">{props.selectedProduct?.price} · lager {props.selectedProduct?.stock}</p>
+            <p className="mt-1">{props.selectedProduct?.priceB2b ? `B2B €${Number(props.selectedProduct.priceB2b).toFixed(2)}` : 'B2B-pris mangler'} · lager {props.selectedProduct?.stock}</p>
+            {props.selectedProduct && (!(props.selectedProduct as any).vatConfigured || !(props.selectedProduct as any).priceBasis) && <p className="mt-2 text-xs text-amber-300">Bestilling er låst til Doña Anna har bekreftet IVA og om prisen er inkl./ekskl. IVA.</p>}
           </div>
-          <button disabled={!props.selectedProduct || props.quantity <= 0 || props.quantity > Number(props.selectedProduct.stock || 0)} onClick={props.onSubmitOrder} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 text-sm font-bold text-black hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-40">
-            <Send size={17} /> {props.selectedProduct && props.selectedProduct.stock > 0 ? 'Send ordre' : 'Ikke bekreftet lager'}
+          <button disabled={!props.selectedProduct || props.quantity <= 0 || props.quantity > Number(props.selectedProduct.stock || 0) || !Number(props.selectedProduct.priceB2b || 0) || !(props.selectedProduct as any).vatConfigured || !(props.selectedProduct as any).priceBasis} onClick={props.onSubmitOrder} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 text-sm font-bold text-black hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-40">
+            <Send size={17} /> {!props.selectedProduct ? 'Velg produkt' : !props.selectedProduct.stock ? 'Ikke bekreftet lager' : !props.selectedProduct.priceB2b ? 'B2B-pris mangler' : (!(props.selectedProduct as any).vatConfigured || !(props.selectedProduct as any).priceBasis) ? 'IVA må bekreftes' : 'Send ordre'}
           </button>
         </div>
       </aside>
