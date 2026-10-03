@@ -22,6 +22,8 @@ export type ParcelExecutionRow = {
   stageLabel: string;
   nextAction: string;
   targetTab: 'harvest_planner'|'production'|'traceability_batches';
+  actionPlanId?: string;
+  actionBatchId?: string;
   planCount: number;
   approvedPlanCount: number;
   plannedKg: number;
@@ -123,6 +125,8 @@ export async function fetchSeasonExecution():Promise<SeasonExecution>{
     let stage:ParcelExecutionStage='no_plan';
     let nextAction='Lag første høsteplan for denne parsellen.';
     let targetTab:ParcelExecutionRow['targetTab']='harvest_planner';
+    let actionPlanId:string|undefined;
+    let actionBatchId:string|undefined;
 
     if(parcelPlans.length===0){
       stage='no_plan';
@@ -130,10 +134,12 @@ export async function fetchSeasonExecution():Promise<SeasonExecution>{
       stage='plan_pending';
       nextAction='Kontroller estimatgrunnlag og godkjenn høsteplanen.';
       targetTab='harvest_planner';
+      actionPlanId=pendingPlans[0]?.id;
     }else if(approvedWithoutIntake.length>0){
       stage='approved_waiting_harvest';
       nextAction='Registrer faktisk høsting når arbeidet starter.';
       targetTab='production';
+      actionPlanId=approvedWithoutIntake[0]?.id;
     }else if(harvested.length>0){
       stage='harvested';
       nextAction='Marker høstet råvare som mottatt etter faktisk mottak/veiing.';
@@ -146,10 +152,12 @@ export async function fetchSeasonExecution():Promise<SeasonExecution>{
       stage='production';
       nextAction='Fortsett registrert produksjonssteg for aktive batcher.';
       targetTab='production';
+      actionBatchId=activeBeforePacking[0]?.id||parcelBatches[0]?.id;
     }else if(packableWithoutLot.length>0){
       stage='ready_to_pack';
       nextAction='Opprett pakkelot med faktisk brukt kg/liter fra ferdig batch.';
       targetTab='traceability_batches';
+      actionBatchId=packableWithoutLot[0]?.id;
     }else if(parcelLots.length>0){
       stage='packed';
       nextAction='Pakkelot er registrert. Fortsett lager/salg når varen faktisk flyttes.';
@@ -183,6 +191,8 @@ export async function fetchSeasonExecution():Promise<SeasonExecution>{
       stageLabel:stageLabel(stage),
       nextAction,
       targetTab,
+      actionPlanId,
+      actionBatchId,
       planCount:parcelPlans.length,
       approvedPlanCount:approvedPlans.length,
       plannedKg,
