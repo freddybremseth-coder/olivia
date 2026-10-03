@@ -1,6 +1,8 @@
 import { supabase } from './supabaseClient';
 import { currentHarvestSeason, harvestSeasonForDate } from './harvestSeason';
 
+export type ParcelExecutionAttention='none'|'info'|'warning'|'critical';
+
 export type ParcelExecutionStage =
   | 'no_plan'
   | 'plan_pending'
@@ -24,6 +26,10 @@ export type ParcelExecutionRow = {
   targetTab: 'harvest_planner'|'production'|'traceability_batches';
   actionPlanId?: string;
   actionBatchId?: string;
+  attentionLevel: ParcelExecutionAttention;
+  attentionText?: string;
+  plannedDate?: string;
+  daysToPlannedDate?: number;
   planCount: number;
   approvedPlanCount: number;
   plannedKg: number;
@@ -44,9 +50,25 @@ export type SeasonExecution = {
   approvedParcelCount: number;
   startedParcelCount: number;
   packedParcelCount: number;
+  attentionParcelCount: number;
+  criticalParcelCount: number;
 };
 
 const n=(value:unknown)=>Number(value||0);
+
+function dateAtNoon(value:string){
+  const date=new Date(value.slice(0,10)+'T12:00:00');
+  return Number.isNaN(date.getTime())?undefined:date;
+}
+
+function daysFromToday(value?:string){
+  if(!value)return undefined;
+  const target=dateAtNoon(value);
+  if(!target)return undefined;
+  const today=new Date();
+  today.setHours(12,0,0,0);
+  return Math.round((target.getTime()-today.getTime())/86400000);
+}
 
 function shortParcelName(name:string){
   const match=name.match(/Parcela\s+(\d+)/i);
@@ -92,7 +114,9 @@ export async function fetchSeasonExecution():Promise<SeasonExecution>{
   const lotSources=(lotSourcesRes.data||[]).filter((source:any)=>lotMap.has(source.lot_id));
 
   const rows:ParcelExecutionRow[]=parcels.map((parcel:any)=>{
-    const parcelPlans=plans.filter((plan:any)=>plan.parcel_id===parcel.id);
+    const parcelPlans=plans
+      .filter((plan:any)=>plan.parcel_id===parcel.id)
+      .sort((a:any,b:any)=>String(a.planned_date).localeCompare(String(b.planned_date)));
     const parcelIntakes=intakes.filter((row:any)=>row.parcel_id===parcel.id);
     const parcelBatches=batches.filter((batch:any)=>batch.parcel_id===parcel.id);
     const parcelBatchIds=new Set(parcelBatches.map((batch:any)=>batch.id));
@@ -127,6 +151,8 @@ export async function fetchSeasonExecution():Promise<SeasonExecution>{
     let targetTab:ParcelExecutionRow['targetTab']='harvest_planner';
     let actionPlanId:string|undefined;
     let actionBatchId:string|undefined;
+    let attentionLevel:ParcelExecutionAttention='none';
+    let attentionText:string|undefined;
 
     if(parcelPlans.length===0){
       stage='no_plan';
@@ -172,6 +198,40 @@ export async function fetchSeasonExecution():Promise<SeasonExecution>{
       targetTab='production';
     }
 
+    const unresolvedPlans=parcelPlans.filter((plan:any)=>['planned','approved'].includes(plan.status)&&!planIdsWithIntake.has(plan.id));
+    const timingPlan=unresolvedPlans[0];
+    const plannedDate=timingPlan?.planned_date||undefined;
+    const daysToPlannedDate=daysFromToday(plannedDate);
+
+    if(parcelPlans.length===0){
+      attentionLevel='warning';
+      attentionText='Ingen høsteplan er registrert for denne parsellen i '+season+'.';
+    }
+
+    if(timingPlan&&daysToPlannedDate!=null){
+      if(daysToPlannedDate<0){
+        attentionLevel='critical';
+        attentionText='Planlagt dato '+timingPlan.planned_date+' er passert uten koblet faktisk høsting.';
+      }else if(daysToPlannedDate===0){
+        attentionLevel='warning';
+        attentionText='Planlagt høstedato er i dag. Registrer bare faktisk høsting når den starter.';
+      }else if(daysToPlannedDate<=7){
+        attentionLevel='warning';
+        attentionText='Planlagt høstedato er om '+daysToPlannedDate+' dag'+(daysToPlannedDate===1?'':'er')+'.';
+      }
+    }
+
+    if(harvested.length>0&&attentionLevel!=='critical'){
+      attentionLevel='warning';
+      attentionText='Høsting er registrert, men råvaren er ikke markert mottatt ennå.';
+    }else if(receivedNeedsBatch.length>0&&attentionLevel!=='critical'){
+      attentionLevel='warning';
+      attentionText='Råvare er mottatt, men mangler produksjonsbatch.';
+    }else if(packableWithoutLot.length>0&&attentionLevel==='none'){
+      attentionLevel='info';
+      attentionText='Ferdig produksjonsutbytte finnes, men ingen pakkelot er registrert ennå.';
+    }
+
     const plannedKg=parcelPlans.reduce((sum:number,plan:any)=>sum+n(plan.estimated_kg),0);
     const actualKg=parcelIntakes.reduce((sum:number,row:any)=>sum+n(row.net_kg??row.kg),0);
     const packedUnits=parcelLots.reduce((sum:number,lot:any)=>sum+n(lot.initial_units),0);
@@ -193,6 +253,10 @@ export async function fetchSeasonExecution():Promise<SeasonExecution>{
       targetTab,
       actionPlanId,
       actionBatchId,
+      attentionLevel,
+      attentionText,
+      plannedDate,
+      daysToPlannedDate,
       planCount:parcelPlans.length,
       approvedPlanCount:approvedPlans.length,
       plannedKg,
@@ -206,6 +270,16 @@ export async function fetchSeasonExecution():Promise<SeasonExecution>{
     };
   });
 
+  const attentionRank:Record<ParcelExecutionAttention,number>={critical:0,warning:1,info:2,none:3};
+  rows.sort((a,b)=>{
+    const rank=attentionRank[a.attentionLevel]-attentionRank[b.attentionLevel];
+    if(rank!==0)return rank;
+    if(a.plannedDate&&b.plannedDate)return a.plannedDate.localeCompare(b.plannedDate);
+    if(a.plannedDate)return-1;
+    if(b.plannedDate)return 1;
+    return a.parcelName.localeCompare(b.parcelName,'no');
+  });
+
   return{
     season,
     parcels:rows,
@@ -214,5 +288,7 @@ export async function fetchSeasonExecution():Promise<SeasonExecution>{
     approvedParcelCount:rows.filter(row=>row.approvedPlanCount>0).length,
     startedParcelCount:rows.filter(row=>row.intakeCount>0).length,
     packedParcelCount:rows.filter(row=>row.packedLotCount>0).length,
+    attentionParcelCount:rows.filter(row=>row.attentionLevel!=='none').length,
+    criticalParcelCount:rows.filter(row=>row.attentionLevel==='critical').length,
   };
 }
