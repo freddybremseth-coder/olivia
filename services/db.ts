@@ -414,6 +414,7 @@ function rowToBatch(r: any): Batch {
     sales: r.sales ?? undefined,
     logs: r.logs ?? undefined,
     qualityMetrics: r.quality_metrics ?? undefined,
+    metadata: r.metadata ?? undefined,
   };
 }
 
@@ -442,6 +443,7 @@ function batchToRow(b: Batch) {
     sales: b.sales ?? null,
     logs: b.logs ?? null,
     quality_metrics: b.qualityMetrics ?? null,
+    metadata: b.metadata ?? null,
   };
 }
 

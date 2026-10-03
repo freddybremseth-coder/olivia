@@ -5,6 +5,7 @@ import { deleteBatch, deleteRecipe, fetchBatches, fetchRecipes, upsertBatch, ups
 import { fetchOliviaHarvests, HarvestRecord, SalesChannel } from '../services/oliviaSchemaData';
 import TableOliveBatchPlanner from './TableOliveBatchPlanner';
 import HarvestIntakeFlow from './HarvestIntakeFlow';
+import BatchProductionWorkflow from './BatchProductionWorkflow';
 
 interface Props {
   language: Language;
@@ -234,6 +235,7 @@ const ProductionOliviaView: React.FC<Props> = ({ parcels }) => {
 
       {activeTab === 'batches' && (
         <div className="space-y-5">
+          <BatchProductionWorkflow batches={seasonBatches} onSaved={load} />
           <TableOliveBatchPlanner parcels={parcels} recipes={recipes} onSave={savePlannedTableBatch} />
           <div className="glass rounded-[2rem] p-6 border border-white/10 space-y-4">
             <div className="flex justify-between items-center"><h3 className="text-lg text-white font-bold">Batcher fra olivia.batches</h3><button onClick={() => setShowBatchForm(true)} className="px-4 py-2 rounded-xl bg-green-500 text-black text-xs font-bold flex items-center gap-2"><Plus size={14} /> Enkel batch</button></div>

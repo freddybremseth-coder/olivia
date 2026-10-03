@@ -32,6 +32,8 @@ export interface UserProfile {
 }
 
 export type TableOliveStage = 'PLUKKING' | 'LAKE' | 'SKYLLING' | 'MARINERING' | 'LAGRING' | 'PAKKING' | 'SALG';
+export type OilProductionStage = 'MOTTATT' | 'PRESSING' | 'DEKANTERING' | 'LAGRING_TANK' | 'ANALYSE' | 'PAKKING' | 'SALG';
+export type ProductionStage = TableOliveStage | OilProductionStage;
 
 export type FlavorProfile = 'mild' | 'syrlig' | 'krydret' | 'urterik' | 'sitrus' | 'hvitlok' | 'middelhav';
 
@@ -84,7 +86,7 @@ export interface BatchSale {
 }
 
 export interface BatchLog {
-  stage: TableOliveStage;
+  stage: ProductionStage;
   startDate: string;
   notes: string;
 }
@@ -116,12 +118,13 @@ export interface Batch {
   oilYieldLiters?: number;
   tableOliveYieldKg?: number;
   traceabilityCode?: string;
-  currentStage?: TableOliveStage;
+  currentStage?: ProductionStage;
   stageStartDate?: string;
-  completedStages?: TableOliveStage[];
+  completedStages?: ProductionStage[];
   sales?: BatchSale[];
   logs?: BatchLog[];
   qualityMetrics?: BatchQualityMetrics;
+  metadata?: Record<string, any>;
 }
 
 export interface Transaction {
