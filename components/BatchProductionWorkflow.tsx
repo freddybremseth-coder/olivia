@@ -2,6 +2,7 @@ import React,{useEffect,useMemo,useState}from'react';
 import{CheckCircle2,Factory,FlaskConical,Loader2,Save,Scale,X}from'lucide-react';
 import type{Batch,ProductionStage}from'../types';
 import{upsertBatch}from'../services/db';
+import CostSuggestionReview from './CostSuggestionReview';
 
 const input='w-full rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-white outline-none focus:border-green-500/50';
 const OIL_STAGES:ProductionStage[]=['MOTTATT','PRESSING','DEKANTERING','LAGRING_TANK','ANALYSE','PAKKING','SALG'];
@@ -40,6 +41,9 @@ const BatchProductionWorkflow:React.FC<{batches:Batch[];onSaved:()=>void}>=({bat
    <div className="grid grid-cols-3 gap-3 mt-3"><label className="text-xs text-slate-400">K232<input type="number" step="0.001" value={k232} onChange={e=>setK232(e.target.value)} className={input+' mt-1'}/></label><label className="text-xs text-slate-400">K270<input type="number" step="0.001" value={k270} onChange={e=>setK270(e.target.value)} className={input+' mt-1'}/></label><label className="text-xs text-slate-400">ΔK<input type="number" step="0.001" value={deltaK} onChange={e=>setDeltaK(e.target.value)} className={input+' mt-1'}/></label></div>
    <label className="block text-xs text-slate-400 mt-3">Notat<textarea value={notes} onChange={e=>setNotes(e.target.value)} className={input+' mt-1 min-h-[90px]'} placeholder="Pressing, temperatur, levering, sensorikk, avvik eller annen faktisk produksjonsinfo."/></label>
    <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4 flex items-center gap-3"><Scale className="text-green-400"/><div><p className="text-xs text-slate-500">Råvare inn</p><p className="font-black text-white">{selected.weight} kg</p></div></div>
+   <div className="mt-4">
+    <CostSuggestionReview targetType="batch" targetId={selected.id} eventDate={processDate} stage={stage} compact />
+   </div>
    <button onClick={save} disabled={saving} className="mt-5 w-full rounded-2xl bg-blue-500 py-4 font-black text-black disabled:opacity-40 flex items-center justify-center gap-2">{saving?<Loader2 size={18} className="animate-spin"/>:<Save size={18}/>} Lagre produksjonssteg</button>
   </div></div>}
  </div>;
