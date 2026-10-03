@@ -100,8 +100,22 @@ export async function saveCustomerProfile(user: UserProfile, customer: B2BCustom
 export async function placeCustomerOrder(customer: B2BCustomerProfile, product: CommerceProduct, quantity: number, notes: string): Promise<CommerceOrder> {
   if (!Number.isFinite(quantity) || quantity <= 0) throw new Error('Antall må være større enn 0.');
   if (quantity > Number(product.stock || 0)) throw new Error('Ordren er større enn bekreftet tilgjengelig lager. Kontakt Doña Anna for tilgjengelighet eller tilbud.');
-  const unitPrice = product.priceB2b ?? product.priceRetail ?? parsePrice(product.price);
-  const totalAmount = unitPrice * quantity;
+
+  const vatConfigured = Boolean((product as any).vatConfigured);
+  const priceBasis = (product as any).priceBasis as 'gross' | 'net' | undefined;
+  const vatRate = Number((product as any).vatRate ?? 0);
+  if (!vatConfigured || !priceBasis) throw new Error('IVA/prisgrunnlag er ikke bekreftet for dette produktet. Ordren er blokkert til Doña Anna har satt korrekt avgiftsoppsett.');
+
+  const isB2b = customer.priceTier === 'b2b';
+  const basePrice = isB2b ? Number(product.priceB2b || 0) : Number(product.priceRetail || parsePrice(product.price));
+  if (!Number.isFinite(basePrice) || basePrice <= 0) throw new Error(isB2b ? 'B2B-pris er ikke satt for dette produktet.' : 'Pris er ikke satt for dette produktet.');
+
+  const factor = 1 + vatRate / 100;
+  const netUnit = priceBasis === 'gross' ? basePrice / factor : basePrice;
+  const grossUnit = priceBasis === 'gross' ? basePrice : basePrice * factor;
+  const subtotal = Math.round(netUnit * quantity * 100) / 100;
+  const totalAmount = Math.round(grossUnit * quantity * 100) / 100;
+  const taxAmount = Math.round((totalAmount - subtotal) * 100) / 100;
   const order: CommerceOrder = {
     id: `order-${Date.now()}`,
     orderNumber: `DA-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`,
@@ -120,10 +134,20 @@ export async function placeCustomerOrder(customer: B2BCustomerProfile, product: 
       name: product.name,
       sku: product.sku,
       quantity,
-      unitPrice,
+      unitPrice: Math.round(grossUnit * 100) / 100,
       totalPrice: totalAmount,
     }],
   };
+  (order as any).customerName = customer.company || customer.contactName;
+  (order as any).subtotal = subtotal;
+  (order as any).taxAmount = taxAmount;
+  (order as any).vatRate = vatRate;
+  (order as any).priceBasis = priceBasis;
+  (order.items[0] as any).netUnitPrice = Math.round(netUnit * 10000) / 10000;
+  (order.items[0] as any).grossUnitPrice = Math.round(grossUnit * 10000) / 10000;
+  (order.items[0] as any).taxAmount = taxAmount;
+  (order.items[0] as any).vatRate = vatRate;
+  (order.items[0] as any).priceBasis = priceBasis;
 
   const localOrders = loadLocalOrders();
   localStorage.setItem(ORDERS_KEY, JSON.stringify([order, ...localOrders]));
@@ -194,10 +218,10 @@ export async function fetchAdminPortalRows(): Promise<{
 
   return {
     customers: (customersRes.data ?? []).map(customerToAdminRow),
-    orders: [...(ordersRes.data ?? []).map(rawOrderToAdminRow), ...localOrders.map(orderToAdminRow)],
+    orders: (ordersRes.data ?? []).map(rawOrderToAdminRow),
     invoices: (invoicesRes.data ?? []).map(rawInvoiceToAdminRow),
     shipments: (shipmentsRes.data ?? []).map(rawShipmentToAdminRow),
-    messages: [...(messagesRes.data ?? []).map(rawMessageToAdminRow), ...localMessages.map(messageToAdminRow)],
+    messages: (messagesRes.data ?? []).map(rawMessageToAdminRow),
   };
 }
 
@@ -215,15 +239,10 @@ export async function fetchCommerceBusinessMetrics(): Promise<CommerceBusinessMe
     supabase.from('commerce_messages').select('*'),
   ]);
 
-  const orders = [
-    ...(ordersRes.data ?? []).map(rowToOrder),
-    ...localOrders,
-  ].filter(order => order.status.toLowerCase() !== 'test' && order.totalAmount > 0);
+  const orders = (ordersRes.data ?? []).map(rowToOrder)
+    .filter(order => order.status.toLowerCase() !== 'test' && order.totalAmount > 0);
   const invoices = (invoicesRes.data ?? []).map(rowToInvoice);
-  const messages = [
-    ...(messagesRes.data ?? []).map(rowToMessage),
-    ...localMessages,
-  ];
+  const messages = (messagesRes.data ?? []).map(rowToMessage);
 
   return calculateMetrics(orders, invoices, messages);
 }
@@ -374,6 +393,7 @@ function customerToRow(customer: B2BCustomerProfile) {
     customer_type: customer.customerType,
     price_tier: customer.priceTier,
     payment_terms: customer.paymentTerms,
+    payment_terms_days: (customer as any).paymentTermsDays ?? null,
     billing_address: customer.billingAddress ?? null,
     shipping_address: customer.shippingAddress ?? null,
     tax_id: customer.taxId ?? null,
@@ -393,6 +413,7 @@ function rowToCustomer(row: any): B2BCustomerProfile {
     customerType: row.customer_type ?? 'b2b_customer',
     priceTier: row.price_tier ?? 'b2b',
     paymentTerms: row.payment_terms ?? 'card',
+    paymentTermsDays: row.payment_terms_days ?? undefined,
     billingAddress: row.billing_address ?? '',
     shippingAddress: row.shipping_address ?? '',
     taxId: row.tax_id ?? '',
@@ -406,11 +427,12 @@ function orderToRow(order: CommerceOrder) {
     id: order.id,
     order_number: order.orderNumber,
     customer_id: order.customerId ?? null,
+    customer_name: (order as any).customerName ?? null,
     order_type: 'order',
     status: order.status,
     payment_status: order.paymentStatus,
-    subtotal: order.totalAmount,
-    tax_amount: 0,
+    subtotal: (order as any).subtotal ?? order.totalAmount,
+    tax_amount: (order as any).taxAmount ?? 0,
     shipping_cost: 0,
     discount_amount: 0,
     total_amount: order.totalAmount,
@@ -431,7 +453,13 @@ function orderItemToRow(item: CommerceOrderItem, orderId: string) {
     sku: item.sku ?? null,
     quantity: item.quantity,
     unit_price: item.unitPrice,
+    net_unit_price: (item as any).netUnitPrice ?? null,
+    gross_unit_price: (item as any).grossUnitPrice ?? item.unitPrice,
+    tax_rate: (item as any).vatRate ?? 0,
+    tax_amount: (item as any).taxAmount ?? 0,
+    price_basis: (item as any).priceBasis ?? null,
     total_price: item.totalPrice,
+    line_total: item.totalPrice,
   };
 }
 
@@ -455,8 +483,8 @@ function rowToOrder(row: any): CommerceOrder {
       name: item.name,
       sku: item.sku ?? undefined,
       quantity: Number(item.quantity ?? 1),
-      unitPrice: Number(item.unit_price ?? 0),
-      totalPrice: Number(item.total_price ?? 0),
+      unitPrice: Number(item.gross_unit_price ?? item.unit_price ?? 0),
+      totalPrice: Number(item.total_price ?? item.line_total ?? 0),
     })),
   };
 }
