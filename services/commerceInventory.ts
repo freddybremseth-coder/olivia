@@ -112,7 +112,7 @@ export async function verifyPhysicalInventory(productId: string, countedUnits: n
 
   const current = num(product.stock_quantity);
   const delta = countedUnits - current;
-  const now = params.packedAt || new Date().toISOString();
+  const now = new Date().toISOString();
 
   if (delta !== 0) {
     const { error: movementError } = await supabase.from('inventory_movements').insert({
@@ -149,7 +149,7 @@ export async function createProductLot(params: {
 }) {
   if (!isSupabaseConfigured) throw new Error('Supabase er ikke konfigurert.');
   const lotId = `lot-${Date.now()}`;
-  const now = new Date().toISOString();
+  const now = params.packedAt || new Date().toISOString();
 
   const { error: lotError } = await supabase.from('product_lots').insert({
     id: lotId,
