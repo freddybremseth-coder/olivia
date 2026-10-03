@@ -90,7 +90,37 @@ const HarvestPlannerSupabaseView: React.FC<{ onStartHarvest?: (planId: string) =
     done: seasonPlans.filter(p => p.status === 'done').length,
   }), [seasonPlans]);
 
+  const productiveParcels = useMemo(
+    () => parcels.filter(parcel => Number(parcel.treeCount || 0) > 0),
+    [parcels],
+  );
+
+  const parcelCoverage = useMemo(
+    () => productiveParcels.map(parcel => {
+      const rows = seasonPlans.filter(plan => plan.parcel_id === parcel.id && plan.status !== 'cancelled');
+      return {
+        parcel,
+        planCount: rows.length,
+        approvedCount: rows.filter(plan => plan.status === 'approved' || plan.status === 'done').length,
+        plannedKg: rows.reduce((sum, plan) => sum + Number(plan.estimated_kg || 0), 0),
+        actualKg: rows.reduce((sum, plan) => sum + Number(plan.actual_kg || 0), 0),
+      };
+    }),
+    [productiveParcels, seasonPlans],
+  );
+
+  const parcelShortName = (parcel: Parcel) => {
+    const match = parcel.name.match(/Parcela\s+(\d+)/i);
+    return match ? `Parcela ${match[1]}` : parcel.name;
+  };
+
   const openNew = () => { setEditingId(null); setForm(emptyForm(parcels)); setOpen(true); };
+  const openNewForParcel = (parcel: Parcel) => {
+    const next = emptyForm([parcel]);
+    setEditingId(null);
+    setForm({ ...next, parcel_id: parcel.id, parcel_name: parcel.name, variety: parcel.treeVariety && parcel.treeVariety !== 'Annen' ? parcel.treeVariety : '' });
+    setOpen(true);
+  };
   const openEdit = (plan: HarvestPlanRecord) => { setEditingId(plan.id); setForm(plan); setOpen(true); };
 
   const save = async () => {
@@ -163,6 +193,40 @@ const HarvestPlannerSupabaseView: React.FC<{ onStartHarvest?: (planId: string) =
     </div>
     {error && <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-200 text-sm">{error}</div>}
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4"><Card label="Planlagt kg" value={stats.plannedKg.toLocaleString('no-NO')} /><Card label="Godkjent" value={stats.approved} /><Card label="Utført" value={stats.done} /><Card label="Historiske planer" value={historicalPlanCount} /></div>
+
+    <div className="glass rounded-[2rem] p-6 border border-green-500/15 bg-green-500/[0.03]">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-widest font-black text-green-400">Parselldekning · {season}</p>
+          <h3 className="text-xl font-black text-white mt-1">Hvilke produktive parceller har en høsteplan?</h3>
+          <p className="text-xs text-slate-500 mt-2">Olivia viser bare registrerte trær, sort og eksisterende planer. Ingen kg beregnes automatisk.</p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-right">
+          <p className="text-[9px] uppercase tracking-widest text-slate-500">Produktive parceller</p>
+          <p className="text-2xl font-black text-white">{productiveParcels.length}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-5">
+        {parcelCoverage.map(({ parcel, planCount, approvedCount, plannedKg, actualKg }) => (
+          <div key={parcel.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-black text-white">{parcelShortName(parcel)}</p>
+                <p className="text-xs text-slate-500 mt-1">{parcel.treeVariety || 'Sort ikke registrert'} · {Number(parcel.treeCount || 0).toLocaleString('no-NO')} trær</p>
+              </div>
+              <span className={`rounded-full px-2 py-1 text-[10px] font-black ${planCount ? 'bg-green-500/10 text-green-300' : 'bg-amber-300/10 text-amber-200'}`}>{planCount ? planCount+' plan'+(planCount===1?'':'er') : 'Ingen plan'}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 mt-4">
+              <div className="rounded-xl bg-white/5 p-2"><p className="text-[9px] uppercase text-slate-500">Planlagt</p><p className="font-bold text-white">{plannedKg ? plannedKg.toLocaleString('no-NO')+' kg' : '—'}</p></div>
+              <div className="rounded-xl bg-white/5 p-2"><p className="text-[9px] uppercase text-slate-500">Godkjent</p><p className="font-bold text-white">{approvedCount}</p></div>
+              <div className="rounded-xl bg-white/5 p-2"><p className="text-[9px] uppercase text-slate-500">Faktisk</p><p className="font-bold text-white">{actualKg ? actualKg.toLocaleString('no-NO')+' kg' : '—'}</p></div>
+            </div>
+            <button onClick={() => openNewForParcel(parcel)} className="mt-3 w-full rounded-xl bg-white/10 px-3 py-2.5 text-xs font-bold text-white hover:bg-white/15 flex items-center justify-center gap-2"><Plus size={14}/> Ny plan for {parcelShortName(parcel)}</button>
+          </div>
+        ))}
+      </div>
+      {!productiveParcels.length && <p className="text-sm text-slate-500 mt-4">Ingen parceller med registrert treantall over 0.</p>}
+    </div>
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">{seasonPlans.map(plan => <div key={plan.id} className="glass rounded-[2rem] p-6 border border-white/10"><div className="flex justify-between gap-4"><div><p className="text-[10px] uppercase font-bold tracking-widest text-green-400">{statusLabel(plan.status)} · {purposeLabel(plan.purpose)}</p><h3 className="text-xl text-white font-bold mt-1">{plan.variety} · {plan.parcel_name}</h3><p className="text-xs text-slate-500 mt-1">Planlagt {plan.planned_date}{plan.maturity_index == null ? ' · modenhet ikke målt' : ' · modenhet '+plan.maturity_index}</p><p className="text-[10px] text-slate-600 mt-1">Estimat: {plan.estimate_source || 'grunnlag ikke registrert'}{plan.observation_date ? ' · observert '+plan.observation_date : ''}</p></div><div className="text-right"><p className="text-[10px] text-slate-500">{plan.actual_kg ? 'Faktisk / estimert' : 'Estimert kg'}</p><p className="text-3xl text-white font-black">{plan.actual_kg ? Number(plan.actual_kg).toLocaleString('no-NO') : Number(plan.estimated_kg).toLocaleString('no-NO')}</p>{plan.actual_kg ? <p className="text-[10px] text-slate-500 mt-1">av {Number(plan.estimated_kg).toLocaleString('no-NO')} kg planlagt</p> : null}</div></div>{plan.notes && <p className="text-sm text-slate-400 mt-4">{plan.notes}</p>}<div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-5"><button onClick={() => openEdit(plan)} className="bg-white/10 text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2"><Edit3 size={16} /> Rediger</button><button onClick={() => updateStatus(plan, 'approved')} disabled={plan.status==='approved'||plan.status==='done'} className="bg-blue-500/15 text-blue-300 font-bold py-3 rounded-2xl disabled:opacity-35">Godkjenn</button><button onClick={() => onStartHarvest?.(plan.id)} disabled={plan.status!=='approved'||!onStartHarvest} className="bg-green-500 text-black font-black py-3 rounded-2xl flex items-center justify-center gap-2 disabled:opacity-35"><Play size={16}/> Registrer høsting</button><button onClick={() => updateStatus(plan, 'done')} disabled={plan.status==='done'} className="bg-green-500/15 text-green-300 font-bold py-3 rounded-2xl disabled:opacity-35">Utført</button><button onClick={() => remove(plan.id)} className="bg-red-500/10 text-red-300 font-bold py-3 rounded-2xl flex items-center justify-center gap-2"><Trash2 size={16} /> Slett</button></div></div>)}</div>
     {!seasonPlans.length && <div className="glass rounded-[2rem] p-8 border border-white/10 text-center text-slate-500">Ingen høsteplaner for {season} ennå. Olivia fyller ikke inn kg, dato eller modenhet på egen hånd.</div>}
     {open && <div className="fixed inset-0 z-[2000] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/80 backdrop-blur-md"><div className="glass w-full md:max-w-2xl rounded-t-[2.5rem] md:rounded-[2.5rem] p-6 md:p-8 border border-white/20 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto"><div className="flex justify-between items-center"><h3 className="text-2xl font-bold text-white">{editingId ? 'Rediger høsteplan' : 'Ny høsteplan'}</h3><button onClick={() => setOpen(false)} className="p-2 text-slate-500 hover:text-white"><X size={24} /></button></div>
