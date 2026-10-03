@@ -59,6 +59,17 @@ const schemaPrompt = [
 '    "confidence": 0.0',
 '  }],',
 '  "products": [{"name":"","composition":"","purpose":"","dose":"","organicNote":""}],',
+'  "facts": [{',
+'    "knowledgeKey": "kort stabil nøkkel, f.eks. well.parcel190.depth.measured_2016",',
+'    "subjectType": "farm|parcel|well|product|supplier|operation|other",',
+'    "category": "f.eks. water, planting_plan, supplier, infrastructure, payment, agronomy",',
+'    "statement": "presis setning som kilden faktisk støtter",',
+'    "value": {},',
+'    "confidence": 0.0,',
+'    "requiresConfirmation": false,',
+'    "question": "spørsmål hvis faktum må avklares, ellers tom streng"',
+'  }],',
+'  "questions": [{"question":"","reason":"","priority":"low|medium|high|critical","relatedKnowledgeKey":""}],',
 '  "warnings": ["usikkerhet eller konflikt som må kontrolleres av bruker"]',
 "}",
 "",
@@ -74,6 +85,10 @@ const schemaPrompt = [
 "- Ikke gjett treantall. treeCountDelta brukes bare når kilden eksplisitt sier hvor mange trær som er plantet/fjernet/døde.",
 "- recurrenceCandidate kan være true for tilbakevendende drift som sprøyting, beskjæring, jordarbeid, gjødsling, vanningskontroll, skuddfjerning og unge-trær-arbeid. Det betyr bare vurder samme periode neste år, ikke automatisk utførelse.",
 "- For produkter: skill navn, sammensetning/aktivt stoff, formål/bruksområde og dose når det står. Ikke konkluder økologisk godkjent bare fordi gården er økologisk; skriv kun organicNote når dokumentet faktisk støtter det.",
+"- facts brukes til varig kunnskap som brønndata, vannrett, tre-/plantingsforslag, dokumentert sort, leverandørreferanse, betaling eller andre stabile opplysninger. Ikke dupliser hele hendelseslisten som facts.",
+"- Hvis to kilder kan være i konflikt (f.eks. to ulike brønndybder), behold begge som separate facts med kildepresis statement. Sett requiresConfirmation=true og lag et konkret spørsmål. Ikke velg den ene som riktig.",
+"- Hvis et kart eller bilde inneholder tekst/antall, bevar kildens skrivemåte. Ikke rett sortsnavn eller stedsnavn uten bekreftelse.",
+"- questions skal være korte konkrete spørsmål en gårdseier kan svare på. Still spørsmål når parsell, dato, sortsnavn, betalingsavvik, faktisk utførelse eller betydningen av et tall er usikker.",
 "- confidence er 0-1."
 ].join("\n");
 
