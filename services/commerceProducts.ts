@@ -232,7 +232,7 @@ function productToRow(product: CommerceProduct) {
     status: product.status,
     public_story: product.publicStory ?? '',
     collections: product.collections ?? [],
-    price_label: product.price || null,
+    price_label: formatPrice(product.priceRetail, product.priceB2b),
     label_material: product.labelMaterial ?? null,
     accent_color: product.accentColor ?? null,
     is_public: product.isPublic ?? true,
