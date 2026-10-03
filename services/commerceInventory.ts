@@ -13,6 +13,9 @@ export type UnifiedInventoryProduct = {
   price_retail: number;
   price_b2b?: number;
   cost?: number;
+  vat_rate: number;
+  vat_configured: boolean;
+  price_basis?: 'gross' | 'net';
   batch_id?: string;
   active: boolean;
   status: string;
@@ -54,6 +57,11 @@ export type UnifiedOrderItem = {
   quantity: number;
   unit_price: number;
   total_price: number;
+  net_unit_price?: number;
+  gross_unit_price?: number;
+  tax_rate?: number;
+  tax_amount?: number;
+  price_basis?: 'gross' | 'net';
 };
 
 export type UnifiedShipmentRow = {
@@ -83,6 +91,7 @@ export type CommerceBusinessSettings = {
   iban: string;
   invoice_prefix: string;
   invoice_notes: string;
+  default_payment_terms_days: number;
 };
 
 export type UnifiedInvoiceRow = {
@@ -107,6 +116,8 @@ export type UnifiedOrderCustomer = {
   vat_number?: string;
   billing_address?: string;
   shipping_address?: string;
+  payment_terms?: string;
+  payment_terms_days?: number;
 };
 
 export type UnifiedOrderRow = {
@@ -136,7 +147,7 @@ export async function fetchUnifiedInventory() {
 
   const [productsRes, movementsRes, lotsRes, ordersRes, invoicesRes, shipmentsRes, settingsRes] = await Promise.all([
     supabase.from('commerce_products')
-      .select('id,sku,name,category,size,stock_quantity,reserved_quantity,inventory_verified,inventory_verified_at,price_retail,price_b2b,cost,batch_id,active,status')
+      .select('id,sku,name,category,size,stock_quantity,reserved_quantity,inventory_verified,inventory_verified_at,price_retail,price_b2b,cost,vat_rate,vat_configured,price_basis,batch_id,active,status')
       .eq('active', true).order('name'),
     supabase.from('inventory_movements')
       .select('id,product_id,lot_id,order_id,movement_type,on_hand_delta,reserved_delta,occurred_at,source,verified,notes')
@@ -145,7 +156,7 @@ export async function fetchUnifiedInventory() {
       .select('id,product_id,lot_code,status,packed_at,best_before,initial_units,traceability_slug,notes')
       .order('created_at', { ascending: false }),
     supabase.from('commerce_orders')
-      .select('id,order_number,customer_id,customer_name,shipping_address,billing_address,subtotal,tax_amount,shipping_cost,discount_amount,total_amount,currency,status,payment_status,ordered_at,commerce_customers(company,contact_name,email,tax_id,vat_number,billing_address,shipping_address),commerce_order_items(id,order_id,product_id,lot_id,name,sku,quantity,unit_price,total_price)')
+      .select('id,order_number,customer_id,customer_name,shipping_address,billing_address,subtotal,tax_amount,shipping_cost,discount_amount,total_amount,currency,status,payment_status,ordered_at,commerce_customers(company,contact_name,email,tax_id,vat_number,billing_address,shipping_address,payment_terms,payment_terms_days),commerce_order_items(id,order_id,product_id,lot_id,name,sku,quantity,unit_price,net_unit_price,gross_unit_price,tax_rate,tax_amount,price_basis,total_price)')
       .order('created_at', { ascending: false }).limit(50),
     supabase.from('commerce_invoices')
       .select('id,invoice_number,order_id,customer_id,customer_name,status,payment_status,total_amount,issue_date,due_date,paid_date')
@@ -167,6 +178,9 @@ export async function fetchUnifiedInventory() {
       price_retail: num(row.price_retail),
       price_b2b: row.price_b2b == null ? undefined : num(row.price_b2b),
       cost: row.cost == null ? undefined : num(row.cost),
+      vat_rate: num(row.vat_rate),
+      vat_configured: Boolean(row.vat_configured),
+      price_basis: row.price_basis ?? undefined,
     })) as UnifiedInventoryProduct[],
     movements: (movementsRes.data || []).map((row: any) => ({
       ...row,
@@ -189,6 +203,11 @@ export async function fetchUnifiedInventory() {
         ...item,
         quantity: num(item.quantity),
         unit_price: num(item.unit_price),
+        net_unit_price: item.net_unit_price == null ? undefined : num(item.net_unit_price),
+        gross_unit_price: item.gross_unit_price == null ? undefined : num(item.gross_unit_price),
+        tax_rate: item.tax_rate == null ? undefined : num(item.tax_rate),
+        tax_amount: item.tax_amount == null ? undefined : num(item.tax_amount),
+        price_basis: item.price_basis ?? undefined,
         total_price: num(item.total_price),
       })),
     })) as UnifiedOrderRow[],
@@ -356,5 +375,17 @@ export async function saveCommerceBusinessSettings(settings: CommerceBusinessSet
     id: 'default',
     updated_at: new Date().toISOString(),
   }, { onConflict: 'id' });
+  if (error) throw error;
+}
+
+
+export async function setCustomerPaymentTerms(customerId: string, days: number) {
+  if (!isSupabaseConfigured) throw new Error('Supabase er ikke konfigurert.');
+  if (!Number.isInteger(days) || days < 0 || days > 180) throw new Error('Betalingsfrist må være mellom 0 og 180 dager.');
+  const { error } = await supabase.from('commerce_customers').update({
+    payment_terms_days: days,
+    payment_terms: days === 0 ? 'immediate' : `net_${days}`,
+    updated_at: new Date().toISOString(),
+  }).eq('id', customerId);
   if (error) throw error;
 }
