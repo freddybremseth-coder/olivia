@@ -401,7 +401,7 @@ const PruningAdvisorView: React.FC = () => {
               <p className="text-[9px] text-slate-600 mt-2">Historiske bilder vises som referanse. De legges ikke automatisk inn som nye analysebilder.</p>
             </div>}
           </div>
-          <FarmQuestionsPanel parcelId={selectedParcelId||undefined} agentType="pruning_assistant" title="Beskjæringsassistenten trenger avklaring" compact />
+          <FarmQuestionsPanel key={'pruning-questions-'+(lastAssessmentId||selectedParcelId)} parcelId={selectedParcelId||undefined} agentType="pruning_assistant" title="Beskjæringsassistenten trenger avklaring" compact />
           <AgentFeedbackPanel assessmentId={lastAssessmentId} agentType="pruning_assistant" parcelId={selectedParcelId||undefined} />
 
           <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 text-xs text-blue-100 leading-relaxed"><p className="font-bold text-white mb-2">For presise snittpunkter</p><p>Ta heltrebilde rett forfra med god avstand. Ta også sidebilde og nærbilde av hovedgreiner. AI bør ikke brukes alene for harde kutt i gamle trær.</p></div>
