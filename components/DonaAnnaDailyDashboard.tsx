@@ -34,6 +34,8 @@ import {
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 import { fetchCommerceAttention, type CommerceAttention } from '../services/commerceAttention';
 import { fetchCommercialReadiness, type CommercialReadiness } from '../services/commerceReadiness';
+import { fetchSeasonReadiness, type SeasonReadiness } from '../services/seasonReadiness';
+import SeasonReadinessPanel from './SeasonReadinessPanel';
 
 type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
 
@@ -164,6 +166,7 @@ const DonaAnnaDailyDashboard: React.FC = () => {
   const [observations, setObservations] = useState<FarmObservation[]>([]);
   const [commerceAttention, setCommerceAttention] = useState<CommerceAttention[]>([]);
   const [commercialReadiness, setCommercialReadiness] = useState<CommercialReadiness | null>(null);
+  const [seasonReadiness, setSeasonReadiness] = useState<SeasonReadiness | null>(null);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -175,13 +178,14 @@ const DonaAnnaDailyDashboard: React.FC = () => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness] = await Promise.all([
+      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness, seasonStatus] = await Promise.all([
         fetchLatestSensorReadings(300),
         fetchOpenSensorAlerts(),
         fetchRecentIrrigationEvents(10),
         fetchRecentFarmObservations(10),
         fetchCommerceAttention(),
         fetchCommercialReadiness(),
+        fetchSeasonReadiness(),
       ]);
 
       setReadings(latestReadings);
@@ -190,7 +194,8 @@ const DonaAnnaDailyDashboard: React.FC = () => {
       setObservations(recentObservations);
       setCommerceAttention(commerceRows);
       setCommercialReadiness(readiness);
-      setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length || readiness.issues.length ? 'supabase' : 'empty');
+      setSeasonReadiness(seasonStatus);
+      setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length || readiness.issues.length || seasonStatus.steps.length ? 'supabase' : 'empty');
       setLastRefresh(new Date());
     } catch (error) {
       setReadings([]);
@@ -199,6 +204,7 @@ const DonaAnnaDailyDashboard: React.FC = () => {
       setObservations([]);
       setCommerceAttention([]);
       setCommercialReadiness(null);
+      setSeasonReadiness(null);
       setLoadState('error');
       setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente Daily Dashboard-data fra Supabase.');
     } finally {
@@ -261,6 +267,8 @@ const DonaAnnaDailyDashboard: React.FC = () => {
           </>
         )}
       </div>
+
+      <SeasonReadinessPanel data={seasonReadiness} />
 
       <div className="glass rounded-[2rem] p-6 border border-amber-300/20 bg-amber-300/[0.04]">
         <div className="flex items-center justify-between gap-4">
