@@ -18,6 +18,7 @@ import {
   fetchRainMeasurements,
   fetchYearWheel,
   getFarmDocumentUrl,
+  saveFarmEvidenceImage,
   saveFarmSource,
   updateYearWheelStatus,
   type FarmDocument,
@@ -67,6 +68,14 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
   const [yearWheelSaving,setYearWheelSaving]=useState('');
+  const [completionItem,setCompletionItem]=useState<FarmYearWheelItem|null>(null);
+  const [completionDate,setCompletionDate]=useState(new Date().toISOString().slice(0,10));
+  const [completionParcel,setCompletionParcel]=useState('');
+  const [completionNotes,setCompletionNotes]=useState('');
+  const [completionProduct,setCompletionProduct]=useState('');
+  const [completionQuantity,setCompletionQuantity]=useState('');
+  const [completionUnit,setCompletionUnit]=useState('');
+  const [completionImage,setCompletionImage]=useState<File|null>(null);
   const [file,setFile]=useState<File|null>(null);
   const [messageText,setMessageText]=useState('');
   const [parcelId,setParcelId]=useState('');
@@ -152,11 +161,45 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
     finally{setYearWheelSaving('');}
   };
 
-  const completeYearWheel=async(item:FarmYearWheelItem)=>{
-    setYearWheelSaving(item.id);setError('');setNotice('');
+  const openCompletion=async(item:FarmYearWheelItem)=>{
+    setCompletionItem(item);
+    setCompletionDate(new Date().toISOString().slice(0,10));
+    setCompletionParcel(item.parcel_id||'');
+    setCompletionNotes('');
+    setCompletionProduct('');
+    setCompletionQuantity('');
+    setCompletionUnit('');
+    setCompletionImage(null);
+    setError('');setNotice('');
+  };
+
+  const completeYearWheel=async()=>{
+    if(!completionItem)return;
+    const quantity=completionQuantity.trim()===''?null:Number(completionQuantity);
+    if(quantity!=null&&(!Number.isFinite(quantity)||quantity<0)){setError('Mengde må være 0 eller mer.');return;}
+    setYearWheelSaving(completionItem.id);setError('');setNotice('');
     try{
-      await completeYearWheelItem(item);
-      setNotice('Utført er lagret som verifisert driftshendelse i Driftsjournalen.');
+      let evidenceDocumentId:string|null=null;
+      if(completionImage){
+        evidenceDocumentId=await saveFarmEvidenceImage({
+          file:completionImage,
+          title:'Dokumentasjon · '+completionItem.title,
+          documentDate:completionDate,
+          parcelId:completionParcel||null,
+          notes:completionNotes||undefined,
+        });
+      }
+      await completeYearWheelItem(completionItem,{
+        occurredOn:completionDate,
+        parcelId:completionParcel||null,
+        notes:completionNotes||undefined,
+        productName:completionProduct||undefined,
+        productQuantity:quantity,
+        productUnit:completionUnit||undefined,
+        evidenceDocumentId,
+      });
+      setNotice('Utført er lagret som verifisert driftshendelse i Driftsjournalen'+(evidenceDocumentId?' med bilde som dokumentasjon.':'.'));
+      setCompletionItem(null);
       await load();
     }catch(e:any){setError(e?.message||'Kunne ikke registrere arbeidet som utført.');}
     finally{setYearWheelSaving('');}
@@ -179,6 +222,38 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
   const photoDocs=documents.filter(doc=>doc.document_kind==='photo'||doc.document_kind==='video');
 
   return <div className="space-y-7 pb-24 animate-in fade-in duration-500">
+    {completionItem&&<div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2rem] border border-[#d9b657]/25 bg-[#0a0d0b] p-6 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div><p className="text-[10px] uppercase tracking-widest font-black text-[#d9b657]">Registrer faktisk utført arbeid</p><h3 className="text-2xl font-black text-white mt-1">{completionItem.title}</h3><p className="text-xs text-slate-500 mt-2">Dette blir gårdens fasit. Bare det du bekrefter her lagres som utført.</p></div>
+          <button onClick={()=>setCompletionItem(null)} disabled={yearWheelSaving===completionItem.id} className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-400"><X size={18}/></button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">
+          <label className="text-xs text-slate-400">Dato<input type="date" className={inputClass+' mt-1'} value={completionDate} onChange={e=>setCompletionDate(e.target.value)}/></label>
+          <label className="text-xs text-slate-400">Parsell<select className={inputClass+' mt-1'} value={completionParcel} onChange={e=>setCompletionParcel(e.target.value)}><option value="">Hele gården</option>{parcels.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+        </div>
+        <label className="block text-xs text-slate-400 mt-3">Hva ble faktisk gjort?<textarea className={inputClass+' mt-1 min-h-[90px]'} value={completionNotes} onChange={e=>setCompletionNotes(e.target.value)} placeholder="Kort kommentar, avvik, resultat eller observasjon…"/></label>
+        <div className="mt-4 rounded-2xl border border-purple-500/15 bg-purple-500/[0.04] p-4">
+          <p className="text-xs font-black text-purple-200">Produkt / middel brukt <span className="font-normal text-slate-500">(valgfritt)</span></p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3">
+            <input className={inputClass} value={completionProduct} onChange={e=>setCompletionProduct(e.target.value)} placeholder="Produktnavn"/>
+            <input type="number" min="0" step="0.01" className={inputClass} value={completionQuantity} onChange={e=>setCompletionQuantity(e.target.value)} placeholder="Mengde"/>
+            <input className={inputClass} value={completionUnit} onChange={e=>setCompletionUnit(e.target.value)} placeholder="Enhet, f.eks. L / kg"/>
+          </div>
+          <p className="text-[10px] text-slate-600 mt-2">Tomt felt betyr at Olivia ikke registrerer at et produkt ble brukt.</p>
+        </div>
+        <label className="block mt-4 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] p-4 text-center cursor-pointer hover:border-green-500/30">
+          <ImageIcon className="mx-auto text-cyan-300" size={22}/>
+          <p className="text-sm font-bold text-white mt-2">{completionImage?completionImage.name:'Legg ved bilde som dokumentasjon'}</p>
+          <p className="text-xs text-slate-600 mt-1">Valgfritt · bildet lagres sammen med driftshendelsen</p>
+          <input type="file" accept="image/*" className="hidden" onChange={e=>setCompletionImage(e.target.files?.[0]||null)}/>
+        </label>
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-5">
+          <button onClick={()=>setCompletionItem(null)} disabled={yearWheelSaving===completionItem.id} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold text-slate-300 disabled:opacity-40">Avbryt</button>
+          <button onClick={completeYearWheel} disabled={yearWheelSaving===completionItem.id||!completionDate} className="rounded-xl bg-green-500 px-5 py-3 text-xs font-black text-black disabled:opacity-40 flex items-center justify-center gap-2">{yearWheelSaving===completionItem.id?<Loader2 size={15} className="animate-spin"/>:<CheckCircle2 size={15}/>}Lagre som utført</button>
+        </div>
+      </div>
+    </div>}
     <div className="relative overflow-hidden rounded-[2rem] border border-[#d9b657]/20 bg-[#070b08] p-6">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,.14),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(217,182,87,.11),transparent_35%)]"/>
       <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-5">
@@ -278,7 +353,7 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
       {MONTHS.map((month,index)=>{
         const rows=yearWheel.filter(item=>item.target_month===index+1);
         if(!rows.length)return null;
-        return <div key={month} className="glass rounded-2xl border border-white/10 p-5"><h4 className="font-black text-white">{month}</h4><div className="space-y-2 mt-3">{rows.map(item=><div key={item.id} className="rounded-xl border border-white/10 bg-black/20 p-3 flex flex-col md:flex-row md:items-center justify-between gap-3"><div><div className="flex gap-2 flex-wrap"><span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+badge(item.status)}>{statusLabel(item.status)}</span><span className="text-[9px] uppercase text-slate-600">{item.basis}</span></div><p className="text-white font-bold mt-2">{item.title}</p><p className="text-xs text-slate-500 mt-1">{item.target_day?item.target_day+'. '+month.toLowerCase():item.period_label||month} · {parcelName(item.parcel_id)}</p>{item.notes&&<p className="text-xs text-slate-400 mt-2">{item.notes}</p>}</div><div className="flex flex-wrap gap-2">{item.status==='suggested'&&<><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'approved')} className="rounded-xl bg-green-500 px-3 py-2 text-xs font-black text-black disabled:opacity-40">{yearWheelSaving===item.id?'Lagrer…':'Legg i årshjul'}</button><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'skipped')} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 disabled:opacity-40">Ikke nødvendig</button></>}{item.status==='approved'&&<><button disabled={yearWheelSaving===item.id} onClick={()=>completeYearWheel(item)} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">{yearWheelSaving===item.id?'Lagrer…':'Marker utført'}</button><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'skipped')} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-400 disabled:opacity-40">Ikke nødvendig</button></>}</div></div>)}</div></div>;
+        return <div key={month} className="glass rounded-2xl border border-white/10 p-5"><h4 className="font-black text-white">{month}</h4><div className="space-y-2 mt-3">{rows.map(item=><div key={item.id} className="rounded-xl border border-white/10 bg-black/20 p-3 flex flex-col md:flex-row md:items-center justify-between gap-3"><div><div className="flex gap-2 flex-wrap"><span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+badge(item.status)}>{statusLabel(item.status)}</span><span className="text-[9px] uppercase text-slate-600">{item.basis}</span></div><p className="text-white font-bold mt-2">{item.title}</p><p className="text-xs text-slate-500 mt-1">{item.target_day?item.target_day+'. '+month.toLowerCase():item.period_label||month} · {parcelName(item.parcel_id)}</p>{item.notes&&<p className="text-xs text-slate-400 mt-2">{item.notes}</p>}</div><div className="flex flex-wrap gap-2">{item.status==='suggested'&&<><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'approved')} className="rounded-xl bg-green-500 px-3 py-2 text-xs font-black text-black disabled:opacity-40">{yearWheelSaving===item.id?'Lagrer…':'Legg i årshjul'}</button><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'skipped')} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 disabled:opacity-40">Ikke nødvendig</button></>}{item.status==='approved'&&<><button disabled={yearWheelSaving===item.id} onClick={()=>openCompletion(item)} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">{yearWheelSaving===item.id?'Lagrer…':'Marker utført'}</button><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'skipped')} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-400 disabled:opacity-40">Ikke nødvendig</button></>}</div></div>)}</div></div>;
       })}
       {!yearWheel.length&&<Empty icon={<CalendarDays/>} title="Årshjulet bygges fra historikken" text="Når et verifisert tilbakevendende arbeid har en dato, lager Olivia et forslag til samme periode neste år."/>}
     </div>}
