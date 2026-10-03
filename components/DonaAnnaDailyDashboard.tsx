@@ -285,7 +285,7 @@ type ParcelAttentionRow = {
 
 function buildParcelAttention(farmTruth:any):ParcelAttentionRow[] {
   const today=new Date();today.setHours(12,0,0,0);
-  const parcelNames=new Map<string,string>((farmTruth?.parcels||[]).map((p:any)=>[String(p.id),String(p.name||p.id)]));
+  const parcelNames=new Map<string,string>((farmTruth?.parcels||[]).map((p:any)=>[String(p.id),String(p.name||p.id)] as [string,string]));
   const rows=new Map<string,ParcelAttentionRow>();
 
   const ensure=(parcelId:string)=>{
