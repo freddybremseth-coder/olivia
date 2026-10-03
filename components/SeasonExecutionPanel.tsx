@@ -30,10 +30,18 @@ function progressPercent(row:ParcelExecutionRow){
   return index<0?0:Math.round((index/(order.length-1))*100);
 }
 
+export type SeasonExecutionAction={
+  tab:string;
+  parcelId:string;
+  planId?:string;
+  batchId?:string;
+};
+
 const SeasonExecutionPanel:React.FC<{
   data:SeasonExecution|null;
   onNavigate?:(tab:string)=>void;
-}>=({data,onNavigate})=>{
+  onAction?:(action:SeasonExecutionAction)=>void;
+}>=({data,onNavigate,onAction})=>{
   if(!data)return null;
 
   return <div className="glass rounded-[2rem] p-6 border border-white/10 bg-white/[0.02]">
@@ -82,7 +90,7 @@ const SeasonExecutionPanel:React.FC<{
             <div className="xl:w-[330px] rounded-xl border border-white/10 bg-white/[0.03] p-3">
               <p className="text-[9px] uppercase tracking-widest font-black text-slate-500">Neste handling</p>
               <p className="text-xs text-white mt-1 leading-5">{row.nextAction}</p>
-              {onNavigate&&<button onClick={()=>onNavigate(row.targetTab)} className="mt-3 rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15 flex items-center gap-1">Åpne arbeidsflate <ArrowRight size={14}/></button>}
+              {(onAction||onNavigate)&&<button onClick={()=>onAction?onAction({tab:row.targetTab,parcelId:row.parcelId,planId:row.actionPlanId,batchId:row.actionBatchId}):onNavigate?.(row.targetTab)} className="mt-3 rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15 flex items-center gap-1">Åpne arbeidsflate <ArrowRight size={14}/></button>}
             </div>
           </div>
         </div>;
