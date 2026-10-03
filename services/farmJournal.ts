@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { fileToBase64 } from './expenseCapture';
+import { createFarmQuestion } from './farmIntelligence';
 
 export type FarmDocumentKind =
   | 'invoice'|'receipt'|'quote'|'proforma'|'agronomy_plan'|'message'
@@ -47,6 +48,24 @@ export type FarmScannedEvent = {
   confidence?:number;
 };
 
+export type FarmKnowledgeCandidate={
+  knowledgeKey:string;
+  subjectType:'farm'|'parcel'|'well'|'product'|'supplier'|'operation'|'other';
+  category:string;
+  statement:string;
+  value?:any;
+  confidence?:number;
+  requiresConfirmation?:boolean;
+  question?:string;
+};
+
+export type FarmQuestionCandidate={
+  question:string;
+  reason?:string;
+  priority?:'low'|'medium'|'high'|'critical';
+  relatedKnowledgeKey?:string;
+};
+
 export type FarmScanResult = {
   documentKind:FarmDocumentKind;
   evidenceStatus:FarmEvidenceStatus;
@@ -57,6 +76,8 @@ export type FarmScanResult = {
   confidence?:number;
   events:FarmScannedEvent[];
   products:FarmProductEvidence[];
+  facts:FarmKnowledgeCandidate[];
+  questions:FarmQuestionCandidate[];
   warnings:string[];
 };
 
@@ -203,6 +224,22 @@ function normalizeScan(raw:any):FarmScanResult{
     confidence:Math.max(0,Math.min(1,numberOrUndefined(raw?.confidence)??0)),
     events,
     products:(Array.isArray(raw?.products)?raw.products:[]).map(normalizeProduct).filter((p:FarmProductEvidence)=>p.name),
+    facts:(Array.isArray(raw?.facts)?raw.facts:[]).map((fact:any):FarmKnowledgeCandidate=>({
+      knowledgeKey:String(fact?.knowledgeKey||'').trim().slice(0,220),
+      subjectType:enumValue(fact?.subjectType,['farm','parcel','well','product','supplier','operation','other'] as const,'farm'),
+      category:String(fact?.category||'general').trim().slice(0,120),
+      statement:String(fact?.statement||'').trim().slice(0,1000),
+      value:fact?.value??null,
+      confidence:Math.max(0,Math.min(1,numberOrUndefined(fact?.confidence)??0)),
+      requiresConfirmation:Boolean(fact?.requiresConfirmation),
+      question:String(fact?.question||'').trim()||undefined,
+    })).filter((fact:FarmKnowledgeCandidate)=>fact.knowledgeKey&&fact.statement).slice(0,30),
+    questions:(Array.isArray(raw?.questions)?raw.questions:[]).map((q:any):FarmQuestionCandidate=>({
+      question:String(q?.question||'').trim().slice(0,700),
+      reason:String(q?.reason||'').trim().slice(0,1000)||undefined,
+      priority:enumValue(q?.priority,['low','medium','high','critical'] as const,'medium'),
+      relatedKnowledgeKey:String(q?.relatedKnowledgeKey||'').trim().slice(0,220)||undefined,
+    })).filter((q:FarmQuestionCandidate)=>q.question).slice(0,20),
     warnings:(Array.isArray(raw?.warnings)?raw.warnings:[]).map(String).filter(Boolean).slice(0,12),
   };
 }
@@ -221,6 +258,8 @@ export async function analyzeFarmSource(input:{file?:File|null;text?:string}):Pr
         confidence:1,
         events:[],
         products:[],
+        facts:[],
+        questions:[{question:'Hvilken parsell og hva viser denne videoen?',reason:'Video lagres som bevis, men videotolkning er ikke aktivert.',priority:'medium'}],
         warnings:['Video er ikke automatisk tolket. Beskrivelse og parsell må bekreftes manuelt.'],
       };
     }
@@ -362,7 +401,84 @@ export async function saveFarmSource(params:{
   ];
   await upsertProducts(allProducts,documentId);
 
+  if(scan.facts?.length){
+    const rows=scan.facts.map((fact,index)=>({
+      id:'knowledge-'+documentId+'-'+index,
+      knowledge_key:fact.knowledgeKey,
+      subject_type:fact.subjectType,
+      subject_id:fact.subjectType==='parcel'?(params.parcelId||null):null,
+      category:fact.category||'general',
+      statement:fact.statement,
+      value_json:fact.value??null,
+      confidence:fact.confidence??scan.confidence??0.5,
+      status:fact.requiresConfirmation?'provisional':'verified',
+      learned_from:'document',
+      source_document_id:documentId,
+      source_ref:scan.title,
+      last_confirmed_at:fact.requiresConfirmation?null:new Date().toISOString(),
+      notes:fact.requiresConfirmation?'AI fant et mulig faktum som må avklares før det brukes som bekreftet kunnskap.':null,
+    }));
+    const {error:knowledgeError}=await supabase.from('farm_knowledge_items').insert(rows);
+    if(knowledgeError)console.warn('[farmJournal] knowledge insert failed',knowledgeError);
+  }
+
   if(params.verify!==false)await verifyFarmDocument(documentId);
+
+  for(const fact of scan.facts||[]){
+    if(!fact.requiresConfirmation&&!fact.question)continue;
+    await createFarmQuestion({
+      question:fact.question||('Kan du bekrefte dette: '+fact.statement),
+      reason:'Olivia fant et mulig faktum i kilden, men sikkerheten er ikke høy nok til å bruke det som fasit uten avklaring.',
+      questionType:'confirmation',
+      priority:'medium',
+      parcelId:params.parcelId,
+      agentType:'source_scanner',
+      sourceDocumentId:documentId,
+      relatedKnowledgeKey:fact.knowledgeKey,
+      dedupeKey:'source-fact:'+documentId+':'+normalizeName(fact.knowledgeKey),
+    }).catch(()=>null);
+  }
+
+  for(const question of scan.questions||[]){
+    await createFarmQuestion({
+      question:question.question,
+      reason:question.reason||'Kildeskanneren trenger avklaring før informasjonen kan brukes sikkert.',
+      questionType:'clarification',
+      priority:question.priority||'medium',
+      parcelId:params.parcelId,
+      agentType:'source_scanner',
+      sourceDocumentId:documentId,
+      relatedKnowledgeKey:question.relatedKnowledgeKey,
+      dedupeKey:'source-question:'+documentId+':'+normalizeName(question.question),
+    }).catch(()=>null);
+  }
+
+  for(const warning of scan.warnings||[]){
+    await createFarmQuestion({
+      question:'Kan du avklare dette fra «'+scan.title+'»: '+warning,
+      reason:'Kildeskanneren markerte dette som usikkert. Olivia lagrer heller et spørsmål enn å gjøre en antakelse.',
+      questionType:'clarification',
+      priority:'medium',
+      parcelId:params.parcelId,
+      agentType:'source_scanner',
+      sourceDocumentId:documentId,
+      dedupeKey:'source-warning:'+documentId+':'+normalizeName(warning),
+    }).catch(()=>null);
+  }
+
+  if(!params.parcelId&&sourceEvents.some(event=>event.eventType==='planting'||event.treeCountDelta!=null)){
+    await createFarmQuestion({
+      question:'Hvilken parsell eller sone gjelder «'+scan.title+'»?',
+      reason:'Kilden inneholder planting eller treantall, men ingen parsell er bekreftet. Olivia skal ikke flytte tredata til feil parsell.',
+      questionType:'missing_fact',
+      priority:'high',
+      agentType:'source_scanner',
+      sourceDocumentId:documentId,
+      relatedKnowledgeKey:'source.'+documentId+'.parcel_scope',
+      dedupeKey:'source-parcel:'+documentId,
+    }).catch(()=>null);
+  }
+
   return documentId;
 }
 

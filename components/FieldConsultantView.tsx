@@ -26,6 +26,9 @@ import { filesToResizedDataUrls } from '../lib/imageUpload';
 import { deletePruningItem, fetchParcels, fetchPruningHistory, fetchSettings, upsertPruningItem } from '../services/db';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 import { buildFarmContext, fetchFarmContextImages } from '../services/farmJournal';
+import { buildLearningContext, recordAgentAssessment } from '../services/farmIntelligence';
+import FarmQuestionsPanel from './FarmQuestionsPanel';
+import AgentFeedbackPanel from './AgentFeedbackPanel';
 
 type ResultTab = 'summary' | 'health' | 'pruning' | 'history';
 
@@ -142,6 +145,7 @@ const FieldConsultantView: React.FC = () => {
   const [farmContext, setFarmContext] = useState('');
   const [contextLoading, setContextLoading] = useState(false);
   const [historicalImages, setHistoricalImages] = useState<Array<{url:string;title:string;observedAt:string}>>([]);
+  const [lastAssessmentId,setLastAssessmentId]=useState<string|null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -202,8 +206,8 @@ const FieldConsultantView: React.FC = () => {
     let cancelled = false;
     if (!selectedParcelId) { setFarmContext(''); return; }
     setContextLoading(true);
-    Promise.all([buildFarmContext(selectedParcelId), fetchFarmContextImages(selectedParcelId, 6)])
-      .then(([context, images]) => { if (!cancelled) { setFarmContext(context); setHistoricalImages(images); } })
+    Promise.all([buildFarmContext(selectedParcelId), buildLearningContext(selectedParcelId), fetchFarmContextImages(selectedParcelId, 6)])
+      .then(([context, learningContext, images]) => { if (!cancelled) { setFarmContext([context,learningContext].filter(Boolean).join('\n\n')); setHistoricalImages(images); } })
       .catch(() => { if (!cancelled) { setFarmContext(''); setHistoricalImages([]); } })
       .finally(() => { if (!cancelled) setContextLoading(false); });
     return () => { cancelled = true; };
@@ -274,6 +278,21 @@ const FieldConsultantView: React.FC = () => {
       const raw = await geminiService.analyzeComprehensive(base64List, language, farmContext);
       const normalized = normalizeAnalysis(raw);
       setAnalysis(normalized);
+      const uncertainties=Array.from(new Set([
+        ...(normalized.missingDetails||[]),
+        ...(normalized.pruning.missingDetails||[]),
+        ...(normalized.pruning.limitations||[]).filter(item=>/mangler|ukjent|kan ikke|ikke synlig|krever/i.test(item)),
+      ])).slice(0,8);
+      const learning=await recordAgentAssessment({
+        agentType:'field_consultant',
+        parcelId:selectedParcelId||undefined,
+        result:normalized,
+        contextSnapshot:farmContext,
+        confidence:Math.max(0,Math.min(1,((Number(normalized.diagnosis.confidence||0)+Number(normalized.pruning.confidence||0))/2)/100)),
+        uncertainties,
+        sourceRef:'AI Feltkonsulent '+new Date().toISOString(),
+      }).catch(err=>{console.warn('[FieldConsultantView] learning loop',err);return null;});
+      setLastAssessmentId(learning?.assessmentId||null);
       setShowCamera(false);
       setActiveTab('summary');
       stopCamera();
@@ -329,6 +348,7 @@ const FieldConsultantView: React.FC = () => {
   const reset = () => {
     setImages([]);
     setAnalysis(null);
+    setLastAssessmentId(null);
     setError(null);
     setShowCamera(true);
     setActiveTab('summary');
@@ -412,6 +432,8 @@ const FieldConsultantView: React.FC = () => {
               <p className="text-[9px] text-slate-600 mt-2">Historiske bilder vises som referanse. De legges ikke automatisk inn som nye analysebilder.</p>
             </div>}
           </div>
+          <FarmQuestionsPanel key={'field-questions-'+(lastAssessmentId||selectedParcelId)} parcelId={selectedParcelId||undefined} agentType="field_consultant" title="Feltkonsulenten trenger avklaring" compact />
+          <AgentFeedbackPanel assessmentId={lastAssessmentId} agentType="field_consultant" parcelId={selectedParcelId||undefined} />
 
           <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 text-xs text-blue-100 leading-relaxed">
             <p className="font-bold text-white mb-2">For bedre treff: ta 3–5 bilder</p>

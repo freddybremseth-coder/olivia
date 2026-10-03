@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  AlertTriangle, CalendarDays, CheckCircle2, CloudRain, FileText, Image as ImageIcon,
+  AlertTriangle, Brain, CalendarDays, CheckCircle2, CloudRain, FileText, HelpCircle, Image as ImageIcon,
   Leaf, Loader2, MessageSquareText, PackageSearch, Plus, RefreshCcw, ScanLine,
   ShieldCheck, Sprout, Trees, Upload, Video, X
 } from 'lucide-react';
@@ -25,8 +25,10 @@ import {
   type FarmYearWheelItem,
   type RainMeasurement,
 } from '../services/farmJournal';
+import FarmQuestionsPanel from './FarmQuestionsPanel';
+import { fetchFarmIntelligenceSummary, fetchFarmKnowledge, type FarmKnowledgeItem } from '../services/farmIntelligence';
 
-type Tab='timeline'|'inbox'|'yearwheel'|'rain'|'photos'|'inputs';
+type Tab='timeline'|'inbox'|'yearwheel'|'rain'|'photos'|'inputs'|'learning';
 
 const MONTHS=['Januar','Februar','Mars','April','Mai','Juni','Juli','August','September','Oktober','November','Desember'];
 const inputClass='w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none focus:border-green-500/50';
@@ -58,6 +60,8 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
   const [inputs,setInputs]=useState<any[]>([]);
   const [observations,setObservations]=useState<any[]>([]);
   const [summary,setSummary]=useState<any>(null);
+  const [knowledge,setKnowledge]=useState<FarmKnowledgeItem[]>([]);
+  const [intelligence,setIntelligence]=useState<any>(null);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [file,setFile]=useState<File|null>(null);
@@ -78,7 +82,7 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
   const load=async()=>{
     setLoading(true);setError('');
     try{
-      const [docs,ev,wheel,rainRows,inputRows,obs,truth]=await Promise.all([
+      const [docs,ev,wheel,rainRows,inputRows,obs,truth,knowledgeRows,intelligenceSummary]=await Promise.all([
         fetchFarmDocuments(100),
         fetchFarmEvents(250),
         fetchYearWheel(wheelYear),
@@ -86,8 +90,10 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
         fetchFarmInputs(),
         fetchRecentFarmObservations(100).catch(()=>[]),
         fetchFarmTruthSummary(),
+        fetchFarmKnowledge({limit:100}),
+        fetchFarmIntelligenceSummary(),
       ]);
-      setDocuments(docs);setEvents(ev);setYearWheel(wheel);setRain(rainRows);setInputs(inputRows);setObservations(obs);setSummary(truth);
+      setDocuments(docs);setEvents(ev);setYearWheel(wheel);setRain(rainRows);setInputs(inputRows);setObservations(obs);setSummary(truth);setKnowledge(knowledgeRows);setIntelligence(intelligenceSummary);
     }catch(e:any){setError(e?.message||'Kunne ikke hente driftsjournalen.');}
     finally{setLoading(false);}
   };
@@ -167,18 +173,19 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
 
     {error&&<div className="rounded-2xl border border-amber-400/25 bg-amber-400/10 p-4 text-sm text-amber-100 flex gap-2"><AlertTriangle size={18}/>{error}</div>}
 
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
       <Stat icon={<Trees size={18}/>} label="Registrerte trær" value={(summary?.treeCount||0).toLocaleString('no-NO')}/>
       <Stat icon={<CheckCircle2 size={18}/>} label="Verifiserte hendelser" value={events.length}/>
       <Stat icon={<FileText size={18}/>} label="Dokumenter" value={documents.length}/>
       <Stat icon={<CloudRain size={18}/>} label="Regn 30 dager" value={rain30.toLocaleString('no-NO')+' mm'}/>
       <Stat icon={<CalendarDays size={18}/>} label="Årshjul-forslag" value={yearWheel.filter(i=>i.status==='suggested').length}/>
+      <Stat icon={<HelpCircle size={18}/>} label="Åpne spørsmål" value={intelligence?.openQuestionCount||0}/>
     </div>
 
     <div className="flex gap-2 overflow-x-auto pb-1">
       {([
         ['timeline','Driftstidslinje',ShieldCheck],['inbox','Dokumentskanning',ScanLine],['yearwheel','Årshjul',CalendarDays],
-        ['rain','Regn',CloudRain],['photos','Bilder / video',ImageIcon],['inputs','Produkter',PackageSearch]
+        ['rain','Regn',CloudRain],['photos','Bilder / video',ImageIcon],['inputs','Produkter',PackageSearch],['learning','Spørsmål / læring',Brain]
       ] as [Tab,string,any][]).map(([id,label,Icon])=><button key={id} onClick={()=>setTab(id)} className={'whitespace-nowrap rounded-xl px-4 py-3 text-xs font-bold flex items-center gap-2 border '+(tab===id?'bg-green-500 text-black border-green-400':'bg-white/5 text-slate-300 border-white/10')}><Icon size={15}/>{label}</button>)}
     </div>
 
@@ -230,6 +237,8 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
           <div><h3 className="text-xl font-black text-white">{scan.title}</h3><p className="text-sm text-slate-400 mt-2">{scan.summary}</p></div>
           {scan.warnings.length>0&&<div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-3">{scan.warnings.map(w=><p key={w} className="text-xs text-amber-100">• {w}</p>)}</div>}
           <div className="space-y-2"><p className="text-[10px] uppercase tracking-widest text-slate-500 font-black">Foreslåtte hendelser</p>{scan.events.map((event,i)=><div key={i} className="rounded-xl border border-white/10 bg-black/20 p-3"><div className="flex gap-2 flex-wrap"><span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+badge(event.eventStatus)}>{statusLabel(event.eventStatus)}</span><span className="text-[9px] text-slate-600 uppercase">{event.eventType}</span></div><p className="text-sm font-bold text-white mt-2">{event.title}</p><p className="text-xs text-slate-500 mt-1">{event.occurredOn||event.plannedFor||event.periodLabel||'Dato ikke dokumentert'}</p>{event.description&&<p className="text-xs text-slate-400 mt-2">{event.description}</p>}</div>)}</div>
+          {scan.facts?.length>0&&<div className="space-y-2"><p className="text-[10px] uppercase tracking-widest text-purple-300 font-black">Kunnskap Olivia vil ta med videre</p>{scan.facts.map((fact,i)=><div key={fact.knowledgeKey+'-'+i} className="rounded-xl border border-purple-500/15 bg-purple-500/[0.05] p-3"><div className="flex gap-2 items-center"><span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+(fact.requiresConfirmation?'border-amber-300/20 bg-amber-300/10 text-amber-200':'border-green-500/20 bg-green-500/10 text-green-300')}>{fact.requiresConfirmation?'Må bekreftes':'Kildebasert'}</span><span className="text-[9px] text-slate-600">{Math.round(Number(fact.confidence||0)*100)}%</span></div><p className="text-xs text-white mt-2">{fact.statement}</p></div>)}</div>}
+          {scan.questions?.length>0&&<div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3"><p className="text-[10px] uppercase tracking-widest font-black text-blue-300">Olivia vil spørre</p>{scan.questions.map((q,i)=><p key={i} className="text-xs text-blue-100 mt-2">• {q.question}</p>)}</div>}
           <button onClick={approveSource} disabled={saving} className="w-full rounded-2xl bg-green-500 py-4 font-black text-black disabled:opacity-40 flex items-center justify-center gap-2">{saving?<Loader2 className="animate-spin" size={18}/>:<CheckCircle2 size={18}/>} Godkjenn og lagre som fasit</button>
         </div>}
       </div>
@@ -274,6 +283,36 @@ const FarmJournalView:React.FC<{parcels:Parcel[]}>=({parcels})=>{
         {photoDocs.map(doc=><button key={doc.id} onClick={()=>openDoc(doc)} className="glass rounded-2xl border border-white/10 p-5 text-left"><div className="flex gap-3 items-center">{doc.document_kind==='video'?<Video className="text-purple-300"/>:<ImageIcon className="text-cyan-300"/>}<div><p className="font-bold text-white">{doc.title}</p><p className="text-xs text-slate-500 mt-1">{doc.document_date||String(doc.created_at).slice(0,10)} · {parcelName(doc.parcel_id)}</p></div></div><p className="text-xs text-slate-400 mt-3">{doc.extracted_summary||'Visuell dokumentasjon'}</p></button>)}
       </div>
       {!photoObservations.length&&!photoDocs.length&&<Empty icon={<ImageIcon/>} title="Ingen visuell historikk ennå" text="Bruk Feltlogg for bilder med observasjon, eller Dokumentskanning for foto/video som dokumentkilde."/>}
+    </div>}
+
+    {tab==='learning'&&<div className="space-y-5">
+      <div>
+        <p className="text-[10px] uppercase tracking-widest font-black text-blue-300">Olivia Intelligence</p>
+        <h3 className="text-xl font-black text-white">Spør når noe er uklart — lær av svaret</h3>
+        <p className="text-xs text-slate-500 mt-2">Bekreftede brukersvar og verifiserte dokumenter veier høyere enn tidligere AI-vurderinger. Foreløpig kunnskap merkes tydelig og kan erstattes når bedre kilder kommer.</p>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Stat icon={<Brain size={18}/>} label="Kunnskapspunkter" value={intelligence?.knowledgeCount||0}/>
+        <Stat icon={<HelpCircle size={18}/>} label="Åpne spørsmål" value={intelligence?.openQuestionCount||0}/>
+        <Stat icon={<AlertTriangle size={18}/>} label="Høy/kritisk" value={intelligence?.highQuestionCount||0}/>
+        <Stat icon={<ShieldCheck size={18}/>} label="Agentanalyser" value={intelligence?.assessmentCount||0}/>
+      </div>
+      <FarmQuestionsPanel title="Dette vil Olivia avklare" onAnswered={load}/>
+      <div className="glass rounded-[2rem] border border-white/10 p-5">
+        <div className="flex items-center gap-2"><Brain size={18} className="text-purple-300"/><div><p className="text-[10px] uppercase tracking-widest font-black text-purple-300">Kunnskapsbase</p><h4 className="text-lg font-black text-white">Hva Olivia mener den vet</h4></div></div>
+        <div className="space-y-2 mt-4">
+          {knowledge.map(item=><div key={item.id} className="rounded-xl border border-white/10 bg-black/20 p-3">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+(item.status==='verified'?'border-green-500/25 bg-green-500/10 text-green-300':item.status==='disputed'?'border-red-500/25 bg-red-500/10 text-red-300':'border-amber-300/25 bg-amber-300/10 text-amber-200')}>{item.status==='verified'?'Bekreftet':item.status==='disputed'?'Konflikt':'Foreløpig'}</span>
+              <span className="text-[9px] uppercase tracking-widest text-slate-600">{item.category}</span>
+              <span className="text-[9px] text-slate-600">{Math.round(Number(item.confidence||0)*100)}%</span>
+            </div>
+            <p className="text-sm text-white mt-2">{item.statement}</p>
+            {item.source_ref&&<p className="text-[10px] text-slate-600 mt-2">Kilde: {item.source_ref}</p>}
+          </div>)}
+          {!knowledge.length&&<p className="text-sm text-slate-600">Ingen kunnskapspunkter registrert ennå.</p>}
+        </div>
+      </div>
     </div>}
 
     {tab==='inputs'&&<div className="space-y-4">

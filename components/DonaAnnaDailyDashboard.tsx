@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   CalendarDays,
   CheckCircle2,
+  ClipboardList,
   Droplets,
   Gauge,
   Leaf,
@@ -15,6 +16,7 @@ import {
   ReceiptText,
   Truck,
   Waves,
+  HelpCircle,
 } from 'lucide-react';
 import {
   DONA_ANNA_BIAR_SEASON_SETTINGS,
@@ -39,6 +41,7 @@ import SeasonReadinessPanel from './SeasonReadinessPanel';
 import { fetchSeasonExecution, type SeasonExecution } from '../services/seasonExecution';
 import SeasonExecutionPanel, { type SeasonExecutionAction } from './SeasonExecutionPanel';
 import { fetchFarmTruthSummary } from '../services/farmJournal';
+import { fetchFarmIntelligenceSummary, fetchOpenFarmQuestions, type FarmQuestion } from '../services/farmIntelligence';
 
 type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
 
@@ -172,6 +175,8 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   const [seasonReadiness, setSeasonReadiness] = useState<SeasonReadiness | null>(null);
   const [seasonExecution, setSeasonExecution] = useState<SeasonExecution | null>(null);
   const [farmTruth, setFarmTruth] = useState<any>(null);
+  const [farmIntelligence, setFarmIntelligence] = useState<any>(null);
+  const [farmQuestions, setFarmQuestions] = useState<FarmQuestion[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -183,7 +188,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness, seasonStatus, executionStatus, truthStatus] = await Promise.all([
+      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness, seasonStatus, executionStatus, truthStatus, intelligenceStatus, questionRows] = await Promise.all([
         fetchLatestSensorReadings(300),
         fetchOpenSensorAlerts(),
         fetchRecentIrrigationEvents(10),
@@ -193,6 +198,8 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
         fetchSeasonReadiness(),
         fetchSeasonExecution(),
         fetchFarmTruthSummary(),
+        fetchFarmIntelligenceSummary(),
+        fetchOpenFarmQuestions({limit:5}),
       ]);
 
       setReadings(latestReadings);
@@ -204,6 +211,8 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       setSeasonReadiness(seasonStatus);
       setSeasonExecution(executionStatus);
       setFarmTruth(truthStatus);
+      setFarmIntelligence(intelligenceStatus);
+      setFarmQuestions(questionRows);
       setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length || readiness.issues.length || seasonStatus.steps.length || executionStatus.parcels.length ? 'supabase' : 'empty');
       setLastRefresh(new Date());
     } catch (error) {
@@ -216,6 +225,8 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       setSeasonReadiness(null);
       setSeasonExecution(null);
       setFarmTruth(null);
+      setFarmIntelligence(null);
+      setFarmQuestions([]);
       setLoadState('error');
       setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente Daily Dashboard-data fra Supabase.');
     } finally {
@@ -288,12 +299,13 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
           </div>
           {onNavigate&&<button onClick={()=>onNavigate('farm_journal')} className="rounded-xl bg-[#d9b657] px-4 py-3 text-xs font-black text-black flex items-center gap-2"><ClipboardList size={15}/> Åpne Driftsjournal</button>}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-5">
           <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Registrerte trær</p><p className="font-black text-white mt-1">{Number(farmTruth.treeCount||0).toLocaleString('no-NO')}</p></div>
           <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Verifiserte hendelser</p><p className="font-black text-white mt-1">{farmTruth.events?.length||0}</p></div>
           <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Må kontrolleres</p><p className={"font-black mt-1 "+(farmTruth.needsReview?"text-amber-300":"text-white")}>{farmTruth.needsReview||0}</p></div>
           <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Regn 30 dager</p><p className="font-black text-blue-300 mt-1">{Number(farmTruth.rain30||0).toLocaleString('no-NO')} mm</p></div>
           <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Årshjul nærmer seg</p><p className="font-black text-white mt-1">{farmTruth.upcoming?.length||0}</p></div>
+          <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Olivia spør</p><p className={"font-black mt-1 "+(farmIntelligence?.openQuestionCount?"text-blue-300":"text-white")}>{farmIntelligence?.openQuestionCount||0}</p></div>
         </div>
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 mt-4">
           <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -307,6 +319,13 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
             {!farmTruth.upcoming?.length&&<p className="text-xs text-slate-600 mt-3">Ingen årshjulspunkter nærmer seg akkurat nå.</p>}
           </div>
         </div>
+        {farmQuestions.length>0&&<div className="mt-4 rounded-2xl border border-blue-500/20 bg-blue-500/[0.05] p-4">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+            <div><p className="text-[9px] uppercase tracking-widest font-black text-blue-300">Olivia trenger avklaring</p><p className="text-xs text-slate-500 mt-1">Systemet har funnet usikkerhet eller konflikt og stopper gjettingen her.</p></div>
+            {onNavigate&&<button onClick={()=>onNavigate('farm_journal')} className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-xs font-bold text-blue-200 flex items-center gap-1"><HelpCircle size={14}/>Svar i Driftsjournal</button>}
+          </div>
+          <div className="space-y-2 mt-3">{farmQuestions.slice(0,3).map(q=><div key={q.id} className="rounded-xl bg-black/20 border border-white/10 p-3"><p className="text-xs font-bold text-white">{q.question}</p>{q.reason&&<p className="text-[10px] text-slate-500 mt-1">{q.reason}</p>}</div>)}</div>
+        </div>}
       </div>}
 
       <SeasonReadinessPanel data={seasonReadiness} onNavigate={onNavigate} />
