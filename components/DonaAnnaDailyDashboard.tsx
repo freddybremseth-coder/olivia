@@ -165,6 +165,14 @@ function priorityClass(priority: ActionCard['priority']): string {
   return 'border-green-500/20 bg-green-500/10 text-green-400';
 }
 
+async function safeLoad<T>(promise: Promise<T>, label: string, fallback: T): Promise<T> {
+  try { return await promise; }
+  catch (error) {
+    console.warn('[DonaAnnaDailyDashboard] '+label+' failed', error);
+    return fallback;
+  }
+}
+
 const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onSeasonAction?: (action: SeasonExecutionAction) => void }> = ({ onNavigate, onSeasonAction }) => {
   const [readings, setReadings] = useState<SensorReading[]>([]);
   const [alerts, setAlerts] = useState<SensorAlert[]>([]);
