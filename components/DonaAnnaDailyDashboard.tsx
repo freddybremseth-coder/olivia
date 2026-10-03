@@ -303,7 +303,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
           </div>
           <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
             <p className="text-[9px] uppercase tracking-widest text-slate-500 font-black">Neste fra årshjul</p>
-            {(farmTruth.upcoming||[]).slice(0,4).map((item:any)=><div key={item.id} className="mt-3 border-l-2 border-[#d9b657]/40 pl-3"><p className="text-xs font-bold text-white">{item.title}</p><p className="text-[10px] text-slate-500 mt-1">{item.target_day?item.target_day+'. ':''}{new Date(2026,item.target_month-1,1).toLocaleString('no-NO',{month:'long'})} · {item.status}</p></div>)}
+            {(farmTruth.upcoming||[]).slice(0,4).map((item:any)=><div key={item.id} className="mt-3 border-l-2 border-[#d9b657]/40 pl-3"><p className="text-xs font-bold text-white">{item.title}</p><p className="text-[10px] text-slate-500 mt-1">{item.target_day?item.target_day+'. ':''}{new Date(item.target_year,item.target_month-1,1).toLocaleString('no-NO',{month:'long'})} · {item.status}</p></div>)}
             {!farmTruth.upcoming?.length&&<p className="text-xs text-slate-600 mt-3">Ingen årshjulspunkter nærmer seg akkurat nå.</p>}
           </div>
         </div>
