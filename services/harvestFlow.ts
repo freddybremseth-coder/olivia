@@ -100,11 +100,6 @@ export async function createHarvestIntake(draft:HarvestIntakeDraft,file?:File|nu
     throw error;
   }
 
-  if(draft.harvestPlanId){
-    const {data:all}=await supabase.from('harvest_records').select('net_kg').eq('harvest_plan_id',draft.harvestPlanId);
-    const actual=(all||[]).reduce((sum:number,r:any)=>sum+Number(r.net_kg||0),0);
-    await supabase.from('harvest_plans').update({actual_kg:actual,updated_at:now}).eq('id',draft.harvestPlanId);
-  }
   return data as HarvestIntake;
 }
 
