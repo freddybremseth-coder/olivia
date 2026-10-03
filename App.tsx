@@ -42,6 +42,7 @@ const CaecvDocumentsView = lazy(() => import('./components/CaecvDocumentsView'))
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const IoTDashboard = lazy(() => import('./components/IoTDashboard'));
 const DonaAnnaDailyDashboard = lazy(() => import('./components/DonaAnnaDailyDashboard'));
+const FarmJournalView = lazy(() => import('./components/FarmJournalView'));
 const CommerceHub = lazy(() => import('./components/CommerceHub'));
 const ProfitabilityPage = lazy(() => import('./pages/Profitability'));
 
@@ -299,6 +300,7 @@ const App: React.FC = () => {
     switch (activeTab) {
       case 'dashboard': return <FarmOverview language={language} weatherData={weatherData} locationName={selectedParcel?.name || locationName} parcels={parcels} onNavigate={activateTab} />;
       case 'dona_anna_daily': return <DonaAnnaDailyDashboard onNavigate={activateTab} onSeasonAction={handleSeasonExecutionAction} />;
+      case 'farm_journal': return <FarmJournalView parcels={parcels} />;
       case 'farm_advisor': return <FarmAdvisorView />;
       case 'dashboard_classic': return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;
       case 'consultant': return <FieldConsultantView />;

@@ -22,6 +22,7 @@ import { Language } from '../services/i18nService';
 import { filesToResizedDataUrls } from '../lib/imageUpload';
 import { deletePruningItem, fetchParcels, fetchPruningHistory, fetchSettings, upsertPruningItem, upsertTask } from '../services/db';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
+import { buildFarmContext, fetchFarmContextImages } from '../services/farmJournal';
 
 function makeId(prefix: string) {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `${prefix}-${crypto.randomUUID()}`;
@@ -98,6 +99,9 @@ const PruningAdvisorView: React.FC = () => {
   const [historySaved, setHistorySaved] = useState(false);
   const [taskSaved, setTaskSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [farmContext, setFarmContext] = useState('');
+  const [contextLoading, setContextLoading] = useState(false);
+  const [historicalImages, setHistoricalImages] = useState<Array<{url:string;title:string;observedAt:string}>>([]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -152,6 +156,17 @@ const PruningAdvisorView: React.FC = () => {
     return () => stopCamera();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedParcelId) { setFarmContext(''); return; }
+    setContextLoading(true);
+    Promise.all([buildFarmContext(selectedParcelId), fetchFarmContextImages(selectedParcelId, 6)])
+      .then(([context, images]) => { if (!cancelled) { setFarmContext(context); setHistoricalImages(images); } })
+      .catch(() => { if (!cancelled) { setFarmContext(''); setHistoricalImages([]); } })
+      .finally(() => { if (!cancelled) setContextLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedParcelId]);
 
   const capturePhoto = () => {
     if (images.length >= MAX_ANALYSIS_IMAGES) {
@@ -216,7 +231,7 @@ const PruningAdvisorView: React.FC = () => {
     setHistorySaved(false);
     setTaskSaved(false);
     try {
-      const raw = await geminiService.analyzePruning(base64List, language);
+      const raw = await geminiService.analyzePruning(base64List, language, farmContext);
       const normalized = normalizePlan(raw);
       setPlan(normalized);
       setScheduledDate(normalized.recommendedDate);
@@ -357,6 +372,15 @@ const PruningAdvisorView: React.FC = () => {
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Parsell</label>
             <select className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white" value={selectedParcelId} onChange={e => setSelectedParcelId(e.target.value)}>{parcels.length ? parcels.map(p => <option key={p.id} value={p.id}>{p.name}</option>) : <option value="">Ingen parseller funnet i Supabase</option>}</select>
             {selectedParcel && <p className="text-xs text-slate-500 flex items-center gap-2"><MapPin size={12} /> {selectedParcel.municipality || 'Biar'} · {selectedParcel.treeVariety || selectedParcel.crop || 'oliven'}</p>}
+            <div className="rounded-xl border border-green-500/15 bg-green-500/[0.04] p-3">
+              <p className="text-[9px] uppercase tracking-widest font-black text-green-400">Historikk som beskjæringsassistenten kjenner</p>
+              {contextLoading ? <p className="text-xs text-slate-500 mt-1">Henter driftsjournal…</p> : farmContext ? <p className="text-xs text-slate-400 mt-1 line-clamp-5 whitespace-pre-line">{farmContext}</p> : <p className="text-xs text-slate-600 mt-1">Ingen verifisert historikk for valgt parsell ennå.</p>}
+            </div>
+            {historicalImages.length>0&&<div>
+              <p className="text-[9px] uppercase tracking-widest font-black text-slate-500 mb-2">Siste historiske feltbilder</p>
+              <div className="grid grid-cols-3 gap-2">{historicalImages.slice(0,6).map((item,index)=><div key={item.url+'-'+index} className="relative overflow-hidden rounded-xl border border-white/10 bg-black/30"><img src={item.url} alt={item.title} className="h-24 w-full object-cover"/><div className="absolute inset-x-0 bottom-0 bg-black/70 px-2 py-1 text-[8px] text-slate-300">{item.observedAt.slice(0,10)}</div></div>)}</div>
+              <p className="text-[9px] text-slate-600 mt-2">Historiske bilder vises som referanse. De legges ikke automatisk inn som nye analysebilder.</p>
+            </div>}
           </div>
 
           <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 text-xs text-blue-100 leading-relaxed"><p className="font-bold text-white mb-2">For presise snittpunkter</p><p>Ta heltrebilde rett forfra med god avstand. Ta også sidebilde og nærbilde av hovedgreiner. AI bør ikke brukes alene for harde kutt i gamle trær.</p></div>
