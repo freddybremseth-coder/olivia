@@ -6,6 +6,8 @@ import { UserProfile, Language, Parcel } from './types';
 import { getCurrentSession, onAuthChange, signOut as authSignOut } from './services/auth';
 import { BIAR_DEFAULT_COORDS, BIAR_DEFAULT_LOCATION_NAME, EMPTY_OLIVIA_PARCELS, OLIVIA_FALLBACK_USER } from './services/oliviaAppDefaults';
 import type { SeasonExecutionAction } from './components/SeasonExecutionPanel';
+import DonaAnnaDailyDashboard from './components/DonaAnnaDailyDashboard';
+import ModuleErrorBoundary from './components/ModuleErrorBoundary';
 
 const Layout = lazy(() => import('./components/Layout'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -41,7 +43,6 @@ const PropertyDocumentsView = lazy(() => import('./components/PropertyDocumentsV
 const CaecvDocumentsView = lazy(() => import('./components/CaecvDocumentsView'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const IoTDashboard = lazy(() => import('./components/IoTDashboard'));
-const DonaAnnaDailyDashboard = lazy(() => import('./components/DonaAnnaDailyDashboard'));
 const FarmJournalView = lazy(() => import('./components/FarmJournalView'));
 const CommerceHub = lazy(() => import('./components/CommerceHub'));
 const ProfitabilityPage = lazy(() => import('./pages/Profitability'));
@@ -299,7 +300,7 @@ const App: React.FC = () => {
     if (isAdmin && activeTab === 'admin') return <AdminDashboard />;
     switch (activeTab) {
       case 'dashboard': return <FarmOverview language={language} weatherData={weatherData} locationName={selectedParcel?.name || locationName} parcels={parcels} onNavigate={activateTab} />;
-      case 'dona_anna_daily': return <DonaAnnaDailyDashboard onNavigate={activateTab} onSeasonAction={handleSeasonExecutionAction} />;
+      case 'dona_anna_daily': return <ModuleErrorBoundary title="Olivia Daily kunne ikke vises" onRetry={()=>activateTab('dona_anna_daily')}><DonaAnnaDailyDashboard onNavigate={activateTab} onSeasonAction={handleSeasonExecutionAction} /></ModuleErrorBoundary>;
       case 'farm_journal': return <FarmJournalView parcels={parcels} />;
       case 'farm_advisor': return <FarmAdvisorView />;
       case 'dashboard_classic': return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;

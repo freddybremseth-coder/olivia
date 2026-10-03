@@ -165,6 +165,14 @@ function priorityClass(priority: ActionCard['priority']): string {
   return 'border-green-500/20 bg-green-500/10 text-green-400';
 }
 
+async function safeLoad<T>(promise: Promise<T>, label: string, fallback: T): Promise<T> {
+  try { return await promise; }
+  catch (error) {
+    console.warn('[DonaAnnaDailyDashboard] '+label+' failed', error);
+    return fallback;
+  }
+}
+
 const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onSeasonAction?: (action: SeasonExecutionAction) => void }> = ({ onNavigate, onSeasonAction }) => {
   const [readings, setReadings] = useState<SensorReading[]>([]);
   const [alerts, setAlerts] = useState<SensorAlert[]>([]);
@@ -189,17 +197,17 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
     setErrorMessage(null);
     try {
       const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness, seasonStatus, executionStatus, truthStatus, intelligenceStatus, questionRows] = await Promise.all([
-        fetchLatestSensorReadings(300),
-        fetchOpenSensorAlerts(),
-        fetchRecentIrrigationEvents(10),
-        fetchRecentFarmObservations(10),
-        fetchCommerceAttention(),
-        fetchCommercialReadiness(),
-        fetchSeasonReadiness(),
-        fetchSeasonExecution(),
-        fetchFarmTruthSummary(),
-        fetchFarmIntelligenceSummary(),
-        fetchOpenFarmQuestions({limit:5}),
+        safeLoad(fetchLatestSensorReadings(300),'sensor readings',[]),
+        safeLoad(fetchOpenSensorAlerts(),'sensor alerts',[]),
+        safeLoad(fetchRecentIrrigationEvents(10),'irrigation events',[]),
+        safeLoad(fetchRecentFarmObservations(10),'farm observations',[]),
+        safeLoad(fetchCommerceAttention(),'commerce attention',[]),
+        safeLoad(fetchCommercialReadiness(),'commercial readiness',null),
+        safeLoad(fetchSeasonReadiness(),'season readiness',null),
+        safeLoad(fetchSeasonExecution(),'season execution',null),
+        safeLoad(fetchFarmTruthSummary(),'farm truth',null),
+        safeLoad(fetchFarmIntelligenceSummary(),'farm intelligence',null),
+        safeLoad(fetchOpenFarmQuestions({limit:5}),'farm questions',[]),
       ]);
 
       setReadings(latestReadings);
@@ -213,7 +221,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       setFarmTruth(truthStatus);
       setFarmIntelligence(intelligenceStatus);
       setFarmQuestions(questionRows);
-      setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length || readiness.issues.length || seasonStatus.steps.length || executionStatus.parcels.length ? 'supabase' : 'empty');
+      setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length || (readiness && readiness.issues ? readiness.issues.length : 0) || (seasonStatus && seasonStatus.steps ? seasonStatus.steps.length : 0) || (executionStatus && executionStatus.parcels ? executionStatus.parcels.length : 0) || truthStatus || (intelligenceStatus && intelligenceStatus.openQuestionCount ? intelligenceStatus.openQuestionCount : 0) ? 'supabase' : 'empty');
       setLastRefresh(new Date());
     } catch (error) {
       setReadings([]);
