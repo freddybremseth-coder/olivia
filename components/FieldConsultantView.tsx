@@ -25,6 +25,7 @@ import { Language } from '../services/i18nService';
 import { filesToResizedDataUrls } from '../lib/imageUpload';
 import { deletePruningItem, fetchParcels, fetchPruningHistory, fetchSettings, upsertPruningItem } from '../services/db';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
+import { buildFarmContext } from '../services/farmJournal';
 
 type ResultTab = 'summary' | 'health' | 'pruning' | 'history';
 
@@ -138,6 +139,8 @@ const FieldConsultantView: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [farmContext, setFarmContext] = useState('');
+  const [contextLoading, setContextLoading] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -193,6 +196,17 @@ const FieldConsultantView: React.FC = () => {
     return () => stopCamera();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedParcelId) { setFarmContext(''); return; }
+    setContextLoading(true);
+    buildFarmContext(selectedParcelId)
+      .then(context => { if (!cancelled) setFarmContext(context); })
+      .catch(() => { if (!cancelled) setFarmContext(''); })
+      .finally(() => { if (!cancelled) setContextLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedParcelId]);
 
   const capturePhoto = () => {
     if (images.length >= MAX_ANALYSIS_IMAGES) {
@@ -256,7 +270,7 @@ const FieldConsultantView: React.FC = () => {
     setError(null);
     setAnalysis(null);
     try {
-      const raw = await geminiService.analyzeComprehensive(base64List, language);
+      const raw = await geminiService.analyzeComprehensive(base64List, language, farmContext);
       const normalized = normalizeAnalysis(raw);
       setAnalysis(normalized);
       setShowCamera(false);
@@ -387,6 +401,10 @@ const FieldConsultantView: React.FC = () => {
               {parcels.length ? parcels.map(p => <option key={p.id} value={p.id}>{p.name}</option>) : <option value="">Ingen parseller funnet i Supabase</option>}
             </select>
             {selectedParcel && <p className="text-xs text-slate-500 flex items-center gap-2"><MapPin size={12} /> {selectedParcel.municipality || 'Biar'} · {selectedParcel.treeVariety || selectedParcel.crop || 'oliven'}</p>}
+            <div className="rounded-xl border border-green-500/15 bg-green-500/[0.04] p-3">
+              <p className="text-[9px] uppercase tracking-widest font-black text-green-400">Kjent historikk fra Driftsjournal</p>
+              {contextLoading ? <p className="text-xs text-slate-500 mt-1">Henter gårdskontekst…</p> : farmContext ? <p className="text-xs text-slate-400 mt-1 line-clamp-5 whitespace-pre-line">{farmContext}</p> : <p className="text-xs text-slate-600 mt-1">Ingen verifisert historikk for valgt parsell ennå.</p>}
+            </div>
           </div>
 
           <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 text-xs text-blue-100 leading-relaxed">
