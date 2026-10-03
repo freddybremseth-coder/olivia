@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Edit3, Leaf, Loader2, Plus, RefreshCcw, Save, Trash2, X } from 'lucide-react';
+import { Edit3, Leaf, Loader2, Plus, RefreshCcw, Save, Trash2, X } from 'lucide-react';
 import type { Parcel } from '../types';
 import { fetchOliviaParcels } from '../services/oliviaSchemaData';
 import { deleteHarvestPlan, fetchHarvestPlans, fetchOliveVarieties, upsertHarvestPlan, upsertOliveVariety, type HarvestEstimateSource, type HarvestPlanRecord, type HarvestPlanStatus, type HarvestPurpose } from '../services/harvestPlanning';
@@ -9,8 +9,6 @@ const DEFAULT_VARIETIES = ['Gordal', 'Gordal Sevillana', 'Genovesa', 'Changlot R
 const inputClass = 'w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-green-500/50';
 const labelClass = 'text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2';
 const now = () => new Date().toISOString();
-const today = () => new Date().toISOString().slice(0, 10);
-
 
 function statusLabel(status: HarvestPlanStatus): string {
   if (status === 'approved') return 'Godkjent';
@@ -99,6 +97,7 @@ const HarvestPlannerSupabaseView: React.FC = () => {
     if (!form.parcel_id || !form.variety || !form.purpose || !form.planned_date) { setError('Parsell, sort, formål og planlagt dato må fylles ut.'); return; }
     if (!Number.isFinite(Number(form.estimated_kg)) || Number(form.estimated_kg) <= 0) { setError('Estimert kg må fylles inn som et faktisk planestimat, ikke som en automatisk standardverdi.'); return; }
     if (!form.estimate_source) { setError('Velg hva kg-estimatet bygger på.'); return; }
+    if (harvestSeasonForDate(form.planned_date) !== season) { setError('Planlagt dato må ligge i aktiv sesong '+season+'.'); return; }
     const parcel = parcels.find(p => p.id === form.parcel_id);
     const record: HarvestPlanRecord = {
       id: form.id || `harvest-${Date.now()}`,
@@ -109,7 +108,7 @@ const HarvestPlannerSupabaseView: React.FC = () => {
       status: (form.status as HarvestPlanStatus) || 'planned',
       estimated_kg: Number(form.estimated_kg),
       actual_kg: form.actual_kg === undefined ? undefined : Number(form.actual_kg),
-      maturity_index: form.maturity_index === undefined || form.maturity_index === null || form.maturity_index === '' as any ? undefined : Number(form.maturity_index),
+      maturity_index: form.maturity_index == null ? undefined : Number(form.maturity_index),
       fruit_size: form.fruit_size || undefined,
       firmness: form.firmness || undefined,
       estimate_source: form.estimate_source as HarvestEstimateSource | undefined,
