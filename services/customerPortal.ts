@@ -98,6 +98,8 @@ export async function saveCustomerProfile(user: UserProfile, customer: B2BCustom
 }
 
 export async function placeCustomerOrder(customer: B2BCustomerProfile, product: CommerceProduct, quantity: number, notes: string): Promise<CommerceOrder> {
+  if (!Number.isFinite(quantity) || quantity <= 0) throw new Error('Antall må være større enn 0.');
+  if (quantity > Number(product.stock || 0)) throw new Error('Ordren er større enn bekreftet tilgjengelig lager. Kontakt Doña Anna for tilgjengelighet eller tilbud.');
   const unitPrice = product.priceB2b ?? product.priceRetail ?? parsePrice(product.price);
   const totalAmount = unitPrice * quantity;
   const order: CommerceOrder = {
