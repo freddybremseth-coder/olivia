@@ -120,9 +120,14 @@ function publicStoryForBatch(batch: TraceBatch): string {
   return `Denne batchen kommer fra Doña Anna i Biar, Alicante. Den offentlige sporbarheten viser bare opplysninger som er registrert for denne batchen.`;
 }
 
-const TraceabilityBatchesOliviaView: React.FC = () => {
+const TraceabilityBatchesOliviaView: React.FC<{
+  initialBatchId?: string | null;
+  onContextConsumed?: () => void;
+}> = ({ initialBatchId, onContextConsumed }) => {
   const [batches, setBatches] = useState<TraceBatch[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [handledInitialBatchId, setHandledInitialBatchId] = useState('');
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [publishingLotId, setPublishingLotId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -154,6 +159,7 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
       setError(err?.message || 'Kunne ikke hente batcher fra olivia.batches.');
     } finally {
       setLoading(false);
+      setLoaded(true);
     }
   };
 
@@ -179,10 +185,10 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
     [batches, lotSources],
   );
 
-  const openLotBuilder = () => {
+  const openLotBuilder = (sourceBatchId?: string) => {
     setLotCode(`DA-LOT-${harvestSeasonCode(currentHarvestSeason())}-${String(Date.now()).slice(-5)}`);
     setLotUnits('1');
-    setLotSourceIds([]);
+    setLotSourceIds(sourceBatchId ? [sourceBatchId] : []);
     setLotAllocations({});
     setLotPackedAt(new Date().toISOString().slice(0, 10));
     setLotBestBefore('');
@@ -190,6 +196,20 @@ const TraceabilityBatchesOliviaView: React.FC = () => {
     if (!lotProductId && products[0]) setLotProductId(products[0].id);
     setLotOpen(true);
   };
+
+  useEffect(() => {
+    if (!initialBatchId || initialBatchId === handledInitialBatchId || !loaded) return;
+    const eligible = eligibleSourceBatches.find(batch => batch.id === initialBatchId);
+    if (!eligible) {
+      setError('Batchen som ble valgt fra Olivia Daily er ikke lenger klar for pakking.');
+      setHandledInitialBatchId(initialBatchId);
+      onContextConsumed?.();
+      return;
+    }
+    openLotBuilder(initialBatchId);
+    setHandledInitialBatchId(initialBatchId);
+    onContextConsumed?.();
+  }, [initialBatchId, handledInitialBatchId, loaded, eligibleSourceBatches, onContextConsumed]);
 
   const toggleLotSource = (batchId: string) => {
     setLotSourceIds(prev => {
