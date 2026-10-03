@@ -221,7 +221,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       setFarmTruth(truthStatus);
       setFarmIntelligence(intelligenceStatus);
       setFarmQuestions(questionRows);
-      setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length || readiness.issues.length || seasonStatus.steps.length || executionStatus.parcels.length ? 'supabase' : 'empty');
+      setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length || (readiness && readiness.issues ? readiness.issues.length : 0) || (seasonStatus && seasonStatus.steps ? seasonStatus.steps.length : 0) || (executionStatus && executionStatus.parcels ? executionStatus.parcels.length : 0) || truthStatus || (intelligenceStatus && intelligenceStatus.openQuestionCount ? intelligenceStatus.openQuestionCount : 0) ? 'supabase' : 'empty');
       setLastRefresh(new Date());
     } catch (error) {
       setReadings([]);
