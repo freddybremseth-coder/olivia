@@ -82,14 +82,15 @@ export async function fetchOpenFarmQuestions(params:{parcelId?:string;agentType?
   let query=supabase.from('farm_questions')
     .select('*')
     .eq('status','open')
-    .order('priority',{ascending:false})
     .order('created_at',{ascending:false})
     .limit(params.limit||50);
   if(params.parcelId)query=query.or('parcel_id.eq.'+params.parcelId+',parcel_id.is.null');
   if(params.agentType)query=query.or('agent_type.eq.'+params.agentType+',agent_type.is.null');
   const {data,error}=await query;
   if(error)throw new Error(error.message);
-  return(data||[]) as FarmQuestion[];
+  const rows=(data||[]) as FarmQuestion[];
+  const rank:Record<FarmQuestionPriority,number>={critical:4,high:3,medium:2,low:1};
+  return rows.sort((a,b)=>rank[b.priority]-rank[a.priority]||String(b.created_at).localeCompare(String(a.created_at)));
 }
 
 export async function createFarmQuestion(input:{
