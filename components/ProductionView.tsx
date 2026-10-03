@@ -5,10 +5,12 @@ import ProductionOliviaView from './ProductionOliviaView';
 interface ProductionViewProps {
   language: Language;
   parcels: Parcel[];
+  initialHarvestPlanId?: string | null;
+  onHarvestPlanConsumed?: () => void;
 }
 
-const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels }) => {
-  return <ProductionOliviaView language={language} parcels={parcels} />;
+const ProductionView: React.FC<ProductionViewProps> = ({ language, parcels, initialHarvestPlanId, onHarvestPlanConsumed }) => {
+  return <ProductionOliviaView language={language} parcels={parcels} initialHarvestPlanId={initialHarvestPlanId} onHarvestPlanConsumed={onHarvestPlanConsumed} />;
 };
 
 export default ProductionView;
