@@ -13,6 +13,8 @@ interface Props {
   parcels: Parcel[];
   initialHarvestPlanId?: string | null;
   onHarvestPlanConsumed?: () => void;
+  initialBatchId?: string | null;
+  onBatchContextConsumed?: () => void;
 }
 
 type Tab = 'harvest' | 'batches' | 'recipes' | 'quality';
@@ -28,7 +30,7 @@ const fmtKg = (kg: number) => `${Math.round(kg).toLocaleString('no-NO')} kg`;
 const fmtEuro = (value: number) => `€${Math.round(value).toLocaleString('no-NO')}`;
 const inputClass = 'w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-green-500/50';
 
-const ProductionOliviaView: React.FC<Props> = ({ parcels, initialHarvestPlanId, onHarvestPlanConsumed }) => {
+const ProductionOliviaView: React.FC<Props> = ({ parcels, initialHarvestPlanId, onHarvestPlanConsumed, initialBatchId, onBatchContextConsumed }) => {
   const [activeTab, setActiveTab] = useState<Tab>('harvest');
   const [harvests, setHarvests] = useState<HarvestRecord[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -81,6 +83,10 @@ const ProductionOliviaView: React.FC<Props> = ({ parcels, initialHarvestPlanId, 
   };
 
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (initialBatchId) setActiveTab('batches');
+    else if (initialHarvestPlanId) setActiveTab('harvest');
+  }, [initialBatchId, initialHarvestPlanId]);
 
   const seasons = useMemo(() => {
     const all = new Set([currentHarvestSeason(), ...harvests.map(h => h.season), ...batches.map(b => harvestSeasonForDate(b.harvestDate)).filter(Boolean)]);
@@ -238,7 +244,7 @@ const ProductionOliviaView: React.FC<Props> = ({ parcels, initialHarvestPlanId, 
 
       {activeTab === 'batches' && (
         <div className="space-y-5">
-          <BatchProductionWorkflow batches={seasonBatches} onSaved={load} />
+          <BatchProductionWorkflow batches={seasonBatches} onSaved={load} initialBatchId={initialBatchId} onContextConsumed={onBatchContextConsumed} />
           <TableOliveBatchPlanner parcels={parcels} recipes={recipes} onSave={savePlannedTableBatch} />
           <div className="glass rounded-[2rem] p-6 border border-white/10 space-y-4">
             <div className="flex justify-between items-center"><h3 className="text-lg text-white font-bold">Batcher fra olivia.batches</h3><button onClick={() => setShowBatchForm(true)} className="px-4 py-2 rounded-xl bg-green-500 text-black text-xs font-bold flex items-center gap-2"><Plus size={14} /> Enkel batch</button></div>
