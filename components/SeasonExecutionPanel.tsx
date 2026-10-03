@@ -1,6 +1,19 @@
 import React from 'react';
-import { ArrowRight, CheckCircle2, CircleDashed, Factory, PackageCheck, Sprout, Truck } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, CircleDashed, Clock3, Factory, PackageCheck, Sprout, Truck } from 'lucide-react';
 import type { ParcelExecutionRow, ParcelExecutionStage, SeasonExecution } from '../services/seasonExecution';
+
+function attentionTone(level:'none'|'info'|'warning'|'critical'){
+  if(level==='critical')return'border-red-500/30 bg-red-500/10 text-red-300';
+  if(level==='warning')return'border-amber-300/30 bg-amber-300/10 text-amber-200';
+  if(level==='info')return'border-blue-500/30 bg-blue-500/10 text-blue-300';
+  return'border-white/10 bg-white/[0.03] text-slate-500';
+}
+
+function attentionIcon(level:'none'|'info'|'warning'|'critical'){
+  if(level==='critical')return <AlertTriangle size={14}/>;
+  if(level==='warning')return <Clock3 size={14}/>;
+  return <CircleDashed size={14}/>;
+}
 
 function stageTone(stage:ParcelExecutionStage){
   if(stage==='packed')return'border-green-500/30 bg-green-500/10 text-green-300';
@@ -53,8 +66,8 @@ const SeasonExecutionPanel:React.FC<{
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 min-w-full lg:min-w-0">
         <Mini label="Planlagt" value={data.plannedParcelCount+'/'+data.productiveParcelCount}/>
-        <Mini label="Godkjent" value={data.approvedParcelCount}/>
-        <Mini label="Startet" value={data.startedParcelCount}/>
+        <Mini label="Oppmerksomhet" value={data.attentionParcelCount}/>
+        <Mini label="Kritisk" value={data.criticalParcelCount}/>
         <Mini label="Pakket" value={data.packedParcelCount}/>
       </div>
     </div>
@@ -62,13 +75,14 @@ const SeasonExecutionPanel:React.FC<{
     <div className="space-y-3 mt-5">
       {data.parcels.map(row=>{
         const pct=progressPercent(row);
-        return <div key={row.parcelId} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+        return <div key={row.parcelId} className={"rounded-2xl border bg-black/20 p-4 "+(row.attentionLevel==='critical'?'border-red-500/30':row.attentionLevel==='warning'?'border-amber-300/20':'border-white/10')}>
           <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className={'rounded-full border px-2.5 py-1 text-[10px] font-black '+stageTone(row.stage)}>
                   <span className="inline-flex items-center gap-1">{stageIcon(row.stage)}{row.stageLabel}</span>
                 </span>
+                {row.attentionLevel!=='none'&&row.attentionText&&<span className={'rounded-full border px-2.5 py-1 text-[10px] font-bold '+attentionTone(row.attentionLevel)}><span className="inline-flex items-center gap-1">{attentionIcon(row.attentionLevel)}{row.attentionLevel==='critical'?'Krever handling':row.attentionLevel==='warning'?'Følg opp':'Info'}</span></span>}
                 <span className="text-[10px] text-slate-600">{pct}% i registrert kjede</span>
               </div>
               <div className="mt-2 flex flex-col md:flex-row md:items-baseline gap-1 md:gap-3">
@@ -85,6 +99,7 @@ const SeasonExecutionPanel:React.FC<{
                   ? row.details.map(detail=><span key={detail} className="text-[11px] text-slate-500">{detail}</span>)
                   : <span className="text-[11px] text-slate-600">Ingen sesonghendelser registrert.</span>}
               </div>
+              {row.attentionText&&<div className={'mt-3 rounded-xl border px-3 py-2 text-xs '+attentionTone(row.attentionLevel)}>{row.attentionText}</div>}
             </div>
 
             <div className="xl:w-[330px] rounded-xl border border-white/10 bg-white/[0.03] p-3">
