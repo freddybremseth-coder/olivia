@@ -143,6 +143,10 @@ export type FarmYearWheelItem = {
   basis:string;
   status:'suggested'|'approved'|'in_progress'|'postponed'|'done'|'skipped';
   notes?:string|null;
+  started_at?:string|null;
+  postponed_until?:string|null;
+  postponed_reason?:string|null;
+  status_changed_at?:string|null;
 };
 
 export type RainMeasurement = {
@@ -555,8 +559,32 @@ export async function fetchYearWheel(year:number):Promise<FarmYearWheelItem[]>{
   return(data||[]) as FarmYearWheelItem[];
 }
 
-export async function updateYearWheelStatus(id:string,status:FarmYearWheelItem['status']){
-  const {error}=await supabase.from('farm_year_wheel_items').update({status,updated_at:new Date().toISOString()}).eq('id',id);
+export async function updateYearWheelStatus(
+  id:string,
+  status:FarmYearWheelItem['status'],
+  input:{postponedUntil?:string|null;postponedReason?:string|null}={}
+){
+  const now=new Date().toISOString();
+  const patch:any={status,updated_at:now,status_changed_at:now};
+
+  if(status==='in_progress'){
+    const {data:existing,error:readError}=await supabase.from('farm_year_wheel_items').select('started_at').eq('id',id).maybeSingle();
+    if(readError)throw new Error(readError.message);
+    patch.started_at=existing?.started_at||now;
+    patch.postponed_until=null;
+    patch.postponed_reason=null;
+  }else if(status==='postponed'){
+    patch.postponed_until=input.postponedUntil||null;
+    patch.postponed_reason=input.postponedReason?.trim()||null;
+  }else if(status==='approved'){
+    patch.postponed_until=null;
+    patch.postponed_reason=null;
+  }else if(status==='done'||status==='skipped'){
+    patch.postponed_until=null;
+    patch.postponed_reason=null;
+  }
+
+  const {error}=await supabase.from('farm_year_wheel_items').update(patch).eq('id',id);
   if(error)throw new Error(error.message);
 }
 
