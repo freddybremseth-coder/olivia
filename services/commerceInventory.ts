@@ -35,6 +35,14 @@ export type UnifiedInventoryMovement = {
   notes?: string;
 };
 
+export type UnifiedProductLotSource = {
+  lot_id: string;
+  batch_id: string;
+  input_kg?: number;
+  input_liters?: number;
+  notes?: string;
+};
+
 export type UnifiedProductLot = {
   id: string;
   product_id: string;
@@ -143,9 +151,9 @@ export type UnifiedOrderRow = {
 const num = (value: unknown) => Number(value || 0);
 
 export async function fetchUnifiedInventory() {
-  if (!isSupabaseConfigured) return { products: [], movements: [], lots: [], orders: [], invoices: [], shipments: [], businessSettings: null };
+  if (!isSupabaseConfigured) return { products: [], movements: [], lots: [], lotSources: [], orders: [], invoices: [], shipments: [], businessSettings: null };
 
-  const [productsRes, movementsRes, lotsRes, ordersRes, invoicesRes, shipmentsRes, settingsRes] = await Promise.all([
+  const [productsRes, movementsRes, lotsRes, lotSourcesRes, ordersRes, invoicesRes, shipmentsRes, settingsRes] = await Promise.all([
     supabase.from('commerce_products')
       .select('id,sku,name,category,size,stock_quantity,reserved_quantity,inventory_verified,inventory_verified_at,price_retail,price_b2b,cost,vat_rate,vat_configured,price_basis,batch_id,active,status')
       .eq('active', true).order('name'),
@@ -155,6 +163,8 @@ export async function fetchUnifiedInventory() {
     supabase.from('product_lots')
       .select('id,product_id,lot_code,status,packed_at,best_before,initial_units,traceability_slug,notes')
       .order('created_at', { ascending: false }),
+    supabase.from('product_lot_sources')
+      .select('lot_id,batch_id,input_kg,input_liters,notes'),
     supabase.from('commerce_orders')
       .select('id,order_number,customer_id,customer_name,shipping_address,billing_address,subtotal,tax_amount,shipping_cost,discount_amount,total_amount,currency,status,payment_status,ordered_at,commerce_customers(company,contact_name,email,tax_id,vat_number,billing_address,shipping_address,payment_terms,payment_terms_days),commerce_order_items(id,order_id,product_id,lot_id,name,sku,quantity,unit_price,net_unit_price,gross_unit_price,tax_rate,tax_amount,price_basis,total_price)')
       .order('created_at', { ascending: false }).limit(50),
@@ -167,7 +177,7 @@ export async function fetchUnifiedInventory() {
     supabase.from('commerce_business_settings').select('*').eq('id','default').maybeSingle(),
   ]);
 
-  const error = productsRes.error || movementsRes.error || lotsRes.error || ordersRes.error || invoicesRes.error || shipmentsRes.error || settingsRes.error;
+  const error = productsRes.error || movementsRes.error || lotsRes.error || lotSourcesRes.error || ordersRes.error || invoicesRes.error || shipmentsRes.error || settingsRes.error;
   if (error) throw error;
 
   return {
@@ -191,6 +201,11 @@ export async function fetchUnifiedInventory() {
       ...row,
       initial_units: num(row.initial_units),
     })) as UnifiedProductLot[],
+    lotSources: (lotSourcesRes.data || []).map((row: any) => ({
+      ...row,
+      input_kg: row.input_kg == null ? undefined : num(row.input_kg),
+      input_liters: row.input_liters == null ? undefined : num(row.input_liters),
+    })) as UnifiedProductLotSource[],
     orders: (ordersRes.data || []).map((row: any) => ({
       ...row,
       subtotal: num(row.subtotal),
@@ -266,55 +281,35 @@ export async function createProductLot(params: {
   bestBefore?: string;
 }) {
   if (!isSupabaseConfigured) throw new Error('Supabase er ikke konfigurert.');
-  const lotId = `lot-${Date.now()}`;
-  const now = params.packedAt || new Date().toISOString();
-
-  const { error: lotError } = await supabase.from('product_lots').insert({
-    id: lotId,
-    product_id: params.productId,
-    lot_code: params.lotCode,
-    status: 'active',
-    packed_at: now,
-    best_before: params.bestBefore || null,
-    initial_units: params.units,
-    traceability_slug: params.traceabilitySlug || null,
-    notes: params.notes || null,
-  });
-  if (lotError) throw lotError;
+  if (!Number.isFinite(params.units) || params.units <= 0) throw new Error('Antall ferdige enheter må være større enn 0.');
 
   const sources = params.batchSources?.length
     ? params.batchSources
     : (params.batchIds || []).map(batchId => ({ batchId }));
-  if (sources.length) {
-    const { error: sourceError } = await supabase.from('product_lot_sources').insert(
-      sources.map(source => ({
-        lot_id: lotId,
-        batch_id: source.batchId,
-        input_kg: source.inputKg ?? null,
-        input_liters: source.inputLiters ?? null,
-      }))
-    );
-    if (sourceError) throw sourceError;
-  }
+  if (!sources.length) throw new Error('Minst én dokumentert kildebatch må velges.');
 
-  const { error: movementError } = await supabase.from('inventory_movements').insert({
-    id: `production-${lotId}`,
-    product_id: params.productId,
-    lot_id: lotId,
-    movement_type: 'production',
-    on_hand_delta: params.units,
-    reserved_delta: 0,
-    occurred_at: now,
-    source: 'product_lot',
-    event_key: `production:${lotId}`,
-    verified: true,
-    notes: params.notes || `Pakket batch ${params.lotCode}.`,
+  const lotId = `lot-${Date.now()}`;
+  const packedAt = params.packedAt || new Date().toISOString();
+  const payload = sources.map(source => ({
+    batchId: source.batchId,
+    inputKg: source.inputKg ?? null,
+    inputLiters: source.inputLiters ?? null,
+  }));
+
+  const { data, error } = await supabase.rpc('create_product_lot_atomic', {
+    p_lot_id: lotId,
+    p_product_id: params.productId,
+    p_lot_code: params.lotCode,
+    p_units: params.units,
+    p_sources: payload,
+    p_traceability_slug: params.traceabilitySlug || null,
+    p_notes: params.notes || null,
+    p_packed_at: packedAt,
+    p_best_before: params.bestBefore || null,
   });
-  if (movementError) throw movementError;
-
-  return lotId;
+  if (error) throw error;
+  return String(data || lotId);
 }
-
 
 export async function assignOrderItemLot(orderItemId: string, lotId: string) {
   if (!isSupabaseConfigured) throw new Error('Supabase er ikke konfigurert.');
