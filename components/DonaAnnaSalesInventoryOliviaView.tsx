@@ -8,11 +8,14 @@ import {
   verifyPhysicalInventory,
   type UnifiedInventoryMovement,
   type UnifiedInventoryProduct,
+  type CommerceBusinessSettings,
   type UnifiedInvoiceRow,
   type UnifiedOrderRow,
+  type UnifiedShipmentRow,
   type UnifiedProductLot,
 } from '../services/commerceInventory';
 import OrderFulfillmentPanel from './OrderFulfillmentPanel';
+import CommerceBusinessSettingsPanel from './CommerceBusinessSettingsPanel';
 
 const eur = (value: number) => `€${value.toLocaleString('no-NO', { maximumFractionDigits: 2 })}`;
 
@@ -36,6 +39,8 @@ const DonaAnnaSalesInventoryOliviaView: React.FC = () => {
   const [lots,setLots]=useState<UnifiedProductLot[]>([]);
   const [orders,setOrders]=useState<UnifiedOrderRow[]>([]);
   const [invoices,setInvoices]=useState<UnifiedInvoiceRow[]>([]);
+  const [shipments,setShipments]=useState<UnifiedShipmentRow[]>([]);
+  const [businessSettings,setBusinessSettings]=useState<CommerceBusinessSettings|null>(null);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [countingId,setCountingId]=useState<string|null>(null);
@@ -46,7 +51,7 @@ const DonaAnnaSalesInventoryOliviaView: React.FC = () => {
     setLoading(true); setError('');
     try{
       const data=await fetchUnifiedInventory();
-      setProducts(data.products); setMovements(data.movements); setLots(data.lots); setOrders(data.orders); setInvoices(data.invoices);
+      setProducts(data.products); setMovements(data.movements); setLots(data.lots); setOrders(data.orders); setInvoices(data.invoices); setShipments(data.shipments); setBusinessSettings(data.businessSettings);
     }catch(err:any){ setError(err?.message || 'Kunne ikke hente lagerdata.'); }
     finally{ setLoading(false); }
   };
@@ -134,7 +139,10 @@ const DonaAnnaSalesInventoryOliviaView: React.FC = () => {
       </section>
 
       <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-        <OrderFulfillmentPanel orders={orders} lots={lots} movements={movements} invoices={invoices} onChanged={load} />
+        <div className="space-y-4">
+          <CommerceBusinessSettingsPanel value={businessSettings} onChanged={load} />
+          <OrderFulfillmentPanel orders={orders} lots={lots} movements={movements} invoices={invoices} shipments={shipments} businessSettings={businessSettings} onChanged={load} />
+        </div>
       </section>
     </div>
 
