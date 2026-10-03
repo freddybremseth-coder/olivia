@@ -102,6 +102,11 @@ const emptyProduct = (): CommerceProduct => ({
   channel: '',
   stock: 0,
   price: '',
+  priceRetail: 0,
+  priceB2b: undefined,
+  vatRate: 0,
+  vatConfigured: false,
+  priceBasis: undefined,
   status: 'Utkast',
   description: '',
   collections: [],
@@ -1050,8 +1055,21 @@ function ProductEditor({ product, onClose, onSave }: {
               <Field label="Størrelse">
                 <input value={draft.size} onChange={event => update('size', event.target.value)} className="form-input" placeholder="500 ml" />
               </Field>
-              <Field label="Pris">
-                <input value={draft.price} onChange={event => update('price', event.target.value)} className="form-input" placeholder="€24.90 / B2B quote" />
+              <Field label="Retail-pris (€)">
+                <input type="number" min="0" step="0.01" value={draft.priceRetail ?? ''} onChange={event => update('priceRetail' as any, Number(event.target.value) as any)} className="form-input" placeholder="0.00" />
+              </Field>
+              <Field label="B2B-pris (€)">
+                <input type="number" min="0" step="0.01" value={draft.priceB2b ?? ''} onChange={event => update('priceB2b' as any, event.target.value === '' ? undefined as any : Number(event.target.value) as any)} className="form-input" placeholder="Må settes før B2B-ordre" />
+              </Field>
+              <Field label="IVA-sats (%)">
+                <input type="number" min="0" max="100" step="0.01" value={(draft as any).vatRate ?? 0} onChange={event => setDraft(current => ({ ...current, vatRate: Number(event.target.value) }))} className="form-input" />
+              </Field>
+              <Field label="Prisgrunnlag">
+                <select value={(draft as any).priceBasis ?? ''} onChange={event => setDraft(current => ({ ...current, priceBasis: event.target.value || undefined }))} className="form-input">
+                  <option value="">Ikke bekreftet</option>
+                  <option value="gross">Pris inkluderer IVA</option>
+                  <option value="net">Pris ekskluderer IVA</option>
+                </select>
               </Field>
               <Field label="Bekreftet lager">
                 <div className="form-input flex items-center text-slate-300">{draft.stock} <span className="ml-2 text-[10px] text-slate-500">styres i Salg og lager</span></div>
@@ -1065,6 +1083,13 @@ function ProductEditor({ product, onClose, onSave }: {
                 </select>
               </Field>
             </div>
+            <label className={`flex cursor-pointer items-center justify-between rounded-xl border px-4 py-3 text-sm ${(draft as any).vatConfigured ? 'border-green-500/30 bg-green-500/10 text-green-100' : 'border-amber-300/20 bg-amber-300/10 text-amber-100'}`}>
+              <span>
+                <span className="block font-bold">IVA og prisgrunnlag er kontrollert</span>
+                <span className="text-xs opacity-70">B2B-bestilling er blokkert til dette er bekreftet. Olivia gjetter ikke avgift.</span>
+              </span>
+              <input type="checkbox" checked={Boolean((draft as any).vatConfigured)} onChange={event => setDraft(current => ({ ...current, vatConfigured: event.target.checked }))} className="h-5 w-5 accent-green-500" />
+            </label>
             <Field label="Salgskanal / rolle">
               <input value={draft.channel} onChange={event => update('channel', event.target.value)} className="form-input" placeholder="Restaurant, retail, chef format..." />
             </Field>
