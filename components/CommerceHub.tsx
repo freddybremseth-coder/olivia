@@ -140,7 +140,7 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
           messages: rows.messages,
         });
         setBusinessMetrics(metrics);
-        setInventoryUnits(inventory.products.reduce((sum, product) => sum + product.stock_quantity, 0));
+        setInventoryUnits(inventory.products.filter(product => product.inventory_verified).reduce((sum, product) => sum + product.stock_quantity, 0));
       })
       .catch(error => console.warn('[commerce] live data failed', error));
     return () => { cancelled = true; };
@@ -181,7 +181,7 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
         {[
           { label: 'Ordreverdi', value: businessMetrics ? formatMoney(businessMetrics.orderValue) : '—', icon: BadgeEuro, tone: 'text-amber-300 bg-amber-300/10' },
           { label: 'Åpne ordre', value: businessMetrics ? String(businessMetrics.pendingOrders) : '—', icon: ShoppingCart, tone: 'text-blue-300 bg-blue-300/10' },
-          { label: 'Enheter på lager', value: inventoryUnits.toLocaleString('no-NO'), icon: Package, tone: 'text-green-300 bg-green-300/10' },
+          { label: 'Bekreftet lager', value: inventoryUnits.toLocaleString('no-NO'), icon: Package, tone: 'text-green-300 bg-green-300/10' },
           { label: 'Utestående faktura', value: businessMetrics ? formatMoney(businessMetrics.unpaidAmount) : '—', icon: ReceiptText, tone: 'text-purple-300 bg-purple-300/10' },
         ].map(stat => (
           <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
@@ -279,7 +279,7 @@ function CustomerPortal({ user }: { user: UserProfile }) {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      fetchCommerceProducts({ publicOnly: true }),
+      fetchCommerceProducts({ publicOnly: true, fallback: false }),
       fetchCustomerPortalData(user),
     ]).then(([productRows, data]) => {
       if (cancelled) return;
@@ -503,8 +503,8 @@ function CustomerProducts(props: {
             <p className="font-bold text-white">{props.selectedProduct?.name}</p>
             <p className="mt-1">{props.selectedProduct?.price} · lager {props.selectedProduct?.stock}</p>
           </div>
-          <button onClick={props.onSubmitOrder} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 text-sm font-bold text-black hover:bg-amber-200">
-            <Send size={17} /> Send ordre
+          <button disabled={!props.selectedProduct || props.quantity <= 0 || props.quantity > Number(props.selectedProduct.stock || 0)} onClick={props.onSubmitOrder} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 text-sm font-bold text-black hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-40">
+            <Send size={17} /> {props.selectedProduct && props.selectedProduct.stock > 0 ? 'Send ordre' : 'Ikke bekreftet lager'}
           </button>
         </div>
       </aside>
@@ -657,7 +657,7 @@ export function ProductCatalog() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchCommerceProducts()
+    fetchCommerceProducts({ fallback: false })
       .then(rows => {
         if (cancelled) return;
         setProducts(rows);
@@ -1053,8 +1053,8 @@ function ProductEditor({ product, onClose, onSave }: {
               <Field label="Pris">
                 <input value={draft.price} onChange={event => update('price', event.target.value)} className="form-input" placeholder="€24.90 / B2B quote" />
               </Field>
-              <Field label="Lager">
-                <input type="number" value={draft.stock} onChange={event => update('stock', Number(event.target.value))} className="form-input" />
+              <Field label="Bekreftet lager">
+                <div className="form-input flex items-center text-slate-300">{draft.stock} <span className="ml-2 text-[10px] text-slate-500">styres i Salg og lager</span></div>
               </Field>
               <Field label="Status">
                 <select value={draft.status} onChange={event => update('status', event.target.value as CommerceProduct['status'])} className="form-input">
