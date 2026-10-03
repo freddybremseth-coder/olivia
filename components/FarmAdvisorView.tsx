@@ -2,10 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   BarChart3,
+  Brain,
   CheckCircle2,
   ClipboardList,
   Droplets,
   FlaskConical,
+  HelpCircle,
   Leaf,
   Loader2,
   RefreshCcw,
@@ -15,6 +17,8 @@ import {
 import type { SensorReading, IrrigationEvent, FarmObservation } from '../types/farmIoT';
 import { fetchLatestSensorReadings, fetchRecentFarmObservations, fetchRecentIrrigationEvents } from '../services/farmIoT';
 import { buildIrrigationAdvice, type ClimateWaterInput } from '../services/irrigationAdvisor';
+import { fetchFarmIntelligenceSummary } from '../services/farmIntelligence';
+import FarmQuestionsPanel from './FarmQuestionsPanel';
 
 type AdvisorPriority = 'critical' | 'high' | 'medium' | 'low';
 
@@ -220,20 +224,23 @@ const FarmAdvisorView: React.FC = () => {
   const [climate, setClimate] = useState<ClimateWaterInput>({});
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [intelligence,setIntelligence]=useState<any>(null);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [sensorRows, irrigationRows, observationRows, climateInput] = await Promise.all([
+      const [sensorRows, irrigationRows, observationRows, climateInput, intelligenceSummary] = await Promise.all([
         fetchLatestSensorReadings(1000).catch(() => []),
         fetchRecentIrrigationEvents(200).catch(() => []),
         fetchRecentFarmObservations(200).catch(() => []),
         fetchClimateInput(),
+        fetchFarmIntelligenceSummary(),
       ]);
       setReadings(sensorRows);
       setIrrigationEvents(irrigationRows);
       setObservations(observationRows);
       setClimate(climateInput);
+      setIntelligence(intelligenceSummary);
       setLastRefresh(new Date());
     } finally {
       setIsLoading(false);
@@ -264,9 +271,17 @@ const FarmAdvisorView: React.FC = () => {
           { label: 'Kritisk', value: critical, icon: <AlertTriangle size={18} />, cls: 'border-red-500/20 bg-red-500/10 text-red-400' },
           { label: 'Høy prioritet', value: high, icon: <ShieldCheck size={18} />, cls: 'border-yellow-500/20 bg-yellow-500/10 text-yellow-400' },
           { label: 'Middels', value: medium, icon: <ClipboardList size={18} />, cls: 'border-blue-500/20 bg-blue-500/10 text-blue-400' },
-          { label: 'Datakilder', value: 8, icon: <BarChart3 size={18} />, cls: 'border-green-500/20 bg-green-500/10 text-green-400' },
+          { label: 'Åpne spørsmål', value: intelligence?.openQuestionCount||0, icon: <HelpCircle size={18} />, cls: 'border-blue-500/20 bg-blue-500/10 text-blue-300' },
         ].map(card => <div key={card.label} className={`glass rounded-[2rem] p-5 border ${card.cls}`}><div className="mb-2">{card.icon}</div><p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">{card.label}</p><p className="text-3xl font-black text-white mt-1">{card.value}</p></div>)}
       </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="glass rounded-[2rem] p-5 border border-purple-500/20 bg-purple-500/5"><Brain className="text-purple-300 mb-3"/><p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Lært kunnskap</p><p className="text-3xl font-black text-white mt-1">{intelligence?.knowledgeCount||0}</p></div>
+        <div className="glass rounded-[2rem] p-5 border border-blue-500/20 bg-blue-500/5"><HelpCircle className="text-blue-300 mb-3"/><p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Må avklares</p><p className="text-3xl font-black text-white mt-1">{intelligence?.openQuestionCount||0}</p></div>
+        <div className="glass rounded-[2rem] p-5 border border-green-500/20 bg-green-500/5"><Sparkles className="text-green-300 mb-3"/><p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Lagre analyser</p><p className="text-3xl font-black text-white mt-1">{intelligence?.assessmentCount||0}</p></div>
+      </div>
+
+      <FarmQuestionsPanel agentType="farm_advisor" title="Spørsmål Olivia ikke vil gjette på" compact />
 
       <div className="glass rounded-[2rem] p-6 border border-green-500/20 bg-green-500/5">
         <div className="flex items-start gap-4">
