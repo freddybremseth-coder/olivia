@@ -4,6 +4,7 @@ export type HarvestPurpose = 'table_olives' | 'oil' | 'mixed';
 export type HarvestPlanStatus = 'planned' | 'approved' | 'done' | 'cancelled';
 export type HarvestFruitSize = 'small' | 'medium' | 'large' | 'very_large';
 export type HarvestFirmness = 'hard' | 'medium' | 'soft';
+export type HarvestEstimateSource = 'field_estimate' | 'previous_season' | 'tree_count' | 'weighing' | 'other';
 
 export type HarvestPlanRecord = {
   id: string;
@@ -14,9 +15,12 @@ export type HarvestPlanRecord = {
   status: HarvestPlanStatus;
   estimated_kg: number;
   actual_kg?: number;
-  maturity_index: number;
-  fruit_size: HarvestFruitSize;
-  firmness: HarvestFirmness;
+  maturity_index?: number;
+  fruit_size?: HarvestFruitSize;
+  firmness?: HarvestFirmness;
+  estimate_source?: HarvestEstimateSource;
+  observation_date?: string;
+  planning_basis?: string;
   planned_date: string;
   approved_at?: string;
   completed_at?: string;
@@ -42,9 +46,12 @@ function normalizePlan(row: any): HarvestPlanRecord {
     status: row.status,
     estimated_kg: Number(row.estimated_kg || 0),
     actual_kg: row.actual_kg === null || row.actual_kg === undefined ? undefined : Number(row.actual_kg),
-    maturity_index: Number(row.maturity_index || 0),
-    fruit_size: row.fruit_size || 'medium',
-    firmness: row.firmness || 'medium',
+    maturity_index: row.maturity_index === null || row.maturity_index === undefined ? undefined : Number(row.maturity_index),
+    fruit_size: row.fruit_size || undefined,
+    firmness: row.firmness || undefined,
+    estimate_source: row.estimate_source || undefined,
+    observation_date: row.observation_date || undefined,
+    planning_basis: row.planning_basis || undefined,
     planned_date: row.planned_date,
     approved_at: row.approved_at || undefined,
     completed_at: row.completed_at || undefined,
@@ -73,9 +80,12 @@ export async function upsertHarvestPlan(plan: HarvestPlanRecord): Promise<void> 
     status: plan.status,
     estimated_kg: plan.estimated_kg,
     actual_kg: plan.actual_kg ?? null,
-    maturity_index: plan.maturity_index,
-    fruit_size: plan.fruit_size,
-    firmness: plan.firmness,
+    maturity_index: plan.maturity_index ?? null,
+    fruit_size: plan.fruit_size ?? null,
+    firmness: plan.firmness ?? null,
+    estimate_source: plan.estimate_source ?? null,
+    observation_date: plan.observation_date ?? null,
+    planning_basis: plan.planning_basis ?? null,
     planned_date: plan.planned_date,
     approved_at: plan.approved_at ?? null,
     completed_at: plan.completed_at ?? null,
