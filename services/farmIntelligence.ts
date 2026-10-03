@@ -158,7 +158,7 @@ export async function dismissFarmQuestion(questionId:string){
   if(error)throw new Error(error.message);
 }
 
-export async function recordAgentAssessment(input:AgentAssessmentInput):Promise<FarmQuestion[]>{
+export async function recordAgentAssessment(input:AgentAssessmentInput):Promise<{assessmentId:string;questions:FarmQuestion[]}>{
   const confidence=Math.max(0,Math.min(1,Number(input.confidence??0)));
   const uncertainties=(input.uncertainties||[]).map(v=>String(v).trim()).filter(Boolean).slice(0,12);
   const assessmentId=makeId('assessment');
@@ -188,7 +188,7 @@ export async function recordAgentAssessment(input:AgentAssessmentInput):Promise<
     });
     if(q)created.push(q);
   }
-  return created;
+  return{assessmentId,questions:created};
 }
 
 function questionFromUncertainty(value:string){
