@@ -629,7 +629,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
             </div>
           </button>)}
         </div>:<div className="mt-5 rounded-2xl border border-green-500/15 bg-green-500/[0.04] p-4 text-sm text-green-100"><p className="font-bold">Ingen parseller krever særskilt oppfølging akkurat nå.</p><p className="text-xs text-slate-500 mt-1">Årshjulet har ingen aktive forsinkelser, pågående eller utsatte punkter per parsell.</p></div>}
-      </div>
+      </div>}
 
       <div className="glass rounded-[2rem] p-6 border border-[#d9b657]/20 bg-[#d9b657]/[0.035]">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
