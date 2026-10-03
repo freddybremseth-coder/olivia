@@ -123,6 +123,7 @@ const App: React.FC = () => {
   const [parcels, setParcels] = useState<Parcel[]>(EMPTY_OLIVIA_PARCELS);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [, setParcelsLoaded] = useState(false);
+  const [pendingHarvestPlanId, setPendingHarvestPlanId] = useState<string | null>(null);
 
   const activateTab = (target: string, profile = user) => {
     const next = resolvePortalNavigation(target, profile.role, portalForPath(currentPath()) ?? portalMode);
@@ -131,6 +132,11 @@ const App: React.FC = () => {
     setActiveTab(next.tab);
     setPortalMode(next.portal);
     if (currentPath() !== next.path) window.history.replaceState({}, '', next.path);
+  };
+
+  const startHarvestFromPlan = (planId: string) => {
+    setPendingHarvestPlanId(planId);
+    activateTab('production');
   };
 
   useEffect(() => {
@@ -272,7 +278,7 @@ const App: React.FC = () => {
       case 'map': return <FarmMap parcels={parcels} onParcelSave={handleParcelSave} onParcelDelete={handleParcelDelete} language={language} />;
       case 'weather': return <WeatherView initialData={weatherData} initialLocationName={selectedParcel?.name || ''} initialCoords={parcelCoords} language={language} parcels={parcels} selectedParcel={selectedParcel} onParcelSelect={setSelectedParcel} />;
       case 'climate_stats': return <ClimateDecisionStats />;
-      case 'production': return <ProductionView parcels={parcels} language={language} />;
+      case 'production': return <ProductionView parcels={parcels} language={language} initialHarvestPlanId={pendingHarvestPlanId} onHarvestPlanConsumed={() => setPendingHarvestPlanId(null)} />;
       case 'commerce': return <CommerceHub user={user} mode="backend" />;
       case 'b2b_portal': return <CommerceHub user={user} mode="customer" />;
       case 'economy': return <ProfitabilityPage language={language} parcels={parcels} />;
@@ -282,7 +288,7 @@ const App: React.FC = () => {
       case 'irrigation_log': return <IrrigationLogView />;
       case 'salinity': return <SalinityDashboard />;
       case 'zone_status': return <ZoneStatusMapView />;
-      case 'harvest_planner': return <HarvestPlannerView />;
+      case 'harvest_planner': return <HarvestPlannerView onStartHarvest={startHarvestFromPlan} />;
       case 'traceability_batches': return <TraceabilityBatchesView />;
       case 'label_qr': return <LabelQrGeneratorView />;
       case 'professional_label': return <ProfessionalLabelTemplateView />;
