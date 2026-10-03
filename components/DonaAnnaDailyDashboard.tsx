@@ -229,6 +229,50 @@ function daysSince(value?:string|null):number|null {
   return Math.max(0,Math.round((today.getTime()-date.getTime())/86400000));
 }
 
+type DelaySummary = {
+  criticalOverdue:number;
+  overdue:number;
+  inProgress:number;
+  postponed:number;
+  dueToday:number;
+};
+
+function buildDelaySummary(farmTruth:any):DelaySummary {
+  const today=new Date();today.setHours(12,0,0,0);
+  const summary:DelaySummary={criticalOverdue:0,overdue:0,inProgress:0,postponed:0,dueToday:0};
+
+  for(const item of farmTruth?.yearWheel||[]){
+    if(item.status==='in_progress')summary.inProgress++;
+    if(item.status==='postponed')summary.postponed++;
+    if(['done','skipped','suggested','postponed'].includes(item.status))continue;
+
+    const hasExactDay=Boolean(item.target_day);
+    const target=hasExactDay
+      ?new Date(item.target_year,item.target_month-1,item.target_day)
+      :new Date(item.target_year,item.target_month,0);
+    target.setHours(12,0,0,0);
+    const days=Math.round((target.getTime()-today.getTime())/86400000);
+
+    if(days===0&&hasExactDay)summary.dueToday++;
+    if(days<0){
+      summary.overdue++;
+      if(hasExactDay&&Math.abs(days)>=3)summary.criticalOverdue++;
+    }
+  }
+
+  for(const item of farmTruth?.yearWheel||[]){
+    if(item.status!=='postponed'||!item.postponed_until)continue;
+    const followUp=new Date(item.postponed_until+'T12:00:00');
+    if(Number.isNaN(followUp.getTime()))continue;
+    const days=Math.round((followUp.getTime()-today.getTime())/86400000);
+    if(days<0){
+      summary.overdue++;
+      if(Math.abs(days)>=3)summary.criticalOverdue++;
+    }
+  }
+  return summary;
+}
+
 function buildDailyTopFive(params:{
   farmTruth:any;
   farmQuestions:FarmQuestion[];
@@ -443,6 +487,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
 
   const actions = buildActionCards(advice, readings, alerts, irrigationEvents, observations);
   const topFive = buildDailyTopFive({farmTruth,farmQuestions,seasonExecution,actions});
+  const delaySummary = buildDelaySummary(farmTruth);
   const currentMonth = new Date().getMonth() + 1;
   const oilWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_oil;
   const tableWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_table_olives;
@@ -471,6 +516,19 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
           </button>
         </div>
       </div>
+
+      {farmTruth&&<div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        {[
+          {label:'Kritisk forsinket',value:delaySummary.criticalOverdue,tone:delaySummary.criticalOverdue?'border-red-500/30 bg-red-500/10 text-red-300':'border-white/10 bg-white/[0.03] text-slate-300'},
+          {label:'Forsinket totalt',value:delaySummary.overdue,tone:delaySummary.overdue?'border-amber-400/25 bg-amber-400/[0.07] text-amber-200':'border-white/10 bg-white/[0.03] text-slate-300'},
+          {label:'Pågår',value:delaySummary.inProgress,tone:delaySummary.inProgress?'border-cyan-500/25 bg-cyan-500/[0.07] text-cyan-200':'border-white/10 bg-white/[0.03] text-slate-300'},
+          {label:'Utsatt',value:delaySummary.postponed,tone:delaySummary.postponed?'border-amber-300/20 bg-amber-300/[0.05] text-amber-100':'border-white/10 bg-white/[0.03] text-slate-300'},
+          {label:'Forfaller i dag',value:delaySummary.dueToday,tone:delaySummary.dueToday?'border-blue-400/25 bg-blue-400/[0.07] text-blue-200':'border-white/10 bg-white/[0.03] text-slate-300'},
+        ].map(item=><button key={item.label} onClick={()=>onNavigate?.('farm_journal:yearwheel')} className={'rounded-2xl border p-4 text-left transition hover:bg-white/[0.05] '+item.tone}>
+          <p className="text-[9px] uppercase tracking-widest font-black opacity-80">{item.label}</p>
+          <p className="text-2xl font-black mt-1">{item.value}</p>
+        </button>)}
+      </div>}
 
       {errorMessage && <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100 flex gap-3"><AlertTriangle size={18} className="flex-shrink-0 mt-0.5" /> {errorMessage}</div>}
       {sourceFailures.length>0&&loadState!=='error'&&<div className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] p-4"><div className="flex items-start gap-3"><AlertTriangle size={17} className="text-amber-300 mt-0.5"/><div><p className="text-sm font-bold text-white">Daily er lastet, men noen datakilder svarte ikke</p><p className="text-xs text-slate-500 mt-1">Manglende kilde skal ikke tolkes som at det ikke finnes data. Feilet nå: {sourceFailures.join(', ')}.</p></div></div></div>}
