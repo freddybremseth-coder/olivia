@@ -281,7 +281,7 @@ const FarmAdvisorView: React.FC = () => {
         <div className="glass rounded-[2rem] p-5 border border-green-500/20 bg-green-500/5"><Sparkles className="text-green-300 mb-3"/><p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Lagre analyser</p><p className="text-3xl font-black text-white mt-1">{intelligence?.assessmentCount||0}</p></div>
       </div>
 
-      <FarmQuestionsPanel agentType="farm_advisor" title="Spørsmål Olivia ikke vil gjette på" compact />
+      <FarmQuestionsPanel title="Spørsmål Olivia ikke vil gjette på" compact />
 
       <div className="glass rounded-[2rem] p-6 border border-green-500/20 bg-green-500/5">
         <div className="flex items-start gap-4">
