@@ -279,7 +279,7 @@ function CustomerPortal({ user }: { user: UserProfile }) {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      fetchCommerceProducts({ publicOnly: true }),
+      fetchCommerceProducts({ publicOnly: true, fallback: false }),
       fetchCustomerPortalData(user),
     ]).then(([productRows, data]) => {
       if (cancelled) return;
@@ -657,7 +657,7 @@ export function ProductCatalog() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchCommerceProducts()
+    fetchCommerceProducts({ fallback: false })
       .then(rows => {
         if (cancelled) return;
         setProducts(rows);
