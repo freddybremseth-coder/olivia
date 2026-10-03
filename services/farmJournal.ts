@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { fileToBase64 } from './expenseCapture';
+import { createFarmQuestion } from './farmIntelligence';
 
 export type FarmDocumentKind =
   | 'invoice'|'receipt'|'quote'|'proforma'|'agronomy_plan'|'message'
@@ -363,6 +364,33 @@ export async function saveFarmSource(params:{
   await upsertProducts(allProducts,documentId);
 
   if(params.verify!==false)await verifyFarmDocument(documentId);
+
+  for(const warning of scan.warnings||[]){
+    await createFarmQuestion({
+      question:'Kan du avklare dette fra «'+scan.title+'»: '+warning,
+      reason:'Kildeskanneren markerte dette som usikkert. Olivia lagrer heller et spørsmål enn å gjøre en antakelse.',
+      questionType:'clarification',
+      priority:'medium',
+      parcelId:params.parcelId,
+      agentType:'source_scanner',
+      sourceDocumentId:documentId,
+      dedupeKey:'source-warning:'+documentId+':'+normalizeName(warning),
+    }).catch(()=>null);
+  }
+
+  if(!params.parcelId&&sourceEvents.some(event=>event.eventType==='planting'||event.treeCountDelta!=null)){
+    await createFarmQuestion({
+      question:'Hvilken parsell eller sone gjelder «'+scan.title+'»?',
+      reason:'Kilden inneholder planting eller treantall, men ingen parsell er bekreftet. Olivia skal ikke flytte tredata til feil parsell.',
+      questionType:'missing_fact',
+      priority:'high',
+      agentType:'source_scanner',
+      sourceDocumentId:documentId,
+      relatedKnowledgeKey:'source.'+documentId+'.parcel_scope',
+      dedupeKey:'source-parcel:'+documentId,
+    }).catch(()=>null);
+  }
+
   return documentId;
 }
 
