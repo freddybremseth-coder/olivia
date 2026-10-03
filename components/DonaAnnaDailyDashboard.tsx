@@ -232,7 +232,7 @@ function buildDailyTopFive(params:{
         source:'Årshjul',
         priority:days<0?'Kritisk':'Høy',
         score:days<0?100:88,
-        targetTab:'farm_journal',
+        targetTab:'farm_journal:yearwheel',
         actionLabel:'Fullfør / dokumenter',
       });
     }else if(item.status==='postponed'){
@@ -243,7 +243,7 @@ function buildDailyTopFive(params:{
         source:'Årshjul',
         priority:days<0?'Høy':'Middels',
         score:days<0?84:68,
-        targetTab:'farm_journal',
+        targetTab:'farm_journal:yearwheel',
         actionLabel:'Åpne årshjul',
       });
     }else if(item.status==='approved'&&days<0){
@@ -254,7 +254,7 @@ function buildDailyTopFive(params:{
         source:'Årshjul',
         priority:'Høy',
         score:82+Math.min(10,Math.abs(days)),
-        targetTab:'farm_journal',
+        targetTab:'farm_journal:yearwheel',
         actionLabel:'Avklar status',
       });
     }else if(item.status==='approved'&&days<=7){
@@ -265,7 +265,7 @@ function buildDailyTopFive(params:{
         source:'Årshjul',
         priority:'Middels',
         score:64+(7-days),
-        targetTab:'farm_journal',
+        targetTab:'farm_journal:yearwheel',
         actionLabel:'Åpne årshjul',
       });
     }
@@ -281,7 +281,7 @@ function buildDailyTopFive(params:{
       source:'Olivia',
       priority:qPriority[q.priority]||'Middels',
       score:qScore[q.priority]||60,
-      targetTab:'farm_journal',
+      targetTab:'farm_journal:learning',
       actionLabel:'Svar Olivia',
     });
   }
