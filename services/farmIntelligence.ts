@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { buildVarietyReferenceContext } from './varietyReference';
 
 export type FarmQuestionPriority='low'|'medium'|'high'|'critical';
 export type FarmQuestionType='clarification'|'conflict'|'missing_fact'|'confirmation'|'follow_up';
@@ -231,7 +232,7 @@ export async function recordAgentFeedback(input:{
 }
 
 export async function buildLearningContext(parcelId?:string):Promise<string>{
-  const [knowledge,questions,assessmentRes]=await Promise.all([
+  const [knowledge,questions,assessmentRes,varietyReferenceContext]=await Promise.all([
     fetchFarmKnowledge({parcelId,limit:40}),
     fetchOpenFarmQuestions({parcelId,limit:15}),
     (()=> {
@@ -242,10 +243,12 @@ export async function buildLearningContext(parcelId?:string):Promise<string>{
       if(parcelId)q=q.or('parcel_id.eq.'+parcelId+',parcel_id.is.null');
       return q;
     })(),
+    buildVarietyReferenceContext(parcelId).catch(err=>{console.warn('[farmIntelligence] variety reference context',err);return'';}),
   ]);
   if(assessmentRes.error)throw new Error(assessmentRes.error.message);
 
   const lines:string[]=[];
+  if(varietyReferenceContext)lines.push(varietyReferenceContext);
   if(knowledge.length){
     lines.push('LÆRT OG BEKREFTET KUNNSKAP:');
     knowledge.slice(0,30).forEach(item=>{
