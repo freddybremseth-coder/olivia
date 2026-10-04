@@ -232,7 +232,7 @@ export async function recordAgentFeedback(input:{
 }
 
 export async function buildLearningContext(parcelId?:string):Promise<string>{
-  const [knowledge,questions,assessmentRes,varietyReferenceContext]=await Promise.all([
+  const [knowledge,questions,assessmentRes,varietyReferenceContext,pruningOutcomeRes]=await Promise.all([
     fetchFarmKnowledge({parcelId,limit:40}),
     fetchOpenFarmQuestions({parcelId,limit:15}),
     (()=> {
@@ -244,11 +244,43 @@ export async function buildLearningContext(parcelId?:string):Promise<string>{
       return q;
     })(),
     buildVarietyReferenceContext(parcelId).catch(err=>{console.warn('[farmIntelligence] variety reference context',err);return'';}),
+    (()=> {
+      let q=supabase.from('pruning_history')
+        .select('id,date,tree_type,plan,execution_status,completed_at,outcome_rating,outcome_notes,step_feedback,outcome_verified_at,parcel_id')
+        .not('outcome_verified_at','is',null)
+        .order('outcome_verified_at',{ascending:false})
+        .limit(8);
+      if(parcelId)q=q.eq('parcel_id',parcelId);
+      return q;
+    })(),
   ]);
   if(assessmentRes.error)throw new Error(assessmentRes.error.message);
+  if(pruningOutcomeRes.error)throw new Error(pruningOutcomeRes.error.message);
 
   const lines:string[]=[];
   if(varietyReferenceContext)lines.push(varietyReferenceContext);
+
+  const pruningOutcomes=(pruningOutcomeRes.data||[]) as any[];
+  if(pruningOutcomes.length){
+    lines.push('BEKREFTET BESKJÆRINGSFASIT FRA GÅRDEN:');
+    pruningOutcomes.slice(0,6).forEach(row=>{
+      const feedback=Array.isArray(row.step_feedback)?row.step_feedback:[];
+      const count=(status:string)=>feedback.filter((item:any)=>item?.status===status).length;
+      const statusLabel=row.execution_status==='completed'?'UTFØRT'
+        :row.execution_status==='partly_completed'?'DELVIS UTFØRT'
+        :row.execution_status==='cancelled'?'AVLYST'
+        :'PLANLAGT';
+      const parts=[
+        count('performed')?count('performed')+' råd utført som foreslått':'',
+        count('corrected')?count('corrected')+' råd korrigert':'',
+        count('skipped')?count('skipped')+' råd ikke utført':'',
+        row.outcome_rating?('utfall '+row.outcome_rating):'',
+        row.outcome_notes?String(row.outcome_notes).slice(0,320):'',
+      ].filter(Boolean);
+      lines.push('- ['+statusLabel+'] '+String(row.completed_at||row.date||'').slice(0,10)+' · '+String(row.tree_type||'oliventre')+(parts.length?' · '+parts.join(' · '):''));
+    });
+    lines.push('BESKJÆRINGSREGEL: Menneskelig verifisert utfallsfasit veier tyngre enn tidligere AI-planer. Korrigerte eller hoppede råd skal behandles som negativ/justerende erfaring, ikke som vellykkede anbefalinger.');
+  }
   if(knowledge.length){
     lines.push('LÆRT OG BEKREFTET KUNNSKAP:');
     knowledge.slice(0,30).forEach(item=>{

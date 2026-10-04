@@ -520,6 +520,13 @@ function rowToPruning(r: any): PruningHistoryItem {
     plan: r.plan ?? undefined,
     scheduledTime: r.scheduled_time ?? undefined,
     parcelId: r.parcel_id ?? undefined,
+    executionStatus: r.execution_status ?? 'planned',
+    completedAt: r.completed_at ?? undefined,
+    afterImages: Array.isArray(r.after_images) ? r.after_images : [],
+    outcomeRating: r.outcome_rating ?? undefined,
+    outcomeNotes: r.outcome_notes ?? undefined,
+    stepFeedback: Array.isArray(r.step_feedback) ? r.step_feedback : [],
+    outcomeVerifiedAt: r.outcome_verified_at ?? undefined,
   };
 }
 
@@ -534,5 +541,13 @@ function pruningToRow(p: PruningHistoryItem) {
     plan: p.plan ?? null,
     scheduled_time: p.scheduledTime ?? null,
     parcel_id: p.parcelId ?? null,
+    execution_status: p.executionStatus ?? 'planned',
+    completed_at: p.completedAt ?? null,
+    after_images: p.afterImages ?? [],
+    outcome_rating: p.outcomeRating ?? null,
+    outcome_notes: p.outcomeNotes ?? null,
+    step_feedback: p.stepFeedback ?? [],
+    outcome_verified_at: p.outcomeVerifiedAt ?? null,
+    updated_at: new Date().toISOString(),
   };
 }
