@@ -334,21 +334,22 @@ export function buildDonaAnnaDecisionAdvice(readings: SensorReading[], alerts: S
     };
   }
 
+  const freshTypeCount=freshLatest.length;
   if(staleLatest.length){
     return{
       severity:'watch',
-      title:'Ferske data uten kritiske avvik',
-      message:'De ferske sensormålingene ser stabile ut, men '+staleLatest.length+' sensortype'+(staleLatest.length===1?'':'r')+' har siste måling eldre enn 24 timer og er utelatt fra beslutningsgrunnlaget.',
+      title:'Ingen kritiske avvik i tilgjengelige ferske data',
+      message:'Olivia har ferske data fra '+freshTypeCount+' sensortype'+(freshTypeCount===1?'':'r')+'. '+staleLatest.length+' sensortype'+(staleLatest.length===1?'':'r')+' har siste måling eldre enn 24 timer og er utelatt fra beslutningsgrunnlaget.',
       recommended_action:'monitor',
-      reasons:['Olivia bruker bare sensormålinger som er maksimalt 24 timer gamle til operative råd.'],
+      reasons:['Dette betyr ikke at hele sensorbildet er komplett. Olivia vurderer bare sensortyper som faktisk har ferske målinger.'],
     };
   }
 
   return {
     severity: 'optimal',
-    title: 'Ingen kritiske avvik',
-    message: 'Det ferske sensorbildet ser stabilt ut. Fortsett overvåkning og bruk Biar-profilen for senere høstevindu.',
+    title: 'Ingen kritiske avvik i tilgjengelige ferske data',
+    message: 'Olivia har ferske data fra '+freshTypeCount+' sensortype'+(freshTypeCount===1?'':'r')+' og finner ingen prioriterte grenseverdier overskredet i disse målingene.',
     recommended_action: 'no_action',
-    reasons: ['Ingen åpne kritiske varsler eller ferske målinger utenfor prioriterte grenseverdier.'],
+    reasons: ['Dette beskriver bare sensorene som faktisk har rapportert ferske data; manglende sensortyper tolkes ikke som normale.'],
   };
 }

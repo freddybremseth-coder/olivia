@@ -110,6 +110,21 @@ function humanAge(value?:string|null,now=new Date()):string{
   return days+' dag'+(days===1?'':'er')+' siden';
 }
 
+function sensorTypeLabel(type:string):string{
+  const labels:Record<string,string>={
+    soil_moisture:'jordfukt',
+    soil_ec:'jord-EC',
+    water_ec:'vann-EC',
+    flow:'flow',
+    pressure:'trykk',
+    leaf_wetness:'bladfukt',
+    temperature:'temperatur',
+    humidity:'luftfukt',
+    rain:'regn',
+  };
+  return labels[type]||type.replaceAll('_',' ');
+}
+
 function buildSourceFreshness(
   readings:SensorReading[],
   observations:FarmObservation[],
@@ -117,15 +132,37 @@ function buildSourceFreshness(
   now=new Date()
 ):SourceFreshness[]{
   const latestReading=[...readings].sort((a,b)=>new Date(b.measured_at).getTime()-new Date(a.measured_at).getTime())[0];
-  const sensorAge=latestReading?senorAgeSafe(latestReading,now):null;
+  const sensorAge=latestReading?sensorReadingAgeHours(latestReading,now):null;
+  const latestByType=new Map<string,SensorReading>();
+  for(const reading of readings){
+    const existing=latestByType.get(reading.type);
+    if(!existing||new Date(reading.measured_at)>new Date(existing.measured_at))latestByType.set(reading.type,reading);
+  }
+  const sensorTypes=Array.from(latestByType.values());
+  const freshSensorTypes=sensorTypes.filter(reading=>{
+    const age=sensorReadingAgeHours(reading,now);
+    return age!=null&&age<=SENSOR_ACTION_MAX_AGE_HOURS;
+  });
+  const staleSensorTypes=sensorTypes.filter(reading=>{
+    const age=sensorReadingAgeHours(reading,now);
+    return age==null||age>SENSOR_ACTION_MAX_AGE_HOURS;
+  });
+  const freshTypeText=freshSensorTypes.map(reading=>sensorTypeLabel(reading.type)).slice(0,5).join(', ');
+
   const latestObservation=[...observations].sort((a,b)=>new Date(b.observed_at).getTime()-new Date(a.observed_at).getTime())[0];
   const observationHours=latestObservation?ageHours(latestObservation.observed_at,now):null;
   const latestIrrigation=[...irrigationEvents].sort((a,b)=>new Date(b.started_at).getTime()-new Date(a.started_at).getTime())[0];
   const irrigationHours=latestIrrigation?ageHours(latestIrrigation.started_at,now):null;
 
-  const sensorState:SourceFreshness['state']=sensorAge==null?'missing':sensorAge<=6?'fresh':sensorAge<=SENSOR_ACTION_MAX_AGE_HOURS?'aging':'stale';
+  const sensorState:SourceFreshness['state']=!readings.length?'missing':!freshSensorTypes.length?'stale':staleSensorTypes.length||((sensorAge??0)>6)?'aging':'fresh';
   const observationState:SourceFreshness['state']=observationHours==null?'missing':observationHours<=24*7?'fresh':observationHours<=24*21?'aging':'stale';
   const irrigationState:SourceFreshness['state']=irrigationHours==null?'context':irrigationHours<=24*7?'fresh':'context';
+
+  const sensorNote=sensorState==='missing'
+    ?'Ingen sensormålinger tilgjengelig.'
+    :sensorState==='stale'
+      ?'Ingen registrerte sensortyper har fersk måling innen 24 timer. Operative sensorråd er sperret.'
+      :(freshSensorTypes.length+' fersk'+(freshSensorTypes.length===1?' sensortype':'e sensortyper')+(freshTypeText?': '+freshTypeText:'')+(staleSensorTypes.length?'. '+staleSensorTypes.length+' registrert'+(staleSensorTypes.length===1?' type har':'e typer har')+' for gamle målinger.':'.'));
 
   return[
     {
@@ -134,7 +171,7 @@ function buildSourceFreshness(
       lastAt:latestReading?.measured_at,
       ageText:humanAge(latestReading?.measured_at,now),
       state:sensorState,
-      note:sensorState==='stale'?'For gammel til operative råd.':sensorState==='missing'?'Ingen sensormålinger tilgjengelig.':sensorState==='aging'?'Brukes fortsatt, men bør fornyes snart.':'Fersk nok til operative råd.',
+      note:sensorNote,
       targetTab:'iot',
     },
     {
@@ -156,10 +193,6 @@ function buildSourceFreshness(
       targetTab:'irrigation_log',
     },
   ];
-}
-
-function senorAgeSafe(reading:SensorReading,now=new Date()):number|null{
-  return sensorReadingAgeHours(reading,now);
 }
 
 function getBiarSeasonText(date = new Date()): string {
