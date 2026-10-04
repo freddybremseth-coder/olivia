@@ -14,6 +14,7 @@ import {
   type HarvestRecord,
   type SubsidyIncome,
 } from '../services/oliviaSchemaData';
+import { currentHarvestSeason, harvestSeasonForDate } from '../services/harvestSeason';
 
 type Props = { language: Language; parcels: Parcel[] };
 type SeasonTotals = {
@@ -26,8 +27,27 @@ type SeasonTotals = {
 };
 
 const eur = (value: number) => `€${Math.round(value).toLocaleString('no-NO')}`;
-const currentSeason = () => new Date().getFullYear().toString();
+const currentSeason = () => currentHarvestSeason();
 const currentYear = () => new Date().getFullYear().toString();
+
+function financeSeason(explicit:string|undefined,date?:string):string{
+  if(explicit&&/^\d{4}\/\d{2}$/.test(explicit))return explicit;
+  if(date)return harvestSeasonForDate(date);
+  return explicit||currentHarvestSeason();
+}
+
+function harvestRowSeason(row:HarvestRecord):string{
+  return financeSeason(row.season,row.date);
+}
+function expenseRowSeason(row:FarmExpense):string{
+  return financeSeason(row.season,row.date);
+}
+function subsidyRowSeason(row:SubsidyIncome):string{
+  return financeSeason(row.season,row.date);
+}
+function incomeRowSeason(row:FarmIncome):string{
+  return financeSeason(row.season,row.earnedDate||row.paymentDate||(row.paymentPeriod?row.paymentPeriod+'-01':undefined));
+}
 
 function seasonRows(
   season: string,
@@ -36,10 +56,10 @@ function seasonRows(
   subsidies: SubsidyIncome[],
   incomes: FarmIncome[],
 ): SeasonTotals {
-  const hs = harvests.filter(h => h.season === season);
-  const ex = expenses.filter(e => e.season === season);
-  const su = subsidies.filter(s => s.season === season);
-  const inc = incomes.filter(i => i.season === season && i.status !== 'cancelled');
+  const hs = harvests.filter(h => harvestRowSeason(h) === season);
+  const ex = expenses.filter(e => expenseRowSeason(e) === season);
+  const su = subsidies.filter(s => subsidyRowSeason(s) === season);
+  const inc = incomes.filter(i => incomeRowSeason(i) === season && i.status !== 'cancelled');
   return {
     season,
     harvestValue: hs.reduce((acc, h) => acc + h.kg * h.pricePerKg, 0),
@@ -76,10 +96,10 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
       setIncomes(i);
 
       const dataSeasons = Array.from(new Set([
-        ...h.map(x => x.season),
-        ...e.map(x => x.season),
-        ...s.map(x => x.season),
-        ...i.map(x => x.season),
+        ...h.map(x => harvestRowSeason(x)),
+        ...e.map(x => expenseRowSeason(x)),
+        ...s.map(x => subsidyRowSeason(x)),
+        ...i.map(x => incomeRowSeason(x)),
       ])).filter(Boolean).sort((a, b) => b.localeCompare(a));
 
       const latestWithRows = dataSeasons.find(se => seasonRows(se, h, e, s, i).rows > 0);
@@ -99,10 +119,10 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
   const seasons = useMemo(() => {
     const all = new Set([
       currentSeason(),
-      ...harvests.map(h => h.season),
-      ...expenses.map(e => e.season),
-      ...subsidies.map(s => s.season),
-      ...incomes.map(i => i.season),
+      ...harvests.map(h => harvestRowSeason(h)),
+      ...expenses.map(e => expenseRowSeason(e)),
+      ...subsidies.map(s => subsidyRowSeason(s)),
+      ...incomes.map(i => incomeRowSeason(i)),
     ]);
     return Array.from(all).filter(Boolean).sort((a, b) => b.localeCompare(a));
   }, [harvests, expenses, subsidies, incomes]);
@@ -113,10 +133,10 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
   );
 
   const totals = seasonRows(season, harvests, expenses, subsidies, incomes);
-  const sHarvests = harvests.filter(h => h.season === season);
-  const sExpenses = expenses.filter(e => e.season === season);
-  const sSubsidies = subsidies.filter(s => s.season === season);
-  const sIncome = incomes.filter(i => i.season === season && i.status !== 'cancelled');
+  const sHarvests = harvests.filter(h => harvestRowSeason(h) === season);
+  const sExpenses = expenses.filter(e => expenseRowSeason(e) === season);
+  const sSubsidies = subsidies.filter(s => subsidyRowSeason(s) === season);
+  const sIncome = incomes.filter(i => incomeRowSeason(i) === season && i.status !== 'cancelled');
   const harvestKg = sHarvests.reduce((acc, h) => acc + h.kg, 0);
   const actualRevenue = totals.actualIncome + totals.subsidies;
   const net = actualRevenue - totals.expenses;
@@ -140,7 +160,7 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3"><Euro className="text-green-400" /> Økonomi</h2>
-          <p className="text-slate-400 text-sm mt-1">Faktiske inntekter, oppgjør, kostnader og produksjonsgrunnlag. Avlingsverdi og mottatt betaling holdes adskilt.</p>
+          <p className="text-slate-400 text-sm mt-1">Sesongresultat og kontantstrøm holdes adskilt. En februar-faktura eller mai-betaling kan tilhøre høsten fra forrige kalenderår.</p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <ExpenseCapturePanel parcels={parcels} onSaved={load} />
@@ -148,7 +168,7 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
           <label className="flex flex-col gap-1 text-[10px] text-slate-500 uppercase font-bold tracking-widest">
             Sesong
             <select value={season} onChange={e => setSeason(e.target.value)} className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white font-bold text-sm focus:outline-none cursor-pointer normal-case tracking-normal">
-              {seasons.map(se => <option key={se} value={se} className="bg-slate-800">{se} · {seasonRows(se, harvests, expenses, subsidies, incomes).rows} rader</option>)}
+              {seasons.map(se => <option key={se} value={se} className="bg-slate-800">{se} · høst {se.slice(0,4)} · {seasonRows(se, harvests, expenses, subsidies, incomes).rows} rader</option>)}
             </select>
           </label>
         </div>
