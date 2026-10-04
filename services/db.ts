@@ -527,6 +527,7 @@ function rowToPruning(r: any): PruningHistoryItem {
     outcomeNotes: r.outcome_notes ?? undefined,
     stepFeedback: Array.isArray(r.step_feedback) ? r.step_feedback : [],
     outcomeVerifiedAt: r.outcome_verified_at ?? undefined,
+    outcomeAiReview: r.outcome_ai_review ?? undefined,
   };
 }
 
@@ -548,6 +549,7 @@ function pruningToRow(p: PruningHistoryItem) {
     outcome_notes: p.outcomeNotes ?? null,
     step_feedback: p.stepFeedback ?? [],
     outcome_verified_at: p.outcomeVerifiedAt ?? null,
+    outcome_ai_review: p.outcomeAiReview ?? null,
     updated_at: new Date().toISOString(),
   };
 }
