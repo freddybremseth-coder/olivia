@@ -52,6 +52,11 @@ function makeId(prefix:string){
   return prefix+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
 }
 
+function stableMediaId(sourceModule:string,sourceRef:string|undefined,index:number){
+  if(!sourceRef)return makeId('media');
+  return 'media:'+sourceModule+':'+sourceRef+':'+index;
+}
+
 function safePart(value?:string|null){
   return String(value||'farm')
     .toLowerCase()
@@ -113,7 +118,7 @@ export async function registerFarmMediaEvidence(input:{
   if(!input.urls.length||!isSupabaseConfigured)return;
   const parcelId=input.parcelId||input.geo?.parcelId||null;
   const rows=input.urls.map((url,index)=>({
-    id:makeId('media'),
+    id:stableMediaId(input.sourceModule,input.sourceRef,index),
     media_url:url,
     media_kind:'photo',
     source_module:input.sourceModule,
@@ -133,7 +138,7 @@ export async function registerFarmMediaEvidence(input:{
     metadata:{imageIndex:index,...(input.metadata||{})},
     created_by:input.createdBy||null,
   }));
-  const {error}=await supabase.from('farm_media_evidence').insert(rows);
+  const {error}=await supabase.from('farm_media_evidence').upsert(rows,{onConflict:'id'});
   if(error)throw new Error(error.message);
 }
 
