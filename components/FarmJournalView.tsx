@@ -14,6 +14,7 @@ import {
   fetchFarmDocuments,
   fetchFarmEvents,
   fetchFarmInputs,
+  fetchFarmInputEvidenceLines,
   fetchFarmTruthSummary,
   fetchRainMeasurements,
   fetchYearWheel,
@@ -25,6 +26,7 @@ import {
   type FarmEvent,
   type FarmScanResult,
   type FarmYearWheelItem,
+  type FarmInputEvidenceLine,
   type RainMeasurement,
 } from '../services/farmJournal';
 import FarmQuestionsPanel from './FarmQuestionsPanel';
@@ -69,6 +71,8 @@ const FarmJournalView:React.FC<{
   const [yearWheelParcelFilter,setYearWheelParcelFilter]=useState('');
   const [rain,setRain]=useState<RainMeasurement[]>([]);
   const [inputs,setInputs]=useState<any[]>([]);
+  const [inputEvidence,setInputEvidence]=useState<FarmInputEvidenceLine[]>([]);
+  const [inputSeasonFilter,setInputSeasonFilter]=useState('');
   const [observations,setObservations]=useState<any[]>([]);
   const [summary,setSummary]=useState<any>(null);
   const [knowledge,setKnowledge]=useState<FarmKnowledgeItem[]>([]);
@@ -106,18 +110,19 @@ const FarmJournalView:React.FC<{
   const load=async()=>{
     setLoading(true);setError('');
     try{
-      const [docs,ev,wheel,rainRows,inputRows,obs,truth,knowledgeRows,intelligenceSummary]=await Promise.all([
+      const [docs,ev,wheel,rainRows,inputRows,inputEvidenceRows,obs,truth,knowledgeRows,intelligenceSummary]=await Promise.all([
         fetchFarmDocuments(100),
         fetchFarmEvents(250),
         fetchYearWheel(wheelYear),
         fetchRainMeasurements(365),
         fetchFarmInputs(),
+        fetchFarmInputEvidenceLines(),
         fetchRecentFarmObservations(100).catch(()=>[]),
         fetchFarmTruthSummary(),
         fetchFarmKnowledge({limit:100}),
         fetchFarmIntelligenceSummary(),
       ]);
-      setDocuments(docs);setEvents(ev);setYearWheel(wheel);setRain(rainRows);setInputs(inputRows);setObservations(obs);setSummary(truth);setKnowledge(knowledgeRows);setIntelligence(intelligenceSummary);
+      setDocuments(docs);setEvents(ev);setYearWheel(wheel);setRain(rainRows);setInputs(inputRows);setInputEvidence(inputEvidenceRows);setObservations(obs);setSummary(truth);setKnowledge(knowledgeRows);setIntelligence(intelligenceSummary);
     }catch(e:any){setError(e?.message||'Kunne ikke hente driftsjournalen.');}
     finally{setLoading(false);}
   };
@@ -303,6 +308,12 @@ const FarmJournalView:React.FC<{
 
   const photoObservations=observations.filter(obs=>Array.isArray(obs.image_urls)&&obs.image_urls.length);
   const photoDocs=documents.filter(doc=>doc.document_kind==='photo'||doc.document_kind==='video');
+  const inputSeasons=Array.from(new Set(inputEvidence.map(row=>row.season).filter(Boolean))).sort((a,b)=>b.localeCompare(a));
+  const activeInputSeason=inputSeasonFilter||(inputSeasons[0]||'');
+  const visibleInputEvidence=inputEvidence.filter(row=>!activeInputSeason||row.season===activeInputSeason);
+  const usedInputLines=visibleInputEvidence.filter(row=>row.evidenceKind==='used');
+  const applicationLines=visibleInputEvidence.filter(row=>row.evidenceKind==='application');
+  const documentInputLines=visibleInputEvidence.filter(row=>row.evidenceKind==='document_line');
 
   return <div className="space-y-7 pb-24 animate-in fade-in duration-500">
     {postponeItem&&<div className="fixed inset-0 z-[91] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
@@ -381,7 +392,7 @@ const FarmJournalView:React.FC<{
     <div className="flex gap-2 overflow-x-auto pb-1">
       {([
         ['timeline','Driftstidslinje',ShieldCheck],['inbox','Dokumentskanning',ScanLine],['yearwheel','Årshjul',CalendarDays],
-        ['rain','Regn',CloudRain],['photos','Bilder / video',ImageIcon],['inputs','Produkter',PackageSearch],['learning','Spørsmål / læring',Brain]
+        ['rain','Regn',CloudRain],['photos','Bilder / video',ImageIcon],['inputs','Sprøytemidler & gjødsel',PackageSearch],['learning','Spørsmål / læring',Brain]
       ] as [Tab,string,any][]).map(([id,label,Icon])=><button key={id} onClick={()=>setTab(id)} className={'whitespace-nowrap rounded-xl px-4 py-3 text-xs font-bold flex items-center gap-2 border '+(tab===id?'bg-green-500 text-black border-green-400':'bg-white/5 text-slate-300 border-white/10')}><Icon size={15}/>{label}</button>)}
     </div>
 
@@ -523,11 +534,71 @@ const FarmJournalView:React.FC<{
       </div>
     </div>}
 
-    {tab==='inputs'&&<div className="space-y-4">
-      <div><p className="text-[10px] uppercase tracking-widest font-black text-purple-300">Innsatsmidler og produkter</p><h3 className="text-xl font-black text-white">Hva er kjøpt, anbefalt og hva brukes det til?</h3><p className="text-xs text-slate-500 mt-2">Produktregisteret fylles fra dokumentene, men «kjøpt» betyr ikke «brukt».</p></div>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">{inputs.map((p:any)=><div key={p.id} className="glass rounded-2xl border border-white/10 p-4"><p className="font-black text-white">{p.name}</p>{p.composition&&<p className="text-xs text-purple-300 mt-2">Sammensetning: {p.composition}</p>}{p.intended_use&&<p className="text-xs text-slate-400 mt-2">Bruksområde: {p.intended_use}</p>}{p.dose&&<p className="text-xs text-slate-500 mt-1">Dose: {p.dose}</p>}{p.organic_note&&<p className="text-[10px] text-green-300 mt-2">{p.organic_note}</p>}</div>)}</div>
-      {!inputs.length&&<Empty icon={<PackageSearch/>} title="Ingen produkter registrert" text="Når produktnavn, sammensetning eller dose finnes i et verifisert dokument, bygges registeret automatisk."/>}
+    {tab==='inputs'&&<div className="space-y-5">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+        <div><p className="text-[10px] uppercase tracking-widest font-black text-purple-300">Sprøytemidler & gjødsel</p><h3 className="text-xl font-black text-white">Hva er faktisk brukt — og hva står bare i dokumentene?</h3><p className="text-xs text-slate-500 mt-2">Olivia skiller mellom bekreftet bruk, utført behandling uten dokumentert middel, og produktlinjer som bare er tilbudt, anbefalt eller bestilt.</p></div>
+        <select value={activeInputSeason} onChange={e=>setInputSeasonFilter(e.target.value)} className={inputClass+' md:w-auto'}>
+          {inputSeasons.map(season=><option key={season} value={season}>{season} · høst {season.slice(0,4)}</option>)}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Stat icon={<CheckCircle2 size={18}/>} label="Bekreftet brukt" value={usedInputLines.length}/>
+        <Stat icon={<ShieldCheck size={18}/>} label="Utført behandling" value={applicationLines.length}/>
+        <Stat icon={<FileText size={18}/>} label="Dokumentlinjer" value={documentInputLines.length}/>
+        <Stat icon={<PackageSearch size={18}/>} label="Produktregister" value={inputs.length}/>
+      </div>
+
+      <div className="rounded-[2rem] border border-green-500/20 bg-green-500/[0.04] p-5">
+        <p className="text-[10px] uppercase tracking-widest font-black text-green-300">Faktisk brukt</p>
+        <h4 className="text-lg font-black text-white mt-1">Middel registrert på utført driftshendelse</h4>
+        {usedInputLines.length?<div className="space-y-2 mt-4">{usedInputLines.map(row=><InputEvidenceRow key={row.id} row={row} documents={documents} onOpenDoc={openDoc}/>)}</div>:<div className="mt-4 rounded-xl border border-dashed border-green-500/20 p-4 text-sm text-slate-400">Ingen konkrete produktnavn er ennå bekreftet som brukt i verifiserte driftshendelser for {activeInputSeason||'valgt sesong'}. Det betyr ikke at det ikke er sprøytet — bare at middelet ikke er koblet til utført-hendelsen ennå.</div>}
+      </div>
+
+      <div className="rounded-[2rem] border border-cyan-500/20 bg-cyan-500/[0.04] p-5">
+        <p className="text-[10px] uppercase tracking-widest font-black text-cyan-300">Utført behandling</p>
+        <h4 className="text-lg font-black text-white mt-1">Arbeidslinjer som dokumenterer at sprøyting faktisk ble gjort</h4>
+        {applicationLines.length?<div className="space-y-2 mt-4">{applicationLines.map(row=><InputEvidenceRow key={row.id} row={row} documents={documents} onOpenDoc={openDoc}/>)}</div>:<p className="text-sm text-slate-500 mt-4">Ingen utførte sprøyte-/behandlingslinjer funnet for valgt sesong.</p>}
+        {applicationLines.length>0&&<p className="text-[10px] text-slate-500 mt-3">En arbeidsfaktura kan bekrefte at «sulfatar» er utført uten å dokumentere hvilket kjemisk/biologisk middel som var i tanken. Olivia markerer derfor ikke produktet som brukt uten egen kilde.</p>}
+      </div>
+
+      <div className="rounded-[2rem] border border-purple-500/20 bg-purple-500/[0.035] p-5">
+        <p className="text-[10px] uppercase tracking-widest font-black text-purple-300">Faktiske dokumentlinjer</p>
+        <h4 className="text-lg font-black text-white mt-1">Tilbud, proforma og agronomplan — ordrett varelinjegrunnlag</h4>
+        <div className="space-y-2 mt-4">{documentInputLines.map(row=><InputEvidenceRow key={row.id} row={row} documents={documents} onOpenDoc={openDoc}/>)}</div>
+        {!documentInputLines.length&&<p className="text-sm text-slate-500 mt-3">Ingen relevante produktlinjer funnet for valgt sesong.</p>}
+      </div>
+
+      <div>
+        <p className="text-[10px] uppercase tracking-widest font-black text-slate-500">Produktregister</p>
+        <h4 className="text-lg font-black text-white mt-1">Sammensetning og dose fra verifiserte dokumenter</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-3">{inputs.map((p:any)=><div key={p.id} className="glass rounded-2xl border border-white/10 p-4"><p className="font-black text-white">{p.name}</p>{p.composition&&<p className="text-xs text-purple-300 mt-2">Sammensetning: {p.composition}</p>}{p.intended_use&&<p className="text-xs text-slate-400 mt-2">Bruksområde: {p.intended_use}</p>}{p.dose&&<p className="text-xs text-slate-500 mt-1">Dose: {p.dose}</p>}{p.organic_note&&<p className="text-[10px] text-green-300 mt-2">{p.organic_note}</p>}</div>)}</div>
+        {!inputs.length&&<Empty icon={<PackageSearch/>} title="Ingen produkter registrert" text="Når produktnavn, sammensetning eller dose finnes i et verifisert dokument, bygges registeret automatisk."/>}
+      </div>
     </div>}
+  </div>;
+};
+
+const InputEvidenceRow:React.FC<{row:FarmInputEvidenceLine;documents:FarmDocument[];onOpenDoc:(doc:FarmDocument)=>void}>=({row,documents,onOpenDoc})=>{
+  const doc=row.sourceDocumentId?documents.find(item=>item.id===row.sourceDocumentId):undefined;
+  const tone=row.confirmedUsed?'border-green-500/20 bg-green-500/[0.06] text-green-300':row.evidenceKind==='application'?'border-cyan-500/20 bg-cyan-500/[0.06] text-cyan-200':row.evidenceStatus==='ordered'||row.evidenceStatus==='purchased'?'border-purple-500/20 bg-purple-500/[0.06] text-purple-200':'border-amber-300/20 bg-amber-300/[0.05] text-amber-200';
+  const qty=row.quantity!=null?String(row.quantity)+(row.unit?' '+row.unit:''):'';
+  const price=row.unitPrice!=null?' · '+Number(row.unitPrice).toLocaleString('no-NO',{maximumFractionDigits:2})+' '+(row.currency||'EUR')+(row.unit?'/'+row.unit:''):'';
+  const amount=row.amount!=null?' · '+Number(row.amount).toLocaleString('no-NO',{maximumFractionDigits:2})+' '+(row.currency||'EUR'):'';
+  return <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+    <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+      <div className="min-w-0">
+        <div className="flex flex-wrap gap-2 items-center"><span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+tone}>{row.truthLabel}</span>{row.season&&<span className="text-[9px] text-slate-600 uppercase">{row.season}</span>}</div>
+        <p className="font-black text-white mt-2">{row.name}</p>
+        <p className="text-xs text-slate-500 mt-1">{row.date||'Dato ikke spesifisert'}{row.supplier?' · '+row.supplier:''}</p>
+        {(qty||price||amount)&&<p className="text-xs text-slate-300 mt-2">{qty}{price}{amount}</p>}
+        {row.composition&&<p className="text-[10px] text-purple-300 mt-2">Sammensetning: {row.composition}</p>}
+        {row.intendedUse&&<p className="text-[10px] text-slate-400 mt-1">Bruksområde: {row.intendedUse}{row.dose?' · dokumentert dose '+row.dose:''}</p>}
+        {row.detailsMissing&&<p className="text-[10px] text-amber-200 mt-2">Varelinjer mangler i dette eldre bilaget. Beløp/beskrivelse er registrert, men produktnavn må kompletteres fra originaldokumentet.</p>}
+        <p className="text-[10px] text-slate-600 mt-2">Kilde: {row.sourceTitle}{row.filename?' · '+row.filename:''}</p>
+      </div>
+      {doc&&<button onClick={()=>onOpenDoc(doc)} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white whitespace-nowrap">Åpne kilde</button>}
+    </div>
   </div>;
 };
 
