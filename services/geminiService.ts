@@ -9,6 +9,43 @@ export interface FarmInsight {
   beskrivelse: string;
 }
 
+export interface OliveVarietyCandidate {
+  name: string;
+  confidence: number;
+  supportingTraits: string[];
+  contradictingTraits: string[];
+}
+
+export interface OliveInspectionResult {
+  imageQuality: 'GOOD' | 'LIMITED' | 'INSUFFICIENT';
+  visibleOrgans: {
+    wholeTree: boolean;
+    trunk: boolean;
+    leaves: boolean;
+    fruit: boolean;
+    endocarp: boolean;
+  };
+  observations: string[];
+  canopy: {
+    density: string;
+    lightPenetration: string;
+    waterShoots: string;
+    deadWood: string;
+    crossingBranches: string;
+  };
+  leafSymptoms: string[];
+  fruitTraits: string[];
+  endocarpTraits: string[];
+  varietyAssessment: {
+    status: 'LIKELY' | 'POSSIBLE' | 'INSUFFICIENT';
+    bestCandidate: string;
+    confidence: number;
+    candidates: OliveVarietyCandidate[];
+    reasoning: string;
+  };
+  nextPhotos: string[];
+}
+
 export interface PruningStep {
   area: string;
   action: string;
@@ -17,6 +54,10 @@ export interface PruningStep {
   y: number;
   confidence?: number;
   evidence?: string;
+  riskLevel?: 'GREEN' | 'YELLOW' | 'RED';
+  actionType?: 'REMOVE' | 'SHORTEN' | 'KEEP' | 'MONITOR';
+  whyNow?: string;
+  consequenceIfSkipped?: string;
 }
 
 export interface PruningPlan {
@@ -32,6 +73,10 @@ export interface PruningPlan {
   limitations?: string[];
   missingDetails?: string[];
   safetyNotes?: string[];
+  treeStage?: 'YOUNG' | 'ESTABLISHING' | 'MATURE' | 'OLD_RENEWAL' | 'UNKNOWN';
+  trainingSystem?: 'VASE' | 'HEDGE' | 'FREE' | 'UNKNOWN';
+  pruningGoal?: string;
+  decisionSummary?: string;
 }
 
 export interface PlantDiagnosis {
@@ -61,6 +106,7 @@ export interface ComprehensiveAnalysisResult {
   varietyConfidence: number;
   needsMoreImages: boolean;
   missingDetails: string[];
+  inspection?: OliveInspectionResult;
 }
 
 export interface DroneAnalysisResult {
@@ -234,6 +280,60 @@ function normalizePriorityValue(value: unknown): PruningStep['priority'] {
   return 'LAV';
 }
 
+function normalizeRiskLevel(value: unknown, confidence = 50): PruningStep['riskLevel'] {
+  const raw=String(value||'').toUpperCase();
+  if(raw.includes('GREEN')||raw.includes('GRØNN')||raw.includes('GRONN'))return'GREEN';
+  if(raw.includes('RED')||raw.includes('RØD')||raw.includes('ROD'))return'RED';
+  if(raw.includes('YELLOW')||raw.includes('GUL'))return'YELLOW';
+  return confidence>=75?'GREEN':confidence>=45?'YELLOW':'RED';
+}
+
+function normalizeInspection(raw: Partial<OliveInspectionResult> | undefined): OliveInspectionResult {
+  const value=raw||{};
+  const visible=value.visibleOrgans||{} as OliveInspectionResult['visibleOrgans'];
+  const va=value.varietyAssessment||{} as OliveInspectionResult['varietyAssessment'];
+  const candidates=Array.isArray(va.candidates)?va.candidates.slice(0,4).map((item:any)=>({
+    name:String(item?.name||'Ukjent sort').slice(0,80),
+    confidence:normalizeConfidence(item?.confidence,0),
+    supportingTraits:Array.isArray(item?.supportingTraits)?item.supportingTraits.map(String).slice(0,6):[],
+    contradictingTraits:Array.isArray(item?.contradictingTraits)?item.contradictingTraits.map(String).slice(0,6):[],
+  })):[];
+  const confidence=normalizeConfidence(va.confidence,candidates[0]?.confidence||0);
+  const status:OliveInspectionResult['varietyAssessment']['status']=
+    va.status==='LIKELY'||va.status==='POSSIBLE'||va.status==='INSUFFICIENT'
+      ?va.status
+      :confidence>=75?'LIKELY':confidence>=40?'POSSIBLE':'INSUFFICIENT';
+  return {
+    imageQuality:value.imageQuality==='GOOD'||value.imageQuality==='LIMITED'||value.imageQuality==='INSUFFICIENT'?value.imageQuality:'LIMITED',
+    visibleOrgans:{
+      wholeTree:Boolean(visible.wholeTree),
+      trunk:Boolean(visible.trunk),
+      leaves:Boolean(visible.leaves),
+      fruit:Boolean(visible.fruit),
+      endocarp:Boolean(visible.endocarp),
+    },
+    observations:Array.isArray(value.observations)?value.observations.map(String).slice(0,12):[],
+    canopy:{
+      density:String(value.canopy?.density||'Ukjent').slice(0,180),
+      lightPenetration:String(value.canopy?.lightPenetration||'Ukjent').slice(0,180),
+      waterShoots:String(value.canopy?.waterShoots||'Ikke sikkert vurdert').slice(0,180),
+      deadWood:String(value.canopy?.deadWood||'Ikke sikkert vurdert').slice(0,180),
+      crossingBranches:String(value.canopy?.crossingBranches||'Ikke sikkert vurdert').slice(0,180),
+    },
+    leafSymptoms:Array.isArray(value.leafSymptoms)?value.leafSymptoms.map(String).slice(0,8):[],
+    fruitTraits:Array.isArray(value.fruitTraits)?value.fruitTraits.map(String).slice(0,8):[],
+    endocarpTraits:Array.isArray(value.endocarpTraits)?value.endocarpTraits.map(String).slice(0,8):[],
+    varietyAssessment:{
+      status,
+      bestCandidate:String(va.bestCandidate||candidates[0]?.name||'Ukjent sort').slice(0,80),
+      confidence,
+      candidates,
+      reasoning:String(va.reasoning||'Ikke nok morfologiske trekk til sikker sortsidentifikasjon.').slice(0,900),
+    },
+    nextPhotos:Array.isArray(value.nextPhotos)?value.nextPhotos.map(String).slice(0,6):[],
+  };
+}
+
 function normalizeCondition(value: unknown): PlantDiagnosis['condition'] {
   const raw = String(value || '').toUpperCase();
   if (raw.includes('SYK') || raw.includes('DISEASE') || raw.includes('SICK')) return 'SYK';
@@ -260,6 +360,10 @@ function sanitizePruningPlan(raw: Partial<PruningPlan> | undefined, varietyConfi
       y: clampNumber(step.y, 0, 100, 50),
       confidence: normalizeConfidence(step.confidence, 50),
       evidence: step.evidence ? String(step.evidence).slice(0, 220) : undefined,
+      riskLevel: normalizeRiskLevel(step.riskLevel, normalizeConfidence(step.confidence,50)),
+      actionType: ['REMOVE','SHORTEN','KEEP','MONITOR'].includes(String(step.actionType||'').toUpperCase()) ? String(step.actionType).toUpperCase() as PruningStep['actionType'] : 'MONITOR',
+      whyNow: step.whyNow ? String(step.whyNow).slice(0,320) : undefined,
+      consequenceIfSkipped: step.consequenceIfSkipped ? String(step.consequenceIfSkipped).slice(0,320) : undefined,
     }));
 
   const confidence = normalizeConfidence(plan.confidence, normalizedSteps.length ? 60 : 20);
@@ -286,6 +390,10 @@ function sanitizePruningPlan(raw: Partial<PruningPlan> | undefined, varietyConfi
     limitations: Array.isArray(plan.limitations) ? plan.limitations.map(String).slice(0, 6) : [],
     missingDetails: Array.isArray(plan.missingDetails) ? plan.missingDetails.map(String).slice(0, 8) : [],
     safetyNotes: Array.isArray(plan.safetyNotes) ? plan.safetyNotes.map(String).slice(0, 6) : [],
+    treeStage: ['YOUNG','ESTABLISHING','MATURE','OLD_RENEWAL','UNKNOWN'].includes(String(plan.treeStage||'')) ? plan.treeStage : 'UNKNOWN',
+    trainingSystem: ['VASE','HEDGE','FREE','UNKNOWN'].includes(String(plan.trainingSystem||'')) ? plan.trainingSystem : 'UNKNOWN',
+    pruningGoal: plan.pruningGoal ? String(plan.pruningGoal).slice(0,400) : undefined,
+    decisionSummary: plan.decisionSummary ? String(plan.decisionSummary).slice(0,700) : undefined,
   };
 }
 
@@ -325,6 +433,7 @@ function sanitizeComprehensiveAnalysis(raw: Partial<ComprehensiveAnalysisResult>
     missingDetails: missingDetails.length ? missingDetails : (
       needsMoreImages ? ['nærbilde av bladoverside og underside', 'frukt/stein hvis tilgjengelig', 'hele treet med stamme', 'parsell og kjent sortshistorikk'] : []
     ),
+    inspection: raw.inspection ? normalizeInspection(raw.inspection) : undefined,
   };
 }
 
