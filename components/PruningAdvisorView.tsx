@@ -91,6 +91,7 @@ function normalizePlan(raw: PruningPlan | null | undefined): PruningPlan {
     trainingSystem: raw?.trainingSystem,
     pruningGoal: raw?.pruningGoal,
     decisionSummary: raw?.decisionSummary,
+    expertReview: raw?.expertReview,
   };
 }
 
@@ -431,6 +432,17 @@ const PruningAdvisorView: React.FC = () => {
 
         <div className="space-y-6">
           {!plan ? <div className="glass rounded-[2rem] p-8 border border-white/10 text-center"><ImageIcon className="mx-auto text-[#d9b657] mb-4" size={42} /><h3 className="text-white font-bold text-xl">Klar for beskjæringsanalyse</h3><p className="text-slate-400 text-sm mt-2">Legg inn minst ett godt heltrebilde. Flere vinkler gir bedre verdi.</p></div> : <div className="space-y-5 animate-in slide-in-from-right-6 duration-500"><div className="glass rounded-[2rem] p-6 border border-white/10"><p className="text-[10px] font-bold text-[#d9b657] uppercase tracking-widest">Ekspertbeslutning</p><h3 className="text-2xl font-bold text-white mt-1">{plan.treeType}</h3><p className="text-xs text-slate-500 mt-1">{plan.ageEstimate}{plan.treeStage?' · '+plan.treeStage:''}{plan.trainingSystem?' · '+plan.trainingSystem:''}</p>{plan.pruningGoal&&<p className="text-xs text-green-300 mt-3"><span className="font-black">Mål:</span> {plan.pruningGoal}</p>}{plan.decisionSummary&&<p className="text-sm text-slate-300 mt-3">{plan.decisionSummary}</p>}<p className="text-sm text-slate-400 mt-4">{plan.timingAdvice}</p><div className="grid grid-cols-2 gap-3 mt-5"><Metric label="Anbefalt dato" value={scheduledDate || plan.recommendedDate} /><Metric label="Antall punkter" value={String(plan.pruningSteps.length)} /><Metric label="Sikkerhet" value={`${confidencePercent(plan.confidence)}%`} /><Metric label="Bildegrunnlag" value={qualityLabel(plan.observationQuality)} /></div>{(plan.limitations?.length || plan.missingDetails?.length || plan.safetyNotes?.length) ? <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-100 space-y-1">{plan.limitations?.length ? <p>Begrensning: {plan.limitations.join(', ')}</p> : null}{plan.missingDetails?.length ? <p>Mangler: {plan.missingDetails.join(', ')}</p> : null}{plan.safetyNotes?.length ? <p>Sikkerhet: {plan.safetyNotes.join(', ')}</p> : null}</div> : null}</div>
+
+            {plan.expertReview&&<div className={'rounded-[2rem] border p-5 '+(plan.expertReview.verdict==='APPROVE'?'border-green-500/20 bg-green-500/[0.04]':plan.expertReview.verdict==='ADJUST'?'border-amber-500/20 bg-amber-500/[0.04]':'border-red-500/20 bg-red-500/[0.04]')}>
+              <div className="flex items-start justify-between gap-3">
+                <div><p className="text-[10px] uppercase tracking-widest font-black text-purple-300">Ekspertpanel · Kritiker</p><p className="text-sm font-bold text-white mt-1">Andre vurdering av planen</p></div>
+                <span className="rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[9px] font-black text-slate-300">{plan.expertReview.verdict==='APPROVE'?'GODKJENT':plan.expertReview.verdict==='ADJUST'?'JUSTERING':'MER BEVIS'}</span>
+              </div>
+              <p className="text-xs text-slate-300 mt-3">{plan.expertReview.summary}</p>
+              {plan.expertReview.agreements.length>0&&<p className="text-[10px] text-green-200 mt-3">Enig: {plan.expertReview.agreements.slice(0,3).join(' · ')}</p>}
+              {plan.expertReview.concerns.length>0&&<div className="mt-3"><p className="text-[9px] uppercase tracking-widest font-black text-amber-300">Kritiske punkter</p>{plan.expertReview.concerns.slice(0,4).map((item,i)=><p key={i} className="text-xs text-slate-400 mt-1">• {item}</p>)}</div>}
+              {plan.expertReview.blockingQuestions.length>0&&<p className="text-[10px] text-red-200 mt-3">Før større inngrep: {plan.expertReview.blockingQuestions.join(' · ')}</p>}
+            </div>}
 
             <div className="glass rounded-[2rem] p-5 border border-white/10 space-y-3"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Planlagt dato</label><input type="date" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} /></div>
 
