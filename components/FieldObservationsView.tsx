@@ -25,10 +25,16 @@ import {
   fetchTreeGroups,
   insertFarmObservation,
 } from '../services/farmIoT';
-import { uploadFieldObservationImages } from '../services/fieldObservationStorage';
 import { geoContextSummary, requestFarmGeo } from '../services/farmGeo';
+import { filesToResizedDataUrls } from '../lib/imageUpload';
 import type { FarmGeoContext } from '../types/farmGeo';
-import { registerFarmMediaEvidence } from '../services/farmMediaEvidence';
+import {
+  listQueuedFieldObservations,
+  queueFieldObservation,
+  syncPendingFieldObservations,
+  syncQueuedFieldObservation,
+  type QueuedFieldObservation,
+} from '../services/fieldOfflineQueue';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 
 type ObservationCategory = FarmObservation['category'];
@@ -88,6 +94,10 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
   const [geoContext,setGeoContext]=useState<FarmGeoContext|null>(null);
   const [isLocating,setIsLocating]=useState(false);
   const [parcelSelectionSource,setParcelSelectionSource]=useState<'none'|'manual'|'geo'>('none');
+  const [offlineQueueCount,setOfflineQueueCount]=useState(0);
+  const [isSyncingOffline,setIsSyncingOffline]=useState(false);
+  const [isOnline,setIsOnline]=useState(()=>typeof navigator==='undefined'?true:navigator.onLine);
+  const [syncMessage,setSyncMessage]=useState('');
 
   const parcelNameById = useMemo(() => new Map(parcels.map(parcel => [parcel.id, parcel.name])), [parcels]);
   const zoneNameById = useMemo(() => new Map(farmZones.map(zone => [zone.id, zone.name])), [farmZones]);
@@ -96,6 +106,31 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     if (!form.zone_id) return treeGroups;
     return treeGroups.filter(group => group.zone_id === form.zone_id);
   }, [form.zone_id, treeGroups]);
+
+  const refreshOfflineQueue=async()=>{
+    try{setOfflineQueueCount((await listQueuedFieldObservations()).length);}
+    catch(err){console.warn('[FieldObservationsView] offline queue count',err);}
+  };
+
+  const syncOfflineQueue=async()=>{
+    if(typeof navigator!=='undefined'&&!navigator.onLine){await refreshOfflineQueue();return;}
+    setIsSyncingOffline(true);
+    try{
+      const result=await syncPendingFieldObservations();
+      await refreshOfflineQueue();
+      if(result.synced){
+        setSyncMessage(result.synced+' feltobservasjon'+(result.synced===1?'':'er')+' synkronisert.');
+        await loadObservations();
+      }else if(result.failed){
+        setSyncMessage('Synkronisering ble ikke fullført. Posten ligger fortsatt trygt lokalt.');
+      }
+    }catch(err:any){
+      setSyncMessage('Synkronisering feilet, men feltdata ligger fortsatt lokalt.');
+      console.warn('[FieldObservationsView] offline sync',err);
+    }finally{
+      setIsSyncingOffline(false);
+    }
+  };
 
   const loadObservations = async () => {
     setIsLoading(true);
@@ -115,7 +150,16 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
   };
 
   useEffect(() => {
-    loadObservations();
+    void loadObservations();
+    void refreshOfflineQueue();
+    const onOnline=()=>{setIsOnline(true);void syncOfflineQueue();};
+    const onOffline=()=>setIsOnline(false);
+    window.addEventListener('online',onOnline);
+    window.addEventListener('offline',onOffline);
+    return()=>{
+      window.removeEventListener('online',onOnline);
+      window.removeEventListener('offline',onOffline);
+    };
   }, []);
 
   useEffect(() => {
@@ -222,15 +266,15 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
 
     setIsSaving(true);
     setErrorMessage(null);
+    setSyncMessage('');
     const observationDraftId = makeObservationDraftId();
     try {
       const selectedTreeGroupName = form.tree_group_id ? treeGroupNameById.get(form.tree_group_id) : undefined;
-      const imageUrls = await uploadFieldObservationImages(selectedImageFiles, {
-        parcelId: form.parcel_id?.trim() || undefined,
-        observationId: observationDraftId,
-      });
+      const imageDataUrls=selectedImageFiles.length
+        ?await filesToResizedDataUrls(selectedImageFiles,{maxDim:1600,quality:0.8})
+        :[];
 
-      const observation: Omit<FarmObservation, 'id'> = {
+      const observation: Omit<FarmObservation, 'id'|'image_urls'> = {
         parcel_id: form.parcel_id?.trim() || undefined,
         zone_id: form.zone_id?.trim() || undefined,
         tree_group_id: form.tree_group_id?.trim() || undefined,
@@ -238,7 +282,6 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
         category: form.category,
         title: form.title.trim(),
         notes: form.notes?.trim() || undefined,
-        image_urls: imageUrls,
         observed_at: new Date().toISOString(),
         created_by: 'Olivia',
         geo_lat:geoContext?.lat,
@@ -250,26 +293,42 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
         geo_match_confidence:geoContext?.matchConfidence,
       };
 
-      const saved = await insertFarmObservation(observation);
-      await registerFarmMediaEvidence({
-        urls:imageUrls,
-        sourceModule:'field_observation',
-        sourceRef:saved.id,
-        parcelId:geoContext?undefined:(saved.parcel_id||undefined),
-        zoneId:saved.zone_id,
+      const queued:QueuedFieldObservation={
+        id:observationDraftId,
+        createdAt:new Date().toISOString(),
+        updatedAt:new Date().toISOString(),
+        attempts:0,
+        observation,
+        imageDataUrls,
         geo:geoContext,
-        metadata:{observationParcelId:saved.parcel_id||null,category:saved.category},
-        createdBy:'Olivia',
-      }).catch(err=>console.warn('[FieldObservationsView] media evidence',err));
-      window.dispatchEvent(new CustomEvent('olivia:farm-truth-updated'));
-      setObservations(prev => [saved, ...prev]);
-      setLoadState('supabase');
-      setLastRefresh(new Date());
+      };
+
+      await queueFieldObservation(queued);
+      await refreshOfflineQueue();
+
+      let synced=false;
+      if(typeof navigator==='undefined'||navigator.onLine){
+        try{
+          const saved=await syncQueuedFieldObservation(queued);
+          setObservations(prev=>[saved,...prev.filter(item=>item.id!==saved.id)]);
+          setLoadState('supabase');
+          setLastRefresh(new Date());
+          synced=true;
+          setSyncMessage('Feltobservasjonen er lagret og synkronisert.');
+        }catch(err:any){
+          console.warn('[FieldObservationsView] immediate sync failed',err);
+          setSyncMessage('Feltobservasjonen er lagret lokalt og venter på synkronisering.');
+        }
+      }else{
+        setSyncMessage('Du er offline. Feltobservasjonen er lagret lokalt og synkroniseres når nettet er tilbake.');
+      }
+
+      await refreshOfflineQueue();
       resetForm();
       setIsFormOpen(false);
+      if(!synced)setLoadState(observations.length?'supabase':'empty');
     } catch (error) {
-      setLoadState(observations.length ? 'supabase' : 'error');
-      setErrorMessage(error instanceof Error ? error.message : 'Observasjonen eller bildeopplastingen ble ikke lagret i Supabase.');
+      setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke lagre observasjonen lokalt.');
     } finally {
       setIsSaving(false);
     }
@@ -307,6 +366,15 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
       </div>
 
       {errorMessage && <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100 flex gap-3"><AlertTriangle size={18} className="flex-shrink-0 mt-0.5" /> {errorMessage}</div>}
+
+      {(offlineQueueCount>0||!isOnline)&&<div className="rounded-2xl border border-blue-500/20 bg-blue-500/[0.07] p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-black text-white">{isOnline?'Feltdata venter på synkronisering':'Offline feltmodus'}</p>
+          <p className="text-xs text-slate-400 mt-1">{offlineQueueCount} {offlineQueueCount===1?'lokal post':'lokale poster'} venter. {isOnline?'Du kan synkronisere nå.':'Du kan fortsette å registrere observasjoner og bilder uten dekning.'}</p>
+        </div>
+        {isOnline&&offlineQueueCount>0&&<button onClick={syncOfflineQueue} disabled={isSyncingOffline} className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-xs font-black text-blue-200 flex items-center justify-center gap-2">{isSyncingOffline?<Loader2 size={14} className="animate-spin"/>:<RefreshCcw size={14}/>} Synkroniser</button>}
+      </div>}
+      {syncMessage&&<div className="rounded-xl border border-green-500/15 bg-green-500/[0.04] px-4 py-3 text-xs text-green-200">{syncMessage}</div>}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
