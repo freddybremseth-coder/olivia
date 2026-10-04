@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import type { Parcel } from '../types';
+import { harvestSeasonForDate, harvestSeasonForExpense } from './harvestSeason';
 
 export type SalesChannel = 'cooperativa' | 'bordoliven' | 'olje_premier' | 'olje_export';
 export type ExpenseCategory = 'innhøsting' | 'beskjæring' | 'nye_planter' | 'trefelling' | 'sprøyting' | 'vann' | 'gjødsel' | 'forsikring' | 'vedlikehold' | 'administrasjon' | 'transport' | 'emballasje' | 'annet';
@@ -54,8 +55,10 @@ export type FarmIncome = {
   notes?: string;
 };
 
-function seasonFromDate(date?: string | null): string {
-  return (date || new Date().toISOString()).slice(0, 4);
+function explicitOrDateSeason(explicit:string|undefined|null,date?:string|null):string {
+  const clean=String(explicit||'').trim();
+  if(/^\d{4}\/\d{2}$/.test(clean))return clean;
+  return harvestSeasonForDate(date||new Date());
 }
 
 function normalizeExpenseCategory(category?: string | null): ExpenseCategory {
@@ -155,7 +158,7 @@ export async function fetchOliviaHarvests(): Promise<HarvestRecord[]> {
     return {
       id: String(row.id),
       parcelId: row.parcel_id ?? undefined,
-      season: row.season || seasonFromDate(date),
+      season: explicitOrDateSeason(row.season,date),
       date,
       variety: row.variety ?? row.olive_type ?? undefined,
       kg,
@@ -174,11 +177,12 @@ export async function fetchOliviaExpenses(): Promise<FarmExpense[]> {
   }
   return (data || []).map((row: any) => {
     const date = row.date || row.created_at || new Date().toISOString().slice(0, 10);
+    const category=normalizeExpenseCategory(row.category);
     return {
       id: String(row.id),
       date,
-      season: row.season || seasonFromDate(date),
-      category: normalizeExpenseCategory(row.category),
+      season: harvestSeasonForExpense(date,category,row.season),
+      category,
       description: row.description || row.vendor || row.notes || row.category || 'Utgift',
       amount: Number(row.amount || 0),
       scope: row.parcel_id ? 'parcel' : 'farm',
@@ -195,7 +199,7 @@ export async function fetchOliviaIncome(): Promise<FarmIncome[]> {
   }
   return (data || []).map((row: any) => ({
     id: String(row.id),
-    season: String(row.season || seasonFromDate(row.earned_date || row.payment_date || row.created_at)),
+    season: explicitOrDateSeason(row.season,row.earned_date || row.payment_date || row.created_at),
     incomeType: row.income_type || 'other',
     description: row.description || 'Inntekt',
     amount: Number(row.amount || 0),
@@ -222,7 +226,7 @@ export async function fetchOliviaSubsidies(): Promise<SubsidyIncome[]> {
     return {
       id: String(row.id),
       date,
-      season: row.season || seasonFromDate(date),
+      season: explicitOrDateSeason(row.season,date),
       type: normalizeSubsidyType(row.category || row.type),
       amount: Number(row.amount || 0),
       description: row.description || row.notes || row.category || 'Tilskudd',
@@ -237,7 +241,8 @@ export async function insertOliviaExpense(expense: FarmExpense): Promise<void> {
     amount: expense.amount,
     currency: 'EUR',
     description: expense.description,
-    notes: `season=${expense.season}; scope=${expense.scope}`,
+    season: expense.season,
+    notes: `scope=${expense.scope}`,
     parcel_id: expense.parcelId || null,
   });
   if (error) throw error;
@@ -255,7 +260,8 @@ export async function insertOliviaSubsidy(subsidy: SubsidyIncome): Promise<void>
     amount: subsidy.amount,
     currency: 'EUR',
     description: subsidy.description,
-    notes: `season=${subsidy.season}`,
+    season: subsidy.season,
+    notes: null,
   });
   if (error) throw error;
 }
