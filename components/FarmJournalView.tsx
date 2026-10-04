@@ -11,6 +11,7 @@ import {
   addRainMeasurement,
   analyzeFarmSource,
   completeYearWheelItem,
+  confirmFarmInputUsage,
   fetchFarmDocuments,
   fetchFarmEvents,
   fetchFarmInputs,
@@ -73,6 +74,13 @@ const FarmJournalView:React.FC<{
   const [inputs,setInputs]=useState<any[]>([]);
   const [inputEvidence,setInputEvidence]=useState<FarmInputEvidenceLine[]>([]);
   const [inputSeasonFilter,setInputSeasonFilter]=useState('');
+  const [usageSourceRows,setUsageSourceRows]=useState<FarmInputEvidenceLine[]>([]);
+  const [usageDate,setUsageDate]=useState('');
+  const [usageParcel,setUsageParcel]=useState('');
+  const [usageEventType,setUsageEventType]=useState<'spraying'|'fertilization'>('spraying');
+  const [usageNotes,setUsageNotes]=useState('');
+  const [usageProducts,setUsageProducts]=useState<Array<{key:string;selected:boolean;name:string;quantity:string;unit:string;composition?:string;purpose?:string;dose?:string}>>([]);
+  const [usageSaving,setUsageSaving]=useState(false);
   const [observations,setObservations]=useState<any[]>([]);
   const [summary,setSummary]=useState<any>(null);
   const [knowledge,setKnowledge]=useState<FarmKnowledgeItem[]>([]);
@@ -265,6 +273,75 @@ const FarmJournalView:React.FC<{
     }catch(e:any){setError(e?.message||'Kunne ikke åpne dokumentet.');}
   };
 
+  const openUsageConfirmation=(rows:FarmInputEvidenceLine[])=>{
+    const unique=new Map<string,{key:string;selected:boolean;name:string;quantity:string;unit:string;composition?:string;purpose?:string;dose?:string}>();
+    rows.forEach((row,index)=>{
+      if(row.detailsMissing)return;
+      const name=String(row.productName||row.name||'').trim();
+      if(!name)return;
+      const key=name.toLowerCase().replace(/[^a-z0-9æøå]+/gi,' ').trim();
+      if(unique.has(key))return;
+      unique.set(key,{
+        key:key||String(index),
+        selected:false,
+        name,
+        quantity:'',
+        unit:row.unit||'',
+        composition:row.composition||undefined,
+        purpose:row.intendedUse||undefined,
+        dose:row.dose||undefined,
+      });
+    });
+    setUsageSourceRows(rows);
+    setUsageProducts(Array.from(unique.values()));
+    setUsageDate('');
+    setUsageParcel('');
+    setUsageNotes('');
+    setUsageEventType(rows.some(row=>String(row.category||'').toLowerCase().includes('gjød'))?'fertilization':'spraying');
+    setError('');setNotice('');
+  };
+
+  const closeUsageConfirmation=()=>{
+    if(usageSaving)return;
+    setUsageSourceRows([]);
+    setUsageProducts([]);
+    setUsageDate('');
+    setUsageParcel('');
+    setUsageNotes('');
+  };
+
+  const saveConfirmedUsage=async()=>{
+    const selected=usageProducts.filter(product=>product.selected);
+    if(!usageDate){setError('Velg faktisk dato for behandlingen.');return;}
+    if(!selected.length){setError('Velg minst ett middel som faktisk ble brukt.');return;}
+    setUsageSaving(true);setError('');setNotice('');
+    try{
+      const source=usageSourceRows[0];
+      await confirmFarmInputUsage({
+        occurredOn:usageDate,
+        parcelId:usageParcel||null,
+        eventType:usageEventType,
+        sourceDocumentId:source?.sourceDocumentId||null,
+        sourceTitle:source?.sourceTitle||'Sprøytemidler og gjødsel',
+        supplier:source?.supplier||null,
+        notes:usageNotes||undefined,
+        products:selected.map(product=>({
+          name:product.name,
+          quantity:product.quantity.trim()===''?null:Number(product.quantity),
+          unit:product.unit||undefined,
+          composition:product.composition,
+          purpose:product.purpose,
+          dose:product.dose,
+        })),
+      });
+      setNotice('Bruken er lagret som verifisert driftshendelse og vises nå under «Bekreftet brukt».');
+      setUsageSourceRows([]);setUsageProducts([]);setUsageDate('');setUsageParcel('');setUsageNotes('');
+      await load();
+      setTab('inputs');
+    }catch(e:any){setError(e?.message||'Kunne ikke bekrefte bruken av innsatsmidlene.');}
+    finally{setUsageSaving(false);}
+  };
+
   const yearWheelAttention=useMemo(()=>{
     const today=new Date();today.setHours(12,0,0,0);
     return yearWheel
@@ -314,8 +391,60 @@ const FarmJournalView:React.FC<{
   const usedInputLines=visibleInputEvidence.filter(row=>row.evidenceKind==='used');
   const applicationLines=visibleInputEvidence.filter(row=>row.evidenceKind==='application');
   const documentInputLines=visibleInputEvidence.filter(row=>row.evidenceKind==='document_line');
+  const inputDocumentGroups=Array.from(documentInputLines.reduce((map,row)=>{
+    const key=row.sourceDocumentId||row.sourceTitle;
+    const existing=map.get(key)||{key,title:row.sourceTitle,sourceDocumentId:row.sourceDocumentId||null,rows:[] as FarmInputEvidenceLine[]};
+    existing.rows.push(row);
+    map.set(key,existing);
+    return map;
+  },new Map<string,{key:string;title:string;sourceDocumentId:string|null;rows:FarmInputEvidenceLine[]}>()).values());
 
   return <div className="space-y-7 pb-24 animate-in fade-in duration-500">
+    {usageSourceRows.length>0&&<div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-[2rem] border border-green-500/25 bg-[#080b09] p-6 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest font-black text-green-300">Bekreft faktisk brukt</p>
+            <h3 className="text-2xl font-black text-white mt-1">{usageSourceRows[0]?.sourceTitle}</h3>
+            <p className="text-xs text-slate-500 mt-2">Bare det du aktivt velger her blir gårdens fasit. Dokumentet alene beviser ikke at et produkt ble brukt.</p>
+          </div>
+          <button onClick={closeUsageConfirmation} disabled={usageSaving} className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-400 disabled:opacity-40"><X size={18}/></button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
+          <label className="text-xs text-slate-400">Faktisk dato<input type="date" className={inputClass+' mt-1'} value={usageDate} onChange={e=>setUsageDate(e.target.value)}/></label>
+          <label className="text-xs text-slate-400">Område<select className={inputClass+' mt-1'} value={usageParcel} onChange={e=>setUsageParcel(e.target.value)}><option value="">Hele gården</option>{parcels.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+          <label className="text-xs text-slate-400">Type<select className={inputClass+' mt-1'} value={usageEventType} onChange={e=>setUsageEventType(e.target.value as 'spraying'|'fertilization')}><option value="spraying">Sprøyting / behandling</option><option value="fertilization">Gjødsling</option></select></label>
+        </div>
+
+        <div className="mt-5">
+          <p className="text-xs font-black text-white">Hvilke midler ble faktisk brukt?</p>
+          <div className="space-y-2 mt-3">
+            {usageProducts.map((product,index)=><div key={product.key} className={'rounded-xl border p-3 '+(product.selected?'border-green-500/25 bg-green-500/[0.06]':'border-white/10 bg-black/20')}>
+              <div className="flex items-start gap-3">
+                <input type="checkbox" className="mt-1 h-4 w-4 accent-green-500" checked={product.selected} onChange={e=>setUsageProducts(current=>current.map((item,i)=>i===index?{...item,selected:e.target.checked}:item))}/>
+                <div className="flex-1 min-w-0">
+                  <p className="font-black text-white">{product.name}</p>
+                  {product.composition&&<p className="text-[10px] text-purple-300 mt-1">{product.composition}</p>}
+                  {product.dose&&<p className="text-[10px] text-slate-500 mt-1">Dokumentert dose: {product.dose}</p>}
+                  {product.selected&&<div className="grid grid-cols-2 gap-2 mt-3">
+                    <input type="number" min="0" step="0.01" className={inputClass} value={product.quantity} onChange={e=>setUsageProducts(current=>current.map((item,i)=>i===index?{...item,quantity:e.target.value}:item))} placeholder="Faktisk mengde (valgfritt)"/>
+                    <input className={inputClass} value={product.unit} onChange={e=>setUsageProducts(current=>current.map((item,i)=>i===index?{...item,unit:e.target.value}:item))} placeholder="Enhet, f.eks. L / kg"/>
+                  </div>}
+                </div>
+              </div>
+            </div>)}
+          </div>
+        </div>
+
+        <label className="block text-xs text-slate-400 mt-4">Notat<textarea className={inputClass+' mt-1 min-h-[80px]'} value={usageNotes} onChange={e=>setUsageNotes(e.target.value)} placeholder="For eksempel behandling 1, hele gården, 2000 L tank, avvik eller hvem som utførte arbeidet…"/></label>
+
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-5">
+          <button onClick={closeUsageConfirmation} disabled={usageSaving} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold text-slate-300 disabled:opacity-40">Avbryt</button>
+          <button onClick={saveConfirmedUsage} disabled={usageSaving||!usageDate||!usageProducts.some(product=>product.selected)} className="rounded-xl bg-green-500 px-5 py-3 text-xs font-black text-black disabled:opacity-40 flex items-center justify-center gap-2">{usageSaving?<Loader2 size={15} className="animate-spin"/>:<CheckCircle2 size={15}/>} Bekreft som faktisk brukt</button>
+        </div>
+      </div>
+    </div>}
     {postponeItem&&<div className="fixed inset-0 z-[91] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
       <div className="w-full max-w-xl rounded-[2rem] border border-amber-300/20 bg-[#0a0d0b] p-6 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
@@ -565,7 +694,13 @@ const FarmJournalView:React.FC<{
       <div className="rounded-[2rem] border border-purple-500/20 bg-purple-500/[0.035] p-5">
         <p className="text-[10px] uppercase tracking-widest font-black text-purple-300">Faktiske dokumentlinjer</p>
         <h4 className="text-lg font-black text-white mt-1">Tilbud, proforma og agronomplan — ordrett varelinjegrunnlag</h4>
-        <div className="space-y-2 mt-4">{documentInputLines.map(row=><InputEvidenceRow key={row.id} row={row} documents={documents} onOpenDoc={openDoc}/>)}</div>
+        <div className="space-y-4 mt-4">{inputDocumentGroups.map(group=><div key={group.key} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+            <div><p className="text-sm font-black text-white">{group.title}</p><p className="text-[10px] text-slate-600 mt-1">{group.rows.length} relevant{group.rows.length===1?' linje':'e linjer'} · {group.rows[0]?.truthLabel}</p></div>
+            {group.rows.some(row=>row.productName&&!row.detailsMissing)&&<button onClick={()=>openUsageConfirmation(group.rows)} className="rounded-xl bg-green-500 px-4 py-2.5 text-xs font-black text-black whitespace-nowrap flex items-center gap-2"><CheckCircle2 size={14}/> Bekreft brukt</button>}
+          </div>
+          <div className="space-y-2 mt-3">{group.rows.map(row=><InputEvidenceRow key={row.id} row={row} documents={documents} onOpenDoc={openDoc}/>)}</div>
+        </div>)}</div>
         {!documentInputLines.length&&<p className="text-sm text-slate-500 mt-3">Ingen relevante produktlinjer funnet for valgt sesong.</p>}
       </div>
 
