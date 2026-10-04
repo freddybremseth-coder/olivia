@@ -35,7 +35,12 @@ import {
   type QueuedFieldObservation,
 } from '../services/fieldOfflineQueue';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
-import { issueTypeFromObservation, type FarmIssueSeverity } from '../services/farmIssues';
+import {
+  fetchFarmIssues,
+  issueTypeFromObservation,
+  type FarmIssue,
+  type FarmIssueSeverity,
+} from '../services/farmIssues';
 
 type ObservationCategory = FarmObservation['category'];
 type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
@@ -112,6 +117,8 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
   const [createFollowUpIssue,setCreateFollowUpIssue]=useState(false);
   const [issueSeverity,setIssueSeverity]=useState<FarmIssueSeverity>('medium');
   const [issueReviewDate,setIssueReviewDate]=useState(()=>datePlusDays(7));
+  const [activeIssues,setActiveIssues]=useState<FarmIssue[]>([]);
+  const [existingIssueId,setExistingIssueId]=useState('');
 
   const parcelNameById = useMemo(() => new Map(parcels.map(parcel => [parcel.id, parcel.name])), [parcels]);
   const zoneNameById = useMemo(() => new Map(farmZones.map(zone => [zone.id, zone.name])), [farmZones]);
@@ -120,6 +127,11 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     if (!form.zone_id) return treeGroups;
     return treeGroups.filter(group => group.zone_id === form.zone_id);
   }, [form.zone_id, treeGroups]);
+
+  const loadActiveIssues=async()=>{
+    try{setActiveIssues(await fetchFarmIssues({status:['open','monitoring'],limit:100}));}
+    catch(err){console.warn('[FieldObservationsView] active issues',err);}
+  };
 
   const refreshOfflineQueue=async()=>{
     try{setOfflineQueueCount((await listQueuedFieldObservations()).length);}
@@ -165,6 +177,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
 
   useEffect(() => {
     void loadObservations();
+    void loadActiveIssues();
     void refreshOfflineQueue();
     const onOnline=()=>{setIsOnline(true);void syncOfflineQueue();};
     const onOffline=()=>setIsOnline(false);
@@ -273,6 +286,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     setCreateFollowUpIssue(false);
     setIssueSeverity('medium');
     setIssueReviewDate(datePlusDays(7));
+    setExistingIssueId('');
   };
 
   const handleSave = async () => {
@@ -326,6 +340,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
           severity:issueSeverity,
           nextReviewAt:issueReviewDate?new Date(issueReviewDate+'T12:00:00').toISOString():undefined,
         }:undefined,
+        existingIssueId:createFollowUpIssue?undefined:(existingIssueId||undefined),
       };
 
       await queueFieldObservation(queued);
@@ -340,6 +355,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
           setLastRefresh(new Date());
           synced=true;
           setSyncMessage('Feltobservasjonen er lagret og synkronisert.');
+          void loadActiveIssues();
         }catch(err:any){
           console.warn('[FieldObservationsView] immediate sync failed',err);
           setSyncMessage('Feltobservasjonen er lagret lokalt og venter på synkronisering.');
@@ -458,7 +474,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label="Parsell" help="Velg parsell manuelt, eller la GPS foreslå den."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.parcel_id || ''} onChange={event => {setParcelSelectionSource('manual');setForm(prev => ({ ...prev, parcel_id: event.target.value, zone_id: '', tree_group_id: '' }));}}><option className="bg-slate-900" value="">Ingen parsell</option>{parcels.map(parcel => <option key={parcel.id} className="bg-slate-900" value={parcel.id}>{parcel.name}</option>)}</select></Field>
-              <Field label="Kategori" help="Velg hva observasjonen handler om."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.category || 'irrigation'} onChange={event => {const category=event.target.value as ObservationCategory;setForm(prev => ({ ...prev, category }));setCreateFollowUpIssue(category==='pest'||category==='disease');}}>{CATEGORY_OPTIONS.map(option => <option key={option.value} className="bg-slate-900" value={option.value}>{option.label}</option>)}</select></Field>
+              <Field label="Kategori" help="Velg hva observasjonen handler om."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.category || 'irrigation'} onChange={event => {const category=event.target.value as ObservationCategory;setForm(prev => ({ ...prev, category }));const follow=category==='pest'||category==='disease';setCreateFollowUpIssue(follow);if(follow)setExistingIssueId('');}}>{CATEGORY_OPTIONS.map(option => <option key={option.value} className="bg-slate-900" value={option.value}>{option.label}</option>)}</select></Field>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -469,9 +485,15 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
             <Field label="Tittel *" help="Kort og tydelig observasjon."><input className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" placeholder="F.eks. lav fukt ved unge Gordal" value={form.title || ''} onChange={event => setForm(prev => ({ ...prev, title: event.target.value }))} /></Field>
             <Field label="Notat" help="Beskriv hva du så, hvor og hva som bør gjøres."><textarea className="w-full min-h-[140px] bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.notes || ''} onChange={event => setForm(prev => ({ ...prev, notes: event.target.value }))} /></Field>
 
-            <div className={'rounded-2xl border p-4 '+(createFollowUpIssue?'border-amber-500/25 bg-amber-500/[0.05]':'border-white/10 bg-white/[0.02]')}>
+            <div className={'rounded-2xl border p-4 '+(createFollowUpIssue||existingIssueId?'border-amber-500/25 bg-amber-500/[0.05]':'border-white/10 bg-white/[0.02]')}>
+              {activeIssues.length>0&&<label className="mb-4 block text-[10px] font-black uppercase tracking-widest text-slate-500">Koble til eksisterende sak
+                <select value={existingIssueId} onChange={event=>{setExistingIssueId(event.target.value);if(event.target.value)setCreateFollowUpIssue(false);}} className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm normal-case tracking-normal text-white">
+                  <option value="">Ingen eksisterende sak</option>
+                  {activeIssues.map(issue=><option key={issue.id} value={issue.id}>{issue.severity.toUpperCase()} · {issue.title}</option>)}
+                </select>
+              </label>}
               <label className="flex cursor-pointer items-start gap-3">
-                <input type="checkbox" checked={createFollowUpIssue} onChange={event=>setCreateFollowUpIssue(event.target.checked)} className="mt-1"/>
+                <input type="checkbox" checked={createFollowUpIssue} onChange={event=>{setCreateFollowUpIssue(event.target.checked);if(event.target.checked)setExistingIssueId('');}} className="mt-1"/>
                 <div><p className="text-sm font-black text-white">Opprett oppfølgingssak</p><p className="mt-1 text-xs text-slate-500">Bruk for skadedyr, sykdom, vanningsfeil eller andre forhold som må kontrolleres igjen. Pest og sykdom velges automatisk.</p></div>
               </label>
               {createFollowUpIssue&&<div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
