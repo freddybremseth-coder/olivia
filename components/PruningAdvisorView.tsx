@@ -36,6 +36,9 @@ import FarmQuestionsPanel from './FarmQuestionsPanel';
 import AgentFeedbackPanel from './AgentFeedbackPanel';
 import OlivePhotoProtocol from './OlivePhotoProtocol';
 import { removePruningOutcomeTruth, savePruningOutcome } from '../services/pruningOutcome';
+import { geoContextSummary, requestFarmGeo } from '../services/farmGeo';
+import type { FarmGeoContext } from '../types/farmGeo';
+import { registerFarmMediaEvidence, uploadDataUrlFarmMedia } from '../services/farmMediaEvidence';
 
 function makeId(prefix: string) {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `${prefix}-${crypto.randomUUID()}`;
@@ -133,6 +136,9 @@ const PruningAdvisorView: React.FC = () => {
   const [outcomeAfterImages,setOutcomeAfterImages]=useState<string[]>([]);
   const [outcomeStepFeedback,setOutcomeStepFeedback]=useState<Record<number,{status?:PruningStepFeedbackStatus;note?:string}>>({});
   const [isSavingOutcome,setIsSavingOutcome]=useState(false);
+  const [geoContext,setGeoContext]=useState<FarmGeoContext|null>(null);
+  const [isLocating,setIsLocating]=useState(false);
+  const [parcelSelectionSource,setParcelSelectionSource]=useState<'none'|'manual'|'geo'>('none');
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -174,7 +180,7 @@ const PruningAdvisorView: React.FC = () => {
       ]);
       if (settings?.language) setLanguage(settings.language as Language);
       setParcels(parcelRows);
-      setSelectedParcelId(prev => prev || parcelRows[0]?.id || '');
+      setSelectedParcelId(prev => prev);
       setHistory(historyRows);
     } catch (err) {
       console.error('[PruningAdvisorView] loadData', err);
@@ -200,6 +206,27 @@ const PruningAdvisorView: React.FC = () => {
     return () => { cancelled = true; };
   }, [selectedParcelId]);
 
+  const captureLiveGeo=async()=>{
+    if(isLocating)return geoContext;
+    setIsLocating(true);
+    try{
+      const geo=await requestFarmGeo(parcels,'device_live_capture');
+      setGeoContext(geo);
+      if(geo.parcelId&&parcelSelectionSource!=='manual'){
+        setSelectedParcelId(geo.parcelId);
+        setParcelSelectionSource('geo');
+      }else if(geo.parcelId&&selectedParcelId&&geo.parcelId!==selectedParcelId){
+        setError('GPS peker mot '+(geo.parcelName||geo.parcelId)+', mens du har valgt en annen parsell. Kontroller parsellen før rådene lagres.');
+      }
+      return geo;
+    }catch(err:any){
+      setError(err?.message||'Kunne ikke hente GPS-posisjon.');
+      return null;
+    }finally{
+      setIsLocating(false);
+    }
+  };
+
   const capturePhoto = () => {
     if (images.length >= MAX_ANALYSIS_IMAGES) {
       setError(`Maks ${MAX_ANALYSIS_IMAGES} bilder per analyse. Fjern et bilde før du legger til flere.`);
@@ -221,6 +248,7 @@ const PruningAdvisorView: React.FC = () => {
     context.drawImage(videoRef.current,0,0,canvasRef.current.width,canvasRef.current.height);
     setImages(prev => [...prev, canvasRef.current!.toDataURL('image/jpeg', 0.74)]);
     setError(null);
+    void captureLiveGeo();
   };
 
   const handleFilePick = () => fileInputRef.current?.click();
@@ -287,6 +315,7 @@ const PruningAdvisorView: React.FC = () => {
         confidence:Math.max(0,Math.min(1,Number(normalized.confidence||0)/100)),
         uncertainties,
         sourceRef:'Beskjæringsassistent '+new Date().toISOString(),
+        geoContext:geoContext||undefined,
       }).catch(err=>{console.warn('[PruningAdvisorView] learning loop',err);return null;});
       setLastAssessmentId(learning?.assessmentId||null);
       setScheduledDate(normalized.recommendedDate);
@@ -304,17 +333,34 @@ const PruningAdvisorView: React.FC = () => {
     setIsSavingHistory(true);
     setError(null);
     try {
-      const item: PruningHistoryItem = {
-        id: makeId('prune'),
-        date: new Date().toISOString(),
+      const historyId=makeId('prune');
+      const storedImages=await uploadDataUrlFarmMedia({
         images,
+        sourceModule:'pruning',
+        sourceRef:historyId,
+        parcelId:selectedParcelId||geoContext?.parcelId,
+      });
+      const item: PruningHistoryItem = {
+        id: historyId,
+        date: new Date().toISOString(),
+        images:storedImages,
         treeType: plan.treeType,
         ageEstimate: plan.ageEstimate,
         plan,
-        parcelId: selectedParcelId || undefined,
+        parcelId: selectedParcelId || geoContext?.parcelId || undefined,
         scheduledTime: scheduledDate || plan.recommendedDate,
+        geoContext:geoContext||undefined,
       };
       await upsertPruningItem(item);
+      await registerFarmMediaEvidence({
+        urls:storedImages,
+        sourceModule:'pruning',
+        sourceRef:historyId,
+        geo:geoContext,
+        parcelId:geoContext?undefined:(selectedParcelId||undefined),
+        metadata:{assessmentId:lastAssessmentId||null,analysisParcelId:selectedParcelId||null},
+        createdBy:'Olivia',
+      }).catch(err=>console.warn('[PruningAdvisorView] media evidence',err));
       setHistory(prev => [item, ...prev]);
       setHistorySaved(true);
       setTimeout(() => setHistorySaved(false), 3000);
@@ -589,8 +635,16 @@ const PruningAdvisorView: React.FC = () => {
 
           <div className="glass rounded-2xl p-4 border border-white/10 space-y-3">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Parsell</label>
-            <select className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white" value={selectedParcelId} onChange={e => setSelectedParcelId(e.target.value)}>{parcels.length ? parcels.map(p => <option key={p.id} value={p.id}>{p.name}</option>) : <option value="">Ingen parseller funnet i Supabase</option>}</select>
+            <select className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white" value={selectedParcelId} onChange={e => {setSelectedParcelId(e.target.value);setParcelSelectionSource(e.target.value?'manual':'none');}}>
+              <option value="">Velg parsell / bruk GEO</option>
+              {parcels.length ? parcels.map(p => <option key={p.id} value={p.id}>{p.name}</option>) : <option value="" disabled>Ingen parseller funnet i Supabase</option>}
+            </select>
             {selectedParcel && <p className="text-xs text-slate-500 flex items-center gap-2"><MapPin size={12} /> {selectedParcel.municipality || 'Biar'} · {selectedParcel.treeVariety || selectedParcel.crop || 'oliven'}</p>}
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" onClick={()=>captureLiveGeo()} disabled={isLocating} className="rounded-xl border border-green-500/20 bg-green-500/10 px-3 py-2 text-[10px] font-black text-green-300 disabled:opacity-50">{isLocating?'Henter GPS…':'Bruk live GPS'}</button>
+              {geoContext&&<span className="text-[10px] text-slate-400">{geoContextSummary(geoContext)}</span>}
+            </div>
+            {geoContext&&<p className="text-[10px] text-slate-600">Live kamerabilder kan knyttes til denne posisjonen. Galleriopplasting får ikke automatisk dagens GPS som original bildeposisjon.</p>}
             <div className="rounded-xl border border-green-500/15 bg-green-500/[0.04] p-3">
               <p className="text-[9px] uppercase tracking-widest font-black text-green-400">Historikk som beskjæringsassistenten kjenner</p>
               {contextLoading ? <p className="text-xs text-slate-500 mt-1">Henter driftsjournal…</p> : farmContext ? <p className="text-xs text-slate-400 mt-1 line-clamp-5 whitespace-pre-line">{farmContext}</p> : <p className="text-xs text-slate-600 mt-1">Ingen verifisert historikk for valgt parsell ennå.</p>}
