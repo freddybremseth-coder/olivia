@@ -21,18 +21,10 @@ import {
   type IrrigationZoneAdvice,
 } from '../services/irrigationAdvisor';
 
-type DataSource = 'supabase' | 'local_demo';
+type DataSource = 'supabase' | 'empty' | 'error';
 
 const BIAR_DEFAULT = { lat: 38.6294, lon: -0.7667, elevation: 650 };
 
-const demoReadings: SensorReading[] = [
-  { id: 'demo-m30-a', sensor_id: 'DA-BIAR-SOIL-M-30-A', parcel_id: 'biar-main', zone_id: 'zone-a', tree_group: 'Unge Gordal', depth_cm: 30, type: 'soil_moisture', value: 32, unit: '%', measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-m60-a', sensor_id: 'DA-BIAR-SOIL-M-60-A', parcel_id: 'biar-main', zone_id: 'zone-a', tree_group: 'Unge Gordal', depth_cm: 60, type: 'soil_moisture', value: 27, unit: '%', measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-ec-b', sensor_id: 'DA-BIAR-SOIL-EC-B', parcel_id: 'biar-main', zone_id: 'zone-b', tree_group: 'Eldre blanding', depth_cm: 40, type: 'soil_ec', value: 2.3, unit: 'dS/m', measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-water-ec', sensor_id: 'DA-BIAR-WATER-EC', parcel_id: 'biar-main', zone_id: 'pump-house', type: 'water_ec', value: 1.2, unit: 'dS/m', measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-flow-a', sensor_id: 'DA-BIAR-FLOW-A', parcel_id: 'biar-main', zone_id: 'zone-a', type: 'flow', value: 28, unit: 'L/min', measured_at: new Date().toISOString(), source: 'simulation' },
-  { id: 'demo-pressure-a', sensor_id: 'DA-BIAR-PRESSURE-A', parcel_id: 'biar-main', zone_id: 'zone-a', type: 'pressure', value: 0.6, unit: 'bar', measured_at: new Date().toISOString(), source: 'simulation' },
-];
 
 function getFarmCoords() {
   try {
@@ -112,10 +104,10 @@ function severityIcon(severity: IrrigationZoneAdvice['severity']) {
 }
 
 const IrrigationAdvisorView: React.FC = () => {
-  const [readings, setReadings] = useState<SensorReading[]>(demoReadings);
+  const [readings, setReadings] = useState<SensorReading[]>([]);
   const [irrigationEvents, setIrrigationEvents] = useState<IrrigationEvent[]>([]);
   const [climate, setClimate] = useState<ClimateWaterInput>({ rain7d: 0, rain30d: 0, et0_7d: 0, et0_30d: 0, deficit7d: 0, deficit30d: 0 });
-  const [dataSource, setDataSource] = useState<DataSource>('local_demo');
+  const [dataSource, setDataSource] = useState<DataSource>('empty');
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
@@ -128,22 +120,16 @@ const IrrigationAdvisorView: React.FC = () => {
         fetchClimateWaterInput(),
       ]);
 
-      if (latestReadings.length) {
-        setReadings(latestReadings);
-        setIrrigationEvents(recentIrrigation);
-        setDataSource('supabase');
-      } else {
-        setReadings(demoReadings);
-        setIrrigationEvents([]);
-        setDataSource('local_demo');
-      }
+      setReadings(latestReadings);
+      setIrrigationEvents(recentIrrigation);
+      setDataSource(latestReadings.length?'supabase':'empty');
       setClimate(climateInput);
       setLastRefresh(new Date());
     } catch (error) {
-      console.warn('[IrrigationAdvisorView] Could not load Supabase/climate data. Using local demo.', error);
-      setReadings(demoReadings);
+      console.warn('[IrrigationAdvisorView] Could not load Supabase/climate data.', error);
+      setReadings([]);
       setIrrigationEvents([]);
-      setDataSource('local_demo');
+      setDataSource('error');
     } finally {
       setIsLoading(false);
     }
@@ -167,13 +153,18 @@ const IrrigationAdvisorView: React.FC = () => {
             <Droplets className="text-green-400" /> Vanningsrådgiver 2.0
           </h2>
           <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">
-            DonaAnna · Biar 650 moh. · {dataSource === 'supabase' ? 'Supabase' : 'Lokal demo'} · Oppdatert {lastRefresh.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}
+            DonaAnna · Biar 650 moh. · {dataSource === 'supabase' ? 'Supabase' : dataSource === 'empty' ? 'Ingen sensordata' : 'Datafeil'} · Oppdatert {lastRefresh.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}
           </p>
         </div>
         <button onClick={loadAdvisor} disabled={isLoading} className="p-3.5 glass border border-white/10 rounded-2xl text-green-400 hover:bg-white/5 transition-all disabled:opacity-50">
           {isLoading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
         </button>
       </div>
+
+      {dataSource!=='supabase'&&<div className="rounded-[2rem] border border-amber-500/20 bg-amber-500/[0.06] p-5">
+        <p className="text-sm font-black text-amber-100">Ingen simulerte sensorer brukes</p>
+        <p className="text-xs text-slate-400 mt-2">{dataSource==='empty'?'Det finnes ingen ekte sensormålinger ennå. Olivia viser derfor ikke en falsk vanningsstatus. Registrer manuell måling eller koble sensor først.':'Sensordata kunne ikke lastes. Ingen demo-data brukes som reserve.'}</p>
+      </div>}
 
       {topAdvice && (
         <div className={`glass rounded-[2rem] p-6 border ${severityClass(topAdvice.severity)}`}>
