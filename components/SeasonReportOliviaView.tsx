@@ -197,7 +197,7 @@ const SeasonReportOliviaView: React.FC = () => {
     'Forventet inntekt: ' + eur(report.expectedIncome),
     'Tilskudd: ' + eur(report.subsidyIncome),
     'Utgifter: ' + eur(report.expenseTotal),
-    'Kontantresultat: ' + eur(report.cashResult),
+    'Sesongresultat basert på mottatt inntekt: ' + eur(report.cashResult),
     'Ufordelt kostgrunnlag: ' + eur(report.unallocatedExpenseAmount) + ' på ' + report.unallocatedExpenseCount + ' bilag',
     '',
     'PRODUKSJON',
@@ -229,7 +229,7 @@ const SeasonReportOliviaView: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3"><FileText className="text-green-400" /> Sesongrapport</h2>
-          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">Avlingssesong · faktisk inntekt · produksjon · kostgrunnlag</p>
+          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">Avlingssesong · faktisk inntekt · produksjon · kostgrunnlag</p><p className="text-xs text-slate-500 mt-2">Sesong {season} kan inneholde fakturaer og betalinger fra neste kalenderår. Datoene beholdes, men lønnsomheten følger avlingen.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <select
@@ -261,7 +261,7 @@ const SeasonReportOliviaView: React.FC = () => {
             { label: 'Planlagt', value: kg(report.plannedKg), icon: <Scale size={18} />, cls: 'border-slate-500/20 bg-slate-500/10 text-slate-300' },
             { label: 'Faktisk høst', value: kg(report.actualHarvestKg), icon: <Leaf size={18} />, cls: 'border-green-500/20 bg-green-500/10 text-green-400' },
             { label: 'Mottatt inntekt', value: eur(report.receivedIncome + report.subsidyIncome), icon: <Euro size={18} />, cls: 'border-yellow-500/20 bg-yellow-500/10 text-yellow-400' },
-            { label: 'Kontantresultat', value: eur(report.cashResult), icon: <TrendingUp size={18} />, cls: report.cashResult >= 0 ? 'border-blue-500/20 bg-blue-500/10 text-blue-400' : 'border-red-500/20 bg-red-500/10 text-red-400' },
+            { label: 'Sesongresultat', value: eur(report.cashResult), icon: <TrendingUp size={18} />, cls: report.cashResult >= 0 ? 'border-blue-500/20 bg-blue-500/10 text-blue-400' : 'border-red-500/20 bg-red-500/10 text-red-400' },
           ].map(card => <div key={card.label} className={'glass rounded-[2rem] p-5 border ' + card.cls}><div className="mb-2">{card.icon}</div><p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">{card.label}</p><p className="text-2xl font-black text-white mt-1">{card.value}</p></div>)}
         </div>
 
@@ -275,7 +275,7 @@ const SeasonReportOliviaView: React.FC = () => {
             <Info label="Tilskudd" value={eur(report.subsidyIncome)} />
             <Info label="Utgifter" value={eur(report.expenseTotal)} />
           </div>
-          <p className="text-xs text-slate-500 mt-3">Avlingsverdi er kg × registrert pris og brukes ikke som erstatning for faktisk mottatt betaling. Kontantresultatet bruker mottatt inntekt + registrerte tilskudd − utgifter.</p>
+          <p className="text-xs text-slate-500 mt-3">Avlingsverdi er kg × registrert pris og brukes ikke som erstatning for faktisk mottatt betaling. Sesongresultatet bruker mottatt inntekt + registrerte tilskudd − kostnader som tilhører valgt avlingssesong, selv om faktura eller betaling ligger i et annet kalenderår.</p>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
