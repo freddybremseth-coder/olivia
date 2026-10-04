@@ -63,6 +63,16 @@ function currentPath(): string {
   return window.location.pathname;
 }
 
+function isStandaloneApp(): boolean {
+  if (typeof window === 'undefined') return false;
+  const nav = window.navigator as Navigator & { standalone?: boolean };
+  return Boolean(window.matchMedia?.('(display-mode: standalone)').matches || nav.standalone);
+}
+
+function isStandaloneOliviaRootLaunch(): boolean {
+  return isStandaloneApp() && currentPath() === '/';
+}
+
 function isB2BUrl(): boolean {
   return portalForPath(currentPath()) === 'b2b';
 }
@@ -109,9 +119,9 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState(() => isB2BUrl() ? 'b2b_portal' : 'dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [showPublicSite, setShowPublicSite] = useState(() => typeof window === 'undefined' ? true : !isPortalUrl() && !isRecoveryUrl() && !isTraceUrl());
+  const [showPublicSite, setShowPublicSite] = useState(() => typeof window === 'undefined' ? true : !isStandaloneOliviaRootLaunch() && !isPortalUrl() && !isRecoveryUrl() && !isTraceUrl());
   const [language, setLanguage] = useState<Language>('no');
-  const [showLogin, setShowLogin] = useState(() => isPortalUrl() && !isRecoveryUrl());
+  const [showLogin, setShowLogin] = useState(() => (isPortalUrl() || isStandaloneOliviaRootLaunch()) && !isRecoveryUrl());
   const [loginDefaultMode, setLoginDefaultMode] = useState<'login' | 'register'>('login');
   const [postLoginTab, setPostLoginTab] = useState(() => isB2BUrl() ? 'b2b_portal' : 'dashboard');
   const navigationRef = useRef(isB2BUrl() ? 'b2b_portal' : 'dashboard');
@@ -136,6 +146,17 @@ const App: React.FC = () => {
   const [pendingTraceBatchId, setPendingTraceBatchId] = useState<string | null>(null);
   const [pendingFarmJournalTab,setPendingFarmJournalTab]=useState<FarmJournalTab|undefined>(undefined);
   const [pendingFarmJournalParcelId,setPendingFarmJournalParcelId]=useState<string|undefined>(undefined);
+
+  useEffect(()=>{
+    if(!isStandaloneOliviaRootLaunch())return;
+    window.history.replaceState({},'',OLIVIA_OS_PATH);
+    navigationRef.current='dashboard';
+    setPostLoginTab('dashboard');
+    setPortalMode('olivia');
+    setActiveTab('dashboard');
+    setShowPublicSite(false);
+    if(!isLoggedIn)setShowLogin(true);
+  },[]);
 
   const activateTab = (target: string, profile = user) => {
     const next = resolvePortalNavigation(target, profile.role, portalForPath(currentPath()) ?? portalMode);
