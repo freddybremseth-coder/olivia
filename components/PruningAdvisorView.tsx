@@ -26,13 +26,14 @@ import { buildFarmContext, fetchFarmContextImages } from '../services/farmJourna
 import { buildLearningContext, recordAgentAssessment } from '../services/farmIntelligence';
 import FarmQuestionsPanel from './FarmQuestionsPanel';
 import AgentFeedbackPanel from './AgentFeedbackPanel';
+import OlivePhotoProtocol from './OlivePhotoProtocol';
 
 function makeId(prefix: string) {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `${prefix}-${crypto.randomUUID()}`;
   return `${prefix}-${Date.now()}`;
 }
 
-const MAX_ANALYSIS_IMAGES = 6;
+const MAX_ANALYSIS_IMAGES = 5;
 
 function normalizePriority(priority: any): 'HØY' | 'MIDDELS' | 'LAV' {
   const value = String(priority || '').toUpperCase();
@@ -64,6 +65,10 @@ function normalizeStep(step: Partial<PruningStep>, index: number): PruningStep {
     y: Math.max(5, Math.min(95, Number(step.y || 50))),
     confidence: confidencePercent(step.confidence || 50),
     evidence: step.evidence,
+    riskLevel: step.riskLevel,
+    actionType: step.actionType,
+    whyNow: step.whyNow,
+    consequenceIfSkipped: step.consequenceIfSkipped,
   };
 }
 
@@ -82,6 +87,10 @@ function normalizePlan(raw: PruningPlan | null | undefined): PruningPlan {
     limitations: Array.isArray(raw?.limitations) ? raw!.limitations : [],
     missingDetails: Array.isArray(raw?.missingDetails) ? raw!.missingDetails : [],
     safetyNotes: Array.isArray(raw?.safetyNotes) ? raw!.safetyNotes : [],
+    treeStage: raw?.treeStage,
+    trainingSystem: raw?.trainingSystem,
+    pruningGoal: raw?.pruningGoal,
+    decisionSummary: raw?.decisionSummary,
   };
 }
 
@@ -184,10 +193,14 @@ const PruningAdvisorView: React.FC = () => {
     }
     const context = canvasRef.current.getContext('2d');
     if (!context) return;
-    canvasRef.current.width = videoRef.current.videoWidth;
-    canvasRef.current.height = videoRef.current.videoHeight;
-    context.drawImage(videoRef.current, 0, 0);
-    setImages(prev => [...prev, canvasRef.current!.toDataURL('image/jpeg', 0.85)]);
+    const maxDim=1280;
+    const sourceW=videoRef.current.videoWidth;
+    const sourceH=videoRef.current.videoHeight;
+    const scale=Math.min(1,maxDim/Math.max(sourceW,sourceH));
+    canvasRef.current.width=Math.max(1,Math.round(sourceW*scale));
+    canvasRef.current.height=Math.max(1,Math.round(sourceH*scale));
+    context.drawImage(videoRef.current,0,0,canvasRef.current.width,canvasRef.current.height);
+    setImages(prev => [...prev, canvasRef.current!.toDataURL('image/jpeg', 0.74)]);
     setError(null);
   };
 
@@ -205,7 +218,7 @@ const PruningAdvisorView: React.FC = () => {
         return;
       }
       const selectedFiles = Array.from(files).slice(0, remainingSlots);
-      const dataUrls = await filesToResizedDataUrls(selectedFiles);
+      const dataUrls = await filesToResizedDataUrls(selectedFiles,{maxDim:1280,quality:0.74});
       if (!dataUrls.length) {
         setError('Ingen av bildene kunne leses.');
         return;
@@ -225,6 +238,11 @@ const PruningAdvisorView: React.FC = () => {
   const analyze = async () => {
     if (!images.length) return;
     const base64List = images.map(img => img.split(',')[1]).filter(Boolean);
+    const approxPayloadMb=base64List.reduce((sum,item)=>sum+item.length,0)*0.75/1024/1024;
+    if(approxPayloadMb>3.8){
+      setError('Bildene er fortsatt for store for sikker analyse. Fjern ett bilde eller last dem opp på nytt; Olivia komprimerer nye bilder automatisk.');
+      return;
+    }
     if (!base64List.length) {
       setError('Bildene kunne ikke klargjøres for analyse. Prøv å laste dem opp på nytt.');
       return;
@@ -343,7 +361,7 @@ const PruningAdvisorView: React.FC = () => {
     return (
       <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
         {plan.pruningSteps.map((step, i) => {
-          const color = step.priority === 'HØY' ? '#ef4444' : step.priority === 'MIDDELS' ? '#f59e0b' : '#22c55e';
+          const color = step.riskLevel === 'RED' ? '#ef4444' : step.riskLevel === 'YELLOW' ? '#f59e0b' : '#22c55e';
           const active = activeMarker === i;
           return <g key={`${step.area}-${i}`}><circle cx={step.x} cy={step.y} r={active ? 5 : 3} fill={color} fillOpacity="0.25" className="animate-ping" /><circle cx={step.x} cy={step.y} r={active ? 6 : 4} stroke={color} strokeWidth="1" fill="none" /><circle cx={step.x} cy={step.y} r="1.4" fill={color} /></g>;
         })}
@@ -387,6 +405,8 @@ const PruningAdvisorView: React.FC = () => {
             <button onClick={handleFilePick} disabled={isUploading} className="flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed border-green-500/30 flex flex-col items-center justify-center gap-1 text-green-400"><Upload size={18} /><span className="text-[9px] font-bold uppercase">Last opp</span></button>
           </div>
 
+          <OlivePhotoProtocol imageCount={images.length} mode="pruning" />
+
           <div className="glass rounded-2xl p-4 border border-white/10 space-y-3">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Parsell</label>
             <select className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white" value={selectedParcelId} onChange={e => setSelectedParcelId(e.target.value)}>{parcels.length ? parcels.map(p => <option key={p.id} value={p.id}>{p.name}</option>) : <option value="">Ingen parseller funnet i Supabase</option>}</select>
@@ -410,11 +430,22 @@ const PruningAdvisorView: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-          {!plan ? <div className="glass rounded-[2rem] p-8 border border-white/10 text-center"><ImageIcon className="mx-auto text-[#d9b657] mb-4" size={42} /><h3 className="text-white font-bold text-xl">Klar for beskjæringsanalyse</h3><p className="text-slate-400 text-sm mt-2">Legg inn minst ett godt heltrebilde. Flere vinkler gir bedre verdi.</p></div> : <div className="space-y-5 animate-in slide-in-from-right-6 duration-500"><div className="glass rounded-[2rem] p-6 border border-white/10"><p className="text-[10px] font-bold text-[#d9b657] uppercase tracking-widest">Plan</p><h3 className="text-2xl font-bold text-white mt-1">{plan.treeType}</h3><p className="text-xs text-slate-500 mt-1">{plan.ageEstimate}</p><p className="text-sm text-slate-400 mt-4">{plan.timingAdvice}</p><div className="grid grid-cols-2 gap-3 mt-5"><Metric label="Anbefalt dato" value={scheduledDate || plan.recommendedDate} /><Metric label="Antall punkter" value={String(plan.pruningSteps.length)} /><Metric label="Sikkerhet" value={`${confidencePercent(plan.confidence)}%`} /><Metric label="Bildegrunnlag" value={qualityLabel(plan.observationQuality)} /></div>{(plan.limitations?.length || plan.missingDetails?.length || plan.safetyNotes?.length) ? <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-100 space-y-1">{plan.limitations?.length ? <p>Begrensning: {plan.limitations.join(', ')}</p> : null}{plan.missingDetails?.length ? <p>Mangler: {plan.missingDetails.join(', ')}</p> : null}{plan.safetyNotes?.length ? <p>Sikkerhet: {plan.safetyNotes.join(', ')}</p> : null}</div> : null}</div>
+          {!plan ? <div className="glass rounded-[2rem] p-8 border border-white/10 text-center"><ImageIcon className="mx-auto text-[#d9b657] mb-4" size={42} /><h3 className="text-white font-bold text-xl">Klar for beskjæringsanalyse</h3><p className="text-slate-400 text-sm mt-2">Legg inn minst ett godt heltrebilde. Flere vinkler gir bedre verdi.</p></div> : <div className="space-y-5 animate-in slide-in-from-right-6 duration-500"><div className="glass rounded-[2rem] p-6 border border-white/10"><p className="text-[10px] font-bold text-[#d9b657] uppercase tracking-widest">Ekspertbeslutning</p><h3 className="text-2xl font-bold text-white mt-1">{plan.treeType}</h3><p className="text-xs text-slate-500 mt-1">{plan.ageEstimate}{plan.treeStage?' · '+plan.treeStage:''}{plan.trainingSystem?' · '+plan.trainingSystem:''}</p>{plan.pruningGoal&&<p className="text-xs text-green-300 mt-3"><span className="font-black">Mål:</span> {plan.pruningGoal}</p>}{plan.decisionSummary&&<p className="text-sm text-slate-300 mt-3">{plan.decisionSummary}</p>}<p className="text-sm text-slate-400 mt-4">{plan.timingAdvice}</p><div className="grid grid-cols-2 gap-3 mt-5"><Metric label="Anbefalt dato" value={scheduledDate || plan.recommendedDate} /><Metric label="Antall punkter" value={String(plan.pruningSteps.length)} /><Metric label="Sikkerhet" value={`${confidencePercent(plan.confidence)}%`} /><Metric label="Bildegrunnlag" value={qualityLabel(plan.observationQuality)} /></div>{(plan.limitations?.length || plan.missingDetails?.length || plan.safetyNotes?.length) ? <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-100 space-y-1">{plan.limitations?.length ? <p>Begrensning: {plan.limitations.join(', ')}</p> : null}{plan.missingDetails?.length ? <p>Mangler: {plan.missingDetails.join(', ')}</p> : null}{plan.safetyNotes?.length ? <p>Sikkerhet: {plan.safetyNotes.join(', ')}</p> : null}</div> : null}</div>
 
             <div className="glass rounded-[2rem] p-5 border border-white/10 space-y-3"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Planlagt dato</label><input type="date" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} /></div>
 
-            <div className="space-y-3">{plan.pruningSteps.length ? plan.pruningSteps.map((step, i) => <button key={`${step.area}-${i}`} onMouseEnter={() => setActiveMarker(i)} onMouseLeave={() => setActiveMarker(null)} className={`w-full text-left p-4 rounded-2xl border transition-all ${activeMarker === i ? 'bg-green-500/10 border-green-500/30' : 'bg-white/5 border-white/10'}`}><div className="flex justify-between gap-3"><p className="text-white font-bold flex-1 min-w-0"><Scissors size={14} className="inline mr-2" />{step.area}</p><span className="text-[10px] text-[#d9b657] font-bold flex-shrink-0">{step.priority} · {confidencePercent(step.confidence)}%</span></div><p className="text-sm text-slate-400 mt-2">{step.action}</p>{step.evidence && <p className="text-xs text-slate-500 mt-2">Grunnlag: {step.evidence}</p>}</button>) : <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">AI kunne ikke markere trygge snittpunkter. Ta flere bilder før du beskjærer.</div>}</div>
+            <div className="space-y-3">{plan.pruningSteps.length ? plan.pruningSteps.map((step, i) => {
+              const risk=step.riskLevel||'YELLOW';
+              const riskLabel=risk==='GREEN'?'GRØNN · normalt trygg':risk==='RED'?'RØD · ikke kutt ennå':'GUL · kontroller først';
+              const riskClass=risk==='GREEN'?'border-green-500/25 bg-green-500/[0.04] text-green-300':risk==='RED'?'border-red-500/25 bg-red-500/[0.04] text-red-300':'border-amber-500/25 bg-amber-500/[0.04] text-amber-300';
+              return <button key={`${step.area}-${i}`} onMouseEnter={() => setActiveMarker(i)} onMouseLeave={() => setActiveMarker(null)} className={`w-full text-left p-4 rounded-2xl border transition-all ${activeMarker === i ? 'border-green-500/30 bg-green-500/10' : 'border-white/10 bg-white/5'}`}>
+                <div className="flex flex-wrap justify-between gap-2"><p className="text-white font-bold flex-1 min-w-0"><Scissors size={14} className="inline mr-2" />{step.area}</p><div className="flex gap-2"><span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+riskClass}>{riskLabel}</span><span className="text-[10px] text-[#d9b657] font-bold">{confidencePercent(step.confidence)}%</span></div></div>
+                <p className="text-sm text-slate-300 mt-2">{step.action}</p>
+                {step.whyNow&&<p className="text-xs text-green-200 mt-2"><span className="font-black">Hvorfor:</span> {step.whyNow}</p>}
+                {step.evidence&&<p className="text-xs text-slate-500 mt-2">Synlig grunnlag: {step.evidence}</p>}
+                {step.consequenceIfSkipped&&<p className="text-[10px] text-slate-600 mt-2">Hvis det utsettes: {step.consequenceIfSkipped}</p>}
+              </button>;
+            }) : <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">Ingen synlige tiltak ble vurdert som forsvarlige. Følg foto-protokollen over og kjør analysen på nytt.</div>}</div>
 
             <div className="flex flex-col md:flex-row gap-3"><button onClick={saveToHistory} disabled={isSavingHistory} className={`flex-1 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 ${historySaved ? 'bg-green-500 text-black' : 'bg-white/10 text-white hover:bg-white/15'}`}>{isSavingHistory ? <Loader2 size={18} className="animate-spin" /> : historySaved ? <CheckCircle2 size={18} /> : <Save size={18} />} {historySaved ? 'Lagret' : 'Lagre historikk'}</button><button onClick={addTask} disabled={isSavingTask} className={`flex-1 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 ${taskSaved ? 'bg-green-500 text-black' : 'bg-[#d9b657] text-black hover:bg-[#f0cf70]'}`}>{isSavingTask ? <Loader2 size={18} className="animate-spin" /> : taskSaved ? <CheckCircle2 size={18} /> : <Calendar size={18} />} {taskSaved ? 'Oppgave laget' : 'Lag oppgave'}</button></div>
 

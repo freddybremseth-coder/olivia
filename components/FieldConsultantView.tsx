@@ -29,6 +29,7 @@ import { buildFarmContext, fetchFarmContextImages } from '../services/farmJourna
 import { buildLearningContext, recordAgentAssessment } from '../services/farmIntelligence';
 import FarmQuestionsPanel from './FarmQuestionsPanel';
 import AgentFeedbackPanel from './AgentFeedbackPanel';
+import OlivePhotoProtocol from './OlivePhotoProtocol';
 
 type ResultTab = 'summary' | 'health' | 'pruning' | 'history';
 
@@ -76,6 +77,10 @@ function normalizePlan(plan?: Partial<PruningPlan>): PruningPlan {
         y: Math.max(5, Math.min(95, Number(step.y || 50))),
         confidence: confidencePercent(step.confidence || 50),
         evidence: step.evidence,
+        riskLevel: step.riskLevel,
+        actionType: step.actionType,
+        whyNow: step.whyNow,
+        consequenceIfSkipped: step.consequenceIfSkipped,
       })),
     recommendedDate: plan?.recommendedDate || new Date().toISOString().slice(0, 10),
     timingAdvice: plan?.timingAdvice || 'AI kunne ikke fastslå optimal timing med høy sikkerhet. Bruk lokal sesong, treets vitalitet og vær før tiltak.',
@@ -86,6 +91,10 @@ function normalizePlan(plan?: Partial<PruningPlan>): PruningPlan {
     limitations: Array.isArray(plan?.limitations) ? plan!.limitations : [],
     missingDetails: Array.isArray(plan?.missingDetails) ? plan!.missingDetails : [],
     safetyNotes: Array.isArray(plan?.safetyNotes) ? plan!.safetyNotes : [],
+    treeStage: plan?.treeStage,
+    trainingSystem: plan?.trainingSystem,
+    pruningGoal: plan?.pruningGoal,
+    decisionSummary: plan?.decisionSummary,
   };
 }
 
@@ -124,6 +133,7 @@ function normalizeAnalysis(raw: ComprehensiveAnalysisResult | null): Comprehensi
     missingDetails: Array.isArray(raw?.missingDetails) && raw!.missingDetails.length
       ? raw!.missingDetails
       : ['heltre', 'bladverk nærbilde', 'stamme/hovedgreiner', 'frukt/skudd hvis relevant'],
+    inspection: raw?.inspection,
   };
 }
 
@@ -370,7 +380,7 @@ const FieldConsultantView: React.FC = () => {
     return (
       <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
         {plan.pruningSteps.map((step, i) => {
-          const color = step.priority === 'HØY' ? '#ef4444' : step.priority === 'MIDDELS' ? '#f59e0b' : '#22c55e';
+          const color = step.riskLevel === 'RED' ? '#ef4444' : step.riskLevel === 'YELLOW' ? '#f59e0b' : '#22c55e';
           const isActive = activeMarker === i;
           return (
             <g key={`${step.area}-${i}`}>
@@ -425,6 +435,8 @@ const FieldConsultantView: React.FC = () => {
             <button onClick={handleFilePick} disabled={isUploading} className="flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed border-green-500/30 flex flex-col items-center justify-center gap-1 text-green-400"><Upload size={18} /><span className="text-[9px] font-bold uppercase">Last opp</span></button>
           </div>
 
+          <OlivePhotoProtocol imageCount={images.length} mode="field" />
+
           <div className="glass rounded-2xl p-4 border border-white/10 space-y-3">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Parsell for analyse</label>
             <select className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white" value={selectedParcelId} onChange={e => setSelectedParcelId(e.target.value)}>
@@ -474,6 +486,20 @@ const FieldConsultantView: React.FC = () => {
                 </div>
                 {analysis.needsMoreImages && <div className="mt-4 rounded-2xl border border-orange-500/20 bg-orange-500/10 p-3 text-xs text-orange-100">Mangler for bedre presisjon: {analysis.missingDetails.join(', ')}</div>}
               </div>
+
+              {analysis.inspection&&<div className="glass rounded-[2rem] p-5 border border-cyan-500/15">
+                <div className="flex items-start justify-between gap-3">
+                  <div><p className="text-[10px] uppercase tracking-widest font-black text-cyan-300">Pass 1 · Visuell inspektør</p><p className="text-sm font-bold text-white mt-1">Hva Olivia faktisk så før den ga råd</p></div>
+                  <span className="text-[10px] font-black rounded-full border border-white/10 bg-black/20 px-2 py-1 text-slate-300">{qualityLabel(analysis.inspection.imageQuality)}</span>
+                </div>
+                {analysis.inspection.observations.length>0&&<div className="mt-3 space-y-1">{analysis.inspection.observations.slice(0,5).map((item,i)=><p key={i} className="text-xs text-slate-400">• {item}</p>)}</div>}
+                <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-3">
+                  <div className="flex items-center justify-between gap-2"><p className="text-xs font-black text-white">Sortsvurdering: {analysis.inspection.varietyAssessment.bestCandidate}</p><span className="text-xs font-black text-[#d9b657]">{confidencePercent(analysis.inspection.varietyAssessment.confidence)}%</span></div>
+                  <p className="text-[10px] text-slate-500 mt-1">{analysis.inspection.varietyAssessment.reasoning}</p>
+                  {analysis.inspection.varietyAssessment.candidates.length>0&&<div className="mt-3 space-y-2">{analysis.inspection.varietyAssessment.candidates.slice(0,3).map(candidate=><div key={candidate.name} className="flex justify-between gap-3 text-xs"><span className="text-slate-300">{candidate.name}</span><span className="text-slate-500">{confidencePercent(candidate.confidence)}%</span></div>)}</div>}
+                </div>
+                {analysis.inspection.nextPhotos.length>0&&<p className="text-[10px] text-amber-200 mt-3">Neste beste bilde: {analysis.inspection.nextPhotos[0]}</p>}
+              </div>}
 
               <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10">
                 {(['summary', 'health', 'pruning', 'history'] as ResultTab[]).map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest ${activeTab === tab ? 'bg-green-500 text-black' : 'text-slate-500 hover:text-white'}`}>{tab === 'summary' ? 'Kort' : tab === 'health' ? 'Helse' : tab === 'pruning' ? 'Beskjæring' : 'Historikk'}</button>)}
