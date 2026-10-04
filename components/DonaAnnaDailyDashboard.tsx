@@ -27,6 +27,8 @@ import {
 } from '../types/farmIoT';
 import {
   buildDonaAnnaDecisionAdvice,
+  sensorReadingAgeHours,
+  SENSOR_ACTION_MAX_AGE_HOURS,
   fetchLatestSensorReadings,
   fetchOpenSensorAlerts,
   fetchRecentFarmObservations,
@@ -66,6 +68,16 @@ type DailyPriorityItem = {
   actionLabel?:string;
 };
 
+type SourceFreshness = {
+  id:string;
+  label:string;
+  lastAt?:string;
+  ageText:string;
+  state:'fresh'|'aging'|'stale'|'missing'|'context';
+  note:string;
+  targetTab:string;
+};
+
 function monthName(monthIndex: number): string {
   return new Date(2026, monthIndex - 1, 1).toLocaleString('no-NO', { month: 'long' });
 }
@@ -82,6 +94,74 @@ function yearWheelStatusLabel(status:string):string {
   return labels[status]||status;
 }
 
+function ageHours(value?:string|null,now=new Date()):number|null{
+  if(!value)return null;
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return null;
+  return Math.max(0,(now.getTime()-date.getTime())/3600000);
+}
+
+function humanAge(value?:string|null,now=new Date()):string{
+  const hours=ageHours(value,now);
+  if(hours==null)return'ingen data';
+  if(hours<1)return'mindre enn 1 time siden';
+  if(hours<24)return Math.floor(hours)+' t siden';
+  const days=Math.floor(hours/24);
+  return days+' dag'+(days===1?'':'er')+' siden';
+}
+
+function buildSourceFreshness(
+  readings:SensorReading[],
+  observations:FarmObservation[],
+  irrigationEvents:IrrigationEvent[],
+  now=new Date()
+):SourceFreshness[]{
+  const latestReading=[...readings].sort((a,b)=>new Date(b.measured_at).getTime()-new Date(a.measured_at).getTime())[0];
+  const sensorAge=latestReading?senorAgeSafe(latestReading,now):null;
+  const latestObservation=[...observations].sort((a,b)=>new Date(b.observed_at).getTime()-new Date(a.observed_at).getTime())[0];
+  const observationHours=latestObservation?ageHours(latestObservation.observed_at,now):null;
+  const latestIrrigation=[...irrigationEvents].sort((a,b)=>new Date(b.started_at).getTime()-new Date(a.started_at).getTime())[0];
+  const irrigationHours=latestIrrigation?ageHours(latestIrrigation.started_at,now):null;
+
+  const sensorState:SourceFreshness['state']=sensorAge==null?'missing':sensorAge<=6?'fresh':sensorAge<=SENSOR_ACTION_MAX_AGE_HOURS?'aging':'stale';
+  const observationState:SourceFreshness['state']=observationHours==null?'missing':observationHours<=24*7?'fresh':observationHours<=24*21?'aging':'stale';
+  const irrigationState:SourceFreshness['state']=irrigationHours==null?'context':irrigationHours<=24*7?'fresh':'context';
+
+  return[
+    {
+      id:'sensors',
+      label:'Sensorer',
+      lastAt:latestReading?.measured_at,
+      ageText:humanAge(latestReading?.measured_at,now),
+      state:sensorState,
+      note:sensorState==='stale'?'For gammel til operative råd.':sensorState==='missing'?'Ingen sensormålinger tilgjengelig.':sensorState==='aging'?'Brukes fortsatt, men bør fornyes snart.':'Fersk nok til operative råd.',
+      targetTab:'iot',
+    },
+    {
+      id:'observations',
+      label:'Feltobservasjoner',
+      lastAt:latestObservation?.observed_at,
+      ageText:humanAge(latestObservation?.observed_at,now),
+      state:observationState,
+      note:observationState==='stale'?'Feltbildet bør oppdateres.':observationState==='missing'?'Ingen feltobservasjon registrert.':observationState==='aging'?'Begynner å bli gammelt som feltgrunnlag.':'Nylig feltobservasjon registrert.',
+      targetTab:'field_observations',
+    },
+    {
+      id:'irrigation',
+      label:'Vanningslogg',
+      lastAt:latestIrrigation?.started_at,
+      ageText:humanAge(latestIrrigation?.started_at,now),
+      state:irrigationState,
+      note:irrigationHours==null?'Ingen vanningshendelser registrert. Dette er ikke avvik i seg selv.':irrigationHours>24*7?'Ingen nyere vanning registrert. Vurder sammen med regn og parselltype.':'Nylig vanningshendelse registrert.',
+      targetTab:'irrigation_log',
+    },
+  ];
+}
+
+function senorAgeSafe(reading:SensorReading,now=new Date()):number|null{
+  return sensorReadingAgeHours(reading,now);
+}
+
 function getBiarSeasonText(date = new Date()): string {
   const month = date.getMonth() + 1;
   if ([1, 2].includes(month)) return 'Beskjæring, vedlikehold, planlegging og jordforbedring.';
@@ -96,6 +176,19 @@ function getBiarSeasonText(date = new Date()): string {
 
 function buildActionCards(advice: FarmDecisionAdvice, readings: SensorReading[], alerts: SensorAlert[], irrigationEvents: IrrigationEvent[], observations: FarmObservation[]): ActionCard[] {
   const cards: ActionCard[] = [];
+
+  const newestReading=[...readings].sort((a,b)=>new Date(b.measured_at).getTime()-new Date(a.measured_at).getTime())[0];
+  const newestReadingAge=newestReading?sensorReadingAgeHours(newestReading):null;
+  if(newestReadingAge!=null&&newestReadingAge>SENSOR_ACTION_MAX_AGE_HOURS){
+    cards.push({
+      title:'Forny sensordata',
+      description:'Siste sensormåling er '+humanAge(newestReading.measured_at)+'. Gamle målinger brukes ikke til operative råd.',
+      priority:'Høy',
+      icon:<Gauge size={18}/>,
+      targetTab:'iot',
+      actionLabel:'Kontroller sensorer',
+    });
+  }
 
   if (!readings.length && !alerts.length && !irrigationEvents.length && !observations.length) {
     cards.push({
@@ -622,6 +715,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   const delaySummary = buildDelaySummary(farmTruth);
   const parcelAttention = buildParcelAttention(farmTruth);
   const weekBrief = buildWeekBrief(farmTruth);
+  const sourceFreshness = buildSourceFreshness(readings,observations,irrigationEvents);
   const currentMonth = new Date().getMonth() + 1;
   const oilWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_oil;
   const tableWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_table_olives;
@@ -670,6 +764,25 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       {isLoading && loadState === 'loading' ? (
         <div className="glass rounded-[2rem] p-8 border border-white/10 text-slate-400 flex items-center gap-3"><Loader2 size={18} className="animate-spin" /> Henter dagsdata fra Supabase...</div>
       ) : null}
+
+      <div className="glass rounded-[2rem] p-6 border border-white/10">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.24em] font-black text-blue-300">Datakvalitet</p>
+          <h3 className="text-xl font-black text-white mt-1">Hvor ferskt er beslutningsgrunnlaget?</h3>
+          <p className="text-xs text-slate-500 mt-2">Gamle sensormålinger beholdes som historikk, men Olivia bruker dem ikke som om de beskriver gården nå.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
+          {sourceFreshness.map(source=>{
+            const tone=source.state==='fresh'?'border-green-500/20 bg-green-500/[0.05]':source.state==='aging'?'border-amber-300/20 bg-amber-300/[0.05]':source.state==='stale'||source.state==='missing'?'border-red-500/20 bg-red-500/[0.05]':'border-white/10 bg-black/20';
+            const textTone=source.state==='fresh'?'text-green-300':source.state==='aging'?'text-amber-200':source.state==='stale'||source.state==='missing'?'text-red-300':'text-slate-300';
+            return <button key={source.id} onClick={()=>onNavigate?.(source.targetTab)} className={'rounded-2xl border p-4 text-left transition hover:bg-white/[0.05] '+tone}>
+              <div className="flex items-start justify-between gap-3"><p className="text-sm font-black text-white">{source.label}</p><span className={'text-[9px] uppercase tracking-widest font-black '+textTone}>{source.state==='fresh'?'Fersk':source.state==='aging'?'Aldrende':source.state==='stale'?'For gammel':source.state==='missing'?'Mangler':'Kontekst'}</span></div>
+              <p className={'text-xs font-bold mt-3 '+textTone}>{source.ageText}</p>
+              <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">{source.note}</p>
+            </button>;
+          })}
+        </div>
+      </div>
 
       {farmTruth&&<div className="glass rounded-[2rem] p-6 border border-white/10">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
