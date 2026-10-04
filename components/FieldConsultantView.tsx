@@ -96,6 +96,7 @@ function normalizePlan(plan?: Partial<PruningPlan>): PruningPlan {
     trainingSystem: plan?.trainingSystem,
     pruningGoal: plan?.pruningGoal,
     decisionSummary: plan?.decisionSummary,
+    expertReview: plan?.expertReview,
   };
 }
 
@@ -135,6 +136,7 @@ function normalizeAnalysis(raw: ComprehensiveAnalysisResult | null): Comprehensi
       ? raw!.missingDetails
       : ['heltre', 'bladverk nærbilde', 'stamme/hovedgreiner', 'frukt/skudd hvis relevant'],
     inspection: raw?.inspection,
+    expertReview: raw?.expertReview,
   };
 }
 
@@ -529,6 +531,16 @@ const FieldConsultantView: React.FC = () => {
                   {analysis.inspection.varietyAssessment.candidates.length>0&&<div className="mt-3 space-y-2">{analysis.inspection.varietyAssessment.candidates.slice(0,3).map(candidate=><div key={candidate.name} className="flex justify-between gap-3 text-xs"><span className="text-slate-300">{candidate.name}</span><span className="text-slate-500">{confidencePercent(candidate.confidence)}%</span></div>)}</div>}
                 </div>
                 {analysis.inspection.nextPhotos.length>0&&<p className="text-[10px] text-amber-200 mt-3">Neste beste bilde: {analysis.inspection.nextPhotos[0]}</p>}
+              </div>}
+
+              {analysis.expertReview&&<div className={'rounded-[2rem] border p-5 '+(analysis.expertReview.verdict==='APPROVE'?'border-green-500/20 bg-green-500/[0.04]':analysis.expertReview.verdict==='ADJUST'?'border-amber-500/20 bg-amber-500/[0.04]':'border-red-500/20 bg-red-500/[0.04]')}>
+                <div className="flex items-start justify-between gap-3">
+                  <div><p className="text-[10px] uppercase tracking-widest font-black text-purple-300">Pass 3 · Kritiker</p><p className="text-sm font-bold text-white mt-1">Uavhengig kontroll av usikre konklusjoner</p></div>
+                  <span className="rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[9px] font-black text-slate-300">{analysis.expertReview.verdict==='APPROVE'?'GODKJENT':analysis.expertReview.verdict==='ADJUST'?'JUSTERING':'MER BEVIS'}</span>
+                </div>
+                <p className="text-xs text-slate-300 mt-3">{analysis.expertReview.summary}</p>
+                {analysis.expertReview.concerns.length>0&&<div className="mt-3"><p className="text-[9px] uppercase tracking-widest font-black text-amber-300">Kritiske punkter</p>{analysis.expertReview.concerns.slice(0,4).map((item,i)=><p key={i} className="text-xs text-slate-400 mt-1">• {item}</p>)}</div>}
+                {analysis.expertReview.blockingQuestions.length>0&&<p className="text-[10px] text-red-200 mt-3">Må avklares: {analysis.expertReview.blockingQuestions.join(' · ')}</p>}
               </div>}
 
               {analysis.inspection&&<div className="rounded-[2rem] border border-[#d9b657]/20 bg-[#d9b657]/[0.035] p-5">
