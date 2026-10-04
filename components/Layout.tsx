@@ -153,7 +153,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
   );
 
   const renderGroup = (group: MenuGroup, isMobile: boolean) => {
-    const isOpen = openGroups[group.id] || !isSidebarOpen || isMobile;
+    const isOpen = isMobile ? Boolean(openGroups[group.id]) : (Boolean(openGroups[group.id]) || !isSidebarOpen);
     const hasActive = group.items.some(item => item.id === activeTab);
     return (
       <div key={group.id} className="space-y-1">
