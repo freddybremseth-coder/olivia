@@ -16,6 +16,29 @@ export interface OliveVarietyCandidate {
   contradictingTraits: string[];
 }
 
+export interface OliveExpertReview {
+  verdict:'APPROVE'|'ADJUST'|'NEED_MORE_EVIDENCE';
+  confidence:number;
+  summary:string;
+  agreements:string[];
+  concerns:string[];
+  blockingQuestions:string[];
+  varietyReview?:{
+    status:'AGREE'|'UNCERTAIN'|'DISAGREE';
+    reason:string;
+  };
+  diagnosisReview?:{
+    status:'AGREE'|'UNCERTAIN'|'DISAGREE';
+    reason:string;
+  };
+  stepReviews:Array<{
+    index:number;
+    verdict:'KEEP'|'DOWNGRADE'|'REMOVE';
+    riskLevel:'GREEN'|'YELLOW'|'RED';
+    reason:string;
+  }>;
+}
+
 export interface OliveInspectionResult {
   imageQuality: 'GOOD' | 'LIMITED' | 'INSUFFICIENT';
   visibleOrgans: {
@@ -77,6 +100,7 @@ export interface PruningPlan {
   trainingSystem?: 'VASE' | 'HEDGE' | 'FREE' | 'UNKNOWN';
   pruningGoal?: string;
   decisionSummary?: string;
+  expertReview?: OliveExpertReview;
 }
 
 export interface PlantDiagnosis {
@@ -107,6 +131,7 @@ export interface ComprehensiveAnalysisResult {
   needsMoreImages: boolean;
   missingDetails: string[];
   inspection?: OliveInspectionResult;
+  expertReview?: OliveExpertReview;
 }
 
 export interface DroneAnalysisResult {
@@ -288,6 +313,35 @@ function normalizeRiskLevel(value: unknown, confidence = 50): PruningStep['riskL
   return confidence>=75?'GREEN':confidence>=45?'YELLOW':'RED';
 }
 
+function normalizeExpertReview(raw:Partial<OliveExpertReview>|undefined):OliveExpertReview{
+  const value=raw||{};
+  const verdict:OliveExpertReview['verdict']=
+    value.verdict==='APPROVE'||value.verdict==='ADJUST'||value.verdict==='NEED_MORE_EVIDENCE'
+      ?value.verdict:'NEED_MORE_EVIDENCE';
+  return{
+    verdict,
+    confidence:normalizeConfidence(value.confidence,50),
+    summary:String(value.summary||'Kritikeren fant ikke nok grunnlag til en sikker ekstra vurdering.').slice(0,900),
+    agreements:Array.isArray(value.agreements)?value.agreements.map(String).slice(0,8):[],
+    concerns:Array.isArray(value.concerns)?value.concerns.map(String).slice(0,8):[],
+    blockingQuestions:Array.isArray(value.blockingQuestions)?value.blockingQuestions.map(String).slice(0,6):[],
+    varietyReview:value.varietyReview?{
+      status:value.varietyReview.status==='AGREE'||value.varietyReview.status==='UNCERTAIN'||value.varietyReview.status==='DISAGREE'?value.varietyReview.status:'UNCERTAIN',
+      reason:String(value.varietyReview.reason||'').slice(0,500),
+    }:undefined,
+    diagnosisReview:value.diagnosisReview?{
+      status:value.diagnosisReview.status==='AGREE'||value.diagnosisReview.status==='UNCERTAIN'||value.diagnosisReview.status==='DISAGREE'?value.diagnosisReview.status:'UNCERTAIN',
+      reason:String(value.diagnosisReview.reason||'').slice(0,500),
+    }:undefined,
+    stepReviews:Array.isArray(value.stepReviews)?value.stepReviews.slice(0,8).map((item:any)=>({
+      index:Math.max(0,Math.floor(Number(item?.index)||0)),
+      verdict:item?.verdict==='KEEP'||item?.verdict==='DOWNGRADE'||item?.verdict==='REMOVE'?item.verdict:'DOWNGRADE',
+      riskLevel:item?.riskLevel==='GREEN'||item?.riskLevel==='YELLOW'||item?.riskLevel==='RED'?item.riskLevel:'YELLOW',
+      reason:String(item?.reason||'').slice(0,500),
+    })):[],
+  };
+}
+
 function normalizeInspection(raw: Partial<OliveInspectionResult> | undefined): OliveInspectionResult {
   const value=raw||{};
   const visible=value.visibleOrgans||{} as OliveInspectionResult['visibleOrgans'];
@@ -394,6 +448,7 @@ function sanitizePruningPlan(raw: Partial<PruningPlan> | undefined, varietyConfi
     trainingSystem: ['VASE','HEDGE','FREE','UNKNOWN'].includes(String(plan.trainingSystem||'')) ? plan.trainingSystem : 'UNKNOWN',
     pruningGoal: plan.pruningGoal ? String(plan.pruningGoal).slice(0,400) : undefined,
     decisionSummary: plan.decisionSummary ? String(plan.decisionSummary).slice(0,700) : undefined,
+    expertReview: plan.expertReview ? normalizeExpertReview(plan.expertReview) : undefined,
   };
 }
 
@@ -434,6 +489,7 @@ function sanitizeComprehensiveAnalysis(raw: Partial<ComprehensiveAnalysisResult>
       needsMoreImages ? ['nærbilde av bladoverside og underside', 'frukt/stein hvis tilgjengelig', 'hele treet med stamme', 'parsell og kjent sortshistorikk'] : []
     ),
     inspection: raw.inspection ? normalizeInspection(raw.inspection) : undefined,
+    expertReview: raw.expertReview ? normalizeExpertReview(raw.expertReview) : undefined,
   };
 }
 
