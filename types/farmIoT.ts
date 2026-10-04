@@ -138,6 +138,13 @@ export interface FarmObservation {
   image_urls?: string[];
   observed_at: string;
   created_by?: string;
+  geo_lat?: number;
+  geo_lon?: number;
+  geo_accuracy_m?: number;
+  geo_captured_at?: string;
+  geo_source?: string;
+  geo_match_method?: string;
+  geo_match_confidence?: number;
 }
 
 export interface BiarSeasonSettings {
