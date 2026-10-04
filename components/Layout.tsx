@@ -22,7 +22,8 @@ type MenuItem = { id: string; icon: React.ElementType; label: string };
 type MenuGroup = { id: string; label: string; icon: React.ElementType; items: MenuItem[] };
 
 const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange, onLogout, language, portalMode = 'olivia' }) => {
-  const isB2B = portalMode === 'b2b';
+  const routePath = typeof window === 'undefined' ? '' : window.location.pathname.replace(/\/+$/, '') || '/';
+  const isB2B = routePath === '/b2b' ? true : routePath === '/olivia' || routePath === '/app' ? false : portalMode === 'b2b';
   const portalName = isB2B ? 'Doña Anna B2B' : 'Olivia OS';
   const { t } = useTranslation(language);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -166,7 +167,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
             <ChevronDown size={13} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
           </button>
         ) : null}
-        {isOpen && <div className={`${isSidebarOpen || isMobile ? 'space-y-1' : 'space-y-1'}`}>{group.items.map(item => renderMenuItem(item, isMobile))}</div>}
+        {isOpen && <div className={`${isSidebarOpen || isMobile ? 'space-y-1' : 'space-y-1'}`}>{group.items.filter(item=>!(isMobile&&!isB2B&&item.id==='b2b_portal')).map(item => renderMenuItem(item, isMobile))}</div>}
       </div>
     );
   };
