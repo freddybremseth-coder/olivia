@@ -187,11 +187,11 @@ export async function fetchRecentIrrigationEvents(limit = 50): Promise<Irrigatio
   return (data ?? []) as IrrigationEvent[];
 }
 
-export async function insertFarmObservation(observation: Omit<FarmObservation, 'id'>): Promise<FarmObservation> {
+export async function insertFarmObservation(observation: Omit<FarmObservation, 'id'> & {id?:string}): Promise<FarmObservation> {
   if (warnIfSupabaseMissing('insertFarmObservation')) throw new Error('Supabase er ikke konfigurert.');
   const { data, error } = await supabase
     .from('farm_observations')
-    .insert(observation)
+    .upsert(observation,{onConflict:'id'})
     .select('*')
     .single();
   if (error) throwFarmIoTError('insertFarmObservation', error);
