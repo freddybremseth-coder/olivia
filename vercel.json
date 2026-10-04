@@ -53,18 +53,6 @@
       "destination": "/api/sitemap"
     },
     {
-      "source": "/api/ai/gemini/:path*",
-      "destination": "/api/ai/gemini?path=:path*"
-    },
-    {
-      "source": "/api/ai/openai/:path*",
-      "destination": "/api/ai/openai?path=:path*"
-    },
-    {
-      "source": "/api/ai/anthropic/:path*",
-      "destination": "/api/ai/anthropic?path=:path*"
-    },
-    {
       "source": "/api/catastro/:path*",
       "destination": "/api/catastro?path=:path*"
     },
