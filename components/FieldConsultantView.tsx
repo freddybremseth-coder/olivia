@@ -499,7 +499,7 @@ const FieldConsultantView: React.FC = () => {
                   {analysis.inspection.varietyAssessment.candidates.length>0&&<div className="mt-3 space-y-2">{analysis.inspection.varietyAssessment.candidates.slice(0,3).map(candidate=><div key={candidate.name} className="flex justify-between gap-3 text-xs"><span className="text-slate-300">{candidate.name}</span><span className="text-slate-500">{confidencePercent(candidate.confidence)}%</span></div>)}</div>}
                 </div>
                 {analysis.inspection.nextPhotos.length>0&&<p className="text-[10px] text-amber-200 mt-3">Neste beste bilde: {analysis.inspection.nextPhotos[0]}</p>}
-              </div>
+              </div>}
 
               <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10">
                 {(['summary', 'health', 'pruning', 'history'] as ResultTab[]).map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest ${activeTab === tab ? 'bg-green-500 text-black' : 'text-slate-500 hover:text-white'}`}>{tab === 'summary' ? 'Kort' : tab === 'health' ? 'Helse' : tab === 'pruning' ? 'Beskjæring' : 'Historikk'}</button>)}
