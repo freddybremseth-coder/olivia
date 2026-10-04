@@ -11,6 +11,42 @@ export type FarmMediaSourceModule=
   |'farm_journal'
   |string;
 
+export type FarmMediaEvidenceRow={
+  id:string;
+  media_url:string;
+  media_kind:string;
+  source_module:string;
+  source_ref?:string|null;
+  parcel_id?:string|null;
+  zone_id?:string|null;
+  lat?:number|null;
+  lon?:number|null;
+  accuracy_m?:number|null;
+  altitude_m?:number|null;
+  heading_deg?:number|null;
+  geo_captured_at?:string|null;
+  geo_source:string;
+  match_method:string;
+  match_distance_m?:number|null;
+  match_confidence?:number|null;
+  metadata?:Record<string,unknown>|null;
+  created_by?:string|null;
+  created_at:string;
+};
+
+export async function fetchFarmMediaEvidence(limit=500):Promise<FarmMediaEvidenceRow[]>{
+  if(!isSupabaseConfigured)return[];
+  const {data,error}=await supabase.from('farm_media_evidence')
+    .select('*')
+    .not('lat','is',null)
+    .not('lon','is',null)
+    .order('geo_captured_at',{ascending:false,nullsFirst:false})
+    .order('created_at',{ascending:false})
+    .limit(limit);
+  if(error)throw new Error(error.message);
+  return(data||[]) as FarmMediaEvidenceRow[];
+}
+
 function makeId(prefix:string){
   if(typeof crypto!=='undefined'&&'randomUUID' in crypto)return prefix+'-'+crypto.randomUUID();
   return prefix+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
