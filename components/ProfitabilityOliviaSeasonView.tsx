@@ -14,7 +14,7 @@ import {
   type HarvestRecord,
   type SubsidyIncome,
 } from '../services/oliviaSchemaData';
-import { currentHarvestSeason, harvestSeasonForDate } from '../services/harvestSeason';
+import { currentHarvestSeason, harvestSeasonForDate, harvestSeasonForExpense } from '../services/harvestSeason';
 
 type Props = { language: Language; parcels: Parcel[] };
 type SeasonTotals = {
@@ -40,7 +40,7 @@ function harvestRowSeason(row:HarvestRecord):string{
   return financeSeason(row.season,row.date);
 }
 function expenseRowSeason(row:FarmExpense):string{
-  return financeSeason(row.season,row.date);
+  return harvestSeasonForExpense(row.date,row.category,row.season);
 }
 function subsidyRowSeason(row:SubsidyIncome):string{
   return financeSeason(row.season,row.date);
