@@ -35,6 +35,7 @@ import {
   type QueuedFieldObservation,
 } from '../services/fieldOfflineQueue';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
+import { issueTypeFromObservation, type FarmIssueSeverity } from '../services/farmIssues';
 
 type ObservationCategory = FarmObservation['category'];
 type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
@@ -76,6 +77,17 @@ function makeObservationDraftId() {
   return `obs-${Date.now()}-${performance?.now?.().toString(36).replace('.', '') || 'manual'}`;
 }
 
+function makeIssueDraftId(){
+  if(typeof crypto!=='undefined'&&'randomUUID' in crypto)return crypto.randomUUID();
+  return 'issue-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+}
+
+function datePlusDays(days:number){
+  const date=new Date();
+  date.setDate(date.getDate()+days);
+  return date.toISOString().slice(0,10);
+}
+
 const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels = [] }) => {
   const [observations, setObservations] = useState<FarmObservation[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
@@ -97,6 +109,9 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
   const [isSyncingOffline,setIsSyncingOffline]=useState(false);
   const [isOnline,setIsOnline]=useState(()=>typeof navigator==='undefined'?true:navigator.onLine);
   const [syncMessage,setSyncMessage]=useState('');
+  const [createFollowUpIssue,setCreateFollowUpIssue]=useState(false);
+  const [issueSeverity,setIssueSeverity]=useState<FarmIssueSeverity>('medium');
+  const [issueReviewDate,setIssueReviewDate]=useState(()=>datePlusDays(7));
 
   const parcelNameById = useMemo(() => new Map(parcels.map(parcel => [parcel.id, parcel.name])), [parcels]);
   const zoneNameById = useMemo(() => new Map(farmZones.map(zone => [zone.id, zone.name])), [farmZones]);
@@ -255,6 +270,9 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     setPreviewImageUrls([]);
     setGeoContext(null);
     setParcelSelectionSource('none');
+    setCreateFollowUpIssue(false);
+    setIssueSeverity('medium');
+    setIssueReviewDate(datePlusDays(7));
   };
 
   const handleSave = async () => {
@@ -300,6 +318,14 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
         observation,
         imageDataUrls,
         geo:geoContext,
+        issueDraft:createFollowUpIssue?{
+          id:makeIssueDraftId(),
+          issueType:issueTypeFromObservation(form.category),
+          title:form.title.trim(),
+          description:form.notes?.trim()||undefined,
+          severity:issueSeverity,
+          nextReviewAt:issueReviewDate?new Date(issueReviewDate+'T12:00:00').toISOString():undefined,
+        }:undefined,
       };
 
       await queueFieldObservation(queued);
@@ -432,7 +458,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label="Parsell" help="Velg parsell manuelt, eller la GPS foreslå den."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.parcel_id || ''} onChange={event => {setParcelSelectionSource('manual');setForm(prev => ({ ...prev, parcel_id: event.target.value, zone_id: '', tree_group_id: '' }));}}><option className="bg-slate-900" value="">Ingen parsell</option>{parcels.map(parcel => <option key={parcel.id} className="bg-slate-900" value={parcel.id}>{parcel.name}</option>)}</select></Field>
-              <Field label="Kategori" help="Velg hva observasjonen handler om."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.category || 'irrigation'} onChange={event => setForm(prev => ({ ...prev, category: event.target.value as ObservationCategory }))}>{CATEGORY_OPTIONS.map(option => <option key={option.value} className="bg-slate-900" value={option.value}>{option.label}</option>)}</select></Field>
+              <Field label="Kategori" help="Velg hva observasjonen handler om."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.category || 'irrigation'} onChange={event => {const category=event.target.value as ObservationCategory;setForm(prev => ({ ...prev, category }));setCreateFollowUpIssue(category==='pest'||category==='disease');}}>{CATEGORY_OPTIONS.map(option => <option key={option.value} className="bg-slate-900" value={option.value}>{option.label}</option>)}</select></Field>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -442,6 +468,23 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
 
             <Field label="Tittel *" help="Kort og tydelig observasjon."><input className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" placeholder="F.eks. lav fukt ved unge Gordal" value={form.title || ''} onChange={event => setForm(prev => ({ ...prev, title: event.target.value }))} /></Field>
             <Field label="Notat" help="Beskriv hva du så, hvor og hva som bør gjøres."><textarea className="w-full min-h-[140px] bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.notes || ''} onChange={event => setForm(prev => ({ ...prev, notes: event.target.value }))} /></Field>
+
+            <div className={'rounded-2xl border p-4 '+(createFollowUpIssue?'border-amber-500/25 bg-amber-500/[0.05]':'border-white/10 bg-white/[0.02]')}>
+              <label className="flex cursor-pointer items-start gap-3">
+                <input type="checkbox" checked={createFollowUpIssue} onChange={event=>setCreateFollowUpIssue(event.target.checked)} className="mt-1"/>
+                <div><p className="text-sm font-black text-white">Opprett oppfølgingssak</p><p className="mt-1 text-xs text-slate-500">Bruk for skadedyr, sykdom, vanningsfeil eller andre forhold som må kontrolleres igjen. Pest og sykdom velges automatisk.</p></div>
+              </label>
+              {createFollowUpIssue&&<div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Alvorlighet
+                  <select value={issueSeverity} onChange={event=>setIssueSeverity(event.target.value as FarmIssueSeverity)} className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white">
+                    <option value="low">Lav</option><option value="medium">Middels</option><option value="high">Høy</option><option value="critical">Kritisk</option>
+                  </select>
+                </label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Neste kontroll
+                  <input type="date" value={issueReviewDate} onChange={event=>setIssueReviewDate(event.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white"/>
+                </label>
+              </div>}
+            </div>
 
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Bilder + GEO</label>
