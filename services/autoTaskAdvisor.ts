@@ -1,5 +1,12 @@
 import type { SensorReading, SensorAlert } from '../types/farmIoT';
 import type { Task } from '../types';
+import {
+  isSensorReadingFresh,
+  isSensorReadingOperationallyUsable,
+  isSensorReadingQualityAcceptable,
+  sensorReadingAgeHours,
+  SENSOR_ACTION_MAX_AGE_HOURS,
+} from './farmIoT';
 
 export type AutoTaskSource =
   | 'soil_moisture'
@@ -44,7 +51,7 @@ function latest(readings: SensorReading[], type: string, zoneId?: string, depth?
       const typeOk = reading.type === type;
       const zoneOk = !zoneId || reading.zone_id === zoneId;
       const depthOk = typeof depth !== 'number' || (typeof reading.depth_cm === 'number' && Math.abs(reading.depth_cm - depth) <= 15);
-      return typeOk && zoneOk && depthOk;
+      return typeOk && zoneOk && depthOk && isSensorReadingOperationallyUsable(reading);
     })
     .sort((a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime())[0];
 }
@@ -73,13 +80,42 @@ export function buildAutoTaskSuggestions(params: {
   const suggestions: AutoTaskSuggestion[] = [];
 
   zones.forEach(zoneId => {
+    const rawZoneReadings=readings.filter(reading=>(reading.zone_id||'farm')===zoneId);
+    const latestPerType=new Map<string,SensorReading>();
+    rawZoneReadings.forEach(reading=>{
+      const existing=latestPerType.get(reading.type);
+      if(!existing||new Date(reading.measured_at)>new Date(existing.measured_at))latestPerType.set(reading.type,reading);
+    });
+    const latestRows=Array.from(latestPerType.values());
+    const usableRows=latestRows.filter(reading=>isSensorReadingOperationallyUsable(reading));
+    const lowQualityRows=latestRows.filter(reading=>isSensorReadingFresh(reading,SENSOR_ACTION_MAX_AGE_HOURS)&&!isSensorReadingQualityAcceptable(reading));
+
+    if(latestRows.length&&!usableRows.length){
+      const newest=[...latestRows].sort((a,b)=>new Date(b.measured_at).getTime()-new Date(a.measured_at).getTime())[0];
+      const age=newest?sensorReadingAgeHours(newest):null;
+      suggestions.push(suggestion({
+        id: makeId('sensor_health', zoneId, 'unusable-data'),
+        title: `Forny sensordata i ${zoneId}`,
+        priority: 'Høy',
+        category: 'IoT / Sensor',
+        dueDate: todayPlus(0),
+        zone_id: zoneId,
+        source: 'sensor_health',
+        reason: lowQualityRows.length
+          ? `${lowQualityRows.length} fersk(e) sensortype(r) har for lav quality_score, og ingen måling er brukbar til operative råd.`
+          : `Ingen brukbare sensormålinger innen ${SENSOR_ACTION_MAX_AGE_HOURS} timer${age!=null?`; nyeste er ca. ${Math.round(age)} t gammel`:''}.`,
+        suggestedAction: 'Kontroller sensor, strøm/signal og registrer en fersk verifisert måling før vannings- eller EC-tiltak styres av sensordata.',
+        confidence: 0.95,
+      }));
+    }
+
     const m30 = latest(readings, 'soil_moisture', zoneId, 30) || latest(readings, 'soil_moisture', zoneId);
     const m60 = latest(readings, 'soil_moisture', zoneId, 60);
     const soilEc = latest(readings, 'soil_ec', zoneId);
     const waterEc = latest(readings, 'water_ec') || latest(readings, 'water_ec', zoneId);
     const flow = latest(readings, 'flow', zoneId) || latest(readings, 'flow');
     const pressure = latest(readings, 'pressure', zoneId) || latest(readings, 'pressure');
-    const zoneReadings = readings.filter(reading => reading.zone_id === zoneId);
+    const zoneReadings = readings.filter(reading => reading.zone_id === zoneId && isSensorReadingOperationallyUsable(reading));
     const batteryValues = zoneReadings.map(reading => reading.battery_percent).filter((value): value is number => typeof value === 'number');
     const minBattery = batteryValues.length ? Math.min(...batteryValues) : undefined;
 

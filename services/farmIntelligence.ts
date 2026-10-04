@@ -1,5 +1,7 @@
 import { supabase } from './supabaseClient';
 import { buildVarietyReferenceContext } from './varietyReference';
+import type { FarmGeoContext } from '../types/farmGeo';
+import { geoContextToDb } from './farmMediaEvidence';
 
 export type FarmQuestionPriority='low'|'medium'|'high'|'critical';
 export type FarmQuestionType='clarification'|'conflict'|'missing_fact'|'confirmation'|'follow_up';
@@ -49,6 +51,7 @@ export type AgentAssessmentInput={
   confidence?:number;
   uncertainties?:string[];
   sourceRef?:string;
+  geoContext?:FarmGeoContext;
 };
 
 function makeId(prefix:string){
@@ -173,6 +176,7 @@ export async function recordAgentAssessment(input:AgentAssessmentInput):Promise<
     context_snapshot:(input.contextSnapshot||'').slice(0,20000)||null,
     uncertainties,
     source_ref:input.sourceRef||null,
+    geo_context:geoContextToDb(input.geoContext)||null,
   });
   if(error)throw new Error(error.message);
 

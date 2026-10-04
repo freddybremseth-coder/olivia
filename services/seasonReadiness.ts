@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { currentHarvestSeason, harvestSeasonForDate } from './harvestSeason';
+import { currentHarvestSeason, harvestSeasonForDate, harvestSeasonForExpense } from './harvestSeason';
 import { expenseAllocatedAmount, fetchProductionCostData } from './productionCosts';
 
 export type SeasonReadinessStatus='ready'|'action'|'waiting'|'attention';
@@ -67,7 +67,7 @@ export async function fetchSeasonReadiness():Promise<SeasonReadiness>{
   const lots=(lotsRes.data||[]).filter((row:any)=>row.packed_at&&harvestSeasonForDate(String(row.packed_at).slice(0,10))===season);
   const packedUnits=lots.reduce((s:number,row:any)=>s+n(row.initial_units),0);
 
-  const seasonExpenses=costData.expenses.filter(expense=>harvestSeasonForDate(expense.date)===season);
+  const seasonExpenses=costData.expenses.filter(expense=>harvestSeasonForExpense(expense.date,expense.category,expense.season)===season);
   const unallocated=seasonExpenses.map(expense=>({
     expense,
     remaining:Math.max(0,expense.amount-expenseAllocatedAmount(expense.id,costData.batchAllocations,costData.lotCosts)),

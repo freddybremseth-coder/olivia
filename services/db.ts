@@ -528,6 +528,7 @@ function rowToPruning(r: any): PruningHistoryItem {
     stepFeedback: Array.isArray(r.step_feedback) ? r.step_feedback : [],
     outcomeVerifiedAt: r.outcome_verified_at ?? undefined,
     outcomeAiReview: r.outcome_ai_review ?? undefined,
+    geoContext: r.geo_context ?? undefined,
   };
 }
 
@@ -550,6 +551,7 @@ function pruningToRow(p: PruningHistoryItem) {
     step_feedback: p.stepFeedback ?? [],
     outcome_verified_at: p.outcomeVerifiedAt ?? null,
     outcome_ai_review: p.outcomeAiReview ?? null,
+    geo_context: p.geoContext ?? null,
     updated_at: new Date().toISOString(),
   };
 }

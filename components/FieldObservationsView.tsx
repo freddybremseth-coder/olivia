@@ -26,6 +26,9 @@ import {
   insertFarmObservation,
 } from '../services/farmIoT';
 import { uploadFieldObservationImages } from '../services/fieldObservationStorage';
+import { geoContextSummary, requestFarmGeo } from '../services/farmGeo';
+import type { FarmGeoContext } from '../types/farmGeo';
+import { registerFarmMediaEvidence } from '../services/farmMediaEvidence';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
 
 type ObservationCategory = FarmObservation['category'];
@@ -82,6 +85,9 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
   const [treeGroups, setTreeGroups] = useState<TreeGroup[]>([]);
   const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
   const [previewImageUrls, setPreviewImageUrls] = useState<string[]>([]);
+  const [geoContext,setGeoContext]=useState<FarmGeoContext|null>(null);
+  const [isLocating,setIsLocating]=useState(false);
+  const [parcelSelectionSource,setParcelSelectionSource]=useState<'none'|'manual'|'geo'>('none');
 
   const parcelNameById = useMemo(() => new Map(parcels.map(parcel => [parcel.id, parcel.name])), [parcels]);
   const zoneNameById = useMemo(() => new Map(farmZones.map(zone => [zone.id, zone.name])), [farmZones]);
@@ -157,7 +163,27 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     return { last7, irrigation, pests, organic };
   }, [observations]);
 
-  const handleImageSelect = (fileList: FileList | null) => {
+  const locateCurrentPosition=async(source:'device_live_capture'|'device_at_upload')=>{
+    setIsLocating(true);setErrorMessage(null);
+    try{
+      const geo=await requestFarmGeo(parcels,source);
+      setGeoContext(geo);
+      if(geo.parcelId&&parcelSelectionSource!=='manual'){
+        setForm(prev=>({...prev,parcel_id:geo.parcelId,zone_id:'',tree_group_id:''}));
+        setParcelSelectionSource('geo');
+      }else if(geo.parcelId&&form.parcel_id&&form.parcel_id!==geo.parcelId){
+        setErrorMessage('GPS peker mot '+(geo.parcelName||geo.parcelId)+', mens du har valgt en annen parsell. Kontroller parsellvalget før lagring.');
+      }
+      return geo;
+    }catch(error:any){
+      setErrorMessage(error?.message||'Kunne ikke hente GPS-posisjon.');
+      return null;
+    }finally{
+      setIsLocating(false);
+    }
+  };
+
+  const handleImageSelect = async (fileList: FileList | null, liveCapture=false) => {
     if (!fileList || fileList.length === 0) return;
     const files = Array.from(fileList).filter(file => file.type.startsWith('image/'));
     if (!files.length) return;
@@ -165,6 +191,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     setSelectedImageFiles(prev => [...prev, ...files]);
     setPreviewImageUrls(prev => [...prev, ...nextPreviews]);
     setErrorMessage(null);
+    if(liveCapture)await locateCurrentPosition('device_live_capture');
   };
 
   const removeSelectedImage = (index: number) => {
@@ -183,6 +210,8 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     setTreeGroups([]);
     setSelectedImageFiles([]);
     setPreviewImageUrls([]);
+    setGeoContext(null);
+    setParcelSelectionSource('none');
   };
 
   const handleSave = async () => {
@@ -212,9 +241,27 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
         image_urls: imageUrls,
         observed_at: new Date().toISOString(),
         created_by: 'Olivia',
+        geo_lat:geoContext?.lat,
+        geo_lon:geoContext?.lon,
+        geo_accuracy_m:geoContext?.accuracyM,
+        geo_captured_at:geoContext?.capturedAt,
+        geo_source:geoContext?.source,
+        geo_match_method:geoContext?.matchMethod,
+        geo_match_confidence:geoContext?.matchConfidence,
       };
 
       const saved = await insertFarmObservation(observation);
+      await registerFarmMediaEvidence({
+        urls:imageUrls,
+        sourceModule:'field_observation',
+        sourceRef:saved.id,
+        parcelId:geoContext?undefined:(saved.parcel_id||undefined),
+        zoneId:saved.zone_id,
+        geo:geoContext,
+        metadata:{observationParcelId:saved.parcel_id||null,category:saved.category},
+        createdBy:'Olivia',
+      }).catch(err=>console.warn('[FieldObservationsView] media evidence',err));
+      window.dispatchEvent(new CustomEvent('olivia:farm-truth-updated'));
       setObservations(prev => [saved, ...prev]);
       setLoadState('supabase');
       setLastRefresh(new Date());
@@ -317,7 +364,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
             <div className="flex justify-between items-start gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#d9b657]">Supabase · feltdata</p><h3 className="text-2xl font-bold text-white mt-1">Ny feltobservasjon</h3><p className="text-xs text-slate-500 mt-1">Dokumenter faktisk observasjon fra gården.</p></div><button onClick={() => { resetForm(); setIsFormOpen(false); }} className="p-2 text-slate-400 hover:text-white"><X size={24} /></button></div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label="Parsell" help="Velg parsell hvis observasjonen gjelder et bestemt område."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.parcel_id || ''} onChange={event => setForm(prev => ({ ...prev, parcel_id: event.target.value, zone_id: '', tree_group_id: '' }))}><option className="bg-slate-900" value="">Ingen parsell</option>{parcels.map(parcel => <option key={parcel.id} className="bg-slate-900" value={parcel.id}>{parcel.name}</option>)}</select></Field>
+              <Field label="Parsell" help="Velg parsell manuelt, eller la GPS foreslå den."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.parcel_id || ''} onChange={event => {setParcelSelectionSource('manual');setForm(prev => ({ ...prev, parcel_id: event.target.value, zone_id: '', tree_group_id: '' }));}}><option className="bg-slate-900" value="">Ingen parsell</option>{parcels.map(parcel => <option key={parcel.id} className="bg-slate-900" value={parcel.id}>{parcel.name}</option>)}</select></Field>
               <Field label="Kategori" help="Velg hva observasjonen handler om."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.category || 'irrigation'} onChange={event => setForm(prev => ({ ...prev, category: event.target.value as ObservationCategory }))}>{CATEGORY_OPTIONS.map(option => <option key={option.value} className="bg-slate-900" value={option.value}>{option.label}</option>)}</select></Field>
             </div>
 
@@ -330,9 +377,26 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
             <Field label="Notat" help="Beskriv hva du så, hvor og hva som bør gjøres."><textarea className="w-full min-h-[140px] bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.notes || ''} onChange={event => setForm(prev => ({ ...prev, notes: event.target.value }))} /></Field>
 
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Bilder</label>
-              <p className="text-[11px] text-slate-600 block mb-2">Valgfritt. Bilder lastes til Supabase Storage.</p>
-              <input type="file" accept="image/*" multiple onChange={event => handleImageSelect(event.target.files)} className="block w-full text-sm text-slate-400 file:mr-4 file:rounded-xl file:border-0 file:bg-[#d9b657] file:px-4 file:py-2 file:text-sm file:font-bold file:text-black hover:file:bg-[#f0cf70]" />
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Bilder + GEO</label>
+              <p className="text-[11px] text-slate-600 block mb-2">Live kamerabilder kan kobles til GPS-posisjonen der du står. Galleribilder får ikke automatisk dagens GPS som bildeposisjon.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <label className="rounded-2xl bg-[#d9b657] px-4 py-3 text-center text-sm font-bold text-black cursor-pointer hover:bg-[#f0cf70]">
+                  <Camera size={16} className="inline mr-2"/>Ta bilde nå
+                  <input type="file" accept="image/*" capture="environment" onChange={event=>handleImageSelect(event.target.files,true)} className="hidden"/>
+                </label>
+                <label className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-bold text-slate-300 cursor-pointer">
+                  Velg fra galleri
+                  <input type="file" accept="image/*" multiple onChange={event=>handleImageSelect(event.target.files,false)} className="hidden"/>
+                </label>
+                <button type="button" onClick={()=>locateCurrentPosition('device_at_upload')} disabled={isLocating} className="rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm font-bold text-green-300 disabled:opacity-50">
+                  {isLocating?<Loader2 size={16} className="inline animate-spin mr-2"/>:<MapPin size={16} className="inline mr-2"/>}Bruk posisjon
+                </button>
+              </div>
+              {geoContext&&<div className={'mt-3 rounded-xl border p-3 '+(geoContext.parcelId?'border-green-500/20 bg-green-500/[0.04]':'border-amber-500/20 bg-amber-500/[0.04]')}>
+                <p className="text-[9px] uppercase tracking-widest font-black text-green-300">GEO registrert</p>
+                <p className="text-xs text-slate-300 mt-1">{geoContextSummary(geoContext)}</p>
+                <p className="text-[10px] text-slate-500 mt-1">{geoContext.source==='device_live_capture'?'Posisjon hentet sammen med live bildeopptak.':'Posisjon hentet ved opplasting/registrering, ikke fra bildefilens EXIF.'}</p>
+              </div>}
               {previewImageUrls.length > 0 && <div className="grid grid-cols-3 gap-2 mt-3">{previewImageUrls.map((url, index) => <div key={url} className="relative"><img src={url} alt="Forhåndsvisning" className="h-24 w-full object-cover rounded-xl border border-white/10" /><button type="button" onClick={() => removeSelectedImage(index)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><X size={12} /></button></div>)}</div>}
             </div>
 

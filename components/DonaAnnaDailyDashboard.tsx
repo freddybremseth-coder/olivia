@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   CalendarDays,
@@ -727,7 +727,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
 
   const advice = useMemo(() => buildDonaAnnaDecisionAdvice(readings, alerts), [readings, alerts]);
 
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
@@ -778,11 +778,20 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
     } finally {
       setIsLoading(false);
     }
-  };
+  },[]);
 
   useEffect(() => {
-    loadDashboard();
-  }, []);
+    const refresh=()=>{ if(document.visibilityState!=='hidden') void loadDashboard(); };
+    void loadDashboard();
+    window.addEventListener('olivia:farm-truth-updated',refresh as EventListener);
+    window.addEventListener('focus',refresh);
+    document.addEventListener('visibilitychange',refresh);
+    return()=>{
+      window.removeEventListener('olivia:farm-truth-updated',refresh as EventListener);
+      window.removeEventListener('focus',refresh);
+      document.removeEventListener('visibilitychange',refresh);
+    };
+  }, [loadDashboard]);
 
   const actions = buildActionCards(advice, readings, alerts, irrigationEvents, observations);
   const topFive = buildDailyTopFive({farmTruth,farmQuestions,seasonExecution,actions});

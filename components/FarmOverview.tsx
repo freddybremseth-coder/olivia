@@ -33,6 +33,7 @@ import { useTranslation } from '../services/i18nService';
 import GlossaryText from './GlossaryText';
 import BatchTimeline from './BatchTimeline';
 import Sesonghjul from './Sesonghjul';
+import { currentHarvestSeason } from '../services/harvestSeason';
 import { CommerceBusinessMetrics, fetchCommerceBusinessMetrics } from '../services/customerPortal';
 
 interface Props {
@@ -145,7 +146,7 @@ const FarmOverview: React.FC<Props> = ({ language, weatherData, locationName, pa
     const openTasks = tasks.filter(t => t.status !== 'DONE');
     const overdueTasks = openTasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date());
 
-    const currentSeason = new Date().getFullYear().toString();
+    const currentSeason = currentHarvestSeason();
     const seasonHarvests = harvests.filter(h => h.season === currentSeason);
     const seasonKg = seasonHarvests.reduce((s, h) => s + h.kg, 0);
     const seasonRevenue = seasonHarvests.reduce((s, h) => s + h.kg * h.pricePerKg, 0);
