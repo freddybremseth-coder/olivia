@@ -1013,76 +1013,105 @@ Svar i JSON med feltene: amount (string), unit (string), rationale (string).`;
     );
   }
 
+  private async inspectOliveImages(imagesBase64:string[],lang:string,farmContext=''):Promise<OliveInspectionResult>{
+    const languageInstruction=lang==='no'?'Svar på norsk.':lang==='es'?'Responde en español.':'Answer in English.';
+    const prompt=`Du er VISUELL OLIVENINSPEKTØR. Du skal observere og klassifisere, IKKE gi behandlings- eller beskjæringsråd.
+${languageInstruction}
+Sted: Biar, Alicante. Dato: ${new Date().toISOString().slice(0,10)}.
+${LOCAL_OLIVE_CONTEXT}
+${farmContext?'KJENT GÅRDSKONTEKST (bruk bare som prior, aldri som erstatning for synlige trekk):\\n'+farmContext:''}
+
+Arbeid i to adskilte deler:
+A) Beskriv KUN hva som faktisk er synlig i bildene.
+B) Gjør deretter en separat SORTSVURDERING basert på morfologiske trekk.
+
+Sortsregler:
+- Rangér primært kjente gårdssorter: Gordal/Gordal Sevillana, Genovesa/Genoesa, Changlot Real og Picual.
+- Tillat "annen/ukjent sort" når trekkene ikke passer.
+- Kroneform alene er svakt bevis. Uten tydelig frukt/blad/endokarp skal confidence normalt være <=35.
+- Fruktform/-størrelse og endokarp/stein veier mer enn kroneform. Blad alene kan støtte, men bør sjelden gi LIKELY.
+- Kandidater skal ha både supportingTraits og contradictingTraits. Ikke skjul trekk som taler mot favoritten.
+- Hvis bevis mangler, bruk status INSUFFICIENT og fortell nøyaktig hvilket neste bilde som vil skille kandidatene.
+
+Returner KUN JSON:
+{
+  "imageQuality":"GOOD|LIMITED|INSUFFICIENT",
+  "visibleOrgans":{"wholeTree":true,"trunk":true,"leaves":true,"fruit":false,"endocarp":false},
+  "observations":["synlig observasjon med bildegrunnlag"],
+  "canopy":{"density":"...","lightPenetration":"...","waterShoots":"...","deadWood":"...","crossingBranches":"..."},
+  "leafSymptoms":["..."],
+  "fruitTraits":["..."],
+  "endocarpTraits":["..."],
+  "varietyAssessment":{
+    "status":"LIKELY|POSSIBLE|INSUFFICIENT",
+    "bestCandidate":"Ukjent sort",
+    "confidence":0,
+    "candidates":[
+      {"name":"Gordal Sevillana","confidence":0,"supportingTraits":["..."],"contradictingTraits":["..."]}
+    ],
+    "reasoning":"kort faglig sammenligning av toppkandidatene"
+  },
+  "nextPhotos":["konkret bilde som mangler"]
+}`;
+    const raw=await this.callVisionJson<OliveInspectionResult>(imagesBase64,prompt,{} as OliveInspectionResult);
+    return normalizeInspection(raw);
+  }
+
   async analyzeComprehensive(imagesBase64: string[], lang: string, farmContext = ''): Promise<ComprehensiveAnalysisResult> {
     const languageInstruction = lang === 'no' ? 'Svar på norsk.' : lang === 'es' ? 'Responde en español.' : 'Answer in English.';
-    const prompt = `Du er en senior olivenagronom og beskjæringsrådgiver for profesjonell olivendrift i Alicante.
+    const inspection=await this.inspectOliveImages(imagesBase64,lang,farmContext);
+    const prompt=`Du er SENIOR OLIVENAGRONOM. En separat visuell inspektør har allerede beskrevet bildene. Nå skal du tolke funnene og gi beslutningsstøtte.
 ${languageInstruction}
-Dato for vurdering: ${new Date().toISOString().slice(0, 10)}.
+Sted: Biar, Alicante. Dato: ${new Date().toISOString().slice(0,10)}.
 ${LOCAL_OLIVE_CONTEXT}
-${farmContext ? '\nVERIFISERT GÅRDSKONTEKST FRA OLIVIA (bruk som bakgrunn, ikke overstyr synlige funn):\n' + farmContext + '\n' : ''}
 
-Analyser bildet(ene) grundig og returner NØYAKTIG dette JSON-objektet (ingen markdown, bare ren JSON):
+VERIFISERT GÅRDSKONTEKST:
+${farmContext||'Ingen ekstra historikk.'}
 
+STRUKTURERT VISUELL INSPEKSJON:
+${JSON.stringify(inspection,null,2)}
+
+Viktige regler:
+- Ikke overstyr inspeksjonens sortsikkerhet uten nytt konkret visuelt bevis.
+- Bruk inspeksjonens bestCandidate og confidence som utgangspunkt. Ved INSUFFICIENT skal diagnosis.variety være "Ukjent sort" eller "Ukjent sort (mulig X)".
+- Skill observasjon fra årsak. Gulning kan ha flere årsaker; list synlig evidens og anbefal måling/prøve når årsak ikke kan bekreftes visuelt.
+- Vær handlingsorientert på lavrisiko feltkontroller: se etter bladunderside, jordfukt, skadeomfang, frukt, dødt virke, insekter, dryppunkt osv.
+- Ikke gi eksakt gjødsel- eller vanningsdose uten relevante målinger.
+- Beskjæringsdelen skal bruke risikonivå GREEN/YELLOW/RED. GREEN = lav risiko og kan normalt gjøres når synlig. YELLOW = sannsynlig nyttig, men bekreft innfesting/helhet. RED = stor strukturell endring; ikke utfør uten ekstra vurdering.
+- IFAPA-prinsipp: produksjonsbeskjæring skal bevare produktivt bladverk og lys; fornyelse av utmattede hovedgreiner skal normalt skje progressivt, én del av strukturen av gangen.
+- Ikke returner null tiltak bare fordi sort/alder er usikker. Synlig dødt virke, rotskudd, tydelige vannskudd og åpenbare kryssgreiner kan fortsatt få GREEN/YELLOW tiltak når bildet støtter det.
+
+Returner KUN JSON:
 {
-  "diagnosis": {
-    "subject": "hva som er avbildet",
-    "variety": "Ukjent sort eller dokumentert sannsynlig sort",
-    "condition": "SUNN eller OBSERVASJON eller SYK",
-    "diagnosis": "detaljert patologisk vurdering med latinske navn der relevant",
-    "actions": ["tiltak 1", "tiltak 2", "tiltak 3"],
-    "confidence": 0,
-    "evidence": ["hvilke synlige tegn vurderingen bygger på"]
-  },
-  "pruning": {
-    "treeType": "sort og trekategori",
-    "ageEstimate": "bred aldersklasse, ikke eksakt årstall hvis stamme ikke er målbar",
-    "pruningSteps": [
-      { "area": "synlig gren-/kroneområde", "action": "spesifikk handling og agronomisk begrunnelse", "priority": "HØY", "x": 50, "y": 30, "confidence": 0, "evidence": "synlig grunnlag" }
+  "diagnosis":{"subject":"...","variety":"...","condition":"SUNN|OBSERVASJON|SYK","diagnosis":"...","actions":["..."],"confidence":0,"evidence":["..."]},
+  "pruning":{
+    "treeType":"...",
+    "ageEstimate":"bred aldersklasse",
+    "treeStage":"YOUNG|ESTABLISHING|MATURE|OLD_RENEWAL|UNKNOWN",
+    "trainingSystem":"VASE|HEDGE|FREE|UNKNOWN",
+    "pruningGoal":"...",
+    "decisionSummary":"...",
+    "pruningSteps":[
+      {"area":"...","action":"...","priority":"HØY|MIDDELS|LAV","riskLevel":"GREEN|YELLOW|RED","actionType":"REMOVE|SHORTEN|KEEP|MONITOR","x":50,"y":30,"confidence":0,"evidence":"...","whyNow":"...","consequenceIfSkipped":"..."}
     ],
-    "recommendedDate": "YYYY-MM-DD",
-    "timingAdvice": "forklaring på optimal timing",
-    "toolsNeeded": ["verktøy 1", "verktøy 2"],
-    "confidence": 0,
-    "ageConfidence": 0,
-    "observationQuality": "GOOD eller LIMITED eller INSUFFICIENT",
-    "limitations": ["hva bildet ikke kan avgjøre"],
-    "missingDetails": ["hvilke bilder/data som mangler"],
-    "safetyNotes": ["sikkerhets- eller smittehygiene-notat"]
+    "recommendedDate":"YYYY-MM-DD","timingAdvice":"...","toolsNeeded":["..."],"confidence":0,"ageConfidence":0,
+    "observationQuality":"GOOD|LIMITED|INSUFFICIENT","limitations":["..."],"missingDetails":["..."],"safetyNotes":["..."]
   },
-  "expertReport": {
-    "urgencyScore": 5,
-    "economicImpact": "estimert produksjonstap % og konsekvens",
-    "yieldEstimate": "estimert kg/tre",
-    "fertilizerRecommendation": "NPK-ratio + mikronæring",
-    "irrigationNote": "vanningsbehov basert på visuell tilstand",
-    "rejuvenationNeeded": false,
-    "nextKeyAction": "den ene viktigste handlingen nå"
-  },
-  "varietyConfidence": 75,
-  "needsMoreImages": false,
-  "missingDetails": []
-}
-
-Krav til faglig presisjon:
-- Ikke gjett. Hvis sort, alder, sykdom eller avling ikke kan ses tydelig, skriv "Ukjent" og forklar hva som mangler.
-- Hvis gårdskonteksten inneholder et ÅPENT SPØRSMÅL som er relevant for analysen, ikke fyll inn svaret selv. Legg behovet inn i missingDetails slik at Olivia kan spørre brukeren.
-- Tidligere AI-vurderinger er læringshistorikk, ikke fasit. Ved konflikt gjelder verifisert dokumentasjon og bekreftede brukersvar foran eldre AI-vurderinger.
-- Sortsidentifisering: bare oppgi Gordal/Gordal Sevillana, Changlot Real, Genovesa/Genoesa, Picual eller annen sort hvis synlige trekk faktisk støtter det. Hvis bare kroneform er synlig, sett varietyConfidence <= 35.
-- Alder: gi kun aldersklasse (ungt, etablering, voksent produksjonstre, gammelt/monumentalt) med lav sikkerhet hvis stammebasis/stammediameter ikke er synlig.
-- Beskjæring: hvert snitt må peke på en synlig gren i bildet. Ikke lag 3 snitt hvis bildet bare støtter 0-2 trygge tiltak.
-- Store strukturelle snitt i Biar/Alicante bør normalt legges etter innhøsting/vinter-senvinter. I sterk sommervarme anbefales bare lette tiltak som tørre greiner, rotskudd/stammeskudd eller åpenbare kryssgreiner.
-- Ikke anbefal å tømme hele innsiden av kronen. Bevar nok bladmasse; fjern primært dødt virke, rotskudd/stammeskudd, vertikale vannskudd med høy vigor, kryssende greiner og greiner som skygger produktivt fruktved.
-- Store sår: anbefal rene skrå snitt, desinfiserte verktøy og gradvis fornying, ikke brutal engangskapping uten tydelig grunn.
-- Økonomi, gjødsel og vanning: ikke gi eksakte tall uten avlingshistorikk, jord-/bladanalyse, jordfuktighet og ET0. Skriv at tall ikke kan beregnes hvis de ikke kan ses.
-
-Bruk faglig ekspertise, men vær eksplisitt om usikkerhet:
-- Sykdommer/skadedyr: Spilocaea oleagina, Colletotrichum acutatum, Verticillium dahliae, Pseudomonas savastanoi, Bactrocera oleae, Prays oleae, Saissetia oleae.
-- Næring: N/Fe/B/Mg/K-mangler bare hvis bladtegn er synlige; ellers anbefal blad-/jordprøve.
-- urgencyScore: 0=perfekt, 10=krev tiltak i dag
-- priority-felt: kun verdiene HØY, MIDDELS eller LAV
-- confidence-felter og varietyConfidence: tall 0-100, ikke 0-1.
-- x/y: koordinater 0–100 i bildet`;
-    return sanitizeComprehensiveAnalysis(await this.callVisionJson<ComprehensiveAnalysisResult>(imagesBase64, prompt, {} as ComprehensiveAnalysisResult));
+  "expertReport":{"urgencyScore":0,"economicImpact":"...","yieldEstimate":"...","fertilizerRecommendation":"...","irrigationNote":"...","rejuvenationNeeded":false,"nextKeyAction":"..."},
+  "varietyConfidence":0,
+  "needsMoreImages":true,
+  "missingDetails":["..."]
+}`;
+    const raw=await this.callVisionJson<ComprehensiveAnalysisResult>(imagesBase64,prompt,{} as ComprehensiveAnalysisResult);
+    raw.inspection=inspection;
+    if(raw.diagnosis){
+      raw.diagnosis.variety=inspection.varietyAssessment.status==='INSUFFICIENT'
+        ? `Ukjent sort${inspection.varietyAssessment.bestCandidate&&inspection.varietyAssessment.bestCandidate!=='Ukjent sort'?' (mulig '+inspection.varietyAssessment.bestCandidate+')':''}`
+        : inspection.varietyAssessment.bestCandidate;
+      raw.varietyConfidence=inspection.varietyAssessment.confidence;
+    }
+    raw.missingDetails=Array.from(new Set([...(raw.missingDetails||[]),...inspection.nextPhotos]));
+    return sanitizeComprehensiveAnalysis(raw);
   }
 
   async analyzeDrone(imagesBase64: string[], lang: string): Promise<DroneAnalysisResult> {
@@ -1117,48 +1146,59 @@ Svar i JSON med feltene: canopyDensity (string), ndviSimulated (number 0–1), w
   }
 
   async analyzePruning(image: string | string[], lang: string, farmContext = ''): Promise<PruningPlan> {
-    const languageInstruction = lang === 'no' ? 'Svar på norsk.' : lang === 'es' ? 'Responde en español.' : 'Answer in English.';
-    const prompt = `Du er olivenbeskjæringsmester for profesjonell olivendrift i Alicante-provinsen.
+    const images=Array.isArray(image)?image:[image];
+    const languageInstruction=lang==='no'?'Svar på norsk.':lang==='es'?'Responde en español.':'Answer in English.';
+    const inspection=await this.inspectOliveImages(images,lang,farmContext);
+    const prompt=`Du er BESKJÆRINGSMESTER FOR OLIVEN i Alicante. Du får en separat visuell inspeksjon og skal nå ta konkrete beslutninger.
 ${languageInstruction}
-Dato for vurdering: ${new Date().toISOString().slice(0, 10)}.
+Dato: ${new Date().toISOString().slice(0,10)}.
 ${LOCAL_OLIVE_CONTEXT}
-${farmContext ? '\nVERIFISERT GÅRDSKONTEKST FRA OLIVIA (bruk som bakgrunn; dokumentert historikk og treantall er sterkere enn gjetning fra bilde):\n' + farmContext + '\n' : ''}
 
-Analyser treet og returner NØYAKTIG dette JSON-objektet (ingen markdown, bare ren JSON):
+GÅRDSHISTORIKK:
+${farmContext||'Ingen ekstra historikk.'}
 
+VISUELL INSPEKSJON:
+${JSON.stringify(inspection,null,2)}
+
+Beslutningsmodell:
+1. Klassifiser livsfase: YOUNG / ESTABLISHING / MATURE / OLD_RENEWAL / UNKNOWN.
+2. Klassifiser form: VASE / HEDGE / FREE / UNKNOWN.
+3. Definer ett hovedmål før du velger snitt: formasjon, produksjon/lys, vedlikehold eller gradvis fornyelse.
+4. Vurder hver synlige grein separat: KEEP, REMOVE, SHORTEN eller MONITOR.
+5. Gi hvert tiltak risiko:
+   GREEN = lavrisiko: dødt virke, rotskudd/stammeskudd, tydelig vannskudd, liten åpenbar kryss-/gnissgrein.
+   YELLOW = nyttig, men krever kontroll av greininnfesting, nabogrein eller treets helhet.
+   RED = store hovedgreiner/foryngelse/permanent strukturendring. Beskriv hva som må bekreftes før kutt.
+6. Vær mer nyttig enn "ta flere bilder": hvis noe lavrisiko er tydelig synlig, foreslå det selv om sort/alder er usikker.
+7. Ikke anbefal å tømme sentrum. Bevar produktivt bladverk, fruktved og balansert lys.
+8. IFAPA-prinsipp: utmattede hovedgreiner fornyes progressivt; ikke start neste store fornyelse før erstatningsvekst fra forrige er etablert.
+9. Store snitt krever tydelig synlig innfesting, heltreperspektiv og begrunnelse. RED er ikke "gjør nå".
+10. x/y må peke på synlig område i FØRSTE bilde. Hvis første bilde ikke viser innfestingen, bruk MONITOR/YELLOW/RED og be om riktig vinkel.
+
+Returner KUN JSON:
 {
-  "treeType": "sort og trekategori",
-  "ageEstimate": "bred aldersklasse med usikkerhet hvis stamme ikke er synlig",
-  "pruningSteps": [
-    { "area": "synlig gren-/kroneområde", "action": "spesifikk handling og begrunnelse", "priority": "HØY", "x": 50, "y": 30, "confidence": 0, "evidence": "synlig grunnlag" }
+  "treeType":"...",
+  "ageEstimate":"...",
+  "treeStage":"YOUNG|ESTABLISHING|MATURE|OLD_RENEWAL|UNKNOWN",
+  "trainingSystem":"VASE|HEDGE|FREE|UNKNOWN",
+  "pruningGoal":"...",
+  "decisionSummary":"kort forklaring på hva som bør gjøres og hva som bør bevares",
+  "pruningSteps":[
+    {"area":"...","action":"...","priority":"HØY|MIDDELS|LAV","riskLevel":"GREEN|YELLOW|RED","actionType":"REMOVE|SHORTEN|KEEP|MONITOR","x":50,"y":30,"confidence":0,"evidence":"synlig grunnlag","whyNow":"hvorfor dette er riktig nå","consequenceIfSkipped":"hva som skjer hvis det utsettes"}
   ],
-  "recommendedDate": "YYYY-MM-DD",
-  "timingAdvice": "forklaring på optimal timing for beskjæring",
-  "toolsNeeded": ["Beskjæringssaks", "Baufil", "Sårpasta"],
-  "confidence": 0,
-  "ageConfidence": 0,
-  "observationQuality": "GOOD eller LIMITED eller INSUFFICIENT",
-  "limitations": ["hva bildet ikke kan avgjøre"],
-  "missingDetails": ["hvilke bilder/data som mangler"],
-  "safetyNotes": ["sikkerhets- eller smittehygiene-notat"]
-}
-
-Regler:
-- Ikke gjett sort eller alder. Hvis bildet ikke viser nok, skriv "Oliven tre - sort ukjent" og "Ukjent alder - krever synlig stamme/stammediameter".
-- Hvis gårdskonteksten inneholder et ÅPENT SPØRSMÅL som er relevant for treet/parsellen, ikke anta svaret. Legg det som missingDetails så Olivia kan spørre brukeren.
-- Bekreftet brukersvar og verifiserte dokumenter veier tyngre enn tidligere AI-analyser. Hvis historikk og nytt bilde peker ulikt, si at det er en konflikt og be om avklaring fremfor å skjule forskjellen.
-- Bruk alle bilder som støtte når flere vinkler er sendt inn. Plasser x/y-koordinater på hovedbildet/første bildet.
-- Ikke tving frem snitt. Returner 0-8 pruningSteps, bare for synlige greiner der tiltaket er agronomisk begrunnet.
-- Ikke anbefal hard foryngelsesbeskjæring, toppkapping eller store strukturelle snitt hvis treets helhet, stamme og hovedgreiner ikke er synlige.
-- For Biar/Alicante: større beskjæring legges normalt etter innhøsting/vinter-senvinter; i sterk sommervarme bør tiltak begrenses til tørre greiner, rotskudd/stammeskudd, tydelige vannskudd eller små korrigeringer.
-- Bevar bladmasse og produktivt fruktved. Ikke "rens ut" hele innsiden; fjern primært dødt virke, rotskudd, vertikale vannskudd med høy vigor, kryssende greiner og greiner som skaper sykdoms-/lysproblem.
-- Store snitt skal beskrive ren snittflate, liten tapp, desinfisert verktøy og gradvis fornying.
-- priority: kun HØY, MIDDELS eller LAV
-- x/y: koordinater 0–100 der kuttet er i bildet
-- confidence/ageConfidence: tall 0-100
-- recommendedDate: en dato i YYYY-MM-DD format`;
-    const images = Array.isArray(image) ? image : [image];
-    return sanitizePruningPlan(await this.callVisionJson<PruningPlan>(images, prompt, {} as PruningPlan));
+  "recommendedDate":"YYYY-MM-DD",
+  "timingAdvice":"...",
+  "toolsNeeded":["..."],
+  "confidence":0,
+  "ageConfidence":0,
+  "observationQuality":"GOOD|LIMITED|INSUFFICIENT",
+  "limitations":["..."],
+  "missingDetails":["..."],
+  "safetyNotes":["..."]
+}`;
+    const raw=await this.callVisionJson<PruningPlan>(images,prompt,{} as PruningPlan);
+    raw.missingDetails=Array.from(new Set([...(raw.missingDetails||[]),...inspection.nextPhotos]));
+    return sanitizePruningPlan(raw,inspection.varietyAssessment.confidence);
   }
 
   async analyzeReceipt(base64Image: string): Promise<any> {
