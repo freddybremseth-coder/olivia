@@ -138,6 +138,12 @@ async function syncFarmTruth(item:PruningHistoryItem){
   }
 }
 
+export async function removePruningOutcomeTruth(historyId:string){
+  const sourceRef='pruning-history:'+historyId;
+  const {error}=await supabase.from('farm_events').delete().eq('source_ref',sourceRef);
+  if(error)throw new Error(error.message);
+}
+
 export async function savePruningOutcome(
   item:PruningHistoryItem,
   input:{
