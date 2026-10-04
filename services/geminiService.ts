@@ -537,6 +537,21 @@ export class GeminiService {
     return data.choices?.[0]?.message?.content || '';
   }
 
+  private async callSupabaseVision(imagesBase64:string[],prompt:string):Promise<string>{
+    if(!isSupabaseConfigured)throw new Error('Supabase er ikke konfigurert.');
+    const {data,error}=await supabase.functions.invoke('olivia-vision',{
+      body:{
+        prompt,
+        images:imagesBase64.map(data=>({data,mimeType:'image/jpeg'})),
+      },
+    });
+    if(error)throw new Error(error.message||'Supabase vision feilet.');
+    if(data?.error)throw new Error(Array.isArray(data.details)?data.details.join(' | '):String(data.error));
+    const text=String(data?.text||'').trim();
+    if(!text)throw new Error('Supabase vision returnerte tomt svar.');
+    return text;
+  }
+
   /** Vision call to OpenAI — used as second-tier fallback. Accepts raw base64 OR data-URL. */
   private async callOpenAIVision(imagesBase64: string[], prompt: string, model: string = DEFAULT_OPENAI_VISION_MODEL): Promise<string> {
     const content: any[] = imagesBase64.map(data => ({
@@ -659,6 +674,22 @@ export class GeminiService {
       if (m.includes('401') || m.includes('unauthor')) return `Ugyldig API-nøkkel (${msg})`;
       return msg || 'ukjent feil';
     };
+
+    if(opts.images?.length){
+      try{
+        const text=await this.callSupabaseVision(opts.images,promptForFallback);
+        return parser(text);
+      }catch(edgeErr:any){
+        const edgeMsg=edgeErr?.message||String(edgeErr);
+        throw new Error(
+          'AI-analyse feilet i både Vercel og Supabase:\n' +
+          `• Gemini: ${explain(geminiErrMsg)}\n` +
+          `• Claude: ${explain(claudeErrMsg)}\n` +
+          `• OpenAI: ${explain(openaiErrMsg)}\n` +
+          `• Supabase vision: ${edgeMsg}`
+        );
+      }
+    }
 
     throw new Error(
       'AI-analyse feilet for alle tre leverandører:\n' +
