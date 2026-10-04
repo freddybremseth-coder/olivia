@@ -63,7 +63,7 @@ function seasonRows(
   return {
     season,
     harvestValue: hs.reduce((acc, h) => acc + h.kg * h.pricePerKg, 0),
-    actualIncome: inc.reduce((acc, i) => acc + i.amount, 0),
+    actualIncome: inc.filter(i=>i.status==='received').reduce((acc, i) => acc + i.amount, 0),
     expenses: ex.reduce((acc, e) => acc + e.amount, 0),
     subsidies: su.reduce((acc, s) => acc + s.amount, 0),
     rows: hs.length + ex.length + su.length + inc.length,
@@ -145,6 +145,9 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
   const receivedThisYear = incomes
     .filter(i => i.status === 'received' && (i.paymentDate?.startsWith(currentYear()) || i.paymentPeriod?.startsWith(currentYear())))
     .reduce((acc, i) => acc + i.amount, 0);
+  const expenseDocumentsThisYear=expenses
+    .filter(e=>e.date?.startsWith(currentYear()))
+    .reduce((acc,e)=>acc+e.amount,0);
 
   const perParcel = parcels.map(parcel => {
     const ph = sHarvests.filter(h => h.parcelId === parcel.id);
@@ -176,16 +179,13 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
 
       {error && <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-200 text-sm flex gap-2"><AlertTriangle size={18} /> {error}</div>}
 
-      {receivedThisYear > 0 && (
-        <div className="glass rounded-2xl border border-green-500/25 bg-green-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
-            <WalletCards size={20} className="text-green-400" />
-            <div>
-              <p className="text-sm font-bold text-white">Mottatt betaling i {currentYear()}</p>
-              <p className="text-xs text-slate-400">Kontantstrøm kan gjelde oppgjør fra en tidligere avlingssesong.</p>
-            </div>
+      {(receivedThisYear>0||expenseDocumentsThisYear>0)&&(
+        <div className="glass rounded-2xl border border-blue-500/20 bg-blue-500/[0.04] p-5">
+          <div className="flex items-center gap-3"><WalletCards size={20} className="text-blue-300"/><div><p className="text-sm font-bold text-white">Kalenderår {currentYear()} · separat fra avlingssesong</p><p className="text-xs text-slate-400 mt-1">Disse tallene viser datoåret. De flytter ikke inntekter eller kostnader ut av riktig avlingssesong.</p></div></div>
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Mottatt betaling {currentYear()}</p><p className="text-xl font-black text-green-300 mt-1">{eur(receivedThisYear)}</p></div>
+            <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Bilagsdato kostnader {currentYear()}</p><p className="text-xl font-black text-amber-200 mt-1">{eur(expenseDocumentsThisYear)}</p></div>
           </div>
-          <strong className="text-xl text-green-400">{eur(receivedThisYear)}</strong>
         </div>
       )}
 
