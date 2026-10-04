@@ -1,6 +1,8 @@
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { FIELD_OBSERVATION_IMAGE_BUCKET } from './fieldObservationStorage';
 import type { OliveInspectionResult } from './geminiService';
+import type { FarmGeoContext } from '../types/farmGeo';
+import { geoContextToDb, registerFarmMediaEvidence } from './farmMediaEvidence';
 
 export type OliveVarietyReference={
   id:string;
@@ -16,6 +18,7 @@ export type OliveVarietyReference={
   confirmed_at:string;
   created_at:string;
   updated_at:string;
+  geo_context?:Record<string,unknown>|null;
 };
 
 export type VarietyReferenceQuality={
@@ -161,6 +164,7 @@ export async function saveConfirmedVarietyReference(input:{
   images:string[];
   sourceAssessmentId?:string|null;
   notes?:string;
+  geoContext?:FarmGeoContext;
 }):Promise<OliveVarietyReference>{
   const varietyName=input.varietyName.trim();
   if(!varietyName)throw new Error('Velg eller skriv inn bekreftet olivensort.');
@@ -177,11 +181,20 @@ export async function saveConfirmedVarietyReference(input:{
     image_urls:imageUrls,
     source_assessment_id:input.sourceAssessmentId||null,
     notes:input.notes?.trim()||null,
+    geo_context:geoContextToDb(input.geoContext),
     confirmed_at:new Date().toISOString(),
     updated_at:new Date().toISOString(),
   };
   const {data,error}=await supabase.from('olive_variety_references').insert(row).select('*').single();
   if(error)throw new Error(error.message);
+  await registerFarmMediaEvidence({
+    urls:imageUrls,
+    sourceModule:'variety_reference',
+    sourceRef:id,
+    parcelId:input.parcelId,
+    geo:input.geoContext,
+    metadata:{varietyName},
+  }).catch(err=>console.warn('[varietyReference] media evidence',err));
   return data as OliveVarietyReference;
 }
 
