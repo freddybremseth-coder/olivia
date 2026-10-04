@@ -692,13 +692,14 @@ export async function getFarmDocumentUrl(doc:Pick<FarmDocument,'storage_bucket'|
 
 export async function fetchFarmTruthSummary(){
   const currentYear=new Date().getFullYear();
-  const [docs,events,currentWheel,nextWheel,rain,parcelsRes]=await Promise.all([
+  const [docs,events,currentWheel,nextWheel,rain,parcelsRes,observationsRes]=await Promise.all([
     fetchFarmDocuments(50),
     fetchFarmEvents(100),
     fetchYearWheel(currentYear),
     fetchYearWheel(currentYear+1),
     fetchRainMeasurements(120),
     supabase.from('parcels').select('id,name,tree_count,tree_variety').order('name'),
+    supabase.from('farm_observations').select('id,title,observed_at,parcel_id,category').order('observed_at',{ascending:false}).limit(300),
   ]);
   const wheel=[...currentWheel,...nextWheel];
   const today=new Date();
@@ -712,9 +713,25 @@ export async function fetchFarmTruthSummary(){
     const diff=(target.getTime()-today.getTime())/86400000;
     return diff>=-14&&diff<=180;
   });
+  const observations=observationsRes.data||[];
+  const latestObservationByParcel:Record<string,any>={};
+  for(const observation of observations as any[]){
+    const key=observation.parcel_id||'farm';
+    if(!latestObservationByParcel[key])latestObservationByParcel[key]=observation;
+  }
+
+  const latestEventByParcel:Record<string,any>={};
+  for(const event of events as any[]){
+    const key=event.parcel_id||'farm';
+    if(!latestEventByParcel[key])latestEventByParcel[key]=event;
+  }
+
   return{
     documents:docs,
     events,
+    observations,
+    latestObservationByParcel,
+    latestEventByParcel,
     yearWheel:wheel,
     rain,
     parcels:parcelsRes.data||[],
