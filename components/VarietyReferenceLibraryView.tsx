@@ -12,6 +12,11 @@ import {
   type OliveVarietyReference,
 } from '../services/varietyReference';
 import type { OliveInspectionResult } from '../services/geminiService';
+import {
+  fetchVarietyEvaluations,
+  runBlindVarietyEvaluation,
+  type OliveVarietyEvaluation,
+} from '../services/varietyEvaluation';
 
 type Props={parcels:Parcel[]};
 
@@ -45,11 +50,20 @@ const VarietyReferenceLibraryView:React.FC<Props>=({parcels})=>{
   const [editTreeLabel,setEditTreeLabel]=useState('');
   const [editNotes,setEditNotes]=useState('');
   const [saving,setSaving]=useState(false);
+  const [evaluations,setEvaluations]=useState<OliveVarietyEvaluation[]>([]);
+  const [evaluatingId,setEvaluatingId]=useState<string|null>(null);
 
   const load=async()=>{
     setLoading(true);setError('');
-    try{setRows(await fetchVarietyReferences({status:'all',limit:250}));}
-    catch(err:any){setError(err?.message||'Kunne ikke hente sortsreferanser.');}
+    try{
+      const [references,tests]=await Promise.all([
+        fetchVarietyReferences({status:'all',limit:250}),
+        fetchVarietyEvaluations(500),
+      ]);
+      setRows(references);
+      setEvaluations(tests);
+    }
+    catch(err:any){setError(err?.message||'Kunne ikke hente sortsreferanser eller blindtester.');}
     finally{setLoading(false);}
   };
 
@@ -60,6 +74,28 @@ const VarietyReferenceLibraryView:React.FC<Props>=({parcels})=>{
     const hay=[row.variety_name,row.tree_label,row.notes,parcels.find(p=>p.id===row.parcel_id)?.name].filter(Boolean).join(' ').toLowerCase();
     return!query.trim()||hay.includes(query.trim().toLowerCase());
   }),[rows,statusFilter,query,parcels]);
+
+  const latestEvaluationByRef=useMemo(()=>{
+    const map=new Map<string,OliveVarietyEvaluation>();
+    for(const evaluation of evaluations){
+      if(!map.has(evaluation.reference_id))map.set(evaluation.reference_id,evaluation);
+    }
+    return map;
+  },[evaluations]);
+
+  const evaluationStats=useMemo(()=>{
+    const latest=Array.from(latestEvaluationByRef.values());
+    const correct=latest.filter(item=>item.is_correct).length;
+    const avgConfidence=latest.length
+      ?Math.round(latest.reduce((sum,item)=>sum+Number(item.confidence||0),0)/latest.length)
+      :0;
+    return{
+      tested:latest.length,
+      correct,
+      accuracy:latest.length?Math.round(correct/latest.length*100):0,
+      avgConfidence,
+    };
+  },[latestEvaluationByRef]);
 
   const stats=useMemo(()=>({
     confirmed:rows.filter(r=>r.status==='confirmed').length,
@@ -107,6 +143,18 @@ const VarietyReferenceLibraryView:React.FC<Props>=({parcels})=>{
     finally{setSaving(false);}
   };
 
+  const runBlindTest=async(row:OliveVarietyReference)=>{
+    setEvaluatingId(row.id);setError('');
+    try{
+      const result=await runBlindVarietyEvaluation(row);
+      setEvaluations(current=>[result,...current]);
+    }catch(err:any){
+      setError('Blindtest feilet: '+(err?.message||String(err)));
+    }finally{
+      setEvaluatingId(null);
+    }
+  };
+
   const changeStatus=async(row:OliveVarietyReference,status:OliveVarietyReference['status'])=>{
     setError('');
     try{
@@ -152,11 +200,12 @@ const VarietyReferenceLibraryView:React.FC<Props>=({parcels})=>{
 
     {error&&<div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-100 flex gap-3"><AlertTriangle size={18} className="flex-shrink-0"/>{error}</div>}
 
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
       <Stat label="Bekreftede trær" value={stats.confirmed}/>
       <Stat label="Bekreftede sorter" value={stats.varieties}/>
       <Stat label="Referansebilder" value={stats.images}/>
       <Stat label="Klar for bilde-match" value={stats.visualReady}/>
+      <Stat label="Blindtest treff" value={evaluationStats.tested?evaluationStats.accuracy+'%':'—'}/>
       <Stat label="Avviste" value={stats.rejected}/>
     </div>
 
@@ -181,6 +230,21 @@ const VarietyReferenceLibraryView:React.FC<Props>=({parcels})=>{
       </div>
     </div>
 
+    <div className="rounded-[2rem] border border-purple-500/15 bg-purple-500/[0.025] p-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] uppercase tracking-widest font-black text-purple-300">Blind kalibrering</p>
+          <h3 className="text-lg font-black text-white mt-1">Mål hvor ofte Olivia faktisk treffer kjent sort</h3>
+          <p className="text-xs text-slate-500 mt-1">Fasiten skjules for AI-en. Bare siste test per referansetre teller i oversikten, slik at mange repetisjoner av samme tre ikke blåser opp treffprosenten.</p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 min-w-[280px]">
+          <Mini label="Testede trær" value={String(evaluationStats.tested)}/>
+          <Mini label="Riktige" value={String(evaluationStats.correct)}/>
+          <Mini label="Snitt sikkerhet" value={evaluationStats.tested?evaluationStats.avgConfidence+'%':'—'}/>
+        </div>
+      </div>
+    </div>
+
     <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 flex flex-col md:flex-row gap-3">
       <input className={inputClass} value={query} onChange={e=>setQuery(e.target.value)} placeholder="Søk sort, tre-ID, parsell eller notat…"/>
       <select className={inputClass+' md:max-w-[220px]'} value={statusFilter} onChange={e=>setStatusFilter(e.target.value as any)}>
@@ -198,6 +262,7 @@ const VarietyReferenceLibraryView:React.FC<Props>=({parcels})=>{
         const inspection=(row.inspection_json||{}) as OliveInspectionResult;
         const quality=scoreVarietyReference(row);
         const qualityLabel=quality.grade==='strong'?'Sterk':quality.grade==='usable'?'Brukbar':'Svak';
+        const latestEvaluation=latestEvaluationByRef.get(row.id);
         return <div key={row.id} className={'rounded-[2rem] border p-5 '+(row.status==='confirmed'?'border-green-500/15 bg-green-500/[0.025]':row.status==='rejected'?'border-red-500/15 bg-red-500/[0.025]':'border-amber-500/15 bg-amber-500/[0.025]')}>
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -220,11 +285,21 @@ const VarietyReferenceLibraryView:React.FC<Props>=({parcels})=>{
             {!quality.eligibleForVisualMatching&&quality.missing.length>0&&<p className="text-[10px] text-amber-200 mt-2">Forbedre med: {quality.missing.slice(0,3).join(' · ')}</p>}
           </div>
 
+          {latestEvaluation&&<div className={'mt-3 rounded-xl border p-3 '+(latestEvaluation.is_correct?'border-green-500/20 bg-green-500/[0.04]':'border-red-500/20 bg-red-500/[0.04]')}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className={'text-[9px] uppercase tracking-widest font-black '+(latestEvaluation.is_correct?'text-green-300':'text-red-300')}>{latestEvaluation.is_correct?'BLINDTEST · TREFF':'BLINDTEST · BOM'}</p>
+              <span className="text-[9px] text-slate-600">{String(latestEvaluation.created_at).slice(0,10)}</span>
+            </div>
+            <p className="text-xs text-slate-300 mt-1">Olivia svarte <span className="font-black text-white">{latestEvaluation.predicted_variety}</span> · {Math.round(Number(latestEvaluation.confidence||0))}% sikkerhet</p>
+            <p className="text-[10px] text-slate-500 mt-1">{latestEvaluation.reference_count} andre sterke gårdsreferanser var tilgjengelige i testen.</p>
+          </div>}
+
           {traits.length>0&&<div className="mt-4"><p className="text-[9px] uppercase tracking-widest font-black text-slate-500">Lagrede synlige trekk</p><div className="mt-2 space-y-1">{traits.slice(0,5).map((trait,i)=><p key={i} className="text-xs text-slate-400">• {trait}</p>)}</div></div>}
           {row.notes&&<p className="text-xs text-slate-500 mt-4 border-t border-white/5 pt-3">{row.notes}</p>}
 
           <div className="flex flex-wrap gap-2 mt-5">
             <button onClick={()=>openEdit(row)} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 flex items-center gap-2"><Edit3 size={13}/> Korriger</button>
+            {row.status==='confirmed'&&quality.eligibleForVisualMatching&&<button onClick={()=>runBlindTest(row)} disabled={evaluatingId===row.id} className="rounded-xl border border-purple-500/20 bg-purple-500/10 px-3 py-2 text-xs font-bold text-purple-200 flex items-center gap-2 disabled:opacity-40">{evaluatingId===row.id?<Loader2 size={13} className="animate-spin"/>:<RefreshCcw size={13}/>} {latestEvaluation?'Test på nytt':'Blindtest Olivia'}</button>}
             {row.status==='confirmed'?<button onClick={()=>changeStatus(row,'rejected')} className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-300 flex items-center gap-2"><XCircle size={13}/> Avvis som referanse</button>:<button onClick={()=>changeStatus(row,'confirmed')} className="rounded-xl border border-green-500/20 bg-green-500/10 px-3 py-2 text-xs font-bold text-green-300 flex items-center gap-2"><CheckCircle2 size={13}/> Bekreft igjen</button>}
           </div>
         </div>;
@@ -237,7 +312,7 @@ const VarietyReferenceLibraryView:React.FC<Props>=({parcels})=>{
   </div>;
 };
 
-const Stat:React.FC<{label:string;value:number}>=({label,value})=><div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4"><p className="text-[9px] uppercase tracking-widest font-black text-slate-500">{label}</p><p className="text-2xl font-black text-white mt-1">{value}</p></div>;
+const Stat:React.FC<{label:string;value:React.ReactNode}>=({label,value})=><div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4"><p className="text-[9px] uppercase tracking-widest font-black text-slate-500">{label}</p><p className="text-2xl font-black text-white mt-1">{value}</p></div>;
 const Mini:React.FC<{label:string;value:string}>=({label,value})=><div className="rounded-xl border border-white/5 bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest font-black text-slate-600">{label}</p><p className="text-xs font-bold text-slate-300 mt-1 line-clamp-2">{value}</p></div>;
 
 export default VarietyReferenceLibraryView;
