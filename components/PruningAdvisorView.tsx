@@ -17,7 +17,15 @@ import {
   X,
 } from 'lucide-react';
 import { geminiService, PruningPlan, PruningStep } from '../services/geminiService';
-import { Parcel, PruningHistoryItem, Task } from '../types';
+import {
+  Parcel,
+  PruningExecutionStatus,
+  PruningHistoryItem,
+  PruningOutcomeRating,
+  PruningStepFeedback,
+  PruningStepFeedbackStatus,
+  Task,
+} from '../types';
 import { Language } from '../services/i18nService';
 import { filesToResizedDataUrls } from '../lib/imageUpload';
 import { deletePruningItem, fetchParcels, fetchPruningHistory, fetchSettings, upsertPruningItem, upsertTask } from '../services/db';
@@ -27,6 +35,7 @@ import { buildLearningContext, recordAgentAssessment } from '../services/farmInt
 import FarmQuestionsPanel from './FarmQuestionsPanel';
 import AgentFeedbackPanel from './AgentFeedbackPanel';
 import OlivePhotoProtocol from './OlivePhotoProtocol';
+import { savePruningOutcome } from '../services/pruningOutcome';
 
 function makeId(prefix: string) {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `${prefix}-${crypto.randomUUID()}`;
@@ -116,10 +125,19 @@ const PruningAdvisorView: React.FC = () => {
   const [contextLoading, setContextLoading] = useState(false);
   const [historicalImages, setHistoricalImages] = useState<Array<{url:string;title:string;observedAt:string}>>([]);
   const [lastAssessmentId,setLastAssessmentId]=useState<string|null>(null);
+  const [outcomeItem,setOutcomeItem]=useState<PruningHistoryItem|null>(null);
+  const [outcomeStatus,setOutcomeStatus]=useState<Exclude<PruningExecutionStatus,'planned'>>('completed');
+  const [outcomeDate,setOutcomeDate]=useState(new Date().toISOString().slice(0,10));
+  const [outcomeRating,setOutcomeRating]=useState<PruningOutcomeRating|''>('');
+  const [outcomeNotes,setOutcomeNotes]=useState('');
+  const [outcomeAfterImages,setOutcomeAfterImages]=useState<string[]>([]);
+  const [outcomeStepFeedback,setOutcomeStepFeedback]=useState<Record<number,{status?:PruningStepFeedbackStatus;note?:string}>>({});
+  const [isSavingOutcome,setIsSavingOutcome]=useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const outcomeFileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const selectedParcel = parcels.find(parcel => parcel.id === selectedParcelId);
@@ -335,6 +353,72 @@ const PruningAdvisorView: React.FC = () => {
     }
   };
 
+  const openOutcome=(item:PruningHistoryItem)=>{
+    setOutcomeItem(item);
+    const existing=item.executionStatus;
+    setOutcomeStatus(existing==='partly_completed'||existing==='cancelled'||existing==='completed'?existing:'completed');
+    setOutcomeDate(String(item.completedAt||new Date().toISOString()).slice(0,10));
+    setOutcomeRating(item.outcomeRating||'');
+    setOutcomeNotes(item.outcomeNotes||'');
+    setOutcomeAfterImages([]);
+    const mapped:Record<number,{status?:PruningStepFeedbackStatus;note?:string}>={};
+    (item.stepFeedback||[]).forEach(entry=>{mapped[entry.index]={status:entry.status,note:entry.note};});
+    setOutcomeStepFeedback(mapped);
+    setError(null);
+  };
+
+  const handleOutcomeImageUpload=async(event:React.ChangeEvent<HTMLInputElement>)=>{
+    const files=event.target.files;
+    if(!files?.length)return;
+    try{
+      const remaining=3-outcomeAfterImages.length;
+      if(remaining<=0){setError('Maks 3 etterbilder per fasit.');return;}
+      const dataUrls=await filesToResizedDataUrls(Array.from(files).slice(0,remaining),{maxDim:1280,quality:0.74});
+      setOutcomeAfterImages(current=>[...current,...dataUrls].slice(0,3));
+    }catch(err:any){
+      setError('Kunne ikke lese etterbilder: '+(err?.message||String(err)));
+    }finally{
+      if(outcomeFileInputRef.current)outcomeFileInputRef.current.value='';
+    }
+  };
+
+  const saveOutcome=async()=>{
+    if(!outcomeItem)return;
+    const stepFeedback:PruningStepFeedback[]=(outcomeItem.plan?.pruningSteps||[]).flatMap((step,index)=>{
+      const entry=outcomeStepFeedback[index];
+      if(!entry?.status)return[];
+      return[{
+        index,
+        area:step.area||('Område '+(index+1)),
+        status:entry.status,
+        note:entry.note?.trim()||undefined,
+      }];
+    });
+    if(outcomeStatus==='partly_completed'&&!outcomeNotes.trim()&&!stepFeedback.length){
+      setError('Beskriv hva som faktisk ble gjort når jobben registreres som delvis utført.');
+      return;
+    }
+    setIsSavingOutcome(true);setError(null);
+    try{
+      const updated=await savePruningOutcome(outcomeItem,{
+        executionStatus:outcomeStatus,
+        outcomeDate,
+        outcomeRating:outcomeRating||undefined,
+        outcomeNotes,
+        stepFeedback,
+        afterImageDataUrls:outcomeAfterImages,
+      });
+      setHistory(current=>current.map(item=>item.id===updated.id?updated:item));
+      setOutcomeItem(null);
+      setOutcomeAfterImages([]);
+      window.dispatchEvent(new CustomEvent('olivia:farm-truth-updated'));
+    }catch(err:any){
+      setError('Kunne ikke lagre beskjæringsfasit: '+(err?.message||String(err)));
+    }finally{
+      setIsSavingOutcome(false);
+    }
+  };
+
   const deleteHistory = async (id: string) => {
     try {
       await deletePruningItem(id);
@@ -372,6 +456,82 @@ const PruningAdvisorView: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 max-w-6xl mx-auto pb-24">
+      {outcomeItem&&<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
+        <div className="w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-[2rem] border border-[#d9b657]/20 bg-[#080b09] p-6 shadow-2xl">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest font-black text-[#d9b657]">Beskjæringsfasit</p>
+              <h3 className="text-xl font-black text-white mt-1">{outcomeItem.treeType||'Oliventre'}</h3>
+              <p className="text-xs text-slate-500 mt-1">Registrer bare det som faktisk ble gjort. Denne fasiten brukes i senere ekspertvurderinger.</p>
+            </div>
+            <button onClick={()=>setOutcomeItem(null)} disabled={isSavingOutcome} className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-400"><X size={18}/></button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
+            <label className="text-xs text-slate-400">Status
+              <select value={outcomeStatus} onChange={e=>setOutcomeStatus(e.target.value as Exclude<PruningExecutionStatus,'planned'>)} className="mt-1 w-full rounded-xl border border-white/10 bg-black/35 px-3 py-2.5 text-sm text-white">
+                <option value="completed">Utført</option>
+                <option value="partly_completed">Delvis utført</option>
+                <option value="cancelled">Avlyst / ikke utført</option>
+              </select>
+            </label>
+            <label className="text-xs text-slate-400">Dato
+              <input type="date" value={outcomeDate} onChange={e=>setOutcomeDate(e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-black/35 px-3 py-2.5 text-sm text-white"/>
+            </label>
+            <label className="text-xs text-slate-400">Resultat
+              <select value={outcomeRating} onChange={e=>setOutcomeRating(e.target.value as PruningOutcomeRating|'')} disabled={outcomeStatus==='cancelled'} className="mt-1 w-full rounded-xl border border-white/10 bg-black/35 px-3 py-2.5 text-sm text-white disabled:opacity-40">
+                <option value="">Ikke vurdert ennå</option>
+                <option value="good">Bra</option>
+                <option value="mixed">Blandet</option>
+                <option value="poor">Dårlig</option>
+              </select>
+            </label>
+          </div>
+
+          {(outcomeItem.plan?.pruningSteps?.length||0)>0&&<div className="mt-5">
+            <p className="text-[10px] uppercase tracking-widest font-black text-purple-300">Fasit per AI-råd</p>
+            <div className="space-y-2 mt-2">
+              {(outcomeItem.plan?.pruningSteps||[]).map((step,index)=>{
+                const entry=outcomeStepFeedback[index]||{};
+                return <div key={index} className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
+                  <p className="text-xs font-black text-white">{index+1}. {step.area}</p>
+                  <p className="text-[10px] text-slate-500 mt-1">{step.action}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-[190px_1fr] gap-2 mt-3">
+                    <select value={entry.status||''} onChange={e=>setOutcomeStepFeedback(current=>({...current,[index]:{...current[index],status:(e.target.value||undefined) as PruningStepFeedbackStatus|undefined}}))} className="rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-xs text-white">
+                      <option value="">Ikke vurdert</option>
+                      <option value="performed">Utført som foreslått</option>
+                      <option value="corrected">Endret / korrigert</option>
+                      <option value="skipped">Ikke utført</option>
+                      <option value="not_applicable">Ikke relevant</option>
+                    </select>
+                    <input value={entry.note||''} onChange={e=>setOutcomeStepFeedback(current=>({...current,[index]:{...current[index],note:e.target.value}}))} placeholder="Kort forklaring ved endring/ikke utført" className="rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-xs text-white"/>
+                  </div>
+                </div>;
+              })}
+            </div>
+          </div>}
+
+          <div className="mt-5">
+            <label className="text-xs text-slate-400">Notat om faktisk arbeid / resultat
+              <textarea value={outcomeNotes} onChange={e=>setOutcomeNotes(e.target.value)} className="mt-1 min-h-[90px] w-full rounded-xl border border-white/10 bg-black/35 px-3 py-2.5 text-sm text-white" placeholder="Hva ble gjort annerledes? Hvordan så treet ut etterpå?"/>
+            </label>
+          </div>
+
+          <div className="mt-5">
+            <input ref={outcomeFileInputRef} type="file" accept="image/*" multiple onChange={handleOutcomeImageUpload} className="hidden"/>
+            <div className="flex items-center justify-between gap-3">
+              <div><p className="text-xs font-bold text-white">Etterbilder</p><p className="text-[10px] text-slate-500">Valgfritt, maks 3. Gir Olivia før/etter-grunnlag.</p></div>
+              <button onClick={()=>outcomeFileInputRef.current?.click()} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 flex items-center gap-2"><Upload size={13}/> Legg til</button>
+            </div>
+            {outcomeAfterImages.length>0&&<div className="grid grid-cols-3 gap-2 mt-3">{outcomeAfterImages.map((img,index)=><div key={index} className="relative overflow-hidden rounded-xl border border-white/10"><img src={img} className="h-28 w-full object-cover"/><button onClick={()=>setOutcomeAfterImages(current=>current.filter((_,i)=>i!==index))} className="absolute top-1 right-1 rounded-full bg-black/70 p-1 text-white"><X size={12}/></button></div>)}</div>}
+          </div>
+
+          <div className="flex justify-end gap-2 mt-6">
+            <button onClick={()=>setOutcomeItem(null)} disabled={isSavingOutcome} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold text-slate-300">Avbryt</button>
+            <button onClick={saveOutcome} disabled={isSavingOutcome} className="rounded-xl bg-[#d9b657] px-5 py-3 text-xs font-black text-black disabled:opacity-40 flex items-center gap-2">{isSavingOutcome?<Loader2 size={14} className="animate-spin"/>:<CheckCircle2 size={14}/>} Lagre verifisert fasit</button>
+          </div>
+        </div>
+      </div>}
       <div className="relative overflow-hidden rounded-[2rem] border border-[#d9b657]/20 bg-[#070b08] p-6 shadow-2xl shadow-black/20">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,0.14),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(217,182,87,0.12),transparent_34%)]" />
         <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
@@ -465,7 +625,23 @@ const PruningAdvisorView: React.FC = () => {
         </div>
       </div>
 
-      <div className="space-y-4"><h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><History size={14} /> Supabase historikk</h3>{history.length ? <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{history.slice(0, 8).map(item => <div key={item.id} className="glass rounded-2xl p-4 border border-white/10 flex justify-between gap-3"><div><p className="text-white font-bold">{item.treeType || 'Beskjæring'}</p><p className="text-xs text-slate-500 mt-1">{new Date(item.date).toLocaleDateString('no-NO')} · {parcels.find(p => p.id === item.parcelId)?.name || 'Ingen parsell'}</p></div><button onClick={() => deleteHistory(item.id)} className="text-slate-500 hover:text-red-400"><Trash2 size={16} /></button></div>)}</div> : <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-500">Ingen beskjæringsanalyser lagret ennå.</div>}</div>
+      <div className="space-y-4"><h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><History size={14} /> Supabase historikk</h3>{history.length ? <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{history.slice(0, 8).map(item => {
+        const status=item.executionStatus||'planned';
+        const statusText=status==='completed'?'Utført':status==='partly_completed'?'Delvis utført':status==='cancelled'?'Avlyst':'Ingen fasit';
+        return <div key={item.id} className="glass rounded-2xl p-4 border border-white/10">
+          <div className="flex justify-between gap-3">
+            <div><p className="text-white font-bold">{item.treeType || 'Beskjæring'}</p><p className="text-xs text-slate-500 mt-1">{new Date(item.date).toLocaleDateString('no-NO')} · {parcels.find(p => p.id === item.parcelId)?.name || 'Ingen parsell'}</p></div>
+            <button onClick={() => deleteHistory(item.id)} className="text-slate-500 hover:text-red-400"><Trash2 size={16} /></button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+(status==='completed'?'border-green-500/25 text-green-300':status==='partly_completed'?'border-amber-500/25 text-amber-300':status==='cancelled'?'border-red-500/25 text-red-300':'border-white/10 text-slate-500')}>{statusText}</span>
+            {item.outcomeRating&&<span className="text-[9px] text-slate-500">Resultat: {item.outcomeRating}</span>}
+            {(item.afterImages?.length||0)>0&&<span className="text-[9px] text-purple-300">{item.afterImages?.length} etterbilder</span>}
+          </div>
+          {item.outcomeNotes&&<p className="text-xs text-slate-500 mt-2 line-clamp-2">{item.outcomeNotes}</p>}
+          <button onClick={()=>openOutcome(item)} className="mt-3 w-full rounded-xl border border-[#d9b657]/20 bg-[#d9b657]/[0.05] px-3 py-2 text-xs font-black text-[#d9b657]">{item.outcomeVerifiedAt?'Rediger fasit':'Registrer fasit'}</button>
+        </div>;
+      })}</div> : <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-500">Ingen beskjæringsanalyser lagret ennå.</div>}</div>
     </div>
   );
 };
