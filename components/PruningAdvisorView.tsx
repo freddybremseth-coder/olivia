@@ -254,7 +254,7 @@ const PruningAdvisorView: React.FC = () => {
     setHistorySaved(false);
     setTaskSaved(false);
     try {
-      const raw = await geminiService.analyzePruning(base64List, language, farmContext);
+      const raw = await geminiService.analyzePruning(base64List, language, farmContext, selectedParcelId||undefined);
       const normalized = normalizePlan(raw);
       setPlan(normalized);
       const uncertainties=Array.from(new Set([

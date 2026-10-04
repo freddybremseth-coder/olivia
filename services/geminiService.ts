@@ -66,6 +66,14 @@ export interface OliveInspectionResult {
     candidates: OliveVarietyCandidate[];
     reasoning: string;
   };
+  referenceComparison?: {
+    used: boolean;
+    referenceCount: number;
+    bestCandidate: string;
+    confidence: number;
+    agreesWithInitial: boolean;
+    reasoning: string;
+  };
   nextPhotos: string[];
 }
 
@@ -384,6 +392,14 @@ function normalizeInspection(raw: Partial<OliveInspectionResult> | undefined): O
       candidates,
       reasoning:String(va.reasoning||'Ikke nok morfologiske trekk til sikker sortsidentifikasjon.').slice(0,900),
     },
+    referenceComparison:value.referenceComparison?{
+      used:Boolean(value.referenceComparison.used),
+      referenceCount:Math.max(0,Math.floor(Number(value.referenceComparison.referenceCount)||0)),
+      bestCandidate:String(value.referenceComparison.bestCandidate||'Ukjent sort').slice(0,80),
+      confidence:normalizeConfidence(value.referenceComparison.confidence,0),
+      agreesWithInitial:Boolean(value.referenceComparison.agreesWithInitial),
+      reasoning:String(value.referenceComparison.reasoning||'').slice(0,900),
+    }:undefined,
     nextPhotos:Array.isArray(value.nextPhotos)?value.nextPhotos.map(String).slice(0,6):[],
   };
 }
@@ -1181,7 +1197,153 @@ Returner KUN JSON:
     return this.callExpertCritic(prompt);
   }
 
-  private async inspectOliveImages(imagesBase64:string[],lang:string,farmContext=''):Promise<OliveInspectionResult>{
+  private async fetchFarmVarietyReferenceImages(parcelId?:string){
+    if(!isSupabaseConfigured)return[] as Array<{url:string;label:string;varietyName:string}>;
+    const {data,error}=await supabase.from('olive_variety_references')
+      .select('variety_name,parcel_id,tree_label,image_urls,confirmed_at')
+      .eq('status','confirmed')
+      .order('confirmed_at',{ascending:false})
+      .limit(60);
+    if(error){
+      console.warn('[geminiService] variety reference images unavailable',error);
+      return[];
+    }
+    const rows=[...(data||[])].sort((a:any,b:any)=>{
+      const ap=parcelId&&a.parcel_id===parcelId?1:0;
+      const bp=parcelId&&b.parcel_id===parcelId?1:0;
+      return bp-ap||String(b.confirmed_at||'').localeCompare(String(a.confirmed_at||''));
+    });
+    const out:Array<{url:string;label:string;varietyName:string}>=[];
+    const perVariety=new Map<string,number>();
+    for(const row of rows as any[]){
+      const variety=String(row.variety_name||'').trim();
+      if(!variety)continue;
+      const key=variety.toLowerCase();
+      if((perVariety.get(key)||0)>=2)continue;
+      const urls=Array.isArray(row.image_urls)?row.image_urls.filter(Boolean):[];
+      if(!urls.length)continue;
+      out.push({
+        url:String(urls[0]),
+        varietyName:variety,
+        label:'BEKREFTET REFERANSE · '+variety+(row.tree_label?' · '+row.tree_label:'')+(parcelId&&row.parcel_id===parcelId?' · samme parsell':''),
+      });
+      perVariety.set(key,(perVariety.get(key)||0)+1);
+      if(out.length>=6)break;
+    }
+    return out;
+  }
+
+  private async compareWithFarmVarietyReferences(
+    imagesBase64:string[],
+    inspection:OliveInspectionResult,
+    parcelId?:string,
+  ){
+    if(!isSupabaseConfigured)return null;
+    if(inspection.varietyAssessment.status==='LIKELY'&&inspection.varietyAssessment.confidence>=85)return null;
+    const references=await this.fetchFarmVarietyReferenceImages(parcelId);
+    if(!references.length)return null;
+
+    const prompt=`Du sammenligner et NYTT OLIVENTRE med BEKREFTET MERKEDE referansebilder fra samme gård.
+De første bildene er merket NYTT TRE. De øvrige er bekreftede gårdsreferanser med sort i etiketten.
+
+Opprinnelig visuell vurdering av nytt tre:
+${JSON.stringify(inspection.varietyAssessment,null,2)}
+
+Regler:
+- Sammenlign konkrete morfologiske trekk: fruktform/størrelse, bladproporsjon, spiss/base, krone/vekstform når relevant, og endokarp hvis synlig.
+- Bekreftet referanse er sammenligningsgrunnlag, men ikke automatisk fasit for det nye treet.
+- Ikke velg en referansesort bare fordi den finnes i biblioteket.
+- Hvis nytt bilde mangler organene som trengs for å skille sortene, behold lav sikkerhet.
+- Ved tydelig konflikt mellom opprinnelig vurdering og referansebilder, forklar konflikten.
+- Kandidater kan også være "Ukjent/annen sort".
+
+Returner KUN JSON:
+{
+  "bestCandidate":"...",
+  "confidence":0,
+  "candidates":[
+    {"name":"...","confidence":0,"supportingTraits":["..."],"contradictingTraits":["..."]}
+  ],
+  "reasoning":"direkte visuell sammenligning mot referansebildene",
+  "nextPhotos":["konkret bilde som best vil skille kandidatene"]
+}`;
+
+    const payloadImages=[
+      ...imagesBase64.slice(0,3).map((data,index)=>({data,mimeType:'image/jpeg',label:'NYTT TRE · bilde '+(index+1)})),
+      ...references.map(ref=>({url:ref.url,mimeType:'image/jpeg',label:ref.label})),
+    ];
+    const {data,error}=await supabase.functions.invoke('olivia-vision',{
+      body:{prompt,images:payloadImages},
+    });
+    if(error)throw new Error(error.message||'Referansesammenligning feilet.');
+    if(data?.error)throw new Error(Array.isArray(data.details)?data.details.join(' | '):String(data.error));
+    const text=String(data?.text||'').trim();
+    if(!text)throw new Error('Referansesammenligning ga tomt svar.');
+    const raw=this.extractJson<any>(text,{});
+    const candidates=Array.isArray(raw.candidates)?raw.candidates.slice(0,4).map((item:any)=>({
+      name:String(item?.name||'Ukjent/annen sort').slice(0,80),
+      confidence:normalizeConfidence(item?.confidence,0),
+      supportingTraits:Array.isArray(item?.supportingTraits)?item.supportingTraits.map(String).slice(0,6):[],
+      contradictingTraits:Array.isArray(item?.contradictingTraits)?item.contradictingTraits.map(String).slice(0,6):[],
+    })):[];
+    return{
+      bestCandidate:String(raw.bestCandidate||candidates[0]?.name||'Ukjent/annen sort').slice(0,80),
+      confidence:normalizeConfidence(raw.confidence,candidates[0]?.confidence||0),
+      candidates,
+      reasoning:String(raw.reasoning||'').slice(0,900),
+      nextPhotos:Array.isArray(raw.nextPhotos)?raw.nextPhotos.map(String).slice(0,5):[],
+      referenceCount:references.length,
+    };
+  }
+
+  private mergeReferenceComparison(inspection:OliveInspectionResult,comparison:any):OliveInspectionResult{
+    if(!comparison)return inspection;
+    const initial=inspection.varietyAssessment;
+    const initialKey=initial.bestCandidate.toLowerCase().replace(/[^a-z0-9æøå]+/g,' ').trim();
+    const comparisonKey=String(comparison.bestCandidate||'').toLowerCase().replace(/[^a-z0-9æøå]+/g,' ').trim();
+    const agrees=Boolean(initialKey&&comparisonKey&&initialKey===comparisonKey);
+    let assessment={...initial};
+    if(agrees){
+      assessment={
+        ...assessment,
+        confidence:Math.min(95,Math.max(initial.confidence,Math.min(comparison.confidence,initial.confidence+12))),
+        status:Math.max(initial.confidence,comparison.confidence)>=72?'LIKELY':'POSSIBLE',
+        candidates:comparison.candidates.length?comparison.candidates:initial.candidates,
+        reasoning:[initial.reasoning,'Direkte gårdsreferanse: '+comparison.reasoning].filter(Boolean).join(' '),
+      };
+    }else if(comparison.confidence>=75&&initial.confidence<=55){
+      assessment={
+        status:'POSSIBLE',
+        bestCandidate:comparison.bestCandidate,
+        confidence:Math.min(70,comparison.confidence),
+        candidates:comparison.candidates.length?comparison.candidates:initial.candidates,
+        reasoning:'Referansebildene peker mot '+comparison.bestCandidate+', mens første inspeksjon pekte mot '+initial.bestCandidate+'. '+comparison.reasoning+' Konflikten må bekreftes med bedre morfologiske bilder.',
+      };
+    }else{
+      assessment={
+        ...assessment,
+        status:'POSSIBLE',
+        confidence:Math.min(initial.confidence,65),
+        candidates:comparison.candidates.length?comparison.candidates:initial.candidates,
+        reasoning:[initial.reasoning,'Referansebildene er ikke enige med første vurdering: '+comparison.reasoning].filter(Boolean).join(' '),
+      };
+    }
+    return{
+      ...inspection,
+      varietyAssessment:assessment,
+      referenceComparison:{
+        used:true,
+        referenceCount:comparison.referenceCount,
+        bestCandidate:comparison.bestCandidate,
+        confidence:comparison.confidence,
+        agreesWithInitial:agrees,
+        reasoning:comparison.reasoning,
+      },
+      nextPhotos:Array.from(new Set([...(inspection.nextPhotos||[]),...(comparison.nextPhotos||[])])).slice(0,8),
+    };
+  }
+
+  private async inspectOliveImages(imagesBase64:string[],lang:string,farmContext='',parcelId?:string):Promise<OliveInspectionResult>{
     const languageInstruction=lang==='no'?'Svar på norsk.':lang==='es'?'Responde en español.':'Answer in English.';
     const prompt=`Du er VISUELL OLIVENINSPEKTØR. Du skal observere og klassifisere, IKKE gi behandlings- eller beskjæringsråd.
 ${languageInstruction}
@@ -1222,12 +1384,19 @@ Returner KUN JSON:
   "nextPhotos":["konkret bilde som mangler"]
 }`;
     const raw=await this.callVisionJson<OliveInspectionResult>(imagesBase64,prompt,{} as OliveInspectionResult);
-    return normalizeInspection(raw);
+    let inspection=normalizeInspection(raw);
+    try{
+      const comparison=await this.compareWithFarmVarietyReferences(imagesBase64,inspection,parcelId);
+      if(comparison)inspection=this.mergeReferenceComparison(inspection,comparison);
+    }catch(error){
+      console.warn('[geminiService] direct farm variety reference comparison unavailable',error);
+    }
+    return inspection;
   }
 
-  async analyzeComprehensive(imagesBase64: string[], lang: string, farmContext = ''): Promise<ComprehensiveAnalysisResult> {
+  async analyzeComprehensive(imagesBase64: string[], lang: string, farmContext = '', parcelId?:string): Promise<ComprehensiveAnalysisResult> {
     const languageInstruction = lang === 'no' ? 'Svar på norsk.' : lang === 'es' ? 'Responde en español.' : 'Answer in English.';
-    const inspection=await this.inspectOliveImages(imagesBase64,lang,farmContext);
+    const inspection=await this.inspectOliveImages(imagesBase64,lang,farmContext,parcelId);
     const prompt=`Du er SENIOR OLIVENAGRONOM. En separat visuell inspektør har allerede beskrevet bildene. Nå skal du tolke funnene og gi beslutningsstøtte.
 ${languageInstruction}
 Sted: Biar, Alicante. Dato: ${new Date().toISOString().slice(0,10)}.
@@ -1339,10 +1508,10 @@ Svar i JSON med feltene: canopyDensity (string), ndviSimulated (number 0–1), w
     );
   }
 
-  async analyzePruning(image: string | string[], lang: string, farmContext = ''): Promise<PruningPlan> {
+  async analyzePruning(image: string | string[], lang: string, farmContext = '', parcelId?:string): Promise<PruningPlan> {
     const images=Array.isArray(image)?image:[image];
     const languageInstruction=lang==='no'?'Svar på norsk.':lang==='es'?'Responde en español.':'Answer in English.';
-    const inspection=await this.inspectOliveImages(images,lang,farmContext);
+    const inspection=await this.inspectOliveImages(images,lang,farmContext,parcelId);
     const prompt=`Du er BESKJÆRINGSMESTER FOR OLIVEN i Alicante. Du får en separat visuell inspeksjon og skal nå ta konkrete beslutninger.
 ${languageInstruction}
 Dato: ${new Date().toISOString().slice(0,10)}.

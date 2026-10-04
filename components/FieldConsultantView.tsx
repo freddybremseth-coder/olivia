@@ -301,7 +301,7 @@ const FieldConsultantView: React.FC = () => {
     setError(null);
     setAnalysis(null);
     try {
-      const raw = await geminiService.analyzeComprehensive(base64List, language, farmContext);
+      const raw = await geminiService.analyzeComprehensive(base64List, language, farmContext, selectedParcelId||undefined);
       const normalized = normalizeAnalysis(raw);
       setAnalysis(normalized);
       setReferenceVariety(normalized.inspection?.varietyAssessment.bestCandidate==='Ukjent sort'?'':(normalized.inspection?.varietyAssessment.bestCandidate||normalized.diagnosis.variety||''));
@@ -530,6 +530,12 @@ const FieldConsultantView: React.FC = () => {
                   <p className="text-[10px] text-slate-500 mt-1">{analysis.inspection.varietyAssessment.reasoning}</p>
                   {analysis.inspection.varietyAssessment.candidates.length>0&&<div className="mt-3 space-y-2">{analysis.inspection.varietyAssessment.candidates.slice(0,3).map(candidate=><div key={candidate.name} className="flex justify-between gap-3 text-xs"><span className="text-slate-300">{candidate.name}</span><span className="text-slate-500">{confidencePercent(candidate.confidence)}%</span></div>)}</div>}
                 </div>
+                {analysis.inspection.referenceComparison?.used&&<div className={'mt-3 rounded-xl border p-3 '+(analysis.inspection.referenceComparison.agreesWithInitial?'border-green-500/20 bg-green-500/[0.04]':'border-amber-500/20 bg-amber-500/[0.04]')}>
+                  <p className="text-[9px] uppercase tracking-widest font-black text-purple-300">Direkte sammenligning med gårdens referansebilder</p>
+                  <div className="flex items-center justify-between gap-3 mt-1"><p className="text-xs font-black text-white">{analysis.inspection.referenceComparison.bestCandidate}</p><span className="text-xs font-black text-[#d9b657]">{confidencePercent(analysis.inspection.referenceComparison.confidence)}%</span></div>
+                  <p className="text-[10px] text-slate-500 mt-1">{analysis.inspection.referenceComparison.referenceCount} bekreftede referansebilder · {analysis.inspection.referenceComparison.agreesWithInitial?'enig med første vurdering':'avvik fra første vurdering'}</p>
+                  <p className="text-[10px] text-slate-400 mt-2">{analysis.inspection.referenceComparison.reasoning}</p>
+                </div>}
                 {analysis.inspection.nextPhotos.length>0&&<p className="text-[10px] text-amber-200 mt-3">Neste beste bilde: {analysis.inspection.nextPhotos[0]}</p>}
               </div>}
 
