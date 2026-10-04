@@ -697,7 +697,7 @@ export async function fetchFarmInputEvidenceLines(limit=250):Promise<FarmInputEv
       const name=String(item.name||'').trim();
       if(!name||!isRelevantInputLine(name,category))continue;
       const application=/sulfat|sprøy|spray|tratamiento/i.test(name)&&doc.evidence_status==='completed';
-      const lineDate=parseInputLineDate(name,doc.document_date||scan.date||null);
+      const lineDate=parseInputLineDate(name,doc.document_date||null);
       const inputCategory=application?'sprøyting':(category||'sprøyting');
       const cat=matchCatalog(name);
       lines.push({
