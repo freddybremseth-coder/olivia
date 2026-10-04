@@ -209,13 +209,26 @@ export async function fetchRecentFarmObservations(limit = 50): Promise<FarmObser
   return (data ?? []) as FarmObservation[];
 }
 
-function latestByType(readings: SensorReading[], type: SensorType): SensorReading | undefined {
+export const SENSOR_ACTION_MAX_AGE_HOURS=24;
+
+export function sensorReadingAgeHours(reading:Pick<SensorReading,'measured_at'>,now=new Date()):number|null{
+  const measured=new Date(reading.measured_at);
+  if(Number.isNaN(measured.getTime()))return null;
+  return Math.max(0,(now.getTime()-measured.getTime())/3600000);
+}
+
+export function isSensorReadingFresh(reading:Pick<SensorReading,'measured_at'>,maxAgeHours=SENSOR_ACTION_MAX_AGE_HOURS,now=new Date()):boolean{
+  const age=sensorReadingAgeHours(reading,now);
+  return age!=null&&age<=maxAgeHours;
+}
+
+function latestByType(readings: SensorReading[], type: SensorType, now=new Date()): SensorReading | undefined {
   return readings
-    .filter(reading => reading.type === type)
+    .filter(reading => reading.type === type && isSensorReadingFresh(reading,SENSOR_ACTION_MAX_AGE_HOURS,now))
     .sort((a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime())[0];
 }
 
-export function buildDonaAnnaDecisionAdvice(readings: SensorReading[], alerts: SensorAlert[] = []): FarmDecisionAdvice {
+export function buildDonaAnnaDecisionAdvice(readings: SensorReading[], alerts: SensorAlert[] = [], now=new Date()): FarmDecisionAdvice {
   const criticalAlert = alerts.find(alert => alert.severity === 'critical');
   if (criticalAlert) {
     return {
@@ -227,14 +240,33 @@ export function buildDonaAnnaDecisionAdvice(readings: SensorReading[], alerts: S
     };
   }
 
-  const soilMoisture = latestByType(readings, 'soil_moisture');
-  const soilEc = latestByType(readings, 'soil_ec');
-  const waterEc = latestByType(readings, 'water_ec');
-  const flow = latestByType(readings, 'flow');
-  const pressure = latestByType(readings, 'pressure');
-  const leafWetness = latestByType(readings, 'leaf_wetness');
+  const soilMoisture = latestByType(readings, 'soil_moisture',now);
+  const soilEc = latestByType(readings, 'soil_ec',now);
+  const waterEc = latestByType(readings, 'water_ec',now);
+  const flow = latestByType(readings, 'flow',now);
+  const pressure = latestByType(readings, 'pressure',now);
+  const leafWetness = latestByType(readings, 'leaf_wetness',now);
 
   const reasons: string[] = [];
+  const latestPerType=new Map<string,SensorReading>();
+  for(const reading of readings){
+    const existing=latestPerType.get(reading.type);
+    if(!existing||new Date(reading.measured_at)>new Date(existing.measured_at))latestPerType.set(reading.type,reading);
+  }
+  const staleLatest=Array.from(latestPerType.values()).filter(reading=>!isSensorReadingFresh(reading,SENSOR_ACTION_MAX_AGE_HOURS,now));
+  const freshLatest=Array.from(latestPerType.values()).filter(reading=>isSensorReadingFresh(reading,SENSOR_ACTION_MAX_AGE_HOURS,now));
+
+  if(!freshLatest.length){
+    return{
+      severity:'watch',
+      title:readings.length?'Sensordata er for gammel':'Ingen ferske sensordata',
+      message:readings.length
+        ?'Siste sensormålinger er eldre enn 24 timer og brukes derfor ikke til operative vannings- eller EC-råd.'
+        :'Olivia mangler ferske sensormålinger. Bruk feltobservasjoner og manuelle målinger inntil sensordata er tilgjengelig.',
+      recommended_action:'monitor',
+      reasons:[readings.length?'Gamle sensormålinger beholdes som historikk, men brukes ikke som dagens beslutningsgrunnlag.':'Ingen sensormålinger er tilgjengelige.'],
+    };
+  }
 
   if (soilMoisture && soilMoisture.value < 30) {
     reasons.push(`Jordfuktighet er lav: ${soilMoisture.value}${soilMoisture.unit}.`);
@@ -302,11 +334,21 @@ export function buildDonaAnnaDecisionAdvice(readings: SensorReading[], alerts: S
     };
   }
 
+  if(staleLatest.length){
+    return{
+      severity:'watch',
+      title:'Ferske data uten kritiske avvik',
+      message:'De ferske sensormålingene ser stabile ut, men '+staleLatest.length+' sensortype'+(staleLatest.length===1?'':'r')+' har siste måling eldre enn 24 timer og er utelatt fra beslutningsgrunnlaget.',
+      recommended_action:'monitor',
+      reasons:['Olivia bruker bare sensormålinger som er maksimalt 24 timer gamle til operative råd.'],
+    };
+  }
+
   return {
     severity: 'optimal',
     title: 'Ingen kritiske avvik',
-    message: 'Sensorbildet ser stabilt ut. Fortsett overvåkning og bruk Biar-profilen for senere høstevindu.',
+    message: 'Det ferske sensorbildet ser stabilt ut. Fortsett overvåkning og bruk Biar-profilen for senere høstevindu.',
     recommended_action: 'no_action',
-    reasons: ['Ingen åpne kritiske varsler eller målinger utenfor prioriterte grenseverdier.'],
+    reasons: ['Ingen åpne kritiske varsler eller ferske målinger utenfor prioriterte grenseverdier.'],
   };
 }
