@@ -30,6 +30,7 @@ import { buildLearningContext, recordAgentAssessment } from '../services/farmInt
 import FarmQuestionsPanel from './FarmQuestionsPanel';
 import AgentFeedbackPanel from './AgentFeedbackPanel';
 import OlivePhotoProtocol from './OlivePhotoProtocol';
+import { saveConfirmedVarietyReference } from '../services/varietyReference';
 
 type ResultTab = 'summary' | 'health' | 'pruning' | 'history';
 
@@ -156,6 +157,10 @@ const FieldConsultantView: React.FC = () => {
   const [contextLoading, setContextLoading] = useState(false);
   const [historicalImages, setHistoricalImages] = useState<Array<{url:string;title:string;observedAt:string}>>([]);
   const [lastAssessmentId,setLastAssessmentId]=useState<string|null>(null);
+  const [referenceVariety,setReferenceVariety]=useState('');
+  const [referenceTreeLabel,setReferenceTreeLabel]=useState('');
+  const [referenceSaving,setReferenceSaving]=useState(false);
+  const [referenceSaved,setReferenceSaved]=useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -297,6 +302,9 @@ const FieldConsultantView: React.FC = () => {
       const raw = await geminiService.analyzeComprehensive(base64List, language, farmContext);
       const normalized = normalizeAnalysis(raw);
       setAnalysis(normalized);
+      setReferenceVariety(normalized.inspection?.varietyAssessment.bestCandidate==='Ukjent sort'?'':(normalized.inspection?.varietyAssessment.bestCandidate||normalized.diagnosis.variety||''));
+      setReferenceTreeLabel('');
+      setReferenceSaved(false);
       const uncertainties=Array.from(new Set([
         ...(normalized.missingDetails||[]),
         ...(normalized.pruning.missingDetails||[]),
@@ -320,6 +328,25 @@ const FieldConsultantView: React.FC = () => {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const saveVarietyReference=async()=>{
+    if(!analysis?.inspection||!referenceVariety.trim())return;
+    setReferenceSaving(true);setReferenceSaved(false);setError(null);
+    try{
+      await saveConfirmedVarietyReference({
+        varietyName:referenceVariety,
+        parcelId:selectedParcelId||undefined,
+        treeLabel:referenceTreeLabel||undefined,
+        inspection:analysis.inspection,
+        images,
+        sourceAssessmentId:lastAssessmentId,
+        notes:'Bekreftet manuelt fra AI Feltkonsulent.',
+      });
+      setReferenceSaved(true);
+    }catch(err:any){
+      setError('Kunne ikke lagre sortsreferansen: '+(err?.message||String(err)));
+    }finally{setReferenceSaving(false);}
   };
 
   const saveAnalysis = async () => {
@@ -368,6 +395,9 @@ const FieldConsultantView: React.FC = () => {
     setImages([]);
     setAnalysis(null);
     setLastAssessmentId(null);
+    setReferenceVariety('');
+    setReferenceTreeLabel('');
+    setReferenceSaved(false);
     setError(null);
     setShowCamera(true);
     setActiveTab('summary');
@@ -499,6 +529,31 @@ const FieldConsultantView: React.FC = () => {
                   {analysis.inspection.varietyAssessment.candidates.length>0&&<div className="mt-3 space-y-2">{analysis.inspection.varietyAssessment.candidates.slice(0,3).map(candidate=><div key={candidate.name} className="flex justify-between gap-3 text-xs"><span className="text-slate-300">{candidate.name}</span><span className="text-slate-500">{confidencePercent(candidate.confidence)}%</span></div>)}</div>}
                 </div>
                 {analysis.inspection.nextPhotos.length>0&&<p className="text-[10px] text-amber-200 mt-3">Neste beste bilde: {analysis.inspection.nextPhotos[0]}</p>}
+              </div>}
+
+              {analysis.inspection&&<div className="rounded-[2rem] border border-[#d9b657]/20 bg-[#d9b657]/[0.035] p-5">
+                <p className="text-[10px] uppercase tracking-widest font-black text-[#d9b657]">Lær Olivia · bekreftet sort</p>
+                <p className="text-xs text-slate-400 mt-1">Bekreft bare når du faktisk kjenner sorten. Da blir bildene og trekkene en gårdsreferanse for senere analyser.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                  <div>
+                    <input list="dona-anna-varieties" value={referenceVariety} onChange={e=>{setReferenceVariety(e.target.value);setReferenceSaved(false);}} placeholder="Bekreftet sort" className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white"/>
+                    <datalist id="dona-anna-varieties">
+                      <option value="Gordal Sevillana"/>
+                      <option value="Genovesa"/>
+                      <option value="Changlot Real"/>
+                      <option value="Picual"/>
+                      <option value="Blanqueta"/>
+                      <option value="Alfafara"/>
+                      <option value="Manzanilla Villalonga"/>
+                      <option value="Arbequina"/>
+                    </datalist>
+                  </div>
+                  <input value={referenceTreeLabel} onChange={e=>setReferenceTreeLabel(e.target.value)} placeholder="Tre-ID / navn (valgfritt)" className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white"/>
+                </div>
+                <button onClick={saveVarietyReference} disabled={referenceSaving||!referenceVariety.trim()||referenceSaved} className="mt-3 w-full rounded-xl bg-[#d9b657] px-4 py-3 text-xs font-black text-black disabled:opacity-40 flex items-center justify-center gap-2">
+                  {referenceSaving?<Loader2 size={15} className="animate-spin"/>:<CheckCircle2 size={15}/>}
+                  {referenceSaved?'Lagret som bekreftet referanse':'Bekreft og lær Olivia denne sorten'}
+                </button>
               </div>}
 
               <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10">
