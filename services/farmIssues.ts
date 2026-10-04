@@ -96,6 +96,32 @@ export async function upsertFarmIssueFromObservation(
   return data as FarmIssue;
 }
 
+export async function attachObservationToFarmIssue(issueId:string,observation:FarmObservation):Promise<FarmIssue>{
+  const {data:current,error:fetchError}=await supabase.from('farm_issues')
+    .select('*')
+    .eq('id',issueId)
+    .single();
+  if(fetchError)throw new Error(fetchError.message);
+  if(['resolved','dismissed'].includes(String(current.status))){
+    throw new Error('Saken er lukket. Gjenåpne den før en ny kontroll kobles til.');
+  }
+  const {data,error}=await supabase.from('farm_issues')
+    .update({
+      latest_observation_id:observation.id,
+      status:current.status==='open'?'monitoring':current.status,
+      updated_at:new Date().toISOString(),
+    })
+    .eq('id',issueId)
+    .select('*')
+    .single();
+  if(error)throw new Error(error.message);
+  const {error:linkError}=await supabase.from('farm_observations')
+    .update({issue_id:issueId})
+    .eq('id',observation.id);
+  if(linkError)throw new Error(linkError.message);
+  return data as FarmIssue;
+}
+
 export async function updateFarmIssue(
   id:string,
   patch:{
