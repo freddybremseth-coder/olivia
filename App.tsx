@@ -8,6 +8,7 @@ import { BIAR_DEFAULT_COORDS, BIAR_DEFAULT_LOCATION_NAME, EMPTY_OLIVIA_PARCELS, 
 import type { SeasonExecutionAction } from './components/SeasonExecutionPanel';
 import DonaAnnaDailyDashboard from './components/DonaAnnaDailyDashboard';
 import ModuleErrorBoundary from './components/ModuleErrorBoundary';
+import type { FarmJournalTab } from './components/FarmJournalView';
 
 const Layout = lazy(() => import('./components/Layout'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -132,6 +133,7 @@ const App: React.FC = () => {
   const [pendingProductionBatchId, setPendingProductionBatchId] = useState<string | null>(null);
   const [pendingTraceBatchId, setPendingTraceBatchId] = useState<string | null>(null);
   const [pendingFarmJournalTab,setPendingFarmJournalTab]=useState<FarmJournalTab|undefined>(undefined);
+  const [pendingFarmJournalParcelId,setPendingFarmJournalParcelId]=useState<string|undefined>(undefined);
 
   const activateTab = (target: string, profile = user) => {
     const next = resolvePortalNavigation(target, profile.role, portalForPath(currentPath()) ?? portalMode);
@@ -144,11 +146,15 @@ const App: React.FC = () => {
 
   const handleDailyNavigate=(target:string)=>{
     if(target.startsWith('farm_journal:')){
-      const requested=target.split(':')[1] as FarmJournalTab;
+      const parts=target.split(':');
+      const requested=parts[1] as FarmJournalTab;
+      const parcelId=parts.length>2?parts.slice(2).join(':'):undefined;
       setPendingFarmJournalTab(requested);
+      setPendingFarmJournalParcelId(parcelId);
       activateTab('farm_journal');
       return;
     }
+    setPendingFarmJournalParcelId(undefined);
     activateTab(target);
   };
 
@@ -312,7 +318,13 @@ const App: React.FC = () => {
     switch (activeTab) {
       case 'dashboard': return <FarmOverview language={language} weatherData={weatherData} locationName={selectedParcel?.name || locationName} parcels={parcels} onNavigate={activateTab} />;
       case 'dona_anna_daily': return <ModuleErrorBoundary title="Olivia Daily kunne ikke vises" onRetry={()=>activateTab('dona_anna_daily')}><DonaAnnaDailyDashboard onNavigate={handleDailyNavigate} onSeasonAction={handleSeasonExecutionAction} /></ModuleErrorBoundary>;
-      case 'farm_journal': return <FarmJournalView parcels={parcels} initialTab={pendingFarmJournalTab} onInitialTabConsumed={()=>setPendingFarmJournalTab(undefined)} />;
+      case 'farm_journal': return <FarmJournalView
+        parcels={parcels}
+        initialTab={pendingFarmJournalTab}
+        initialParcelId={pendingFarmJournalParcelId}
+        onInitialTabConsumed={()=>setPendingFarmJournalTab(undefined)}
+        onInitialParcelConsumed={()=>setPendingFarmJournalParcelId(undefined)}
+      />;
       case 'farm_advisor': return <FarmAdvisorView />;
       case 'dashboard_classic': return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;
       case 'consultant': return <FieldConsultantView />;

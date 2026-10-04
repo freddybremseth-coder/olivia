@@ -55,11 +55,18 @@ function statusLabel(status:string){
   return map[status]||status;
 }
 
-const FarmJournalView:React.FC<{parcels:Parcel[];initialTab?:FarmJournalTab;onInitialTabConsumed?:()=>void}>=({parcels,initialTab,onInitialTabConsumed})=>{
+const FarmJournalView:React.FC<{
+  parcels:Parcel[];
+  initialTab?:FarmJournalTab;
+  initialParcelId?:string;
+  onInitialTabConsumed?:()=>void;
+  onInitialParcelConsumed?:()=>void;
+}>=({parcels,initialTab,initialParcelId,onInitialTabConsumed,onInitialParcelConsumed})=>{
   const [tab,setTab]=useState<Tab>(initialTab||'timeline');
   const [documents,setDocuments]=useState<FarmDocument[]>([]);
   const [events,setEvents]=useState<FarmEvent[]>([]);
   const [yearWheel,setYearWheel]=useState<FarmYearWheelItem[]>([]);
+  const [yearWheelParcelFilter,setYearWheelParcelFilter]=useState('');
   const [rain,setRain]=useState<RainMeasurement[]>([]);
   const [inputs,setInputs]=useState<any[]>([]);
   const [observations,setObservations]=useState<any[]>([]);
@@ -94,7 +101,7 @@ const FarmJournalView:React.FC<{parcels:Parcel[];initialTab?:FarmJournalTab;onIn
   const [rainNotes,setRainNotes]=useState('');
   const [rainSaving,setRainSaving]=useState(false);
   const currentYear=new Date().getFullYear();
-  const [wheelYear,setWheelYear]=useState(currentYear+1);
+  const [wheelYear,setWheelYear]=useState(currentYear);
 
   const load=async()=>{
     setLoading(true);setError('');
@@ -122,6 +129,12 @@ const FarmJournalView:React.FC<{parcels:Parcel[];initialTab?:FarmJournalTab;onIn
     setTab(initialTab);
     onInitialTabConsumed?.();
   },[initialTab]);
+
+  useEffect(()=>{
+    if(!initialParcelId)return;
+    setYearWheelParcelFilter(initialParcelId);
+    onInitialParcelConsumed?.();
+  },[initialParcelId]);
 
   useEffect(()=>{
     fetchYearWheel(wheelYear).then(setYearWheel).catch(e=>setError(e instanceof Error?e.message:'Kunne ikke hente årshjulet.'));
@@ -250,6 +263,7 @@ const FarmJournalView:React.FC<{parcels:Parcel[];initialTab?:FarmJournalTab;onIn
   const yearWheelAttention=useMemo(()=>{
     const today=new Date();today.setHours(12,0,0,0);
     return yearWheel
+      .filter(item=>!yearWheelParcelFilter||item.parcel_id===yearWheelParcelFilter)
       .map(item=>{
         const hasExactDay=Boolean(item.target_day);
         const target=hasExactDay
@@ -280,7 +294,7 @@ const FarmJournalView:React.FC<{parcels:Parcel[];initialTab?:FarmJournalTab;onIn
       .filter(row=>row.level>0)
       .sort((a,b)=>b.level-a.level||a.item.target_month-b.item.target_month||(a.item.target_day||31)-(b.item.target_day||31))
       .slice(0,8);
-  },[yearWheel]);
+  },[yearWheel,yearWheelParcelFilter]);
 
   const rain30=useMemo(()=>{
     const threshold=new Date();threshold.setDate(threshold.getDate()-30);threshold.setHours(0,0,0,0);
@@ -432,7 +446,7 @@ const FarmJournalView:React.FC<{parcels:Parcel[];initialTab?:FarmJournalTab;onIn
     </div>}
 
     {tab==='yearwheel'&&<div className="space-y-5">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3"><div><p className="text-[10px] uppercase tracking-widest font-black text-blue-300">Årshjul {wheelYear}</p><h3 className="text-xl font-black text-white">Forslag bygget fra verifisert historikk</h3><p className="text-xs text-slate-500 mt-2">Historikk gir tidspunkt for vurdering — ikke automatisk sprøyteordre. «Legg i årshjul» betyr planlagt/akseptert, ikke utført. Først når arbeidet faktisk er gjort skal du trykke «Marker utført». Vær, fenologi og faktisk behov må bekreftes.</p></div><select value={wheelYear} onChange={e=>setWheelYear(Number(e.target.value))} className={inputClass+' md:w-auto'}><option value={currentYear}>{currentYear}</option><option value={currentYear+1}>{currentYear+1}</option><option value={currentYear+2}>{currentYear+2}</option></select></div>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3"><div><p className="text-[10px] uppercase tracking-widest font-black text-blue-300">Årshjul {wheelYear}</p><h3 className="text-xl font-black text-white">Forslag bygget fra verifisert historikk</h3><p className="text-xs text-slate-500 mt-2">Historikk gir tidspunkt for vurdering — ikke automatisk sprøyteordre. «Legg i årshjul» betyr planlagt/akseptert, ikke utført. Først når arbeidet faktisk er gjort skal du trykke «Marker utført». Vær, fenologi og faktisk behov må bekreftes.</p></div><div className="flex flex-col sm:flex-row gap-2"><select value={yearWheelParcelFilter} onChange={e=>setYearWheelParcelFilter(e.target.value)} className={inputClass+' md:w-auto'}><option value="">Alle parseller</option>{parcels.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select><select value={wheelYear} onChange={e=>setWheelYear(Number(e.target.value))} className={inputClass+' md:w-auto'}><option value={currentYear}>{currentYear}</option><option value={currentYear+1}>{currentYear+1}</option><option value={currentYear+2}>{currentYear+2}</option></select></div></div>
       {yearWheelAttention.length>0&&<div className="rounded-[2rem] border border-red-500/20 bg-red-500/[0.035] p-5">
         <div className="flex items-start gap-3">
           <AlertTriangle className="text-red-300 mt-0.5" size={18}/>
@@ -446,11 +460,11 @@ const FarmJournalView:React.FC<{parcels:Parcel[];initialTab?:FarmJournalTab;onIn
         </div>
       </div>}
       {MONTHS.map((month,index)=>{
-        const rows=yearWheel.filter(item=>item.target_month===index+1);
+        const rows=yearWheel.filter(item=>item.target_month===index+1&&(!yearWheelParcelFilter||item.parcel_id===yearWheelParcelFilter));
         if(!rows.length)return null;
         return <div key={month} className="glass rounded-2xl border border-white/10 p-5"><h4 className="font-black text-white">{month}</h4><div className="space-y-2 mt-3">{rows.map(item=><div key={item.id} className="rounded-xl border border-white/10 bg-black/20 p-3 flex flex-col md:flex-row md:items-center justify-between gap-3"><div><div className="flex gap-2 flex-wrap"><span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+badge(item.status)}>{statusLabel(item.status)}</span><span className="text-[9px] uppercase text-slate-600">{item.basis}</span></div><p className="text-white font-bold mt-2">{item.title}</p><p className="text-xs text-slate-500 mt-1">{item.target_day?item.target_day+'. '+month.toLowerCase():item.period_label||month} · {parcelName(item.parcel_id)}</p>{item.status==='in_progress'&&item.started_at&&<p className="text-[10px] text-cyan-300 mt-2">Pågår siden {String(item.started_at).slice(0,10)}</p>}{item.status==='postponed'&&<p className="text-[10px] text-amber-200 mt-2">Utsatt{item.postponed_until?' til '+item.postponed_until:''}{item.postponed_reason?' · '+item.postponed_reason:''}</p>}{item.notes&&<p className="text-xs text-slate-400 mt-2">{item.notes}</p>}</div><div className="flex flex-wrap gap-2">{item.status==='suggested'&&<><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'approved')} className="rounded-xl bg-green-500 px-3 py-2 text-xs font-black text-black disabled:opacity-40">{yearWheelSaving===item.id?'Lagrer…':'Legg i årshjul'}</button><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'skipped')} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 disabled:opacity-40">Ikke nødvendig</button></>}{item.status==='approved'&&<><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'in_progress')} className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-200 disabled:opacity-40">Start arbeid</button><button disabled={yearWheelSaving===item.id} onClick={()=>openCompletion(item)} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">Marker utført</button><button disabled={yearWheelSaving===item.id} onClick={()=>openPostpone(item)} className="rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs font-bold text-amber-200 disabled:opacity-40">Utsett</button><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'skipped')} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-400 disabled:opacity-40">Ikke nødvendig</button></>}{item.status==='in_progress'&&<><button disabled={yearWheelSaving===item.id} onClick={()=>openCompletion(item)} className="rounded-xl bg-green-500 px-3 py-2 text-xs font-black text-black disabled:opacity-40">Fullfør og dokumenter</button><button disabled={yearWheelSaving===item.id} onClick={()=>openPostpone(item)} className="rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs font-bold text-amber-200 disabled:opacity-40">Utsett</button></>}{item.status==='postponed'&&<><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'approved')} className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-200 disabled:opacity-40">Aktiver igjen</button><button disabled={yearWheelSaving===item.id} onClick={()=>openCompletion(item)} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">Marker utført</button><button disabled={yearWheelSaving===item.id} onClick={()=>changeYearWheelStatus(item,'skipped')} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-400 disabled:opacity-40">Ikke nødvendig</button></>}</div></div>)}</div></div>;
       })}
-      {!yearWheel.length&&<Empty icon={<CalendarDays/>} title="Årshjulet bygges fra historikken" text="Når et verifisert tilbakevendende arbeid har en dato, lager Olivia et forslag til samme periode neste år."/>}
+      {!yearWheel.filter(item=>!yearWheelParcelFilter||item.parcel_id===yearWheelParcelFilter).length&&<Empty icon={<CalendarDays/>} title={yearWheelParcelFilter?'Ingen årshjulspunkter for denne parsellen':'Årshjulet bygges fra historikken'} text={yearWheelParcelFilter?'Bytt til «Alle parseller» for å se resten av årshjulet.':'Når et verifisert tilbakevendende arbeid har en dato, lager Olivia et forslag til samme periode neste år.'}/>} 
     </div>}
 
     {tab==='rain'&&<div className="grid grid-cols-1 xl:grid-cols-3 gap-5">

@@ -281,6 +281,11 @@ type ParcelAttentionRow = {
   inProgress:number;
   postponed:number;
   score:number;
+  lastActivityTitle?:string;
+  lastActivityDate?:string;
+  lastObservationDate?:string;
+  observationAgeDays:number|null;
+  observationMissing:boolean;
 };
 
 function buildParcelAttention(farmTruth:any):ParcelAttentionRow[] {
@@ -290,11 +295,21 @@ function buildParcelAttention(farmTruth:any):ParcelAttentionRow[] {
 
   const ensure=(parcelId:string)=>{
     const id=parcelId||'farm';
-    if(!rows.has(id))rows.set(id,{
-      parcelId:id,
-      parcelName:id==='farm'?'Hele gården':(parcelNames.get(id)||id),
-      critical:0,overdue:0,inProgress:0,postponed:0,score:0,
-    });
+    if(!rows.has(id)){
+      const latestEvent=farmTruth?.latestEventByParcel?.[id];
+      const latestObservation=farmTruth?.latestObservationByParcel?.[id];
+      const observationAgeDays=daysSince(latestObservation?.observed_at);
+      rows.set(id,{
+        parcelId:id,
+        parcelName:id==='farm'?'Hele gården':(parcelNames.get(id)||id),
+        critical:0,overdue:0,inProgress:0,postponed:0,score:0,
+        lastActivityTitle:latestEvent?.title||undefined,
+        lastActivityDate:latestEvent?.occurred_on||latestEvent?.planned_for||latestEvent?.period_label||undefined,
+        lastObservationDate:latestObservation?.observed_at?String(latestObservation.observed_at).slice(0,10):undefined,
+        observationAgeDays,
+        observationMissing:!latestObservation,
+      });
+    }
     return rows.get(id)!;
   };
 
@@ -335,8 +350,15 @@ function buildParcelAttention(farmTruth:any):ParcelAttentionRow[] {
     }
   }
 
+  for(const parcel of farmTruth?.parcels||[]){
+    const row=ensure(String(parcel.id));
+    if(row.observationMissing)row.score+=4;
+    else if((row.observationAgeDays??0)>=30)row.score+=6;
+    else if((row.observationAgeDays??0)>=21)row.score+=3;
+  }
+
   return Array.from(rows.values())
-    .filter(row=>row.critical||row.overdue||row.inProgress||row.postponed)
+    .filter(row=>row.critical||row.overdue||row.inProgress||row.postponed||row.observationMissing||(row.observationAgeDays??0)>=21)
     .sort((a,b)=>b.score-a.score||a.parcelName.localeCompare(b.parcelName,'no'))
     .slice(0,8);
 }
@@ -611,12 +633,12 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
           <div>
             <p className="text-[10px] uppercase tracking-[0.24em] font-black text-cyan-300">Oppmerksomhet per parsell</p>
             <h3 className="text-xl font-black text-white mt-1">Hvor på gården må dere se først?</h3>
-            <p className="text-xs text-slate-500 mt-2">Kun parseller med forsinket, pågående eller utsatt arbeid vises her.</p>
+            <p className="text-xs text-slate-500 mt-2">Viser parseller med driftsoppfølging eller manglende/gammel feltobservasjon. Klikk en parsell for filtrert årshjul.</p>
           </div>
           {onNavigate&&<button onClick={()=>onNavigate('farm_journal:yearwheel')} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white">Åpne årshjul →</button>}
         </div>
         {parcelAttention.length>0?<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-5">
-          {parcelAttention.map(row=><button key={row.parcelId} onClick={()=>onNavigate?.('farm_journal:yearwheel')} className={'rounded-2xl border p-4 text-left transition hover:bg-white/[0.05] '+(row.critical?'border-red-500/25 bg-red-500/[0.06]':row.overdue?'border-amber-400/20 bg-amber-400/[0.05]':'border-white/10 bg-black/20')}>
+          {parcelAttention.map(row=><button key={row.parcelId} onClick={()=>onNavigate?.(row.parcelId==='farm'?'farm_journal:yearwheel':'farm_journal:yearwheel:'+row.parcelId)} className={'rounded-2xl border p-4 text-left transition hover:bg-white/[0.05] '+(row.critical?'border-red-500/25 bg-red-500/[0.06]':row.overdue?'border-amber-400/20 bg-amber-400/[0.05]':'border-white/10 bg-black/20')}>
             <div className="flex items-start justify-between gap-3">
               <div><p className="text-sm font-black text-white">{row.parcelName}</p><p className="text-[10px] uppercase tracking-widest text-slate-600 mt-1">Driftsoppfølging</p></div>
               <div className={'rounded-full px-2.5 py-1 text-[10px] font-black '+(row.critical?'bg-red-500/15 text-red-300':row.overdue?'bg-amber-400/10 text-amber-200':'bg-cyan-500/10 text-cyan-200')}>{row.score}</div>
@@ -626,6 +648,12 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
               <div><p className="text-[9px] text-slate-600 uppercase">Forsinket</p><p className={'font-black mt-1 '+(row.overdue?'text-amber-200':'text-slate-500')}>{row.overdue}</p></div>
               <div><p className="text-[9px] text-slate-600 uppercase">Pågår</p><p className={'font-black mt-1 '+(row.inProgress?'text-cyan-200':'text-slate-500')}>{row.inProgress}</p></div>
               <div><p className="text-[9px] text-slate-600 uppercase">Utsatt</p><p className={'font-black mt-1 '+(row.postponed?'text-amber-100':'text-slate-500')}>{row.postponed}</p></div>
+            </div>
+            <div className="mt-4 border-t border-white/10 pt-3 space-y-1">
+              <p className={'text-[10px] '+(row.observationMissing||(row.observationAgeDays??0)>=21?'text-amber-200':'text-slate-500')}>
+                Feltobservasjon: {row.observationMissing?'ingen registrert':row.observationAgeDays===0?'i dag':row.observationAgeDays+' dag'+(row.observationAgeDays===1?'':'er')+' siden'}
+              </p>
+              {row.lastActivityTitle&&<p className="text-[10px] text-slate-500">Siste aktivitet: {row.lastActivityTitle}{row.lastActivityDate?' · '+String(row.lastActivityDate).slice(0,10):''}</p>}
             </div>
           </button>)}
         </div>:<div className="mt-5 rounded-2xl border border-green-500/15 bg-green-500/[0.04] p-4 text-sm text-green-100"><p className="font-bold">Ingen parseller krever særskilt oppfølging akkurat nå.</p><p className="text-xs text-slate-500 mt-1">Årshjulet har ingen aktive forsinkelser, pågående eller utsatte punkter per parsell.</p></div>}

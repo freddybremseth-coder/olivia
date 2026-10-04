@@ -288,15 +288,15 @@ async function uploadFarmFile(file:File):Promise<{bucket:string;path:string}>{
   return{bucket,path};
 }
 
-async function upsertProducts(products:FarmProductEvidence[],documentId:string){
+async function upsertProducts(products:FarmProductEvidence[],documentId?:string|null){
   const unique=new Map<string,FarmProductEvidence>();
   for(const product of products){
     const key=normalizeName(product.name);
     if(key&&!unique.has(key))unique.set(key,product);
   }
   for(const [key,product] of unique){
-    const {data:existing}=await supabase.from('farm_inputs').select('id,composition,intended_use,dose,organic_note,first_source_document_id').eq('normalized_name',key).maybeSingle();
-    const row={
+    const {data:existing}=await supabase.from('farm_inputs').select('id,composition,intended_use,dose,organic_note,first_source_document_id,last_source_document_id').eq('normalized_name',key).maybeSingle();
+    const row:any={
       id:existing?.id||'input-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),
       normalized_name:key,
       name:product.name,
@@ -304,10 +304,13 @@ async function upsertProducts(products:FarmProductEvidence[],documentId:string){
       intended_use:product.purpose||existing?.intended_use||null,
       dose:product.dose||existing?.dose||null,
       organic_note:product.organicNote||existing?.organic_note||null,
-      first_source_document_id:existing?.first_source_document_id||documentId,
-      last_source_document_id:documentId,
       last_seen_at:new Date().toISOString(),
     };
+    if(existing?.first_source_document_id)row.first_source_document_id=existing.first_source_document_id;
+    else if(documentId)row.first_source_document_id=documentId;
+    if(documentId)row.last_source_document_id=documentId;
+    else if(existing?.last_source_document_id)row.last_source_document_id=existing.last_source_document_id;
+
     const {error}=await supabase.from('farm_inputs').upsert(row,{onConflict:'normalized_name'});
     if(error)console.warn('[farmJournal] input upsert failed',product.name,error);
   }
@@ -640,7 +643,7 @@ export async function completeYearWheelItem(item:FarmYearWheelItem, input:{
       verified:true,
     });
     if(eventError)throw new Error(eventError.message);
-    if(products.length)await upsertProducts(products,input.evidenceDocumentId||sourceRef);
+    if(products.length)await upsertProducts(products,input.evidenceDocumentId||null);
   }
 
   await updateYearWheelStatus(item.id,'done');
@@ -692,13 +695,14 @@ export async function getFarmDocumentUrl(doc:Pick<FarmDocument,'storage_bucket'|
 
 export async function fetchFarmTruthSummary(){
   const currentYear=new Date().getFullYear();
-  const [docs,events,currentWheel,nextWheel,rain,parcelsRes]=await Promise.all([
+  const [docs,events,currentWheel,nextWheel,rain,parcelsRes,observationsRes]=await Promise.all([
     fetchFarmDocuments(50),
     fetchFarmEvents(100),
     fetchYearWheel(currentYear),
     fetchYearWheel(currentYear+1),
     fetchRainMeasurements(120),
     supabase.from('parcels').select('id,name,tree_count,tree_variety').order('name'),
+    supabase.from('farm_observations').select('id,title,observed_at,parcel_id,category').order('observed_at',{ascending:false}).limit(300),
   ]);
   const wheel=[...currentWheel,...nextWheel];
   const today=new Date();
@@ -712,9 +716,25 @@ export async function fetchFarmTruthSummary(){
     const diff=(target.getTime()-today.getTime())/86400000;
     return diff>=-14&&diff<=180;
   });
+  const observations=observationsRes.data||[];
+  const latestObservationByParcel:Record<string,any>={};
+  for(const observation of observations as any[]){
+    const key=observation.parcel_id||'farm';
+    if(!latestObservationByParcel[key])latestObservationByParcel[key]=observation;
+  }
+
+  const latestEventByParcel:Record<string,any>={};
+  for(const event of events as any[]){
+    const key=event.parcel_id||'farm';
+    if(!latestEventByParcel[key])latestEventByParcel[key]=event;
+  }
+
   return{
     documents:docs,
     events,
+    observations,
+    latestObservationByParcel,
+    latestEventByParcel,
     yearWheel:wheel,
     rain,
     parcels:parcelsRes.data||[],
