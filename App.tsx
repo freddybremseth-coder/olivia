@@ -116,6 +116,8 @@ const App: React.FC = () => {
   const [postLoginTab, setPostLoginTab] = useState(() => isB2BUrl() ? 'b2b_portal' : 'dashboard');
   const navigationRef = useRef(isB2BUrl() ? 'b2b_portal' : 'dashboard');
   const [portalMode, setPortalMode] = useState<PortalMode>(() => isB2BUrl() ? 'b2b' : 'olivia');
+  const routePortalMode = portalForPath(currentPath());
+  const effectivePortalMode: PortalMode = routePortalMode ?? portalMode;
   const [authReady, setAuthReady] = useState(false);
   const [parcelError, setParcelError] = useState('');
   const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(isRecoveryUrl);
@@ -206,7 +208,7 @@ const App: React.FC = () => {
   }, [isLoggedIn, user.role]);
 
   useEffect(() => {
-    if (showPublicSite || isTraceUrl() || !isLoggedIn || portalMode === 'b2b' || !['farmer', 'super_admin'].includes(user.role)) {
+    if (showPublicSite || isTraceUrl() || !isLoggedIn || effectivePortalMode === 'b2b' || !['farmer', 'super_admin'].includes(user.role)) {
       setParcelsLoaded(false);
       setParcels(EMPTY_OLIVIA_PARCELS);
       setSelectedParcel(null);
@@ -232,7 +234,7 @@ const App: React.FC = () => {
       }).catch(err => console.warn('[settings] failed', err));
     }).catch(err => console.warn('[data] failed', err));
     return () => { cancelled = true; };
-  }, [showPublicSite, isLoggedIn, portalMode, user.id, user.role]);
+  }, [showPublicSite, isLoggedIn, effectivePortalMode, user.id, user.role]);
 
   const handleParcelSave = async (parcel: Parcel) => {
     const { upsertParcel } = await import('./services/db');
@@ -311,7 +313,7 @@ const App: React.FC = () => {
 
   const parcelCoords = selectedParcel ? { lat: selectedParcel.lat ?? selectedParcel.coordinates?.[0]?.[0] ?? BIAR_DEFAULT_COORDS.lat, lon: selectedParcel.lon ?? selectedParcel.coordinates?.[0]?.[1] ?? BIAR_DEFAULT_COORDS.lon } : coords;
   const renderContent = () => {
-    if (portalMode === 'b2b' || !['farmer', 'super_admin'].includes(user.role)) {
+    if (effectivePortalMode === 'b2b' || !['farmer', 'super_admin'].includes(user.role)) {
       return activeTab === 'settings' ? <SettingsView language={language} onLanguageChange={updateLanguage} /> : <CommerceHub user={user} mode="customer" />;
     }
     if (isAdmin && activeTab === 'admin') return <AdminDashboard />;
@@ -377,7 +379,7 @@ const App: React.FC = () => {
     }
   };
 
-  return <Suspense fallback={<div className="min-h-screen bg-[#0a0a0b] p-8 text-slate-300">{portalMode === 'b2b' ? 'Laster B2B-portalen...' : 'Laster Olivia OS...'}</div>}><Layout user={user} activeTab={activeTab} portalMode={portalMode} onTabChange={activateTab} onLogout={handleLogout} language={language}><Suspense fallback={<div className="p-8 text-slate-400">Laster modul...</div>}>{parcelError && portalMode === 'olivia' && <div role="alert" className="mb-4 rounded-xl bg-amber-950 p-4 text-amber-200">{parcelError}</div>}{renderContent()}</Suspense></Layout></Suspense>;
+  return <Suspense fallback={<div className="min-h-screen bg-[#0a0a0b] p-8 text-slate-300">{effectivePortalMode === 'b2b' ? 'Laster B2B-portalen...' : 'Laster Olivia OS...'}</div>}><Layout user={user} activeTab={activeTab} portalMode={effectivePortalMode} onTabChange={activateTab} onLogout={handleLogout} language={language}><Suspense fallback={<div className="p-8 text-slate-400">Laster modul...</div>}>{parcelError && effectivePortalMode === 'olivia' && <div role="alert" className="mb-4 rounded-xl bg-amber-950 p-4 text-amber-200">{parcelError}</div>}{renderContent()}</Suspense></Layout></Suspense>;
 };
 
 export default App;
