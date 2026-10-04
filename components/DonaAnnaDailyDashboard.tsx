@@ -28,7 +28,9 @@ import {
 import {
   buildDonaAnnaDecisionAdvice,
   sensorReadingAgeHours,
+  isSensorReadingQualityAcceptable,
   SENSOR_ACTION_MAX_AGE_HOURS,
+  SENSOR_MIN_QUALITY_SCORE,
   fetchLatestSensorReadings,
   fetchOpenSensorAlerts,
   fetchRecentFarmObservations,
@@ -73,7 +75,7 @@ type SourceFreshness = {
   label:string;
   lastAt?:string;
   ageText:string;
-  state:'fresh'|'aging'|'stale'|'missing'|'context';
+  state:'fresh'|'aging'|'stale'|'missing'|'quality'|'context';
   note:string;
   targetTab:string;
 };
@@ -132,7 +134,6 @@ function buildSourceFreshness(
   now=new Date()
 ):SourceFreshness[]{
   const latestReading=[...readings].sort((a,b)=>new Date(b.measured_at).getTime()-new Date(a.measured_at).getTime())[0];
-  const sensorAge=latestReading?sensorReadingAgeHours(latestReading,now):null;
   const latestByType=new Map<string,SensorReading>();
   for(const reading of readings){
     const existing=latestByType.get(reading.type);
@@ -143,33 +144,48 @@ function buildSourceFreshness(
     const age=sensorReadingAgeHours(reading,now);
     return age!=null&&age<=SENSOR_ACTION_MAX_AGE_HOURS;
   });
+  const usableSensorTypes=freshSensorTypes.filter(reading=>isSensorReadingQualityAcceptable(reading));
+  const lowQualitySensorTypes=freshSensorTypes.filter(reading=>!isSensorReadingQualityAcceptable(reading));
   const staleSensorTypes=sensorTypes.filter(reading=>{
     const age=sensorReadingAgeHours(reading,now);
     return age==null||age>SENSOR_ACTION_MAX_AGE_HOURS;
   });
-  const freshTypeText=freshSensorTypes.map(reading=>sensorTypeLabel(reading.type)).slice(0,5).join(', ');
+  const latestUsableReading=[...usableSensorTypes].sort((a,b)=>new Date(b.measured_at).getTime()-new Date(a.measured_at).getTime())[0];
+  const sensorBasisReading=latestUsableReading||latestReading;
+  const sensorAge=sensorBasisReading?sensorReadingAgeHours(sensorBasisReading,now):null;
+  const freshTypeText=usableSensorTypes.map(reading=>sensorTypeLabel(reading.type)).slice(0,5).join(', ');
 
   const latestObservation=[...observations].sort((a,b)=>new Date(b.observed_at).getTime()-new Date(a.observed_at).getTime())[0];
   const observationHours=latestObservation?ageHours(latestObservation.observed_at,now):null;
   const latestIrrigation=[...irrigationEvents].sort((a,b)=>new Date(b.started_at).getTime()-new Date(a.started_at).getTime())[0];
   const irrigationHours=latestIrrigation?ageHours(latestIrrigation.started_at,now):null;
 
-  const sensorState:SourceFreshness['state']=!readings.length?'missing':!freshSensorTypes.length?'stale':staleSensorTypes.length||((sensorAge??0)>6)?'aging':'fresh';
+  const sensorState:SourceFreshness['state']=!readings.length
+    ?'missing'
+    :freshSensorTypes.length&&!usableSensorTypes.length&&lowQualitySensorTypes.length
+      ?'quality'
+      :!usableSensorTypes.length
+        ?'stale'
+        :staleSensorTypes.length||lowQualitySensorTypes.length||((sensorAge??0)>6)
+          ?'aging'
+          :'fresh';
   const observationState:SourceFreshness['state']=observationHours==null?'missing':observationHours<=24*7?'fresh':observationHours<=24*21?'aging':'stale';
   const irrigationState:SourceFreshness['state']=irrigationHours==null?'context':irrigationHours<=24*7?'fresh':'context';
 
   const sensorNote=sensorState==='missing'
     ?'Ingen sensormålinger tilgjengelig.'
-    :sensorState==='stale'
-      ?'Ingen registrerte sensortyper har fersk måling innen 24 timer. Operative sensorråd er sperret.'
-      :(freshSensorTypes.length+' fersk'+(freshSensorTypes.length===1?' sensortype':'e sensortyper')+(freshTypeText?': '+freshTypeText:'')+(staleSensorTypes.length?'. '+staleSensorTypes.length+' registrert'+(staleSensorTypes.length===1?' type har':'e typer har')+' for gamle målinger.':'.'));
+    :sensorState==='quality'
+      ?'Ferske målinger finnes, men quality_score er under '+SENSOR_MIN_QUALITY_SCORE+'. Operative sensorråd er sperret til en brukbar måling finnes.'
+      :sensorState==='stale'
+        ?'Ingen registrerte sensortyper har brukbar fersk måling innen 24 timer. Operative sensorråd er sperret.'
+        :(usableSensorTypes.length+' brukbar'+(usableSensorTypes.length===1?' fersk sensortype':'e ferske sensortyper')+(freshTypeText?': '+freshTypeText:'')+(lowQualitySensorTypes.length?'. '+lowQualitySensorTypes.length+' fersk'+(lowQualitySensorTypes.length===1?' type har':'e typer har')+' lav quality_score.':'')+(staleSensorTypes.length?'. '+staleSensorTypes.length+' registrert'+(staleSensorTypes.length===1?' type har':'e typer har')+' for gamle målinger.':'.'));
 
   return[
     {
       id:'sensors',
       label:'Sensorer',
-      lastAt:latestReading?.measured_at,
-      ageText:humanAge(latestReading?.measured_at,now),
+      lastAt:sensorBasisReading?.measured_at,
+      ageText:humanAge(sensorBasisReading?.measured_at,now),
       state:sensorState,
       note:sensorNote,
       targetTab:'iot',
@@ -212,12 +228,37 @@ function buildActionCards(advice: FarmDecisionAdvice, readings: SensorReading[],
 
   const newestReading=[...readings].sort((a,b)=>new Date(b.measured_at).getTime()-new Date(a.measured_at).getTime())[0];
   const newestReadingAge=newestReading?sensorReadingAgeHours(newestReading):null;
+  const newestByType=new Map<string,SensorReading>();
+  for(const reading of readings){
+    const existing=newestByType.get(reading.type);
+    if(!existing||new Date(reading.measured_at)>new Date(existing.measured_at))newestByType.set(reading.type,reading);
+  }
+  const latestTypes=Array.from(newestByType.values());
+  const lowQualityFreshTypes=latestTypes.filter(reading=>{
+    const age=sensorReadingAgeHours(reading);
+    return age!=null&&age<=SENSOR_ACTION_MAX_AGE_HOURS&&!isSensorReadingQualityAcceptable(reading);
+  });
+  const usableFreshTypes=latestTypes.filter(reading=>{
+    const age=sensorReadingAgeHours(reading);
+    return age!=null&&age<=SENSOR_ACTION_MAX_AGE_HOURS&&isSensorReadingQualityAcceptable(reading);
+  });
   if(newestReadingAge!=null&&newestReadingAge>SENSOR_ACTION_MAX_AGE_HOURS){
     cards.push({
       title:'Forny sensordata',
       description:'Siste sensormåling er '+humanAge(newestReading.measured_at)+'. Gamle målinger brukes ikke til operative råd.',
       priority:'Høy',
       icon:<Gauge size={18}/>,
+      targetTab:'iot',
+      actionLabel:'Kontroller sensorer',
+    });
+  }
+
+  if(lowQualityFreshTypes.length){
+    cards.push({
+      title:'Kontroller sensordatakvalitet',
+      description:lowQualityFreshTypes.length+' fersk sensortype'+(lowQualityFreshTypes.length===1?' har':'r har')+' quality_score under '+SENSOR_MIN_QUALITY_SCORE+'. '+(usableFreshTypes.length?'De er utelatt fra råd.':'Ingen ferske sensortyper er brukbare til operative råd akkurat nå.'),
+      priority:usableFreshTypes.length?'Middels':'Høy',
+      icon:<ShieldCheck size={18}/>,
       targetTab:'iot',
       actionLabel:'Kontroller sensorer',
     });
@@ -806,10 +847,10 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
           {sourceFreshness.map(source=>{
-            const tone=source.state==='fresh'?'border-green-500/20 bg-green-500/[0.05]':source.state==='aging'?'border-amber-300/20 bg-amber-300/[0.05]':source.state==='stale'||source.state==='missing'?'border-red-500/20 bg-red-500/[0.05]':'border-white/10 bg-black/20';
-            const textTone=source.state==='fresh'?'text-green-300':source.state==='aging'?'text-amber-200':source.state==='stale'||source.state==='missing'?'text-red-300':'text-slate-300';
+            const tone=source.state==='fresh'?'border-green-500/20 bg-green-500/[0.05]':source.state==='aging'||source.state==='quality'?'border-amber-300/20 bg-amber-300/[0.05]':source.state==='stale'||source.state==='missing'?'border-red-500/20 bg-red-500/[0.05]':'border-white/10 bg-black/20';
+            const textTone=source.state==='fresh'?'text-green-300':source.state==='aging'||source.state==='quality'?'text-amber-200':source.state==='stale'||source.state==='missing'?'text-red-300':'text-slate-300';
             return <button key={source.id} onClick={()=>onNavigate?.(source.targetTab)} className={'rounded-2xl border p-4 text-left transition hover:bg-white/[0.05] '+tone}>
-              <div className="flex items-start justify-between gap-3"><p className="text-sm font-black text-white">{source.label}</p><span className={'text-[9px] uppercase tracking-widest font-black '+textTone}>{source.state==='fresh'?'Fersk':source.state==='aging'?'Aldrende':source.state==='stale'?'For gammel':source.state==='missing'?'Mangler':'Kontekst'}</span></div>
+              <div className="flex items-start justify-between gap-3"><p className="text-sm font-black text-white">{source.label}</p><span className={'text-[9px] uppercase tracking-widest font-black '+textTone}>{source.state==='fresh'?'Fersk':source.state==='aging'?'Aldrende':source.state==='quality'?'Lav kvalitet':source.state==='stale'?'For gammel':source.state==='missing'?'Mangler':'Kontekst'}</span></div>
               <p className={'text-xs font-bold mt-3 '+textTone}>{source.ageText}</p>
               <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">{source.note}</p>
             </button>;

@@ -210,6 +210,7 @@ export async function fetchRecentFarmObservations(limit = 50): Promise<FarmObser
 }
 
 export const SENSOR_ACTION_MAX_AGE_HOURS=24;
+export const SENSOR_MIN_QUALITY_SCORE=0.5;
 
 export function sensorReadingAgeHours(reading:Pick<SensorReading,'measured_at'>,now=new Date()):number|null{
   const measured=new Date(reading.measured_at);
@@ -222,9 +223,20 @@ export function isSensorReadingFresh(reading:Pick<SensorReading,'measured_at'>,m
   return age!=null&&age<=maxAgeHours;
 }
 
+export function isSensorReadingQualityAcceptable(reading:Pick<SensorReading,'quality_score'>):boolean{
+  return reading.quality_score==null||Number(reading.quality_score)>=SENSOR_MIN_QUALITY_SCORE;
+}
+
+export function isSensorReadingOperationallyUsable(
+  reading:Pick<SensorReading,'measured_at'|'quality_score'>,
+  now=new Date()
+):boolean{
+  return isSensorReadingFresh(reading,SENSOR_ACTION_MAX_AGE_HOURS,now)&&isSensorReadingQualityAcceptable(reading);
+}
+
 function latestByType(readings: SensorReading[], type: SensorType, now=new Date()): SensorReading | undefined {
   return readings
-    .filter(reading => reading.type === type && isSensorReadingFresh(reading,SENSOR_ACTION_MAX_AGE_HOURS,now))
+    .filter(reading => reading.type === type && isSensorReadingOperationallyUsable(reading,now))
     .sort((a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime())[0];
 }
 
@@ -253,15 +265,27 @@ export function buildDonaAnnaDecisionAdvice(readings: SensorReading[], alerts: S
     const existing=latestPerType.get(reading.type);
     if(!existing||new Date(reading.measured_at)>new Date(existing.measured_at))latestPerType.set(reading.type,reading);
   }
-  const staleLatest=Array.from(latestPerType.values()).filter(reading=>!isSensorReadingFresh(reading,SENSOR_ACTION_MAX_AGE_HOURS,now));
-  const freshLatest=Array.from(latestPerType.values()).filter(reading=>isSensorReadingFresh(reading,SENSOR_ACTION_MAX_AGE_HOURS,now));
+  const latestValues=Array.from(latestPerType.values());
+  const staleLatest=latestValues.filter(reading=>!isSensorReadingFresh(reading,SENSOR_ACTION_MAX_AGE_HOURS,now));
+  const freshLatest=latestValues.filter(reading=>isSensorReadingFresh(reading,SENSOR_ACTION_MAX_AGE_HOURS,now));
+  const lowQualityFresh=freshLatest.filter(reading=>!isSensorReadingQualityAcceptable(reading));
+  const usableFresh=freshLatest.filter(reading=>isSensorReadingQualityAcceptable(reading));
 
-  if(!freshLatest.length){
+  if(!usableFresh.length){
+    if(lowQualityFresh.length){
+      return{
+        severity:'watch',
+        title:'Ferske sensordata har for lav kvalitet',
+        message:lowQualityFresh.length+' sensortype'+(lowQualityFresh.length===1?' har':'r har')+' fersk måling, men quality_score er under '+SENSOR_MIN_QUALITY_SCORE+'. Disse målingene brukes ikke til operative råd.',
+        recommended_action:'monitor',
+        reasons:['Olivia beholder målingene som historikk, men krever fersk og tilstrekkelig kvalitetsmerket data før operative sensorbaserte råd.'],
+      };
+    }
     return{
       severity:'watch',
       title:readings.length?'Sensordata er for gammel':'Ingen ferske sensordata',
       message:readings.length
-        ?'Siste sensormålinger er eldre enn 24 timer og brukes derfor ikke til operative vannings- eller EC-råd.'
+        ?'Siste brukbare sensormålinger er eldre enn 24 timer og brukes derfor ikke til operative vannings- eller EC-råd.'
         :'Olivia mangler ferske sensormålinger. Bruk feltobservasjoner og manuelle målinger inntil sensordata er tilgjengelig.',
       recommended_action:'monitor',
       reasons:[readings.length?'Gamle sensormålinger beholdes som historikk, men brukes ikke som dagens beslutningsgrunnlag.':'Ingen sensormålinger er tilgjengelige.'],
@@ -334,12 +358,12 @@ export function buildDonaAnnaDecisionAdvice(readings: SensorReading[], alerts: S
     };
   }
 
-  const freshTypeCount=freshLatest.length;
+  const freshTypeCount=usableFresh.length;
   if(staleLatest.length){
     return{
       severity:'watch',
       title:'Ingen kritiske avvik i tilgjengelige ferske data',
-      message:'Olivia har ferske data fra '+freshTypeCount+' sensortype'+(freshTypeCount===1?'':'r')+'. '+staleLatest.length+' sensortype'+(staleLatest.length===1?'':'r')+' har siste måling eldre enn 24 timer og er utelatt fra beslutningsgrunnlaget.',
+      message:'Olivia har brukbare ferske data fra '+freshTypeCount+' sensortype'+(freshTypeCount===1?'':'r')+'. '+staleLatest.length+' sensortype'+(staleLatest.length===1?'':'r')+' har siste måling eldre enn 24 timer og er utelatt fra beslutningsgrunnlaget.'+(lowQualityFresh.length?' '+lowQualityFresh.length+' fersk sensortype'+(lowQualityFresh.length===1?' har':'r har')+' for lav quality_score og er også utelatt.':''),
       recommended_action:'monitor',
       reasons:['Dette betyr ikke at hele sensorbildet er komplett. Olivia vurderer bare sensortyper som faktisk har ferske målinger.'],
     };
@@ -348,7 +372,7 @@ export function buildDonaAnnaDecisionAdvice(readings: SensorReading[], alerts: S
   return {
     severity: 'optimal',
     title: 'Ingen kritiske avvik i tilgjengelige ferske data',
-    message: 'Olivia har ferske data fra '+freshTypeCount+' sensortype'+(freshTypeCount===1?'':'r')+' og finner ingen prioriterte grenseverdier overskredet i disse målingene.',
+    message: 'Olivia har brukbare ferske data fra '+freshTypeCount+' sensortype'+(freshTypeCount===1?'':'r')+' og finner ingen prioriterte grenseverdier overskredet i disse målingene.'+(lowQualityFresh.length?' '+lowQualityFresh.length+' fersk sensortype'+(lowQualityFresh.length===1?' er':'r er')+' utelatt på grunn av lav quality_score.':''),
     recommended_action: 'no_action',
     reasons: ['Dette beskriver bare sensorene som faktisk har rapportert ferske data; manglende sensortyper tolkes ikke som normale.'],
   };
