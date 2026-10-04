@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import { fileToBase64 } from './expenseCapture';
 import { createFarmQuestion } from './farmIntelligence';
+import { harvestSeasonForExpense } from './harvestSeason';
 
 export type FarmDocumentKind =
   | 'invoice'|'receipt'|'quote'|'proforma'|'agronomy_plan'|'message'
@@ -158,6 +159,32 @@ export type RainMeasurement = {
   notes?:string|null;
   source_document_id?:string|null;
   created_at:string;
+};
+
+export type FarmInputEvidenceLine={
+  id:string;
+  evidenceKind:'used'|'application'|'document_line';
+  truthLabel:'Bekreftet brukt'|'Utført behandling'|'Innkjøpt'|'Bestilt / proforma'|'Planlagt / tilbud'|'Anbefalt'|'Dokumentert';
+  sourceDocumentId?:string|null;
+  sourceEventId?:string|null;
+  sourceTitle:string;
+  documentKind?:FarmDocumentKind|null;
+  evidenceStatus:FarmEvidenceStatus|FarmEventStatus;
+  date?:string|null;
+  season:string;
+  supplier?:string|null;
+  filename?:string|null;
+  category?:string|null;
+  name:string;
+  quantity?:number|null;
+  unit?:string|null;
+  unitPrice?:number|null;
+  amount?:number|null;
+  currency?:string|null;
+  composition?:string|null;
+  intendedUse?:string|null;
+  dose?:string|null;
+  confirmedUsed:boolean;
 };
 
 const allowedKinds:FarmDocumentKind[]=['invoice','receipt','quote','proforma','agronomy_plan','message','photo','video','lab','rain_record','work_order','other'];
@@ -554,6 +581,138 @@ export async function fetchFarmInputs(){
   const {data,error}=await supabase.from('farm_inputs').select('*').order('name');
   if(error)throw new Error(error.message);
   return data||[];
+}
+
+
+function parseInputLineDate(name:string,fallback?:string|null):string|null{
+  const match=String(name||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(match){
+    const dd=match[1].padStart(2,'0');
+    const mm=match[2].padStart(2,'0');
+    return match[3]+'-'+mm+'-'+dd;
+  }
+  return fallback||null;
+}
+
+function inputEvidenceTruthLabel(status:string,kind:'used'|'application'|'document_line'):FarmInputEvidenceLine['truthLabel']{
+  if(kind==='used')return'Bekreftet brukt';
+  if(kind==='application')return'Utført behandling';
+  if(status==='purchased')return'Innkjøpt';
+  if(status==='ordered')return'Bestilt / proforma';
+  if(status==='planned')return'Planlagt / tilbud';
+  if(status==='recommended')return'Anbefalt';
+  return'Dokumentert';
+}
+
+function isRelevantInputLine(name:string,category?:string|null){
+  const raw=(String(name||'')+' '+String(category||'')).toLowerCase();
+  return /sulfat|sprøy|spray|tratamiento|fert|abono|gjød|naturalis|ph control|bio k|terrasorb|terra sorb|cunat|kdos|clin|cobre|amino|potasa|mojante|beauveria/.test(raw);
+}
+
+export async function fetchFarmInputEvidenceLines(limit=250):Promise<FarmInputEvidenceLine[]>{
+  const [docsRes,eventsRes,inputsRes]=await Promise.all([
+    supabase.from('farm_documents')
+      .select('id,title,document_kind,evidence_status,document_date,source_name,original_filename,scan_json,review_status')
+      .eq('review_status','verified')
+      .not('scan_json','is',null)
+      .order('document_date',{ascending:false,nullsFirst:false})
+      .limit(limit),
+    supabase.from('farm_events')
+      .select('id,title,event_type,event_status,occurred_on,planned_for,products,source_document_id,vendor,currency,verified')
+      .eq('verified',true)
+      .eq('event_status','completed')
+      .order('occurred_on',{ascending:false,nullsFirst:false})
+      .limit(limit),
+    supabase.from('farm_inputs').select('name,normalized_name,composition,intended_use,dose'),
+  ]);
+  const err=docsRes.error||eventsRes.error||inputsRes.error;
+  if(err)throw new Error(err.message);
+
+  const catalog=(inputsRes.data||[]) as any[];
+  const matchCatalog=(rawName:string)=>{
+    const key=normalizeName(rawName);
+    return catalog.find(row=>{
+      const catalogKey=String(row.normalized_name||normalizeName(row.name||''));
+      return key===catalogKey||key.startsWith(catalogKey+' ')||key.includes(' '+catalogKey+' ')||catalogKey.startsWith(key+' ');
+    });
+  };
+
+  const lines:FarmInputEvidenceLine[]=[];
+
+  for(const event of (eventsRes.data||[]) as any[]){
+    for(const product of Array.isArray(event.products)?event.products:[]){
+      const name=String(product?.name||'').trim();
+      if(!name)continue;
+      const cat=matchCatalog(name);
+      const date=event.occurred_on||event.planned_for||null;
+      lines.push({
+        id:'event:'+event.id+':'+lines.length,
+        evidenceKind:'used',
+        truthLabel:'Bekreftet brukt',
+        sourceDocumentId:event.source_document_id||null,
+        sourceEventId:event.id,
+        sourceTitle:event.title||'Utført driftshendelse',
+        documentKind:null,
+        evidenceStatus:'completed',
+        date,
+        season:date?harvestSeasonForExpense(date,'sprøyting'):'',
+        supplier:event.vendor||null,
+        category:event.event_type||null,
+        name,
+        quantity:product?.quantity==null?null:Number(product.quantity),
+        unit:product?.unit||null,
+        amount:null,
+        currency:event.currency||'EUR',
+        composition:product?.composition||cat?.composition||null,
+        intendedUse:product?.purpose||cat?.intended_use||null,
+        dose:product?.dose||cat?.dose||null,
+        confirmedUsed:true,
+      });
+    }
+  }
+
+  for(const doc of (docsRes.data||[]) as any[]){
+    const scan=doc.scan_json||{};
+    const category=String(scan.category||'');
+    const currency=String(scan.currency||'EUR');
+    const items=Array.isArray(scan.items)?scan.items:[];
+    for(let i=0;i<items.length;i++){
+      const item=items[i]||{};
+      const name=String(item.name||'').trim();
+      if(!name||!isRelevantInputLine(name,category))continue;
+      const application=/sulfat|sprøy|spray|tratamiento/i.test(name)&&doc.evidence_status==='completed';
+      const lineDate=parseInputLineDate(name,doc.document_date||scan.date||null);
+      const inputCategory=application?'sprøyting':(category||'sprøyting');
+      const cat=matchCatalog(name);
+      lines.push({
+        id:'doc:'+doc.id+':'+i,
+        evidenceKind:application?'application':'document_line',
+        truthLabel:inputEvidenceTruthLabel(doc.evidence_status,application?'application':'document_line'),
+        sourceDocumentId:doc.id,
+        sourceEventId:null,
+        sourceTitle:doc.title||doc.original_filename||'Dokument',
+        documentKind:doc.document_kind,
+        evidenceStatus:doc.evidence_status,
+        date:lineDate,
+        season:lineDate?harvestSeasonForExpense(lineDate,inputCategory):'',
+        supplier:doc.source_name||scan.vendor||null,
+        filename:doc.original_filename||null,
+        category:inputCategory,
+        name,
+        quantity:item.quantity==null?null:Number(item.quantity),
+        unit:item.unit||null,
+        unitPrice:item.unitPrice==null?null:Number(item.unitPrice),
+        amount:item.amount==null?null:Number(item.amount),
+        currency,
+        composition:cat?.composition||null,
+        intendedUse:cat?.intended_use||null,
+        dose:cat?.dose||null,
+        confirmedUsed:false,
+      });
+    }
+  }
+
+  return lines.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||a.name.localeCompare(b.name,'no'));
 }
 
 export async function fetchYearWheel(year:number):Promise<FarmYearWheelItem[]>{
