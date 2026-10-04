@@ -185,6 +185,7 @@ export type FarmInputEvidenceLine={
   intendedUse?:string|null;
   dose?:string|null;
   confirmedUsed:boolean;
+  detailsMissing?:boolean;
 };
 
 const allowedKinds:FarmDocumentKind[]=['invoice','receipt','quote','proforma','agronomy_plan','message','photo','video','lab','rain_record','work_order','other'];
@@ -609,8 +610,18 @@ function isRelevantInputLine(name:string,category?:string|null){
   return /sulfat|sprøy|spray|tratamiento|fert|abono|gjød|naturalis|ph control|bio k|terrasorb|terra sorb|cunat|kdos|clin|cobre|amino|potasa|mojante|beauveria/.test(raw);
 }
 
+function inputEvidenceSeason(lineDate:string|null,category:string,sourceTitle?:string|null,filename?:string|null){
+  if(lineDate)return harvestSeasonForExpense(lineDate,category);
+  const yearMatch=(String(filename||'')+' '+String(sourceTitle||'')).match(/\b(20\d{2})\b/);
+  if(yearMatch){
+    const year=Number(yearMatch[1]);
+    return year+'/'+String(year+1).slice(-2);
+  }
+  return'';
+}
+
 export async function fetchFarmInputEvidenceLines(limit=250):Promise<FarmInputEvidenceLine[]>{
-  const [docsRes,eventsRes,inputsRes]=await Promise.all([
+  const [docsRes,eventsRes,inputsRes,expensesRes]=await Promise.all([
     supabase.from('farm_documents')
       .select('id,title,document_kind,evidence_status,document_date,source_name,original_filename,scan_json,review_status')
       .eq('review_status','verified')
@@ -624,8 +635,13 @@ export async function fetchFarmInputEvidenceLines(limit=250):Promise<FarmInputEv
       .order('occurred_on',{ascending:false,nullsFirst:false})
       .limit(limit),
     supabase.from('farm_inputs').select('name,normalized_name,composition,intended_use,dose'),
+    supabase.from('farm_expenses')
+      .select('id,date,season,category,description,amount,currency,vendor,invoice_number,scan_json,accounting_status')
+      .eq('accounting_status','posted')
+      .order('date',{ascending:false})
+      .limit(limit),
   ]);
-  const err=docsRes.error||eventsRes.error||inputsRes.error;
+  const err=docsRes.error||eventsRes.error||inputsRes.error||expensesRes.error;
   if(err)throw new Error(err.message);
 
   const catalog=(inputsRes.data||[]) as any[];
@@ -655,7 +671,7 @@ export async function fetchFarmInputEvidenceLines(limit=250):Promise<FarmInputEv
         documentKind:null,
         evidenceStatus:'completed',
         date,
-        season:date?harvestSeasonForExpense(date,'sprøyting'):'',
+        season:inputEvidenceSeason(date,'sprøyting',event.title,null),
         supplier:event.vendor||null,
         category:event.event_type||null,
         name,
@@ -694,7 +710,7 @@ export async function fetchFarmInputEvidenceLines(limit=250):Promise<FarmInputEv
         documentKind:doc.document_kind,
         evidenceStatus:doc.evidence_status,
         date:lineDate,
-        season:lineDate?harvestSeasonForExpense(lineDate,inputCategory):'',
+        season:inputEvidenceSeason(lineDate,inputCategory,doc.title,doc.original_filename),
         supplier:doc.source_name||scan.vendor||null,
         filename:doc.original_filename||null,
         category:inputCategory,
@@ -710,6 +726,40 @@ export async function fetchFarmInputEvidenceLines(limit=250):Promise<FarmInputEv
         confirmedUsed:false,
       });
     }
+  }
+
+  for(const expense of (expensesRes.data||[]) as any[]){
+    const items=Array.isArray(expense.scan_json?.items)?expense.scan_json.items:[];
+    if(items.length)continue;
+    if(!isRelevantInputLine(expense.description||'',expense.category||''))continue;
+    const date=expense.date||null;
+    const category=String(expense.category||'sprøyting');
+    lines.push({
+      id:'expense:'+expense.id,
+      evidenceKind:'document_line',
+      truthLabel:'Dokumentert',
+      sourceDocumentId:null,
+      sourceEventId:null,
+      sourceTitle:expense.invoice_number?'Bilag '+expense.invoice_number:'Registrert kostnad',
+      documentKind:'invoice',
+      evidenceStatus:'completed',
+      date,
+      season:inputEvidenceSeason(date,category,expense.description,null),
+      supplier:expense.vendor||null,
+      filename:null,
+      category,
+      name:String(expense.description||'Sprøytemidler / gjødsel'),
+      quantity:null,
+      unit:null,
+      unitPrice:null,
+      amount:expense.amount==null?null:Number(expense.amount),
+      currency:expense.currency||'EUR',
+      composition:null,
+      intendedUse:null,
+      dose:null,
+      confirmedUsed:false,
+      detailsMissing:true,
+    });
   }
 
   return lines.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||a.name.localeCompare(b.name,'no'));
