@@ -101,7 +101,7 @@ const FarmJournalView:React.FC<{
   const [rainNotes,setRainNotes]=useState('');
   const [rainSaving,setRainSaving]=useState(false);
   const currentYear=new Date().getFullYear();
-  const [wheelYear,setWheelYear]=useState(currentYear+1);
+  const [wheelYear,setWheelYear]=useState(currentYear);
 
   const load=async()=>{
     setLoading(true);setError('');
