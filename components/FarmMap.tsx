@@ -4,7 +4,7 @@ import {
   ChevronRight, Trash2, Globe, Locate, Building, Zap, Droplets,
   Eye, EyeOff, Navigation, Target, Radar, SearchCode, ArrowRight,
   ShieldCheck, AlertTriangle, Map as MapTypeIcon, MousePointerClick,
-  Pencil
+  Pencil, Camera
 } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { Parcel, Language } from '../types';
@@ -14,6 +14,7 @@ import { geminiService, CadastralDetails } from '../services/geminiService';
 import { sedecService } from '../services/sedecService';
 import { useTranslation } from '../services/i18nService';
 import { MUNICIPALITIES, Municipality, PROVINCE_CODE_MAP } from '../data/es_municipalities';
+import { fetchFarmMediaEvidence, type FarmMediaEvidenceRow } from '../services/farmMediaEvidence';
 
 import * as turf from '@turf/turf';
 
@@ -26,6 +27,34 @@ interface FarmMapProps {
   language: Language;
 }
 
+function escapeHtml(value:unknown){
+  return String(value??'')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#039;");
+}
+
+function mediaSourceLabel(source:string){
+  const labels:Record<string,string>={
+    field_observation:'Feltobservasjon',
+    field_consultant:'Feltkonsulent',
+    pruning:'Beskjæring',
+    pruning_outcome:'Beskjæring · etterbilde',
+    variety_reference:'Sortreferanse',
+    farm_journal:'Driftsjournal',
+  };
+  return labels[source]||source.replaceAll('_',' ');
+}
+
+function mediaMarkerClass(source:string){
+  if(source==='variety_reference')return'#a78bfa';
+  if(source==='pruning'||source==='pruning_outcome')return'#f59e0b';
+  if(source==='field_consultant')return'#22d3ee';
+  return'#22c55e';
+}
+
 const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete, language }) => {
   const { t } = useTranslation(language);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
@@ -33,6 +62,9 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
   const [isCadastreLayerActive, setIsCadastreLayerActive] = useState(true);
   const [isElectricityLayerActive, setIsElectricityLayerActive] = useState(false);
   const [isWaterLayerActive, setIsWaterLayerActive] = useState(false);
+  const [isMediaLayerActive,setIsMediaLayerActive]=useState(true);
+  const [mediaEvidence,setMediaEvidence]=useState<FarmMediaEvidenceRow[]>([]);
+  const [mediaLoadError,setMediaLoadError]=useState('');
   const [showLayerPanel, setShowLayerPanel] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
 
@@ -78,6 +110,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
   const parcelsLayerRef = useRef<L.LayerGroup>(L.layerGroup());
   const drawingLayerRef = useRef<L.LayerGroup>(L.layerGroup());
   const gpsLayerRef = useRef<L.LayerGroup>(L.layerGroup());
+  const mediaLayerRef = useRef<L.LayerGroup>(L.layerGroup());
   const cadastreWmsRef = useRef<L.TileLayer.WMS | null>(null);
   const electricityLayerRef = useRef<L.TileLayer | null>(null);
   const waterLayerRef = useRef<L.TileLayer | null>(null);
@@ -131,6 +164,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
       parcelsLayerRef.current.addTo(mapRef.current);
       drawingLayerRef.current.addTo(mapRef.current);
       gpsLayerRef.current.addTo(mapRef.current);
+      mediaLayerRef.current.addTo(mapRef.current);
       updateMapBaseLayer('satellite');
 
       const resizeObserver = new ResizeObserver(() => {
@@ -140,6 +174,71 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
       return () => resizeObserver.disconnect();
     }
   }, []);
+
+  useEffect(()=>{
+    let cancelled=false;
+    const load=async()=>{
+      try{
+        const rows=await fetchFarmMediaEvidence(500);
+        if(!cancelled){setMediaEvidence(rows);setMediaLoadError('');}
+      }catch(error:any){
+        console.warn('[FarmMap] media evidence load failed',error);
+        if(!cancelled)setMediaLoadError(error?.message||'Kunne ikke hente GEO-bilder.');
+      }
+    };
+    void load();
+    const refresh=()=>void load();
+    window.addEventListener('olivia:farm-truth-updated',refresh as EventListener);
+    return()=>{
+      cancelled=true;
+      window.removeEventListener('olivia:farm-truth-updated',refresh as EventListener);
+    };
+  },[]);
+
+  useEffect(()=>{
+    const layer=mediaLayerRef.current;
+    layer.clearLayers();
+    if(!mapRef.current)return;
+    if(!isMediaLayerActive){
+      if(mapRef.current.hasLayer(layer))mapRef.current.removeLayer(layer);
+      return;
+    }
+    if(!mapRef.current.hasLayer(layer))layer.addTo(mapRef.current);
+
+    const parcelNames=new Map(parcels.map(parcel=>[parcel.id,parcel.name]));
+    mediaEvidence.forEach(row=>{
+      const lat=Number(row.lat),lon=Number(row.lon);
+      if(!Number.isFinite(lat)||!Number.isFinite(lon))return;
+      const source=mediaSourceLabel(row.source_module);
+      const dateValue=row.geo_captured_at||row.created_at;
+      const dateLabel=dateValue?new Date(dateValue).toLocaleString('no-NO'):'Ukjent tidspunkt';
+      const parcelLabel=row.parcel_id?parcelNames.get(row.parcel_id)||row.parcel_id:'Ingen sikker parsell';
+      const accuracy=Number(row.accuracy_m);
+      const confidence=Number(row.match_confidence);
+      const marker=L.circleMarker([lat,lon],{
+        radius:7,
+        weight:2,
+        color:'#ffffff',
+        fillColor:mediaMarkerClass(row.source_module),
+        fillOpacity:0.9,
+      });
+      const imageUrl=escapeHtml(row.media_url);
+      const popup=`
+        <div style="width:220px;font-family:system-ui,sans-serif;color:#111">
+          <img src="${imageUrl}" alt="GEO-merket gårdsbilde" style="width:100%;height:130px;object-fit:cover;border-radius:10px;margin-bottom:8px" />
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#166534">${escapeHtml(source)}</div>
+          <div style="font-size:13px;font-weight:800;margin-top:3px">${escapeHtml(parcelLabel)}</div>
+          <div style="font-size:11px;color:#555;margin-top:4px">${escapeHtml(dateLabel)}</div>
+          <div style="font-size:10px;color:#777;margin-top:3px">
+            GPS ${Number.isFinite(accuracy)?'±'+Math.round(accuracy)+' m':'nøyaktighet ukjent'}
+            ${Number.isFinite(confidence)?' · match '+Math.round(confidence*100)+'%':''}
+          </div>
+        </div>`;
+      marker.bindPopup(popup,{maxWidth:250});
+      marker.addTo(layer);
+    });
+    layer.bringToFront?.();
+  },[mediaEvidence,isMediaLayerActive,parcels]);
 
   // Keep refs in sync so the map click closure sees current values
   useEffect(() => { isMapClickModeRef.current = isMapClickMode; }, [isMapClickMode]);
@@ -789,6 +888,11 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
                   <Droplets size={14} /><span>Vann & Irrigasjon</span>
                   {isWaterLayerActive ? <Eye size={12} className="ml-auto" /> : <EyeOff size={12} className="ml-auto" />}
                 </button>
+                <button onClick={()=>setIsMediaLayerActive(!isMediaLayerActive)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-bold transition-all ${isMediaLayerActive ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30' : 'bg-white/5 text-slate-400 border border-white/5'}`}>
+                  <Camera size={14}/><span>Feltbilder (${mediaEvidence.length})</span>
+                  {isMediaLayerActive?<Eye size={12} className="ml-auto"/>:<EyeOff size={12} className="ml-auto"/>}
+                </button>
+                {mediaLoadError&&<p className="px-2 pt-1 text-[9px] text-amber-300">GEO-bilder: {mediaLoadError}</p>}
               </div>
             </div>
           )}
