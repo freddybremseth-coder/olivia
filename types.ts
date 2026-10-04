@@ -222,6 +222,23 @@ export interface PruningStepFeedback {
   note?: string;
 }
 
+export interface PruningOutcomeAIReview {
+  observationQuality: 'GOOD' | 'LIMITED' | 'INSUFFICIENT';
+  confidence: number;
+  summary: string;
+  visibleChanges: string[];
+  canopyChange: string;
+  structuralBalance: string;
+  lightPenetration: string;
+  stepEvidence: Array<{
+    index: number;
+    status: 'SUPPORTED' | 'NOT_VISIBLE' | 'CONTRADICTED' | 'UNCERTAIN';
+    evidence: string;
+  }>;
+  concerns: string[];
+  nextObservations: string[];
+}
+
 export interface PruningHistoryItem {
   id: string;
   date: string;
@@ -239,6 +256,7 @@ export interface PruningHistoryItem {
   outcomeNotes?: string;
   stepFeedback?: PruningStepFeedback[];
   outcomeVerifiedAt?: string;
+  outcomeAiReview?: PruningOutcomeAIReview;
 }
 
 export interface HarvestRecord {

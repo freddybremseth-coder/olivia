@@ -525,8 +525,25 @@ const PruningAdvisorView: React.FC = () => {
               <div><p className="text-xs font-bold text-white">Etterbilder</p><p className="text-[10px] text-slate-500">Valgfritt, maks 3. Gir Olivia før/etter-grunnlag.</p></div>
               <button onClick={()=>outcomeFileInputRef.current?.click()} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 flex items-center gap-2"><Upload size={13}/> Legg til</button>
             </div>
-            {outcomeAfterImages.length>0&&<div className="grid grid-cols-3 gap-2 mt-3">{outcomeAfterImages.map((img,index)=><div key={index} className="relative overflow-hidden rounded-xl border border-white/10"><img src={img} className="h-28 w-full object-cover"/><button onClick={()=>setOutcomeAfterImages(current=>current.filter((_,i)=>i!==index))} className="absolute top-1 right-1 rounded-full bg-black/70 p-1 text-white"><X size={12}/></button></div>)}</div>}
+            {(outcomeItem.afterImages?.length||0)>0&&<div className="mt-3">
+              <p className="text-[9px] uppercase tracking-widest font-black text-slate-500 mb-2">Lagrede etterbilder</p>
+              <div className="grid grid-cols-3 gap-2">{(outcomeItem.afterImages||[]).slice(-3).map((img,index)=><a key={img+index} href={img} target="_blank" rel="noreferrer" className="overflow-hidden rounded-xl border border-white/10"><img src={img} className="h-28 w-full object-cover"/></a>)}</div>
+            </div>}
+            {outcomeAfterImages.length>0&&<div className="mt-3">
+              <p className="text-[9px] uppercase tracking-widest font-black text-purple-300 mb-2">Nye etterbilder</p>
+              <div className="grid grid-cols-3 gap-2">{outcomeAfterImages.map((img,index)=><div key={index} className="relative overflow-hidden rounded-xl border border-white/10"><img src={img} className="h-28 w-full object-cover"/><button onClick={()=>setOutcomeAfterImages(current=>current.filter((_,i)=>i!==index))} className="absolute top-1 right-1 rounded-full bg-black/70 p-1 text-white"><X size={12}/></button></div>)}</div>
+            </div>}
           </div>
+
+          {outcomeItem.outcomeAiReview&&<div className="mt-5 rounded-2xl border border-cyan-500/15 bg-cyan-500/[0.035] p-4">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div><p className="text-[9px] uppercase tracking-widest font-black text-cyan-300">Visuell etterkontroll · AI</p><p className="text-xs font-bold text-white mt-1">Observasjon, ikke gårdsfasit</p></div>
+              <span className="rounded-full border border-white/10 px-2 py-0.5 text-[9px] font-black text-slate-400">{outcomeItem.outcomeAiReview.confidence}% · {qualityLabel(outcomeItem.outcomeAiReview.observationQuality)}</span>
+            </div>
+            <p className="text-xs text-slate-300 mt-3">{outcomeItem.outcomeAiReview.summary}</p>
+            {outcomeItem.outcomeAiReview.visibleChanges.length>0&&<div className="mt-3 space-y-1">{outcomeItem.outcomeAiReview.visibleChanges.slice(0,5).map((item,index)=><p key={index} className="text-[10px] text-slate-400">• {item}</p>)}</div>}
+            {outcomeItem.outcomeAiReview.concerns.length>0&&<p className="text-[10px] text-amber-200 mt-3">Begrensninger: {outcomeItem.outcomeAiReview.concerns.slice(0,3).join(' · ')}</p>}
+          </div>}
 
           <div className="flex justify-end gap-2 mt-6">
             <button onClick={()=>setOutcomeItem(null)} disabled={isSavingOutcome} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold text-slate-300">Avbryt</button>
@@ -641,6 +658,10 @@ const PruningAdvisorView: React.FC = () => {
             {(item.afterImages?.length||0)>0&&<span className="text-[9px] text-purple-300">{item.afterImages?.length} etterbilder</span>}
           </div>
           {item.outcomeNotes&&<p className="text-xs text-slate-500 mt-2 line-clamp-2">{item.outcomeNotes}</p>}
+          {item.outcomeAiReview&&<div className="mt-2 rounded-xl border border-cyan-500/10 bg-cyan-500/[0.025] p-2">
+            <p className="text-[9px] font-black uppercase tracking-widest text-cyan-300">AI etterkontroll · {item.outcomeAiReview.confidence}%</p>
+            <p className="text-[10px] text-slate-500 mt-1 line-clamp-2">{item.outcomeAiReview.summary}</p>
+          </div>}
           <button onClick={()=>openOutcome(item)} className="mt-3 w-full rounded-xl border border-[#d9b657]/20 bg-[#d9b657]/[0.05] px-3 py-2 text-xs font-black text-[#d9b657]">{item.outcomeVerifiedAt?'Rediger fasit':'Registrer fasit'}</button>
         </div>;
       })}</div> : <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-500">Ingen beskjæringsanalyser lagret ennå.</div>}</div>
