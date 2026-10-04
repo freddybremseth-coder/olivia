@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient';
 import { fetchBatches } from './db';
-import { currentHarvestSeason, harvestSeasonForDate } from './harvestSeason';
+import { currentHarvestSeason, harvestSeasonForDate, harvestSeasonForExpense } from './harvestSeason';
 import { fetchHarvestPlans } from './harvestPlanning';
 import {
   fetchOliviaExpenses,
@@ -53,6 +53,10 @@ function incomeDate(row:any){
   return undefined;
 }
 
+function expenseSeason(row:any){
+  return harvestSeasonForExpense(row.date,row.category,row.season);
+}
+
 export async function fetchSeasonReportSnapshot(requestedSeason?:string):Promise<SeasonReportSnapshot>{
   const [
     parcels,
@@ -81,7 +85,7 @@ export async function fetchSeasonReportSnapshot(requestedSeason?:string):Promise
 
   const seasons=new Set<string>([currentHarvestSeason()]);
   harvests.forEach(row=>seasons.add(normalizedSeason(row.season,row.date)));
-  expenses.forEach(row=>seasons.add(normalizedSeason(row.season,row.date)));
+  expenses.forEach(row=>seasons.add(expenseSeason(row)));
   subsidies.forEach(row=>seasons.add(normalizedSeason(row.season,row.date)));
   incomes.forEach(row=>seasons.add(normalizedSeason(row.season,incomeDate(row))));
   batches.forEach(row=>seasons.add(harvestSeasonForDate(row.harvestDate)));
@@ -92,7 +96,7 @@ export async function fetchSeasonReportSnapshot(requestedSeason?:string):Promise
   const season=requestedSeason&&availableSeasons.includes(requestedSeason)?requestedSeason:currentHarvestSeason();
 
   const seasonHarvests=harvests.filter(row=>normalizedSeason(row.season,row.date)===season);
-  const seasonExpenses=expenses.filter(row=>normalizedSeason(row.season,row.date)===season);
+  const seasonExpenses=expenses.filter(row=>expenseSeason(row)===season);
   const seasonSubsidies=subsidies.filter(row=>normalizedSeason(row.season,row.date)===season);
   const seasonIncomes=incomes.filter(row=>normalizedSeason(row.season,incomeDate(row))===season&&row.status!=='cancelled');
   const seasonBatches=batches.filter(row=>harvestSeasonForDate(row.harvestDate)===season);
@@ -108,7 +112,7 @@ export async function fetchSeasonReportSnapshot(requestedSeason?:string):Promise
   const subsidyIncome=seasonSubsidies.reduce((sum,row)=>sum+n(row.amount),0);
   const expenseTotal=seasonExpenses.reduce((sum,row)=>sum+n(row.amount),0);
 
-  const costExpenses=productionCosts.expenses.filter(row=>harvestSeasonForDate(row.date)===season);
+  const costExpenses=productionCosts.expenses.filter(row=>harvestSeasonForExpense(row.date,row.category,row.season)===season);
   const unallocated=costExpenses.map(expense=>({
     expense,
     remaining:Math.max(0,expense.amount-expenseAllocatedAmount(expense.id,productionCosts.batchAllocations,productionCosts.lotCosts)),
