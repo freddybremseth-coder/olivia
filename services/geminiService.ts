@@ -66,6 +66,14 @@ export interface OliveInspectionResult {
     candidates: OliveVarietyCandidate[];
     reasoning: string;
   };
+  referenceComparison?: {
+    used: boolean;
+    referenceCount: number;
+    bestCandidate: string;
+    confidence: number;
+    agreesWithInitial: boolean;
+    reasoning: string;
+  };
   nextPhotos: string[];
 }
 
@@ -384,6 +392,14 @@ function normalizeInspection(raw: Partial<OliveInspectionResult> | undefined): O
       candidates,
       reasoning:String(va.reasoning||'Ikke nok morfologiske trekk til sikker sortsidentifikasjon.').slice(0,900),
     },
+    referenceComparison:value.referenceComparison?{
+      used:Boolean(value.referenceComparison.used),
+      referenceCount:Math.max(0,Math.floor(Number(value.referenceComparison.referenceCount)||0)),
+      bestCandidate:String(value.referenceComparison.bestCandidate||'Ukjent sort').slice(0,80),
+      confidence:normalizeConfidence(value.referenceComparison.confidence,0),
+      agreesWithInitial:Boolean(value.referenceComparison.agreesWithInitial),
+      reasoning:String(value.referenceComparison.reasoning||'').slice(0,900),
+    }:undefined,
     nextPhotos:Array.isArray(value.nextPhotos)?value.nextPhotos.map(String).slice(0,6):[],
   };
 }
