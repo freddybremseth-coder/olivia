@@ -14,6 +14,7 @@ import {
   type HarvestRecord,
   type SubsidyIncome,
 } from '../services/oliviaSchemaData';
+import { currentHarvestSeason, harvestSeasonForDate } from '../services/harvestSeason';
 
 type Props = { language: Language; parcels: Parcel[] };
 type SeasonTotals = {
@@ -26,8 +27,27 @@ type SeasonTotals = {
 };
 
 const eur = (value: number) => `€${Math.round(value).toLocaleString('no-NO')}`;
-const currentSeason = () => new Date().getFullYear().toString();
+const currentSeason = () => currentHarvestSeason();
 const currentYear = () => new Date().getFullYear().toString();
+
+function financeSeason(explicit:string|undefined,date?:string):string{
+  if(explicit&&/^\d{4}\/\d{2}$/.test(explicit))return explicit;
+  if(date)return harvestSeasonForDate(date);
+  return explicit||currentHarvestSeason();
+}
+
+function harvestRowSeason(row:HarvestRecord):string{
+  return financeSeason(row.season,row.date);
+}
+function expenseRowSeason(row:FarmExpense):string{
+  return financeSeason(row.season,row.date);
+}
+function subsidyRowSeason(row:SubsidyIncome):string{
+  return financeSeason(row.season,row.date);
+}
+function incomeRowSeason(row:FarmIncome):string{
+  return financeSeason(row.season,row.earnedDate||row.paymentDate||(row.paymentPeriod?row.paymentPeriod+'-01':undefined));
+}
 
 function seasonRows(
   season: string,
@@ -36,14 +56,14 @@ function seasonRows(
   subsidies: SubsidyIncome[],
   incomes: FarmIncome[],
 ): SeasonTotals {
-  const hs = harvests.filter(h => h.season === season);
-  const ex = expenses.filter(e => e.season === season);
-  const su = subsidies.filter(s => s.season === season);
-  const inc = incomes.filter(i => i.season === season && i.status !== 'cancelled');
+  const hs = harvests.filter(h => harvestRowSeason(h) === season);
+  const ex = expenses.filter(e => expenseRowSeason(e) === season);
+  const su = subsidies.filter(s => subsidyRowSeason(s) === season);
+  const inc = incomes.filter(i => incomeRowSeason(i) === season && i.status !== 'cancelled');
   return {
     season,
     harvestValue: hs.reduce((acc, h) => acc + h.kg * h.pricePerKg, 0),
-    actualIncome: inc.reduce((acc, i) => acc + i.amount, 0),
+    actualIncome: inc.filter(i=>i.status==='received').reduce((acc, i) => acc + i.amount, 0),
     expenses: ex.reduce((acc, e) => acc + e.amount, 0),
     subsidies: su.reduce((acc, s) => acc + s.amount, 0),
     rows: hs.length + ex.length + su.length + inc.length,
@@ -76,10 +96,10 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
       setIncomes(i);
 
       const dataSeasons = Array.from(new Set([
-        ...h.map(x => x.season),
-        ...e.map(x => x.season),
-        ...s.map(x => x.season),
-        ...i.map(x => x.season),
+        ...h.map(x => harvestRowSeason(x)),
+        ...e.map(x => expenseRowSeason(x)),
+        ...s.map(x => subsidyRowSeason(x)),
+        ...i.map(x => incomeRowSeason(x)),
       ])).filter(Boolean).sort((a, b) => b.localeCompare(a));
 
       const latestWithRows = dataSeasons.find(se => seasonRows(se, h, e, s, i).rows > 0);
@@ -99,10 +119,10 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
   const seasons = useMemo(() => {
     const all = new Set([
       currentSeason(),
-      ...harvests.map(h => h.season),
-      ...expenses.map(e => e.season),
-      ...subsidies.map(s => s.season),
-      ...incomes.map(i => i.season),
+      ...harvests.map(h => harvestRowSeason(h)),
+      ...expenses.map(e => expenseRowSeason(e)),
+      ...subsidies.map(s => subsidyRowSeason(s)),
+      ...incomes.map(i => incomeRowSeason(i)),
     ]);
     return Array.from(all).filter(Boolean).sort((a, b) => b.localeCompare(a));
   }, [harvests, expenses, subsidies, incomes]);
@@ -113,10 +133,10 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
   );
 
   const totals = seasonRows(season, harvests, expenses, subsidies, incomes);
-  const sHarvests = harvests.filter(h => h.season === season);
-  const sExpenses = expenses.filter(e => e.season === season);
-  const sSubsidies = subsidies.filter(s => s.season === season);
-  const sIncome = incomes.filter(i => i.season === season && i.status !== 'cancelled');
+  const sHarvests = harvests.filter(h => harvestRowSeason(h) === season);
+  const sExpenses = expenses.filter(e => expenseRowSeason(e) === season);
+  const sSubsidies = subsidies.filter(s => subsidyRowSeason(s) === season);
+  const sIncome = incomes.filter(i => incomeRowSeason(i) === season && i.status !== 'cancelled');
   const harvestKg = sHarvests.reduce((acc, h) => acc + h.kg, 0);
   const actualRevenue = totals.actualIncome + totals.subsidies;
   const net = actualRevenue - totals.expenses;
@@ -125,6 +145,9 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
   const receivedThisYear = incomes
     .filter(i => i.status === 'received' && (i.paymentDate?.startsWith(currentYear()) || i.paymentPeriod?.startsWith(currentYear())))
     .reduce((acc, i) => acc + i.amount, 0);
+  const expenseDocumentsThisYear=expenses
+    .filter(e=>e.date?.startsWith(currentYear()))
+    .reduce((acc,e)=>acc+e.amount,0);
 
   const perParcel = parcels.map(parcel => {
     const ph = sHarvests.filter(h => h.parcelId === parcel.id);
@@ -140,7 +163,7 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3"><Euro className="text-green-400" /> Økonomi</h2>
-          <p className="text-slate-400 text-sm mt-1">Faktiske inntekter, oppgjør, kostnader og produksjonsgrunnlag. Avlingsverdi og mottatt betaling holdes adskilt.</p>
+          <p className="text-slate-400 text-sm mt-1">Sesongresultat og kontantstrøm holdes adskilt. En februar-faktura eller mai-betaling kan tilhøre høsten fra forrige kalenderår.</p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <ExpenseCapturePanel parcels={parcels} onSaved={load} />
@@ -148,7 +171,7 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
           <label className="flex flex-col gap-1 text-[10px] text-slate-500 uppercase font-bold tracking-widest">
             Sesong
             <select value={season} onChange={e => setSeason(e.target.value)} className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white font-bold text-sm focus:outline-none cursor-pointer normal-case tracking-normal">
-              {seasons.map(se => <option key={se} value={se} className="bg-slate-800">{se} · {seasonRows(se, harvests, expenses, subsidies, incomes).rows} rader</option>)}
+              {seasons.map(se => <option key={se} value={se} className="bg-slate-800">{se} · høst {se.slice(0,4)} · {seasonRows(se, harvests, expenses, subsidies, incomes).rows} rader</option>)}
             </select>
           </label>
         </div>
@@ -156,16 +179,13 @@ const ProfitabilityOliviaSeasonView: React.FC<Props> = ({ parcels }) => {
 
       {error && <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-200 text-sm flex gap-2"><AlertTriangle size={18} /> {error}</div>}
 
-      {receivedThisYear > 0 && (
-        <div className="glass rounded-2xl border border-green-500/25 bg-green-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
-            <WalletCards size={20} className="text-green-400" />
-            <div>
-              <p className="text-sm font-bold text-white">Mottatt betaling i {currentYear()}</p>
-              <p className="text-xs text-slate-400">Kontantstrøm kan gjelde oppgjør fra en tidligere avlingssesong.</p>
-            </div>
+      {(receivedThisYear>0||expenseDocumentsThisYear>0)&&(
+        <div className="glass rounded-2xl border border-blue-500/20 bg-blue-500/[0.04] p-5">
+          <div className="flex items-center gap-3"><WalletCards size={20} className="text-blue-300"/><div><p className="text-sm font-bold text-white">Kalenderår {currentYear()} · separat fra avlingssesong</p><p className="text-xs text-slate-400 mt-1">Disse tallene viser datoåret. De flytter ikke inntekter eller kostnader ut av riktig avlingssesong.</p></div></div>
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Mottatt betaling {currentYear()}</p><p className="text-xl font-black text-green-300 mt-1">{eur(receivedThisYear)}</p></div>
+            <div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-500">Bilagsdato kostnader {currentYear()}</p><p className="text-xl font-black text-amber-200 mt-1">{eur(expenseDocumentsThisYear)}</p></div>
           </div>
-          <strong className="text-xl text-green-400">{eur(receivedThisYear)}</strong>
         </div>
       )}
 

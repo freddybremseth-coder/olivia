@@ -3,6 +3,7 @@ import { Camera, FileText, Loader2, Plus, ReceiptText, Save, ScanLine, Upload, X
 import type { Parcel } from '../types';
 import type { ExpenseCategory } from '../services/oliviaSchemaData';
 import { analyzeExpenseDocument, saveExpenseWithDocument, type ExpenseDraft } from '../services/expenseCapture';
+import { harvestSeasonForDate } from '../services/harvestSeason';
 
 type Props = {
   parcels: Parcel[];
@@ -33,7 +34,7 @@ function emptyDraft(): ExpenseDraft {
   return {
     vendor: '',
     date,
-    season: date.slice(0, 4),
+    season: harvestSeasonForDate(date),
     totalAmount: 0,
     currency: 'EUR',
     category: 'annet',
@@ -95,7 +96,7 @@ const ExpenseCapturePanel: React.FC<Props> = ({ parcels, onSaved }) => {
       setDraft(current => ({
         ...current,
         ...result,
-        season: result.date.slice(0, 4),
+        season: harvestSeasonForDate(result.date),
         parcelId: undefined,
         scope: result.scope || 'farm',
       }));
@@ -115,7 +116,7 @@ const ExpenseCapturePanel: React.FC<Props> = ({ parcels, onSaved }) => {
     try {
       await saveExpenseWithDocument({
         ...draft,
-        season: draft.date.slice(0, 4),
+        season: draft.season || harvestSeasonForDate(draft.date),
         scope: draft.parcelId ? 'parcel' : 'farm',
       }, file);
       setStatus('Kostnaden er bokført i Olivia.');
@@ -152,7 +153,7 @@ const ExpenseCapturePanel: React.FC<Props> = ({ parcels, onSaved }) => {
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-amber-300">Doña Anna · Olivia Økonomi</p>
                 <h3 className="mt-1 text-2xl font-bold text-white">{mode === 'scan' ? 'Scan og bokfør bilag' : 'Registrer ny kostnad'}</h3>
-                <p className="mt-2 text-sm text-slate-400">Bilaget lagres privat. AI foreslår bokføring, men ingenting lagres før du godkjenner.</p>
+                <p className="mt-2 text-sm text-slate-400">Bilaget lagres privat. Fakturadato og avlingssesong lagres separat, slik at arbeid fakturert i 2026 fortsatt kan tilhøre høsten 2025/26.</p>
               </div>
               <button onClick={() => { setOpen(false); reset(); }} className="rounded-xl p-2 text-slate-400 hover:bg-white/10 hover:text-white"><X size={22} /></button>
             </div>
@@ -207,7 +208,8 @@ function ExpenseForm({ draft, setDraft, parcels, isWork }: {
     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
       <h4 className="font-bold text-white">Kontroller bokføringen</h4>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <label><span className={labelClass}>Dato</span><input type="date" className={inputClass} value={draft.date} onChange={e => update('date', e.target.value)} /></label>
+        <label><span className={labelClass}>Faktura-/bilagsdato</span><input type="date" className={inputClass} value={draft.date} onChange={e => { const value=e.target.value; setDraft(current=>({...current,date:value,season:harvestSeasonForDate(value)})); }} /></label>
+        <label><span className={labelClass}>Avlingssesong</span><select className={inputClass} value={draft.season} onChange={e=>update('season',e.target.value)}><option value="2024/25" className="bg-slate-900">2024/25 · høst 2024</option><option value="2025/26" className="bg-slate-900">2025/26 · høst 2025</option><option value="2026/27" className="bg-slate-900">2026/27 · høst 2026</option><option value="2027/28" className="bg-slate-900">2027/28 · høst 2027</option></select><span className="mt-1 block text-[10px] text-slate-600">Sesongen styrer lønnsomhetsrapporten. Fakturadato beholdes for regnskap.</span></label>
         <label><span className={labelClass}>Leverandør / person</span><input className={inputClass} value={draft.vendor} onChange={e => update('vendor', e.target.value)} /></label>
         <label><span className={labelClass}>Kategori</span><select className={inputClass} value={draft.category} onChange={e => update('category', e.target.value as ExpenseCategory)}>{categories.map(c => <option key={c.value} value={c.value} className="bg-slate-900">{c.label}</option>)}</select></label>
         <label><span className={labelClass}>Parsell</span><select className={inputClass} value={draft.parcelId || ''} onChange={e => update('parcelId', e.target.value || undefined)}><option value="" className="bg-slate-900">Hele gården</option>{parcels.map(p => <option key={p.id} value={p.id} className="bg-slate-900">{p.name}</option>)}</select></label>
