@@ -299,7 +299,17 @@ const App: React.FC = () => {
       setAuthReady(true);
       if (result) {
         setUser(result.user); setIsAdmin(result.isAdmin); setIsLoggedIn(true); setShowLogin(false);
-        if (isPortalUrl()) activateTab(navigationRef.current, result.user);
+        const internal=['farmer','super_admin'].includes(result.user.role);
+        if(isStandaloneApp()&&internal&&currentPath()!=='/olivia'&&currentPath()!=='/app'){
+          window.history.replaceState({},'',OLIVIA_OS_PATH);
+          navigationRef.current='dashboard';
+          setPostLoginTab('dashboard');
+          setPortalMode('olivia');
+          setActiveTab('dashboard');
+          setShowPublicSite(false);
+        } else if (isPortalUrl()) {
+          activateTab(navigationRef.current, result.user);
+        }
       } else {
         setIsLoggedIn(false); setIsAdmin(false); setUser(OLIVIA_FALLBACK_USER);
         setParcels(EMPTY_OLIVIA_PARCELS); setSelectedParcel(null);
