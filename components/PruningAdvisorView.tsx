@@ -35,7 +35,7 @@ import { buildLearningContext, recordAgentAssessment } from '../services/farmInt
 import FarmQuestionsPanel from './FarmQuestionsPanel';
 import AgentFeedbackPanel from './AgentFeedbackPanel';
 import OlivePhotoProtocol from './OlivePhotoProtocol';
-import { savePruningOutcome } from '../services/pruningOutcome';
+import { removePruningOutcomeTruth, savePruningOutcome } from '../services/pruningOutcome';
 
 function makeId(prefix: string) {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `${prefix}-${crypto.randomUUID()}`;
@@ -421,8 +421,10 @@ const PruningAdvisorView: React.FC = () => {
 
   const deleteHistory = async (id: string) => {
     try {
+      await removePruningOutcomeTruth(id);
       await deletePruningItem(id);
       setHistory(prev => prev.filter(item => item.id !== id));
+      window.dispatchEvent(new CustomEvent('olivia:farm-truth-updated'));
     } catch (err: any) {
       setError(`Kunne ikke slette historikk: ${err?.message || String(err)}`);
     }
