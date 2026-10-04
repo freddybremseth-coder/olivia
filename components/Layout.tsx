@@ -55,6 +55,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
       items: [
         { id: 'dashboard', icon: LayoutDashboard, label: t('dashboard') },
         { id: 'dona_anna_daily', icon: Leaf, label: 'DonaAnna Daily' },
+        { id: 'field_mode', icon: MapPin, label: 'Feltmodus' },
         { id: 'farm_journal', icon: ClipboardList, label: 'Driftsjournal' },
         { id: 'farm_advisor', icon: Sparkles, label: 'Olivia Advisor' },
       ],
