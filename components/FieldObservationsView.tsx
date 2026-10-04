@@ -23,7 +23,6 @@ import {
   fetchFarmZones,
   fetchRecentFarmObservations,
   fetchTreeGroups,
-  insertFarmObservation,
 } from '../services/farmIoT';
 import { geoContextSummary, requestFarmGeo } from '../services/farmGeo';
 import { filesToResizedDataUrls } from '../lib/imageUpload';
