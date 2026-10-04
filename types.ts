@@ -1,4 +1,5 @@
 import { PruningPlan, PlantDiagnosis } from './services/geminiService';
+import type { FarmGeoContext } from './types/farmGeo';
 
 export type Language = 'en' | 'no' | 'es';
 
@@ -257,6 +258,7 @@ export interface PruningHistoryItem {
   stepFeedback?: PruningStepFeedback[];
   outcomeVerifiedAt?: string;
   outcomeAiReview?: PruningOutcomeAIReview;
+  geoContext?: FarmGeoContext;
 }
 
 export interface HarvestRecord {
