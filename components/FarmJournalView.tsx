@@ -594,6 +594,7 @@ const InputEvidenceRow:React.FC<{row:FarmInputEvidenceLine;documents:FarmDocumen
         {(qty||price||amount)&&<p className="text-xs text-slate-300 mt-2">{qty}{price}{amount}</p>}
         {row.composition&&<p className="text-[10px] text-purple-300 mt-2">Sammensetning: {row.composition}</p>}
         {row.intendedUse&&<p className="text-[10px] text-slate-400 mt-1">Bruksområde: {row.intendedUse}{row.dose?' · dokumentert dose '+row.dose:''}</p>}
+        {row.detailsMissing&&<p className="text-[10px] text-amber-200 mt-2">Varelinjer mangler i dette eldre bilaget. Beløp/beskrivelse er registrert, men produktnavn må kompletteres fra originaldokumentet.</p>}
         <p className="text-[10px] text-slate-600 mt-2">Kilde: {row.sourceTitle}{row.filename?' · '+row.filename:''}</p>
       </div>
       {doc&&<button onClick={()=>onOpenDoc(doc)} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white whitespace-nowrap">Åpne kilde</button>}
