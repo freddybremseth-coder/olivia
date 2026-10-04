@@ -70,6 +70,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
         { id: 'field_observations', icon: MapPin, label: 'Feltlogg' },
         { id: 'consultant', icon: Sparkles, label: t('consultant') },
         { id: 'pruning', icon: Scissors, label: t('pruning') },
+        { id: 'variety_library', icon: Leaf, label: 'Sortbibliotek' },
       ],
     },
     {

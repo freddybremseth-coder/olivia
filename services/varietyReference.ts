@@ -107,6 +107,47 @@ export async function fetchConfirmedVarietyReferences(limit=80):Promise<OliveVar
   return(data||[]) as OliveVarietyReference[];
 }
 
+export async function fetchVarietyReferences(params:{status?:OliveVarietyReference['status']|'all';limit?:number}={}):Promise<OliveVarietyReference[]>{
+  let query=supabase.from('olive_variety_references')
+    .select('*')
+    .order('confirmed_at',{ascending:false})
+    .limit(params.limit||200);
+  if(params.status&&params.status!=='all')query=query.eq('status',params.status);
+  const {data,error}=await query;
+  if(error)throw new Error(error.message);
+  return(data||[]) as OliveVarietyReference[];
+}
+
+export async function updateVarietyReference(id:string,input:{
+  varietyName?:string;
+  treeLabel?:string|null;
+  notes?:string|null;
+  status?:OliveVarietyReference['status'];
+}):Promise<OliveVarietyReference>{
+  const patch:any={updated_at:new Date().toISOString()};
+  if(input.varietyName!==undefined){
+    const clean=input.varietyName.trim();
+    if(!clean)throw new Error('Sort kan ikke være tom.');
+    patch.variety_name=clean;
+  }
+  if(input.treeLabel!==undefined)patch.tree_label=input.treeLabel?.trim()||null;
+  if(input.notes!==undefined)patch.notes=input.notes?.trim()||null;
+  if(input.status!==undefined){
+    patch.status=input.status;
+    if(input.status==='confirmed'){
+      patch.confidence=1;
+      patch.confirmed_at=new Date().toISOString();
+    }
+  }
+  const {data,error}=await supabase.from('olive_variety_references')
+    .update(patch)
+    .eq('id',id)
+    .select('*')
+    .single();
+  if(error)throw new Error(error.message);
+  return data as OliveVarietyReference;
+}
+
 export async function buildVarietyReferenceContext(parcelId?:string):Promise<string>{
   const rows=await fetchConfirmedVarietyReferences(60);
   if(!rows.length)return'';
