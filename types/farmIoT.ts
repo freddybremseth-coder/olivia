@@ -145,6 +145,7 @@ export interface FarmObservation {
   geo_source?: string;
   geo_match_method?: string;
   geo_match_confidence?: number;
+  issue_id?: string;
 }
 
 export interface BiarSeasonSettings {
