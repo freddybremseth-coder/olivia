@@ -1069,6 +1069,118 @@ Svar i JSON med feltene: amount (string), unit (string), rationale (string).`;
     );
   }
 
+  private async callExpertCritic(prompt:string):Promise<OliveExpertReview>{
+    const fallback={} as OliveExpertReview;
+    try{
+      const text=await this.generateText(prompt);
+      return normalizeExpertReview(this.extractJson<OliveExpertReview>(text,fallback));
+    }catch(primaryError){
+      if(!isSupabaseConfigured)throw primaryError;
+      const {data,error}=await supabase.functions.invoke('ai-proxy',{
+        body:{provider:'gemini',task:'olivia_expert_critic',prompt},
+      });
+      if(error)throw primaryError;
+      const text=String(data?.text||'').trim();
+      if(!text)throw primaryError;
+      return normalizeExpertReview(this.extractJson<OliveExpertReview>(text,fallback));
+    }
+  }
+
+  private needsComprehensiveCritic(result:ComprehensiveAnalysisResult){
+    return result.varietyConfidence<70
+      || Number(result.diagnosis.confidence||0)<65
+      || result.pruning.pruningSteps.some(step=>step.riskLevel==='YELLOW'||step.riskLevel==='RED')
+      || Number(result.pruning.confidence||0)<65
+      || result.needsMoreImages;
+  }
+
+  private needsPruningCritic(plan:PruningPlan){
+    return Number(plan.confidence||0)<70
+      || plan.pruningSteps.some(step=>step.riskLevel==='YELLOW'||step.riskLevel==='RED')
+      || plan.pruningSteps.some(step=>step.actionType==='REMOVE'&&Number(step.confidence||0)<75);
+  }
+
+  private applyCriticToPlan(plan:PruningPlan,review:OliveExpertReview):PruningPlan{
+    const stepReviewByIndex=new Map(review.stepReviews.map(item=>[item.index,item]));
+    const steps=plan.pruningSteps.map((step,index)=>{
+      const critique=stepReviewByIndex.get(index);
+      if(!critique||critique.verdict==='KEEP')return step;
+      if(critique.verdict==='REMOVE'){
+        return{
+          ...step,
+          actionType:'MONITOR' as const,
+          riskLevel:'RED' as const,
+          confidence:Math.min(Number(step.confidence||50),Math.max(20,review.confidence)),
+          action:'Ikke utfør dette inngrepet ennå. '+step.action,
+          whyNow:[step.whyNow,critique.reason].filter(Boolean).join(' · '),
+        };
+      }
+      return{
+        ...step,
+        riskLevel:critique.riskLevel,
+        confidence:Math.min(Number(step.confidence||50),Math.max(30,review.confidence)),
+        whyNow:[step.whyNow,critique.reason].filter(Boolean).join(' · '),
+      };
+    });
+    return{
+      ...plan,
+      pruningSteps:steps,
+      limitations:Array.from(new Set([...(plan.limitations||[]),...review.concerns])).slice(0,8),
+      missingDetails:Array.from(new Set([...(plan.missingDetails||[]),...review.blockingQuestions])).slice(0,10),
+      expertReview:review,
+    };
+  }
+
+  private async reviewExpertDecision(input:{
+    inspection:OliveInspectionResult;
+    diagnosis?:PlantDiagnosis;
+    plan:PruningPlan;
+    farmContext:string;
+    mode:'field'|'pruning';
+  }):Promise<OliveExpertReview>{
+    const prompt=`Du er KRITIKER i et ekspertpanel for profesjonell olivendrift i Alicante. Du ser IKKE originalbildene. Du skal derfor aldri finne på nye visuelle fakta. Du skal kontrollere om ekspertens konklusjoner faktisk følger av den strukturerte visuelle inspeksjonen og kjent gårdskontekst.
+
+MODUS: ${input.mode}
+VISUELL INSPEKSJON:
+${JSON.stringify(input.inspection,null,2)}
+
+EKSPERTENS DIAGNOSE:
+${JSON.stringify(input.diagnosis||null,null,2)}
+
+BESKJÆRINGSPLAN:
+${JSON.stringify(input.plan,null,2)}
+
+GÅRDSKONTEKST:
+${input.farmContext||'Ingen ekstra historikk.'}
+
+Kontroller spesielt:
+- Har eksperten gjort sorten sikrere enn bildetrekkene tillater?
+- Forveksles synlig symptom med sikker årsak?
+- Er et GREEN-tiltak virkelig lavrisiko ut fra observasjonene?
+- Er store strukturelle inngrep korrekt RED/YELLOW?
+- Bevares produktivt bladverk, lysbalanse og gradvis fornyelse?
+- Finnes det et konkret nytt bilde/måling som kan løse usikkerheten?
+- Vær ikke passiv: godkjenn tydelige lavrisikotiltak når de er godt begrunnet.
+
+stepReviews bruker 0-basert indeks fra pruningSteps. KEEP betyr at tiltaket kan stå. DOWNGRADE betyr øk forsiktighet/risko. REMOVE betyr at anbefalingen ikke har nok grunnlag og skal omgjøres til MONITOR.
+
+Returner KUN JSON:
+{
+  "verdict":"APPROVE|ADJUST|NEED_MORE_EVIDENCE",
+  "confidence":0,
+  "summary":"kort andre-vurdering",
+  "agreements":["..."],
+  "concerns":["..."],
+  "blockingQuestions":["..."],
+  "varietyReview":{"status":"AGREE|UNCERTAIN|DISAGREE","reason":"..."},
+  "diagnosisReview":{"status":"AGREE|UNCERTAIN|DISAGREE","reason":"..."},
+  "stepReviews":[
+    {"index":0,"verdict":"KEEP|DOWNGRADE|REMOVE","riskLevel":"GREEN|YELLOW|RED","reason":"..."}
+  ]
+}`;
+    return this.callExpertCritic(prompt);
+  }
+
   private async inspectOliveImages(imagesBase64:string[],lang:string,farmContext=''):Promise<OliveInspectionResult>{
     const languageInstruction=lang==='no'?'Svar på norsk.':lang==='es'?'Responde en español.':'Answer in English.';
     const prompt=`Du er VISUELL OLIVENINSPEKTØR. Du skal observere og klassifisere, IKKE gi behandlings- eller beskjæringsråd.
@@ -1167,7 +1279,33 @@ Returner KUN JSON:
       raw.varietyConfidence=inspection.varietyAssessment.confidence;
     }
     raw.missingDetails=Array.from(new Set([...(raw.missingDetails||[]),...inspection.nextPhotos]));
-    return sanitizeComprehensiveAnalysis(raw);
+    let result=sanitizeComprehensiveAnalysis(raw);
+    if(this.needsComprehensiveCritic(result)){
+      try{
+        const review=await this.reviewExpertDecision({
+          inspection,
+          diagnosis:result.diagnosis,
+          plan:result.pruning,
+          farmContext,
+          mode:'field',
+        });
+        result={
+          ...result,
+          pruning:this.applyCriticToPlan(result.pruning,review),
+          expertReview:review,
+          needsMoreImages:result.needsMoreImages||review.verdict==='NEED_MORE_EVIDENCE'||review.varietyReview?.status==='DISAGREE'||review.varietyReview?.status==='UNCERTAIN',
+          missingDetails:Array.from(new Set([
+            ...result.missingDetails,
+            ...review.blockingQuestions,
+            ...(review.varietyReview&&review.varietyReview.status!=='AGREE'?[review.varietyReview.reason]:[]),
+            ...(review.diagnosisReview&&review.diagnosisReview.status==='DISAGREE'?[review.diagnosisReview.reason]:[]),
+          ])).filter(Boolean).slice(0,12),
+        };
+      }catch(error){
+        console.warn('[geminiService] Expert critic unavailable; keeping primary field assessment',error);
+      }
+    }
+    return result;
   }
 
   async analyzeDrone(imagesBase64: string[], lang: string): Promise<DroneAnalysisResult> {
@@ -1254,7 +1392,21 @@ Returner KUN JSON:
 }`;
     const raw=await this.callVisionJson<PruningPlan>(images,prompt,{} as PruningPlan);
     raw.missingDetails=Array.from(new Set([...(raw.missingDetails||[]),...inspection.nextPhotos]));
-    return sanitizePruningPlan(raw,inspection.varietyAssessment.confidence);
+    let plan=sanitizePruningPlan(raw,inspection.varietyAssessment.confidence);
+    if(this.needsPruningCritic(plan)){
+      try{
+        const review=await this.reviewExpertDecision({
+          inspection,
+          plan,
+          farmContext,
+          mode:'pruning',
+        });
+        plan=this.applyCriticToPlan(plan,review);
+      }catch(error){
+        console.warn('[geminiService] Expert critic unavailable; keeping primary pruning assessment',error);
+      }
+    }
+    return plan;
   }
 
   async analyzeReceipt(base64Image: string): Promise<any> {
