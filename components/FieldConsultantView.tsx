@@ -32,7 +32,7 @@ import AgentFeedbackPanel from './AgentFeedbackPanel';
 
 type ResultTab = 'summary' | 'health' | 'pruning' | 'history';
 
-const MAX_ANALYSIS_IMAGES = 6;
+const MAX_ANALYSIS_IMAGES = 5;
 
 function makeId(prefix: string) {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `${prefix}-${crypto.randomUUID()}`;
@@ -225,10 +225,14 @@ const FieldConsultantView: React.FC = () => {
     }
     const context = canvasRef.current.getContext('2d');
     if (!context) return;
-    canvasRef.current.width = videoRef.current.videoWidth;
-    canvasRef.current.height = videoRef.current.videoHeight;
-    context.drawImage(videoRef.current, 0, 0);
-    const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.85);
+    const maxDim=1280;
+    const sourceW=videoRef.current.videoWidth;
+    const sourceH=videoRef.current.videoHeight;
+    const scale=Math.min(1,maxDim/Math.max(sourceW,sourceH));
+    canvasRef.current.width=Math.max(1,Math.round(sourceW*scale));
+    canvasRef.current.height=Math.max(1,Math.round(sourceH*scale));
+    context.drawImage(videoRef.current,0,0,canvasRef.current.width,canvasRef.current.height);
+    const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.74);
     setImages(prev => [...prev, dataUrl]);
     setError(null);
   };
@@ -247,7 +251,7 @@ const FieldConsultantView: React.FC = () => {
         return;
       }
       const selectedFiles = Array.from(files).slice(0, remainingSlots);
-      const dataUrls = await filesToResizedDataUrls(selectedFiles);
+      const dataUrls = await filesToResizedDataUrls(selectedFiles,{maxDim:1280,quality:0.74});
       if (!dataUrls.length) {
         setError('Ingen av bildene kunne leses.');
         return;
@@ -267,6 +271,11 @@ const FieldConsultantView: React.FC = () => {
   const runAnalysis = async () => {
     if (!images.length) return;
     const base64List = images.map(img => img.split(',')[1]).filter(Boolean);
+    const approxPayloadMb=base64List.reduce((sum,item)=>sum+item.length,0)*0.75/1024/1024;
+    if(approxPayloadMb>3.8){
+      setError('Bildene er fortsatt for store for sikker AI-analyse. Fjern ett bilde eller last dem opp på nytt; Olivia komprimerer nye bilder automatisk.');
+      return;
+    }
     if (!base64List.length) {
       setError('Bildene kunne ikke klargjøres for analyse. Prøv å laste dem opp på nytt.');
       return;
