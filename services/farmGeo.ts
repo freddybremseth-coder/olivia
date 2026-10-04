@@ -1,24 +1,8 @@
 import * as turf from '@turf/turf';
 import type { Parcel } from '../types';
+import type { FarmGeoContext, FarmGeoSource } from '../types/farmGeo';
 
-export type FarmGeoSource='device_live_capture'|'device_at_upload'|'manual'|'exif'|'none';
-export type FarmGeoMatchMethod='polygon'|'boundary_near'|'nearest'|'manual'|'unmatched';
-
-export type FarmGeoContext={
-  lat:number;
-  lon:number;
-  accuracyM:number;
-  altitudeM?:number;
-  headingDeg?:number;
-  capturedAt:string;
-  source:FarmGeoSource;
-  parcelId?:string;
-  parcelName?:string;
-  matchMethod:FarmGeoMatchMethod;
-  matchDistanceM?:number;
-  matchConfidence:number;
-  ambiguousParcelIds?:string[];
-};
+export type { FarmGeoContext, FarmGeoSource, FarmGeoMatchMethod } from '../types/farmGeo';
 
 type ParcelShape={
   parcel:Parcel;
