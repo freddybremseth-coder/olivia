@@ -82,13 +82,6 @@ function confidenceScore(reasons: string[], values: IrrigationZoneAdvice['values
   return Math.min(0.98, Math.round(score * 100) / 100);
 }
 
-function minutesFromSeverity(severity: IrrigationAdvisorSeverity, treeGroup?: string): number | undefined {
-  const youngTrees = (treeGroup || '').toLowerCase().includes('unge') || (treeGroup || '').toLowerCase().includes('young');
-  if (severity === 'critical') return youngTrees ? 150 : 120;
-  if (severity === 'warning') return youngTrees ? 90 : 75;
-  if (severity === 'watch') return youngTrees ? 45 : undefined;
-  return undefined;
-}
 
 function recentIrrigationForZone(events: IrrigationEvent[], zoneId: string): IrrigationEvent | undefined {
   return events
