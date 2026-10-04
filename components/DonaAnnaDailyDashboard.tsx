@@ -363,6 +363,48 @@ function buildParcelAttention(farmTruth:any):ParcelAttentionRow[] {
     .slice(0,8);
 }
 
+type WeekBrief = {
+  completed7:number;
+  dueNext7:number;
+  postponedFollowUps7:number;
+  observations7:number;
+};
+
+function buildWeekBrief(farmTruth:any):WeekBrief {
+  const today=new Date();today.setHours(12,0,0,0);
+  const sevenAgo=new Date(today);sevenAgo.setDate(sevenAgo.getDate()-7);
+  const sevenAhead=new Date(today);sevenAhead.setDate(sevenAhead.getDate()+7);
+
+  const completed7=(farmTruth?.events||[]).filter((event:any)=>{
+    if(event.event_status!=='completed'||!event.occurred_on)return false;
+    const date=new Date(String(event.occurred_on).slice(0,10)+'T12:00:00');
+    return !Number.isNaN(date.getTime())&&date>=sevenAgo&&date<=today;
+  }).length;
+
+  let dueNext7=0;
+  let postponedFollowUps7=0;
+  for(const item of farmTruth?.yearWheel||[]){
+    if(['done','skipped','suggested'].includes(item.status))continue;
+    if(item.status==='postponed'&&item.postponed_until){
+      const date=new Date(item.postponed_until+'T12:00:00');
+      if(!Number.isNaN(date.getTime())&&date>=today&&date<=sevenAhead)postponedFollowUps7++;
+      continue;
+    }
+    if(!item.target_day)continue;
+    const date=new Date(item.target_year,item.target_month-1,item.target_day);
+    date.setHours(12,0,0,0);
+    if(date>=today&&date<=sevenAhead)dueNext7++;
+  }
+
+  const observations7=(farmTruth?.observations||[]).filter((observation:any)=>{
+    if(!observation.observed_at)return false;
+    const date=new Date(String(observation.observed_at).slice(0,10)+'T12:00:00');
+    return !Number.isNaN(date.getTime())&&date>=sevenAgo&&date<=today;
+  }).length;
+
+  return{completed7,dueNext7,postponedFollowUps7,observations7};
+}
+
 function buildDailyTopFive(params:{
   farmTruth:any;
   farmQuestions:FarmQuestion[];
@@ -579,6 +621,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   const topFive = buildDailyTopFive({farmTruth,farmQuestions,seasonExecution,actions});
   const delaySummary = buildDelaySummary(farmTruth);
   const parcelAttention = buildParcelAttention(farmTruth);
+  const weekBrief = buildWeekBrief(farmTruth);
   const currentMonth = new Date().getMonth() + 1;
   const oilWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_oil;
   const tableWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_table_olives;
@@ -627,6 +670,23 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       {isLoading && loadState === 'loading' ? (
         <div className="glass rounded-[2rem] p-8 border border-white/10 text-slate-400 flex items-center gap-3"><Loader2 size={18} className="animate-spin" /> Henter dagsdata fra Supabase...</div>
       ) : null}
+
+      {farmTruth&&<div className="glass rounded-[2rem] p-6 border border-white/10">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.24em] font-black text-green-300">Denne uken</p>
+            <h3 className="text-xl font-black text-white mt-1">Kort driftsbrief</h3>
+            <p className="text-xs text-slate-500 mt-2">Faktisk utført siste 7 dager og det som har eksakt dato de neste 7 dagene. Månedspunkter får ikke en oppdiktet ukedato.</p>
+          </div>
+          {onNavigate&&<button onClick={()=>onNavigate('farm_journal')} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white">Åpne driftsjournal →</button>}
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
+          <div className="rounded-2xl border border-green-500/15 bg-green-500/[0.04] p-4"><p className="text-[9px] uppercase tracking-widest text-green-300 font-black">Utført siste 7d</p><p className="text-2xl font-black text-white mt-1">{weekBrief.completed7}</p></div>
+          <div className="rounded-2xl border border-blue-400/15 bg-blue-400/[0.04] p-4"><p className="text-[9px] uppercase tracking-widest text-blue-200 font-black">Forfaller neste 7d</p><p className="text-2xl font-black text-white mt-1">{weekBrief.dueNext7}</p></div>
+          <div className="rounded-2xl border border-amber-300/15 bg-amber-300/[0.04] p-4"><p className="text-[9px] uppercase tracking-widest text-amber-200 font-black">Utsatt oppfølging</p><p className="text-2xl font-black text-white mt-1">{weekBrief.postponedFollowUps7}</p></div>
+          <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.04] p-4"><p className="text-[9px] uppercase tracking-widest text-cyan-200 font-black">Feltobservasjoner 7d</p><p className="text-2xl font-black text-white mt-1">{weekBrief.observations7}</p></div>
+        </div>
+      </div>}
 
       {farmTruth&&<div className="glass rounded-[2rem] p-6 border border-white/10">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
