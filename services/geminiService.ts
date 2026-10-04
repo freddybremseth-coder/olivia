@@ -2,6 +2,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Sensor, Recipe, Ingredient } from "../types";
 import { isSupabaseConfigured, supabase } from './supabaseClient';
+import { canonicalVarietyName, scoreReferenceEvidence } from './varietyReference';
 
 export interface FarmInsight {
   id: string;
@@ -1198,25 +1199,35 @@ Returner KUN JSON:
   }
 
   private async fetchFarmVarietyReferenceImages(parcelId?:string){
-    if(!isSupabaseConfigured)return[] as Array<{url:string;label:string;varietyName:string}>;
+    if(!isSupabaseConfigured)return[] as Array<{url:string;label:string;varietyName:string;qualityScore:number}>;
     const {data,error}=await supabase.from('olive_variety_references')
-      .select('variety_name,parcel_id,tree_label,image_urls,confirmed_at')
+      .select('variety_name,parcel_id,tree_label,image_urls,inspection_json,confirmed_at')
       .eq('status','confirmed')
       .order('confirmed_at',{ascending:false})
-      .limit(60);
+      .limit(80);
     if(error){
       console.warn('[geminiService] variety reference images unavailable',error);
       return[];
     }
-    const rows=[...(data||[])].sort((a:any,b:any)=>{
-      const ap=parcelId&&a.parcel_id===parcelId?1:0;
-      const bp=parcelId&&b.parcel_id===parcelId?1:0;
-      return bp-ap||String(b.confirmed_at||'').localeCompare(String(a.confirmed_at||''));
+    const eligible=(data||[]).map((row:any)=>({
+      row,
+      quality:scoreReferenceEvidence(
+        row.inspection_json||{},
+        Array.isArray(row.image_urls)?row.image_urls.length:0,
+      ),
+    })).filter(item=>item.quality.eligibleForVisualMatching);
+
+    eligible.sort((a:any,b:any)=>{
+      const ap=parcelId&&a.row.parcel_id===parcelId?1:0;
+      const bp=parcelId&&b.row.parcel_id===parcelId?1:0;
+      return bp-ap||b.quality.score-a.quality.score||String(b.row.confirmed_at||'').localeCompare(String(a.row.confirmed_at||''));
     });
-    const out:Array<{url:string;label:string;varietyName:string}>=[];
+
+    const out:Array<{url:string;label:string;varietyName:string;qualityScore:number}>=[];
     const perVariety=new Map<string,number>();
-    for(const row of rows as any[]){
-      const variety=String(row.variety_name||'').trim();
+    for(const item of eligible as any[]){
+      const row=item.row;
+      const variety=canonicalVarietyName(String(row.variety_name||'').trim());
       if(!variety)continue;
       const key=variety.toLowerCase();
       if((perVariety.get(key)||0)>=2)continue;
@@ -1225,7 +1236,8 @@ Returner KUN JSON:
       out.push({
         url:String(urls[0]),
         varietyName:variety,
-        label:'BEKREFTET REFERANSE · '+variety+(row.tree_label?' · '+row.tree_label:'')+(parcelId&&row.parcel_id===parcelId?' · samme parsell':''),
+        qualityScore:item.quality.score,
+        label:'BEKREFTET STERK REFERANSE · '+variety+' · kvalitet '+item.quality.score+'/100'+(row.tree_label?' · '+row.tree_label:'')+(parcelId&&row.parcel_id===parcelId?' · samme parsell':''),
       });
       perVariety.set(key,(perVariety.get(key)||0)+1);
       if(out.length>=6)break;
@@ -1251,7 +1263,7 @@ ${JSON.stringify(inspection.varietyAssessment,null,2)}
 
 Regler:
 - Sammenlign konkrete morfologiske trekk: fruktform/størrelse, bladproporsjon, spiss/base, krone/vekstform når relevant, og endokarp hvis synlig.
-- Bekreftet referanse er sammenligningsgrunnlag, men ikke automatisk fasit for det nye treet.
+- Alle referansebildene som sendes inn har bestått Olivias visuelle kvalitetsport. Likevel er de bare sammenligningsgrunnlag, ikke automatisk fasit.
 - Ikke velg en referansesort bare fordi den finnes i biblioteket.
 - Hvis nytt bilde mangler organene som trengs for å skille sortene, behold lav sikkerhet.
 - Ved tydelig konflikt mellom opprinnelig vurdering og referansebilder, forklar konflikten.

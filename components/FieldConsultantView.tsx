@@ -30,7 +30,7 @@ import { buildLearningContext, recordAgentAssessment } from '../services/farmInt
 import FarmQuestionsPanel from './FarmQuestionsPanel';
 import AgentFeedbackPanel from './AgentFeedbackPanel';
 import OlivePhotoProtocol from './OlivePhotoProtocol';
-import { saveConfirmedVarietyReference } from '../services/varietyReference';
+import { saveConfirmedVarietyReference, scoreReferenceEvidence } from '../services/varietyReference';
 
 type ResultTab = 'summary' | 'health' | 'pruning' | 'history';
 
@@ -407,6 +407,10 @@ const FieldConsultantView: React.FC = () => {
     startCamera();
   };
 
+  const currentReferenceQuality=analysis?.inspection
+    ?scoreReferenceEvidence(analysis.inspection,images.length)
+    :null;
+
   const renderMarkers = (plan?: PruningPlan) => {
     if (!plan?.pruningSteps?.length) return null;
     return (
@@ -550,8 +554,15 @@ const FieldConsultantView: React.FC = () => {
               </div>}
 
               {analysis.inspection&&<div className="rounded-[2rem] border border-[#d9b657]/20 bg-[#d9b657]/[0.035] p-5">
-                <p className="text-[10px] uppercase tracking-widest font-black text-[#d9b657]">Lær Olivia · bekreftet sort</p>
-                <p className="text-xs text-slate-400 mt-1">Bekreft bare når du faktisk kjenner sorten. Da blir bildene og trekkene en gårdsreferanse for senere analyser.</p>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div><p className="text-[10px] uppercase tracking-widest font-black text-[#d9b657]">Lær Olivia · bekreftet sort</p><p className="text-xs text-slate-400 mt-1">Bekreft bare når du faktisk kjenner sorten. Sorten lagres som gårdskunnskap uansett, men bare sterke bildesett brukes i direkte bilde-match.</p></div>
+                  {currentReferenceQuality&&<span className={'rounded-full border px-2 py-1 text-[9px] font-black '+(currentReferenceQuality.eligibleForVisualMatching?'border-purple-500/25 text-purple-300':'border-amber-500/25 text-amber-300')}>{currentReferenceQuality.score}/100 · {currentReferenceQuality.eligibleForVisualMatching?'VISUELL REFERANSE':'KJENT SORT'}</span>}
+                </div>
+                {currentReferenceQuality&&!currentReferenceQuality.eligibleForVisualMatching&&<div className="mt-3 rounded-xl border border-amber-500/15 bg-amber-500/[0.04] p-3">
+                  <p className="text-[10px] text-amber-100">Du kan fortsatt bekrefte sorten, men dette bildesettet blir ikke brukt som visuell fasit ennå.</p>
+                  {currentReferenceQuality.missing.length>0&&<p className="text-[10px] text-slate-500 mt-1">For en sterk referanse: {currentReferenceQuality.missing.slice(0,3).join(' · ')}</p>}
+                </div>}
+                {currentReferenceQuality?.eligibleForVisualMatching&&<div className="mt-3 rounded-xl border border-purple-500/15 bg-purple-500/[0.04] p-3 text-[10px] text-purple-200">Bildesettet har nok sortsrelevante trekk til å kunne brukes i senere direkte sammenligninger.</div>}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
                   <div>
                     <input list="dona-anna-varieties" value={referenceVariety} onChange={e=>{setReferenceVariety(e.target.value);setReferenceSaved(false);}} placeholder="Bekreftet sort" className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white"/>

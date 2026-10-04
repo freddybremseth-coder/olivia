@@ -18,6 +18,94 @@ export type OliveVarietyReference={
   updated_at:string;
 };
 
+export type VarietyReferenceQuality={
+  score:number;
+  grade:'strong'|'usable'|'weak';
+  eligibleForVisualMatching:boolean;
+  strengths:string[];
+  missing:string[];
+};
+
+export function canonicalVarietyName(value:string){
+  const normalized=String(value||'')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,' ')
+    .trim();
+  if(normalized==='gordal'||normalized==='gordal sevillana')return'Gordal Sevillana';
+  if(normalized==='genovesa'||normalized==='genoesa')return'Genovesa';
+  if(normalized==='changlot'||normalized==='changlot real')return'Changlot Real';
+  if(normalized==='picual')return'Picual';
+  return String(value||'').trim();
+}
+
+export function scoreReferenceEvidence(
+  inspectionInput?:Partial<OliveInspectionResult>|Record<string,unknown>|null,
+  imageCount=0,
+):VarietyReferenceQuality{
+  const inspection=(inspectionInput||{}) as Partial<OliveInspectionResult>;
+  const visible=inspection.visibleOrgans||{} as OliveInspectionResult['visibleOrgans'];
+  const observations=Array.isArray(inspection.observations)?inspection.observations:[];
+  const fruitTraits=Array.isArray(inspection.fruitTraits)?inspection.fruitTraits:[];
+  const endocarpTraits=Array.isArray(inspection.endocarpTraits)?inspection.endocarpTraits:[];
+
+  let score=0;
+  const strengths:string[]=[];
+  const missing:string[]=[];
+
+  if(inspection.imageQuality==='GOOD'){score+=20;strengths.push('god bildekvalitet');}
+  else if(inspection.imageQuality==='LIMITED'){score+=8;}
+  else missing.push('bedre skarpe bilder');
+
+  if(imageCount>=3){score+=15;strengths.push('flere vinkler');}
+  else if(imageCount>=1){score+=5;missing.push('minst 3 komplementære bilder');}
+  else missing.push('referansebilder');
+
+  if(visible.wholeTree){score+=5;strengths.push('heltre');}
+  else missing.push('heltre');
+
+  if(visible.trunk){score+=5;}
+  if(visible.leaves){score+=15;strengths.push('bladverk');}
+  else missing.push('tydelig bladverk');
+
+  if(visible.fruit){score+=20;strengths.push('frukt');}
+  if(visible.endocarp){score+=25;strengths.push('stein/endokarp');}
+
+  if(observations.length>=3)score+=5;
+  if(fruitTraits.length>=2)score+=5;
+  if(endocarpTraits.length>=1)score+=5;
+
+  if(!visible.fruit&&!visible.endocarp)missing.push('frukt eller stein/endokarp for sikker sortsammenligning');
+
+  score=Math.max(0,Math.min(100,score));
+  const eligibleForVisualMatching=
+    score>=60
+    && Boolean(visible.leaves)
+    && Boolean(visible.fruit||visible.endocarp)
+    && imageCount>=1;
+
+  const grade:VarietyReferenceQuality['grade']=
+    eligibleForVisualMatching&&score>=75?'strong'
+      :score>=45?'usable'
+      :'weak';
+
+  return{
+    score,
+    grade,
+    eligibleForVisualMatching,
+    strengths:Array.from(new Set(strengths)).slice(0,8),
+    missing:Array.from(new Set(missing)).slice(0,8),
+  };
+}
+
+export function scoreVarietyReference(ref:OliveVarietyReference):VarietyReferenceQuality{
+  return scoreReferenceEvidence(
+    ref.inspection_json as Partial<OliveInspectionResult>,
+    Array.isArray(ref.image_urls)?ref.image_urls.length:0,
+  );
+}
+
 function makeId(prefix:string){
   if(typeof crypto!=='undefined'&&'randomUUID' in crypto)return prefix+'-'+crypto.randomUUID();
   return prefix+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
@@ -154,19 +242,23 @@ export async function buildVarietyReferenceContext(parcelId?:string):Promise<str
   const ranked=[...rows].sort((a,b)=>{
     const aLocal=a.parcel_id&&parcelId&&a.parcel_id===parcelId?1:0;
     const bLocal=b.parcel_id&&parcelId&&b.parcel_id===parcelId?1:0;
-    return bLocal-aLocal||String(b.confirmed_at).localeCompare(String(a.confirmed_at));
+    const aq=scoreVarietyReference(a).score;
+    const bq=scoreVarietyReference(b).score;
+    return bLocal-aLocal||bq-aq||String(b.confirmed_at).localeCompare(String(a.confirmed_at));
   }).slice(0,20);
   const lines=['BEKREFTET SORTSREFERANSER FRA DOÑA ANNA (bruk som gårdsspesifikk prior, men krev fortsatt synlige trekk):'];
   for(const row of ranked){
     const inspection=(row.inspection_json||{}) as OliveInspectionResult;
+    const quality=scoreVarietyReference(row);
     const traits=[
       ...(Array.isArray(inspection.fruitTraits)?inspection.fruitTraits.slice(0,3):[]),
       ...(Array.isArray(inspection.endocarpTraits)?inspection.endocarpTraits.slice(0,3):[]),
       ...(Array.isArray(inspection.observations)?inspection.observations.slice(0,2):[]),
     ].filter(Boolean);
     const scope=row.parcel_id===parcelId?'SAMME PARSELL':'GÅRDSREFERANSE';
-    lines.push('- ['+scope+'] '+row.variety_name+(row.tree_label?' · '+row.tree_label:'')+(traits.length?' · trekk: '+traits.join('; '):''));
+    const visual=quality.eligibleForVisualMatching?'VISUELL STERK':'KJENT SORT, SVAKERE BILDEGRUNNLAG';
+    lines.push('- ['+scope+' · '+visual+' · '+quality.score+'/100] '+canonicalVarietyName(row.variety_name)+(row.tree_label?' · '+row.tree_label:'')+(traits.length?' · trekk: '+traits.join('; '):''));
   }
-  lines.push('REGEL: En bekreftet referanse styrker en kandidat, men erstatter ikke morfologisk sammenligning. Ved konflikt mellom nytt bilde og referanse skal Olivia vise konflikten.');
+  lines.push('REGEL: Bekreftet sort er menneskelig gårdskunnskap. Visuelle trekk fra svake referansebilder skal ikke brukes som sterkt bildebevis. Direkte bilde-mot-bilde-sammenligning skal bare bruke referanser som består kvalitetsporten.');
   return lines.join('\n').slice(0,10000);
 }

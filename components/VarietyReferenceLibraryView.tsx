@@ -5,7 +5,9 @@ import {
 } from 'lucide-react';
 import type { Parcel } from '../types';
 import {
+  canonicalVarietyName,
   fetchVarietyReferences,
+  scoreVarietyReference,
   updateVarietyReference,
   type OliveVarietyReference,
 } from '../services/varietyReference';
@@ -14,6 +16,8 @@ import type { OliveInspectionResult } from '../services/geminiService';
 type Props={parcels:Parcel[]};
 
 const inputClass='w-full rounded-xl border border-white/10 bg-black/35 px-3 py-2.5 text-sm text-white outline-none focus:border-green-500/40';
+const CORE_VARIETIES=['Gordal Sevillana','Genovesa','Changlot Real','Picual'] as const;
+const CALIBRATION_TARGET=3;
 
 function traitsOf(ref:OliveVarietyReference){
   const inspection=(ref.inspection_json||{}) as OliveInspectionResult;
@@ -60,8 +64,25 @@ const VarietyReferenceLibraryView:React.FC<Props>=({parcels})=>{
   const stats=useMemo(()=>({
     confirmed:rows.filter(r=>r.status==='confirmed').length,
     rejected:rows.filter(r=>r.status==='rejected').length,
-    varieties:new Set(rows.filter(r=>r.status==='confirmed').map(r=>r.variety_name.trim().toLowerCase())).size,
+    varieties:new Set(rows.filter(r=>r.status==='confirmed').map(r=>canonicalVarietyName(r.variety_name).toLowerCase())).size,
     images:rows.filter(r=>r.status==='confirmed').reduce((sum,r)=>sum+(Array.isArray(r.image_urls)?r.image_urls.length:0),0),
+    visualReady:rows.filter(r=>r.status==='confirmed'&&scoreVarietyReference(r).eligibleForVisualMatching).length,
+  }),[rows]);
+
+  const calibration=useMemo(()=>CORE_VARIETIES.map(variety=>{
+    const refs=rows.filter(row=>row.status==='confirmed'&&canonicalVarietyName(row.variety_name)===variety);
+    const strong=refs.filter(row=>{
+      const quality=scoreVarietyReference(row);
+      return quality.eligibleForVisualMatching&&quality.grade==='strong';
+    }).length;
+    const usable=refs.filter(row=>scoreVarietyReference(row).grade!=='weak').length;
+    return{
+      variety,
+      confirmed:refs.length,
+      strong,
+      usable,
+      ready:strong>=CALIBRATION_TARGET,
+    };
   }),[rows]);
 
   const openEdit=(row:OliveVarietyReference)=>{
@@ -131,11 +152,33 @@ const VarietyReferenceLibraryView:React.FC<Props>=({parcels})=>{
 
     {error&&<div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-100 flex gap-3"><AlertTriangle size={18} className="flex-shrink-0"/>{error}</div>}
 
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
       <Stat label="Bekreftede trær" value={stats.confirmed}/>
       <Stat label="Bekreftede sorter" value={stats.varieties}/>
       <Stat label="Referansebilder" value={stats.images}/>
+      <Stat label="Klar for bilde-match" value={stats.visualReady}/>
       <Stat label="Avviste" value={stats.rejected}/>
+    </div>
+
+    <div className="rounded-[2rem] border border-white/10 bg-white/[0.025] p-5">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+        <div>
+          <p className="text-[10px] uppercase tracking-widest font-black text-purple-300">Kalibrering av kjente gårdssorter</p>
+          <h3 className="text-lg font-black text-white mt-1">Mål: minst {CALIBRATION_TARGET} sterke referansetrær per sort</h3>
+          <p className="text-xs text-slate-500 mt-1">Et bekreftet tre teller som gårdskunnskap med én gang. Det teller som sterk visuell referanse først når bildene har nok morfologisk informasjon.</p>
+        </div>
+        <p className="text-xs text-slate-500">{calibration.filter(item=>item.ready).length}/{calibration.length} kjernesorter kalibrert</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mt-4">
+        {calibration.map(item=><div key={item.variety} className={'rounded-2xl border p-4 '+(item.ready?'border-green-500/20 bg-green-500/[0.04]':'border-white/10 bg-black/20')}>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-black text-white">{item.variety}</p>
+            <span className={'text-[9px] font-black rounded-full border px-2 py-0.5 '+(item.ready?'border-green-500/25 text-green-300':'border-white/10 text-slate-400')}>{item.strong}/{CALIBRATION_TARGET} sterke</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-white/5 overflow-hidden mt-3"><div className="h-full bg-green-500" style={{width:Math.min(100,(item.strong/CALIBRATION_TARGET)*100)+'%'}}/></div>
+          <p className="text-[10px] text-slate-500 mt-2">{item.confirmed} bekreftet · {item.usable} brukbart bildegrunnlag</p>
+        </div>)}
+      </div>
     </div>
 
     <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 flex flex-col md:flex-row gap-3">
@@ -153,10 +196,12 @@ const VarietyReferenceLibraryView:React.FC<Props>=({parcels})=>{
         const traits=traitsOf(row);
         const parcel=parcels.find(p=>p.id===row.parcel_id);
         const inspection=(row.inspection_json||{}) as OliveInspectionResult;
+        const quality=scoreVarietyReference(row);
+        const qualityLabel=quality.grade==='strong'?'Sterk':quality.grade==='usable'?'Brukbar':'Svak';
         return <div key={row.id} className={'rounded-[2rem] border p-5 '+(row.status==='confirmed'?'border-green-500/15 bg-green-500/[0.025]':row.status==='rejected'?'border-red-500/15 bg-red-500/[0.025]':'border-amber-500/15 bg-amber-500/[0.025]')}>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="flex flex-wrap gap-2 items-center"><span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+(row.status==='confirmed'?'border-green-500/25 text-green-300':row.status==='rejected'?'border-red-500/25 text-red-300':'border-amber-500/25 text-amber-300')}>{statusLabel(row.status)}</span><span className="text-[9px] text-slate-600">{String(row.confirmed_at).slice(0,10)}</span></div>
+              <div className="flex flex-wrap gap-2 items-center"><span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+(row.status==='confirmed'?'border-green-500/25 text-green-300':row.status==='rejected'?'border-red-500/25 text-red-300':'border-amber-500/25 text-amber-300')}>{statusLabel(row.status)}</span><span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+(quality.eligibleForVisualMatching?'border-purple-500/25 text-purple-300':'border-white/10 text-slate-500')}>{qualityLabel} bildebevis · {quality.score}/100</span><span className="text-[9px] text-slate-600">{String(row.confirmed_at).slice(0,10)}</span></div>
               <h3 className="text-xl font-black text-white mt-2">{row.variety_name}</h3>
               <p className="text-xs text-slate-500 mt-1">{row.tree_label||'Ingen tre-ID'}{parcel?' · '+parcel.name:''}</p>
             </div>
@@ -168,6 +213,11 @@ const VarietyReferenceLibraryView:React.FC<Props>=({parcels})=>{
           <div className="grid grid-cols-2 gap-2 mt-4">
             <Mini label="Bildegrunnlag" value={inspection.imageQuality||'—'}/>
             <Mini label="AI-kandidat da lagret" value={inspection.varietyAssessment?.bestCandidate||'—'}/>
+          </div>
+          <div className={'mt-3 rounded-xl border p-3 '+(quality.eligibleForVisualMatching?'border-purple-500/15 bg-purple-500/[0.04]':'border-amber-500/15 bg-amber-500/[0.04]')}>
+            <p className="text-[9px] uppercase tracking-widest font-black text-slate-400">{quality.eligibleForVisualMatching?'Brukes i direkte bilde-match':'Ikke brukt i direkte bilde-match ennå'}</p>
+            <p className="text-[10px] text-slate-500 mt-1">{quality.eligibleForVisualMatching?'Bildesettet har nok sortsrelevante trekk til å sammenligne ukjente trær.':'Sorten er fortsatt bekreftet gårdskunnskap, men bildene er for svake som visuell fasit.'}</p>
+            {!quality.eligibleForVisualMatching&&quality.missing.length>0&&<p className="text-[10px] text-amber-200 mt-2">Forbedre med: {quality.missing.slice(0,3).join(' · ')}</p>}
           </div>
 
           {traits.length>0&&<div className="mt-4"><p className="text-[9px] uppercase tracking-widest font-black text-slate-500">Lagrede synlige trekk</p><div className="mt-2 space-y-1">{traits.slice(0,5).map((trait,i)=><p key={i} className="text-xs text-slate-400">• {trait}</p>)}</div></div>}
