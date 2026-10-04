@@ -335,7 +335,7 @@ const FarmJournalView:React.FC<{
         })),
       });
       setNotice('Bruken er lagret som verifisert driftshendelse og vises nå under «Bekreftet brukt».');
-      closeUsageConfirmation();
+      setUsageSourceRows([]);setUsageProducts([]);setUsageDate('');setUsageParcel('');setUsageNotes('');
       await load();
       setTab('inputs');
     }catch(e:any){setError(e?.message||'Kunne ikke bekrefte bruken av innsatsmidlene.');}
