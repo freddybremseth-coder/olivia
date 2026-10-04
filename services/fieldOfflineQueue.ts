@@ -2,7 +2,7 @@ import type { FarmObservation } from '../types/farmIoT';
 import type { FarmGeoContext } from '../types/farmGeo';
 import { insertFarmObservation } from './farmIoT';
 import { registerFarmMediaEvidence, uploadDataUrlFarmMedia } from './farmMediaEvidence';
-import { upsertFarmIssueFromObservation, type FarmIssueDraft } from './farmIssues';
+import { attachObservationToFarmIssue, upsertFarmIssueFromObservation, type FarmIssueDraft } from './farmIssues';
 
 const DB_NAME='olivia-field-offline';
 const DB_VERSION=1;
@@ -19,6 +19,7 @@ export type QueuedFieldObservation={
   uploadedUrls?:string[];
   geo?:FarmGeoContext|null;
   issueDraft?:FarmIssueDraft;
+  existingIssueId?:string;
 };
 
 function openDb():Promise<IDBDatabase>{
@@ -110,6 +111,8 @@ export async function syncQueuedFieldObservation(item:QueuedFieldObservation){
 
     if(item.issueDraft){
       await upsertFarmIssueFromObservation(saved,item.issueDraft,item.geo);
+    }else if(item.existingIssueId){
+      await attachObservationToFarmIssue(item.existingIssueId,saved);
     }
 
     await registerFarmMediaEvidence({
