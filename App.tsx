@@ -22,6 +22,7 @@ const IrrigationView = lazy(() => import('./components/IrrigationView'));
 const IrrigationAdvisorView = lazy(() => import('./components/IrrigationAdvisorView'));
 const IrrigationLogView = lazy(() => import('./components/IrrigationLogView'));
 const FieldObservationsView = lazy(() => import('./components/FieldObservationsView'));
+const FieldModeView = lazy(() => import('./components/FieldModeView'));
 const SalinityDashboard = lazy(() => import('./components/SalinityDashboard'));
 const ZoneStatusMapView = lazy(() => import('./components/ZoneStatusMapView'));
 const HarvestPlannerView = lazy(() => import('./components/HarvestPlannerView'));
@@ -352,6 +353,7 @@ const App: React.FC = () => {
     switch (activeTab) {
       case 'dashboard': return <FarmOverview language={language} weatherData={weatherData} locationName={selectedParcel?.name || locationName} parcels={parcels} onNavigate={activateTab} />;
       case 'dona_anna_daily': return <ModuleErrorBoundary title="Olivia Daily kunne ikke vises" onRetry={()=>activateTab('dona_anna_daily')}><DonaAnnaDailyDashboard onNavigate={handleDailyNavigate} onSeasonAction={handleSeasonExecutionAction} /></ModuleErrorBoundary>;
+      case 'field_mode': return <FieldModeView parcels={parcels} onNavigate={handleDailyNavigate} />;
       case 'farm_journal': return <FarmJournalView
         parcels={parcels}
         initialTab={pendingFarmJournalTab}
