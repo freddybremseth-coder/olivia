@@ -211,16 +211,34 @@ export interface Recipe {
   isQualityAssured: boolean;
 }
 
+export type PruningExecutionStatus = 'planned' | 'completed' | 'partly_completed' | 'cancelled';
+export type PruningOutcomeRating = 'good' | 'mixed' | 'poor';
+export type PruningStepFeedbackStatus = 'performed' | 'corrected' | 'skipped' | 'not_applicable';
+
+export interface PruningStepFeedback {
+  index: number;
+  area: string;
+  status: PruningStepFeedbackStatus;
+  note?: string;
+}
+
 export interface PruningHistoryItem {
   id: string;
   date: string;
-  images: string[]; 
+  images: string[];
   treeType: string;
   ageEstimate: string;
   analysis?: ComprehensiveAnalysis;
   plan?: PruningPlan;
   scheduledTime?: string;
   parcelId?: string;
+  executionStatus?: PruningExecutionStatus;
+  completedAt?: string;
+  afterImages?: string[];
+  outcomeRating?: PruningOutcomeRating;
+  outcomeNotes?: string;
+  stepFeedback?: PruningStepFeedback[];
+  outcomeVerifiedAt?: string;
 }
 
 export interface HarvestRecord {
