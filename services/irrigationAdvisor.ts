@@ -1,4 +1,5 @@
 import type { SensorReading, IrrigationEvent } from '../types/farmIoT';
+import { isSensorReadingOperationallyUsable } from './farmIoT';
 
 export type IrrigationAdvisorSeverity = 'optimal' | 'watch' | 'warning' | 'critical';
 
@@ -50,7 +51,7 @@ export interface IrrigationZoneAdvice {
 
 function latestByType(readings: SensorReading[], type: string, zoneId?: string): SensorReading | undefined {
   return readings
-    .filter(reading => reading.type === type && (!zoneId || reading.zone_id === zoneId))
+    .filter(reading => reading.type === type && (!zoneId || reading.zone_id === zoneId) && isSensorReadingOperationallyUsable(reading))
     .sort((a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime())[0];
 }
 
@@ -58,7 +59,7 @@ function latestByTypeAndDepth(readings: SensorReading[], type: string, depth: nu
   return readings
     .filter(reading => {
       const depthOk = typeof reading.depth_cm === 'number' ? Math.abs(reading.depth_cm - depth) <= 15 : false;
-      return reading.type === type && depthOk && (!zoneId || reading.zone_id === zoneId);
+      return reading.type === type && depthOk && (!zoneId || reading.zone_id === zoneId) && isSensorReadingOperationallyUsable(reading);
     })
     .sort((a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime())[0];
 }
@@ -126,6 +127,21 @@ export function buildIrrigationZoneAdvice(params: {
 
   const treeGroup = m30?.tree_group || m60?.tree_group || soilEc?.tree_group;
   const reasons: string[] = [];
+  const usableSensorCount=[m30,m60,soilEc,waterEc,flow,pressure].filter(Boolean).length;
+  if(!usableSensorCount){
+    return{
+      zone_id:zoneId,
+      zone_name:zoneName||zoneId,
+      tree_group:treeGroup,
+      severity:'watch',
+      action:'monitor',
+      title:'Mangler ferske, brukbare sensordata',
+      message:'Olivia gir ikke vanningsbeslutning for sonen før en relevant måling er fersk og består kvalitetsporten.',
+      confidence:0.2,
+      reasons:['Gamle eller lavkvalitets sensormålinger brukes ikke som dagens vanningsgrunnlag.'],
+      values,
+    };
+  }
   let severity: IrrigationAdvisorSeverity = 'optimal';
   let action: IrrigationAdvisorAction = 'no_action';
   let title = 'Ingen vanning nødvendig nå';
@@ -196,7 +212,10 @@ export function buildIrrigationZoneAdvice(params: {
     }
   }
 
-  const recommended_minutes = action === 'irrigate_evening' ? minutesFromSeverity(severity, treeGroup) : undefined;
+  const recommended_minutes = undefined;
+  if(action==='irrigate_evening'){
+    reasons.push('Varighet beregnes ikke automatisk før Olivia har dokumentert kapasitet/emitterdata for sonen.');
+  }
   const confidence = confidenceScore(reasons, values);
 
   return {
