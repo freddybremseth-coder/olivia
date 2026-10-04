@@ -40,6 +40,7 @@ const TasksView = lazy(() => import('./components/TasksView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
 const FieldConsultantView = lazy(() => import('./components/FieldConsultantView'));
 const PruningAdvisorView = lazy(() => import('./components/PruningAdvisorView'));
+const VarietyReferenceLibraryView = lazy(() => import('./components/VarietyReferenceLibraryView'));
 const PropertyDocumentsView = lazy(() => import('./components/PropertyDocumentsView'));
 const CaecvDocumentsView = lazy(() => import('./components/CaecvDocumentsView'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
@@ -362,6 +363,7 @@ const App: React.FC = () => {
       case 'dashboard_classic': return <Dashboard language={language} weatherData={weatherData} locationName={locationName} />;
       case 'consultant': return <FieldConsultantView />;
       case 'pruning': return <PruningAdvisorView />;
+      case 'variety_library': return <VarietyReferenceLibraryView parcels={parcels} />;
       case 'property_documents': return <PropertyDocumentsView />;
       case 'caecv_documents': return <CaecvDocumentsView />;
       case 'map': return <FarmMap parcels={parcels} onParcelSave={handleParcelSave} onParcelDelete={handleParcelDelete} language={language} />;
