@@ -185,6 +185,7 @@ export type FarmInputEvidenceLine={
   intendedUse?:string|null;
   dose?:string|null;
   confirmedUsed:boolean;
+  productName?:string|null;
   detailsMissing?:boolean;
 };
 
@@ -675,6 +676,7 @@ export async function fetchFarmInputEvidenceLines(limit=250):Promise<FarmInputEv
         supplier:event.vendor||null,
         category:event.event_type||null,
         name,
+        productName:cat?.name||name,
         quantity:product?.quantity==null?null:Number(product.quantity),
         unit:product?.unit||null,
         amount:null,
@@ -715,6 +717,7 @@ export async function fetchFarmInputEvidenceLines(limit=250):Promise<FarmInputEv
         filename:doc.original_filename||null,
         category:inputCategory,
         name,
+        productName:cat?.name||name,
         quantity:item.quantity==null?null:Number(item.quantity),
         unit:item.unit||null,
         unitPrice:item.unitPrice==null?null:Number(item.unitPrice),
@@ -749,6 +752,7 @@ export async function fetchFarmInputEvidenceLines(limit=250):Promise<FarmInputEv
       filename:null,
       category,
       name:String(expense.description||'Sprøytemidler / gjødsel'),
+      productName:null,
       quantity:null,
       unit:null,
       unitPrice:null,
@@ -763,6 +767,64 @@ export async function fetchFarmInputEvidenceLines(limit=250):Promise<FarmInputEv
   }
 
   return lines.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||a.name.localeCompare(b.name,'no'));
+}
+
+export async function confirmFarmInputUsage(input:{
+  occurredOn:string;
+  parcelId?:string|null;
+  eventType:'spraying'|'fertilization';
+  sourceDocumentId?:string|null;
+  sourceTitle?:string;
+  supplier?:string|null;
+  notes?:string;
+  products:FarmProductEvidence[];
+}):Promise<string>{
+  const occurredOn=String(input.occurredOn||'').trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(occurredOn))throw new Error('Velg faktisk dato for behandlingen.');
+  const products=(input.products||[])
+    .map(product=>normalizeProduct(product))
+    .filter(product=>product.name);
+  if(!products.length)throw new Error('Velg minst ett middel som faktisk ble brukt.');
+
+  const sourceKey=input.sourceDocumentId||normalizeName(input.sourceTitle||'manual');
+  const parcelKey=input.parcelId||'farm';
+  const sourceRef='input-use:'+sourceKey+':'+occurredOn+':'+parcelKey+':'+input.eventType;
+
+  const existing=await supabase.from('farm_events').select('id').eq('source_ref',sourceRef).eq('event_status','completed').maybeSingle();
+  if(existing.error)throw new Error(existing.error.message);
+  if(existing.data?.id)throw new Error('Denne behandlingen er allerede bekreftet for samme dato og område.');
+
+  const eventId='farmevent-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+  const title=(input.eventType==='fertilization'?'Gjødsling':'Sprøyting')+' · '+products.map(p=>p.name).join(', ');
+  const {error}=await supabase.from('farm_events').insert({
+    id:eventId,
+    title,
+    event_type:input.eventType,
+    event_status:'completed',
+    occurred_on:occurredOn,
+    planned_for:null,
+    period_label:null,
+    date_precision:'exact',
+    parcel_id:input.parcelId||null,
+    scope:input.parcelId?'parcel':'farm',
+    description:input.notes?.trim()||'Bruk av innsatsmidler bekreftet manuelt i Olivia.',
+    source_document_id:input.sourceDocumentId||null,
+    source_kind:'user_confirmation',
+    source_ref:sourceRef,
+    vendor:input.supplier||null,
+    products,
+    amount:null,
+    currency:'EUR',
+    tree_count_delta:null,
+    recurrence_candidate:true,
+    recurrence_reason:'Bekreftet faktisk bruk av innsatsmidler.',
+    confidence:1,
+    verified:true,
+  });
+  if(error)throw new Error(error.message);
+
+  await upsertProducts(products,input.sourceDocumentId||null);
+  return eventId;
 }
 
 export async function fetchYearWheel(year:number):Promise<FarmYearWheelItem[]>{
