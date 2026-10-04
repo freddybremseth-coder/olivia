@@ -88,7 +88,6 @@ export function buildAutoTaskSuggestions(params: {
     });
     const latestRows=Array.from(latestPerType.values());
     const usableRows=latestRows.filter(reading=>isSensorReadingOperationallyUsable(reading));
-    const staleRows=latestRows.filter(reading=>!isSensorReadingFresh(reading,SENSOR_ACTION_MAX_AGE_HOURS));
     const lowQualityRows=latestRows.filter(reading=>isSensorReadingFresh(reading,SENSOR_ACTION_MAX_AGE_HOURS)&&!isSensorReadingQualityAcceptable(reading));
 
     if(latestRows.length&&!usableRows.length){
