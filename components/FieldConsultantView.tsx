@@ -34,6 +34,7 @@ import { saveConfirmedVarietyReference, scoreReferenceEvidence } from '../servic
 import { geoContextSummary, requestFarmGeo } from '../services/farmGeo';
 import type { FarmGeoContext } from '../types/farmGeo';
 import { registerFarmMediaEvidence, uploadDataUrlFarmMedia } from '../services/farmMediaEvidence';
+import { buildSpatialMemoryContext } from '../services/farmSpatialMemory';
 
 type ResultTab = 'summary' | 'health' | 'pruning' | 'history';
 
@@ -329,7 +330,12 @@ const FieldConsultantView: React.FC = () => {
     setError(null);
     setAnalysis(null);
     try {
-      const raw = await geminiService.analyzeComprehensive(base64List, language, farmContext, selectedParcelId||undefined);
+      const spatialContext=await buildSpatialMemoryContext({
+        geo:geoContext,
+        parcelId:selectedParcelId||geoContext?.parcelId,
+      }).catch(err=>{console.warn('[FieldConsultantView] spatial memory',err);return'';});
+      const analysisContext=[farmContext,spatialContext].filter(Boolean).join('\n\n');
+      const raw = await geminiService.analyzeComprehensive(base64List, language, analysisContext, selectedParcelId||undefined);
       const normalized = normalizeAnalysis(raw);
       setAnalysis(normalized);
       setReferenceVariety(normalized.inspection?.varietyAssessment.bestCandidate==='Ukjent sort'?'':(normalized.inspection?.varietyAssessment.bestCandidate||normalized.diagnosis.variety||''));
@@ -344,7 +350,7 @@ const FieldConsultantView: React.FC = () => {
         agentType:'field_consultant',
         parcelId:selectedParcelId||undefined,
         result:normalized,
-        contextSnapshot:farmContext,
+        contextSnapshot:analysisContext,
         confidence:Math.max(0,Math.min(1,((Number(normalized.diagnosis.confidence||0)+Number(normalized.pruning.confidence||0))/2)/100)),
         uncertainties,
         sourceRef:'AI Feltkonsulent '+new Date().toISOString(),

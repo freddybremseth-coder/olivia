@@ -41,6 +41,9 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
    - tvetydig geografi skal ikke auto-klassifiseres
    - galleriopplasting skal ikke late som dagens GPS er original bildeposisjon
    - geografisk evidens skal kunne brukes til kart, historikk og læring
+   - nye analyser kan bruke nærliggende historiske observasjoner som romlig hukommelse
+   - gammel tilstand er kun historisk kontekst; ny observasjon/måling har alltid forrang
+   - gjentatte GEO-punkter kan senere danne faktiske drifts-soner/hotspots, men først når nok ekte data finnes
 
 7. **Farm issues / oppfølgingssaker**
    - skadedyr, sykdom, vanningsfeil og andre avvik får livssyklus fra første observasjon til lukket sak
