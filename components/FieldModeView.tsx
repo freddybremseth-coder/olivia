@@ -72,6 +72,22 @@ function sourceLabel(value:string){
   return labels[value]||value.replaceAll('_',' ');
 }
 
+function geoQuality(accuracy?:number){
+  const value=Number(accuracy);
+  if(!Number.isFinite(value))return{label:'Ukjent',level:'unknown' as const,detail:'Hent GPS for å vurdere posisjonskvalitet.'};
+  if(value<=15)return{label:'Svært god',level:'strong' as const,detail:'Egnet også for faste kartpunkter.'};
+  if(value<=25)return{label:'God',level:'good' as const,detail:'Egnet for sone, tregruppe og de fleste faste punkt.'};
+  if(value<=35)return{label:'Brukbar',level:'usable' as const,detail:'Egnet for sonepunkter, men for grov for presise tre-/infrastrukturpunkt.'};
+  if(value<=50)return{label:'Svak',level:'weak' as const,detail:'Bruk observasjonen, men oppdater GPS før kartlæring.'};
+  return{label:'For svak',level:'poor' as const,detail:'Ikke bruk denne posisjonen til å lære gårdsstrukturen.'};
+}
+
+function maxAccuracyForCreateKind(kind:CreateKind){
+  if(kind==='zone')return 35;
+  if(kind==='tree_group')return 25;
+  return 20;
+}
+
 const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
   const[geo,setGeo]=useState<FarmGeoContext|null>(()=>loadActiveFarmGeo()?.geo||null);
   const[locating,setLocating]=useState(false);
@@ -98,6 +114,18 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
   const[savingStructure,setSavingStructure]=useState(false);
 
   const currentParcel=geo?.parcelId?parcels.find(parcel=>parcel.id===geo.parcelId):undefined;
+
+  const currentGeoQuality=useMemo(()=>geoQuality(geo?.accuracyM),[geo?.accuracyM]);
+  const parcelMediaCount=useMemo(()=>geo?.parcelId?media.filter(row=>row.parcel_id===geo.parcelId).length:0,[media,geo?.parcelId]);
+  const footprintZoneCount=useMemo(()=>zones.filter(zone=>zoneSamples.filter(sample=>sample.zone_id===zone.id).length>=3).length,[zones,zoneSamples]);
+  const mappingSteps=useMemo(()=>[
+    {id:'position',label:'GPS + parsell bekreftet',done:Boolean(geo?.parcelId),detail:geo?.parcelId?geoContextSummary(geo):'Finn hvor du står først.'},
+    {id:'zone',label:'Minst én operativ sone',done:zones.length>0,detail:zones.length?zones.length+' sone'+(zones.length===1?'':'r')+' registrert':'Opprett første sone der du står.'},
+    {id:'footprint',label:'Sone med minst 3 bekreftede punkt',done:footprintZoneCount>0,detail:footprintZoneCount?footprintZoneCount+' sonefotavtrykk under læring':'Bekreft samme sone fra ulike steder i området.'},
+    {id:'tree_group',label:'Minst én tregruppe',done:treeGroups.length>0,detail:treeGroups.length?treeGroups.length+' tregruppe'+(treeGroups.length===1?'':'r')+' registrert':'Registrer en gruppe trær med sort/alder når kjent.'},
+    {id:'photo',label:'Første GEO-feltbilde',done:parcelMediaCount>0,detail:parcelMediaCount?parcelMediaCount+' GEO-bilde'+(parcelMediaCount===1?'':'r')+' på parsellen':'Ta en representativ feltobservasjon med live bilde.'},
+  ],[geo,zones.length,footprintZoneCount,treeGroups.length,parcelMediaCount]);
+  const mappingDone=mappingSteps.filter(step=>step.done).length;
 
   const loadMedia=async()=>{
     setLoadingMedia(true);
@@ -161,6 +189,15 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
 
   const openCreate=(kind:CreateKind)=>{
     setError('');setMessage('');
+    if(!geo){
+      setError('Hent GPS-posisjon først.');
+      return;
+    }
+    const maxAccuracy=maxAccuracyForCreateKind(kind);
+    if(geo.accuracyM>maxAccuracy){
+      setError('GPS-nøyaktigheten er ±'+Math.round(geo.accuracyM)+' m. '+(kind==='zone'?'Sone krever ±35 m eller bedre.':kind==='tree_group'?'Tregruppe krever ±25 m eller bedre.':'Fast punkt krever ±20 m eller bedre.')+' Gå ut i åpent område og trykk Oppdater GPS.');
+      return;
+    }
     setCreateKind(kind);
     setCreateName('');
     setCreateDescription('');
@@ -195,6 +232,11 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
     }
     if(!createParcelId){
       setError('Velg parsell før lagring.');
+      return;
+    }
+    const maxAccuracy=maxAccuracyForCreateKind(createKind);
+    if(geo.accuracyM>maxAccuracy){
+      setError('GPS er for unøyaktig for denne typen kartlæring. Oppdater posisjonen før lagring.');
       return;
     }
 
@@ -280,6 +322,10 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
     }
     if(geo.parcelId&&geo.parcelId!==zone.parcel_id){
       setError('GPS er koblet til en annen parsell enn sonen. Kontroller parsell før du bekrefter punktet.');
+      return;
+    }
+    if(geo.accuracyM>35){
+      setError('GPS ±'+Math.round(geo.accuracyM)+' m er for svak for å lære sonefotavtrykket. Oppdater GPS til ±35 m eller bedre.');
       return;
     }
     setSavingZoneSampleId(zone.id);setError('');setMessage('');
@@ -375,6 +421,7 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
               <p className="text-[9px] font-black uppercase tracking-widest text-green-400">Aktiv GEO-kontekst</p>
               <p className="mt-1 text-sm font-black text-white">{geoContextSummary(geo)}</p>
               <p className="mt-1 text-[10px] text-slate-500">{geo.matchMethod==='polygon'?'Punktet ligger inne i registrert parsellpolygon.':geo.matchMethod==='spatial_memory'?'Parsell er foreslått fra Olivias bekreftede GEO-hukommelse.':geo.parcelId?'Parsell er foreslått med redusert geografisk sikkerhet.':'Olivia fant ingen entydig parsell. Velg parsell ved lagring.'}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2"><span className={'rounded-full border px-2 py-0.5 text-[9px] font-black '+(currentGeoQuality.level==='strong'||currentGeoQuality.level==='good'?'border-green-500/25 text-green-300':currentGeoQuality.level==='usable'?'border-yellow-500/25 text-yellow-200':'border-red-500/25 text-red-300')}>GPS {currentGeoQuality.label}</span><span className="text-[10px] text-slate-500">{currentGeoQuality.detail}</span></div>
             </div>
             <button onClick={locate} disabled={locating} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300">{locating?<Loader2 size={14} className="animate-spin"/>:<RefreshCcw size={14}/>} Oppdater GPS</button>
           </div>}
@@ -383,6 +430,28 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
         </div>
       </div>
     </div>
+
+    {geo?.parcelId&&<div className="rounded-[2rem] border border-[#d9b657]/20 bg-[#d9b657]/[0.035] p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#d9b657]">Kartleggingsrunde · {currentParcel?.name||geo.parcelName||'parsell'}</p>
+          <h3 className="mt-1 text-lg font-black text-white">Lær Olivia tomten med ekte feltpunkter</h3>
+          <p className="mt-1 text-xs text-slate-500">Dette er et oppstartsforløp, ikke en egen modul. Du kan gjøre punktene over flere besøk.</p>
+        </div>
+        <div className="min-w-[130px]"><p className="text-right text-xs font-black text-white">{mappingDone}/{mappingSteps.length}</p><div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/5"><div className="h-full bg-[#d9b657]" style={{width:(mappingDone/mappingSteps.length*100)+'%'}}/></div></div>
+      </div>
+      <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
+        {mappingSteps.map(step=><div key={step.id} className={'rounded-xl border p-3 '+(step.done?'border-green-500/15 bg-green-500/[0.035]':'border-white/10 bg-black/20')}>
+          <div className="flex items-start gap-2">{step.done?<CheckCircle2 size={15} className="mt-0.5 shrink-0 text-green-400"/>:<div className="mt-0.5 h-[15px] w-[15px] shrink-0 rounded-full border border-slate-600"/>}<div><p className="text-xs font-black text-white">{step.label}</p><p className="mt-1 text-[10px] leading-4 text-slate-500">{step.detail}</p></div></div>
+        </div>)}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {!zones.length&&<button onClick={()=>openCreate('zone')} className="rounded-xl border border-green-500/20 bg-green-500/10 px-3 py-2 text-[10px] font-black text-green-300">Opprett første sone</button>}
+        {!treeGroups.length&&<button onClick={()=>openCreate('tree_group')} className="rounded-xl border border-[#d9b657]/20 bg-[#d9b657]/10 px-3 py-2 text-[10px] font-black text-[#d9b657]">Registrer tregruppe</button>}
+        {!parcelMediaCount&&<button onClick={()=>onNavigate('field_observations')} className="rounded-xl border border-purple-500/20 bg-purple-500/10 px-3 py-2 text-[10px] font-black text-purple-300">Ta første feltbilde</button>}
+        <button onClick={()=>onNavigate('map')} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black text-slate-300">Se driftskart</button>
+      </div>
+    </div>}
 
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {actions.map(action=>{
@@ -407,9 +476,9 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-2">
-        <button onClick={()=>openCreate('zone')} disabled={!geo} className="rounded-2xl border border-white/10 bg-black/20 p-4 text-left disabled:opacity-35"><Layers size={18} className="text-green-400"/><p className="mt-2 text-sm font-black text-white">Ny sone</p><p className="mt-1 text-[10px] text-slate-500">{zones.length} registrert</p></button>
-        <button onClick={()=>openCreate('tree_group')} disabled={!geo} className="rounded-2xl border border-white/10 bg-black/20 p-4 text-left disabled:opacity-35"><Leaf size={18} className="text-[#d9b657]"/><p className="mt-2 text-sm font-black text-white">Ny tregruppe</p><p className="mt-1 text-[10px] text-slate-500">{treeGroups.length} registrert</p></button>
-        <button onClick={()=>openCreate('landmark')} disabled={!geo} className="rounded-2xl border border-white/10 bg-black/20 p-4 text-left disabled:opacity-35"><MapPin size={18} className="text-blue-400"/><p className="mt-2 text-sm font-black text-white">Fast punkt</p><p className="mt-1 text-[10px] text-slate-500">{landmarks.length} registrert</p></button>
+        <button onClick={()=>openCreate('zone')} disabled={!geo||geo.accuracyM>35} className="rounded-2xl border border-white/10 bg-black/20 p-4 text-left disabled:opacity-35"><Layers size={18} className="text-green-400"/><p className="mt-2 text-sm font-black text-white">Ny sone</p><p className="mt-1 text-[10px] text-slate-500">{zones.length} registrert · GPS ≤35 m</p></button>
+        <button onClick={()=>openCreate('tree_group')} disabled={!geo||geo.accuracyM>25} className="rounded-2xl border border-white/10 bg-black/20 p-4 text-left disabled:opacity-35"><Leaf size={18} className="text-[#d9b657]"/><p className="mt-2 text-sm font-black text-white">Ny tregruppe</p><p className="mt-1 text-[10px] text-slate-500">{treeGroups.length} registrert · GPS ≤25 m</p></button>
+        <button onClick={()=>openCreate('landmark')} disabled={!geo||geo.accuracyM>20} className="rounded-2xl border border-white/10 bg-black/20 p-4 text-left disabled:opacity-35"><MapPin size={18} className="text-blue-400"/><p className="mt-2 text-sm font-black text-white">Fast punkt</p><p className="mt-1 text-[10px] text-slate-500">{landmarks.length} registrert · GPS ≤20 m</p></button>
       </div>
 
       {!geo&&<p className="mt-3 text-[10px] text-amber-200">Hent GPS først. Olivia skal ikke opprette et GEO-område uten faktisk posisjon.</p>}
@@ -419,7 +488,7 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
           <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Soner</p>
           {zones.slice(0,4).map(zone=><div key={zone.id} className="mt-2 rounded-lg border border-white/5 bg-white/[0.02] p-2">
             <div className="flex items-center justify-between gap-2"><p className="truncate text-xs font-bold text-slate-300">{zone.name}</p><span className="text-[9px] text-slate-600">{zoneSampleCount(zone.id)} punkt</span></div>
-            <button onClick={()=>confirmCurrentPointInZone(zone)} disabled={!geo||savingZoneSampleId===zone.id} className="mt-2 w-full rounded-lg border border-green-500/15 bg-green-500/[0.05] px-2 py-1.5 text-[9px] font-black text-green-300 disabled:opacity-35">{savingZoneSampleId===zone.id?'Lagrer…':'Jeg står fortsatt i denne sonen'}</button>
+            <button onClick={()=>confirmCurrentPointInZone(zone)} disabled={!geo||geo.accuracyM>35||savingZoneSampleId===zone.id} className="mt-2 w-full rounded-lg border border-green-500/15 bg-green-500/[0.05] px-2 py-1.5 text-[9px] font-black text-green-300 disabled:opacity-35">{savingZoneSampleId===zone.id?'Lagrer…':'Jeg står fortsatt i denne sonen'}</button>
           </div>)}
           {!zones.length&&<p className="mt-1 text-xs text-slate-600">Ingen</p>}
         </div>
