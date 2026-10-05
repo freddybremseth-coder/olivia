@@ -17,6 +17,8 @@ import {
   Truck,
   Waves,
   HelpCircle,
+  CloudRain,
+  Wind,
 } from 'lucide-react';
 import {
   DONA_ANNA_BIAR_SEASON_SETTINGS,
@@ -47,6 +49,13 @@ import SeasonExecutionPanel, { type SeasonExecutionAction } from './SeasonExecut
 import { fetchFarmTruthSummary } from '../services/farmJournal';
 import { fetchFarmIntelligenceSummary, fetchOpenFarmQuestions, type FarmQuestion } from '../services/farmIntelligence';
 import FarmQuestionsPanel from './FarmQuestionsPanel';
+import { fetchFarmIssues, type FarmIssue } from '../services/farmIssues';
+import {
+  bestWorkWindow,
+  fetchWorkWindowForecast,
+  workActivitiesForContext,
+  type WorkWindowForecast,
+} from '../services/weatherWorkWindow';
 
 type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
 
@@ -63,7 +72,7 @@ type DailyPriorityItem = {
   id:string;
   title:string;
   description:string;
-  source:'Årshjul'|'Olivia'|'Sesong'|'Felt';
+  source:'Årshjul'|'Olivia'|'Sesong'|'Felt'|'Sak';
   priority:ActionCard['priority'];
   score:number;
   targetTab?:string;
@@ -577,6 +586,7 @@ function buildDailyTopFive(params:{
   farmQuestions:FarmQuestion[];
   seasonExecution:SeasonExecution|null;
   actions:ActionCard[];
+  activeIssues:FarmIssue[];
 }):DailyPriorityItem[]{
   const items:DailyPriorityItem[]=[];
   const today=new Date();
@@ -641,6 +651,33 @@ function buildDailyTopFive(params:{
         actionLabel:'Åpne årshjul',
       });
     }
+  }
+
+  for(const issue of params.activeIssues||[]){
+    const reviewAt=issue.next_review_at?new Date(issue.next_review_at):null;
+    const reviewDays=reviewAt&&!Number.isNaN(reviewAt.getTime())
+      ?Math.round((reviewAt.getTime()-today.getTime())/86400000)
+      :null;
+    const overdueDays=reviewDays!=null&&reviewDays<0?Math.abs(reviewDays):0;
+    const severityScore:Record<string,number>={critical:102,high:88,medium:68,low:46};
+    const severityPriority:Record<string,ActionCard['priority']>={critical:'Kritisk',high:'Høy',medium:'Middels',low:'Lav'};
+    const reviewText=overdueDays
+      ?'Planlagt kontroll er '+overdueDays+' dag'+(overdueDays===1?'':'er')+' forsinket. '
+      :reviewDays===0
+        ?'Planlagt kontroll er i dag. '
+        :reviewDays!=null&&reviewDays<=3
+          ?'Ny kontroll om '+reviewDays+' dag'+(reviewDays===1?'':'er')+'. '
+          :'';
+    items.push({
+      id:'issue-'+issue.id,
+      title:issue.title,
+      description:reviewText+(issue.description||'Åpen oppfølgingssak må kontrolleres og eksplisitt lukkes når den faktisk er avklart.'),
+      source:'Sak',
+      priority:overdueDays>=3||issue.severity==='critical'?'Kritisk':severityPriority[issue.severity]||'Middels',
+      score:(severityScore[issue.severity]||60)+(overdueDays>=3?18:overdueDays?10:reviewDays===0?8:0),
+      targetTab:'field_observations',
+      actionLabel:'Åpne oppfølgingssaker',
+    });
   }
 
   const qScore:Record<string,number>={critical:98,high:86,medium:62,low:42};
@@ -719,6 +756,8 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   const [farmTruth, setFarmTruth] = useState<any>(null);
   const [farmIntelligence, setFarmIntelligence] = useState<any>(null);
   const [farmQuestions, setFarmQuestions] = useState<FarmQuestion[]>([]);
+  const [activeIssues, setActiveIssues] = useState<FarmIssue[]>([]);
+  const [workForecast, setWorkForecast] = useState<WorkWindowForecast | null>(null);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -732,7 +771,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
     setErrorMessage(null);
     try {
       const failures:string[]=[];
-      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness, seasonStatus, executionStatus, truthStatus, intelligenceStatus, questionRows] = await Promise.all([
+      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness, seasonStatus, executionStatus, truthStatus, intelligenceStatus, questionRows, issueRows, forecast] = await Promise.all([
         safeLoad(fetchLatestSensorReadings(300),'Sensorer',[],failures),
         safeLoad(fetchOpenSensorAlerts(),'Sensorvarsler',[],failures),
         safeLoad(fetchRecentIrrigationEvents(10),'Vanningslogg',[],failures),
@@ -744,6 +783,8 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
         safeLoad(fetchFarmTruthSummary(),'Driftsjournal',null,failures),
         safeLoad(fetchFarmIntelligenceSummary(),'Olivia Intelligence',null,failures),
         safeLoad(fetchOpenFarmQuestions({limit:5}),'Olivia-spørsmål',[],failures),
+        safeLoad(fetchFarmIssues({status:'active',limit:50}),'Oppfølgingssaker',[],failures),
+        safeLoad(fetchWorkWindowForecast({days:5}),'Arbeidsvindu',null,failures),
       ]);
       setSourceFailures(failures);
 
@@ -758,7 +799,9 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       setFarmTruth(truthStatus);
       setFarmIntelligence(intelligenceStatus);
       setFarmQuestions(questionRows);
-      setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length || (readiness && readiness.issues ? readiness.issues.length : 0) || (seasonStatus && seasonStatus.steps ? seasonStatus.steps.length : 0) || (executionStatus && executionStatus.parcels ? executionStatus.parcels.length : 0) || truthStatus || (intelligenceStatus && intelligenceStatus.openQuestionCount ? intelligenceStatus.openQuestionCount : 0) ? 'supabase' : 'empty');
+      setActiveIssues(issueRows);
+      setWorkForecast(forecast);
+      setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length || (readiness && readiness.issues ? readiness.issues.length : 0) || (seasonStatus && seasonStatus.steps ? seasonStatus.steps.length : 0) || (executionStatus && executionStatus.parcels ? executionStatus.parcels.length : 0) || truthStatus || (intelligenceStatus && intelligenceStatus.openQuestionCount ? intelligenceStatus.openQuestionCount : 0) || issueRows.length ? 'supabase' : 'empty');
       setLastRefresh(new Date());
     } catch (error) {
       setReadings([]);
@@ -772,6 +815,8 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       setFarmTruth(null);
       setFarmIntelligence(null);
       setFarmQuestions([]);
+      setActiveIssues([]);
+      setWorkForecast(null);
       setSourceFailures(['Daily']);
       setLoadState('error');
       setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente Daily Dashboard-data fra Supabase.');
@@ -794,7 +839,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   }, [loadDashboard]);
 
   const actions = buildActionCards(advice, readings, alerts, irrigationEvents, observations);
-  const topFive = buildDailyTopFive({farmTruth,farmQuestions,seasonExecution,actions});
+  const topFive = buildDailyTopFive({farmTruth,farmQuestions,seasonExecution,actions,activeIssues});
   const delaySummary = buildDelaySummary(farmTruth);
   const parcelAttention = buildParcelAttention(farmTruth);
   const weekBrief = buildWeekBrief(farmTruth);
@@ -802,11 +847,16 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   const currentMonth = new Date().getMonth() + 1;
   const oilWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_oil;
   const tableWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_table_olives;
-  const sourceLabel = loadState === 'supabase' ? (sourceFailures.length ? `Supabase · ${11-sourceFailures.length}/11 kilder` : 'Supabase · 11/11 kilder') : loadState === 'empty' ? 'Supabase · ingen data ennå' : loadState === 'error' ? 'Supabase-feil' : 'Laster Supabase';
+  const sourceLabel = loadState === 'supabase' ? (sourceFailures.length ? `Daily · ${13-sourceFailures.length}/13 kilder` : 'Daily · 13/13 kilder') : loadState === 'empty' ? 'Ingen driftsdata ennå' : loadState === 'error' ? 'Daily-datafeil' : 'Laster Daily-kilder';
   const orderAttention = commerceAttention.filter(item => item.event_type === 'order_process');
   const readyToShip = commerceAttention.filter(item => item.event_type === 'order_ready_to_ship');
   const overdueInvoices = commerceAttention.filter(item => item.event_type === 'invoice_overdue');
   const dueSoonInvoices = commerceAttention.filter(item => item.event_type === 'invoice_due_soon');
+  const workActivities=workActivitiesForContext({
+    yearWheel:farmTruth?.yearWheel||[],
+    includeIrrigation:advice.recommended_action==='irrigate',
+  });
+  const workWindows=workActivities.map(activity=>bestWorkWindow(activity,workForecast));
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
@@ -914,6 +964,29 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
           </button>)}
         </div>:<div className="mt-5 rounded-2xl border border-green-500/15 bg-green-500/[0.04] p-4 text-sm text-green-100"><p className="font-bold">Ingen parseller krever særskilt oppfølging akkurat nå.</p><p className="text-xs text-slate-500 mt-1">Årshjulet har ingen aktive forsinkelser, pågående eller utsatte punkter per parsell.</p></div>}
       </div>}
+
+      <div className="glass rounded-[2rem] p-6 border border-blue-400/15 bg-blue-400/[0.025]">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.24em] font-black text-blue-300">Arbeidsvindu · neste 5 dager</p>
+            <h3 className="text-xl font-black text-white mt-1">Når er været best for feltarbeidet?</h3>
+            <p className="text-xs text-slate-500 mt-2">Vær påvirker bare timingråd. Det oppretter, utsetter eller fullfører aldri en jobb automatisk. Produktetikett, regelverk og faktisk feltbehov har alltid forrang.</p>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-500"><CloudRain size={15}/>{workForecast?'Open-Meteo · '+new Date(workForecast.fetchedAt).toLocaleTimeString('no-NO',{hour:'2-digit',minute:'2-digit'}):'Værdata mangler'}</div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mt-5">
+          {workWindows.map(window=>{
+            const tone=window.level==='good'?'border-green-500/20 bg-green-500/[0.05]':window.level==='caution'?'border-amber-400/20 bg-amber-400/[0.05]':window.level==='poor'?'border-red-500/20 bg-red-500/[0.05]':'border-white/10 bg-black/20';
+            const label=window.date?new Date(window.date+'T12:00:00').toLocaleDateString('no-NO',{weekday:'short',day:'2-digit',month:'2-digit'}):'Ukjent';
+            return <div key={window.activity} className={'rounded-2xl border p-4 '+tone}>
+              <div className="flex items-start justify-between gap-2"><p className="text-sm font-black text-white">{window.label}</p><Wind size={15} className="text-slate-500"/></div>
+              <p className="text-xl font-black text-white mt-3">{label}</p>
+              {window.day&&<p className="text-[10px] text-slate-500 mt-1">{window.day.rainMm.toFixed(1)} mm · {Math.round(window.day.rainProbability)}% regn · vind {Math.round(window.day.windKmh)} km/t</p>}
+              <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">{window.reason}</p>
+            </div>;
+          })}
+        </div>
+      </div>
 
       <div className="glass rounded-[2rem] p-6 border border-[#d9b657]/20 bg-[#d9b657]/[0.035]">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
