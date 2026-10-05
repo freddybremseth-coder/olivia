@@ -1,5 +1,5 @@
 export type FarmGeoSource='device_live_capture'|'device_at_upload'|'manual'|'exif'|'none';
-export type FarmGeoMatchMethod='polygon'|'boundary_near'|'nearest'|'manual'|'unmatched';
+export type FarmGeoMatchMethod='polygon'|'boundary_near'|'nearest'|'manual'|'spatial_memory'|'unmatched';
 
 export type FarmGeoContext={
   lat:number;

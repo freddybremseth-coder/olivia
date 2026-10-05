@@ -36,7 +36,7 @@ import FarmQuestionsPanel from './FarmQuestionsPanel';
 import AgentFeedbackPanel from './AgentFeedbackPanel';
 import OlivePhotoProtocol from './OlivePhotoProtocol';
 import { removePruningOutcomeTruth, savePruningOutcome } from '../services/pruningOutcome';
-import { geoContextSummary, requestFarmGeo } from '../services/farmGeo';
+import { assignGeoParcelManually, geoContextSummary, requestFarmGeo } from '../services/farmGeo';
 import type { FarmGeoContext } from '../types/farmGeo';
 import { registerFarmMediaEvidence, uploadDataUrlFarmMedia } from '../services/farmMediaEvidence';
 import { buildSpatialMemoryContext } from '../services/farmSpatialMemory';
@@ -641,7 +641,15 @@ const PruningAdvisorView: React.FC = () => {
 
           <div className="glass rounded-2xl p-4 border border-white/10 space-y-3">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Parsell</label>
-            <select className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white" value={selectedParcelId} onChange={e => {setSelectedParcelId(e.target.value);setParcelSelectionSource(e.target.value?'manual':'none');}}>
+            <select className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white" value={selectedParcelId} onChange={e => {
+      const parcelId=e.target.value;
+      setSelectedParcelId(parcelId);
+      setParcelSelectionSource(parcelId?'manual':'none');
+      if(geoContext&&parcelId){
+        const parcel=parcels.find(item=>item.id===parcelId);
+        if(parcel)setGeoContext(assignGeoParcelManually(geoContext,parcel)||geoContext);
+      }
+    }}>
               <option value="">Velg parsell / bruk GEO</option>
               {parcels.length ? parcels.map(p => <option key={p.id} value={p.id}>{p.name}</option>) : <option value="" disabled>Ingen parseller funnet i Supabase</option>}
             </select>
