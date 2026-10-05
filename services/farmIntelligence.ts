@@ -459,16 +459,25 @@ export async function buildLearningContext(parcelId?:string):Promise<string>{
 export async function fetchFarmIntelligenceSummary(){
   const [knowledgeRes,questionsRes,assessmentsRes]=await Promise.all([
     supabase.from('farm_knowledge_items').select('id,status').in('status',['verified','provisional','disputed']),
-    supabase.from('farm_questions').select('id,priority,status').eq('status','open'),
+    supabase.from('farm_questions').select('id,question,priority,status,parcel_id,related_knowledge_key').eq('status','open').limit(500),
     supabase.from('farm_agent_assessments').select('id,feedback_status').limit(1000),
   ]);
   const error=knowledgeRes.error||questionsRes.error||assessmentsRes.error;
   if(error)throw new Error(error.message);
-  const questions=(questionsRes.data||[]) as any[];
+  const questions=(questionsRes.data||[]) as FarmQuestion[];
+  const grouped=new Map<string,FarmQuestion>();
+  const rank:Record<FarmQuestionPriority,number>={critical:4,high:3,medium:2,low:1};
+  for(const question of questions){
+    const key=questionSemanticKey(question);
+    const existing=grouped.get(key);
+    if(!existing||rank[question.priority]>rank[existing.priority])grouped.set(key,question);
+  }
+  const uniqueQuestions=Array.from(grouped.values());
   return{
     knowledgeCount:(knowledgeRes.data||[]).length,
-    openQuestionCount:questions.length,
-    highQuestionCount:questions.filter(q=>['high','critical'].includes(q.priority)).length,
+    openQuestionCount:uniqueQuestions.length,
+    rawOpenQuestionRowCount:questions.length,
+    highQuestionCount:uniqueQuestions.filter(q=>['high','critical'].includes(q.priority)).length,
     assessmentCount:(assessmentsRes.data||[]).length,
     feedbackCount:(assessmentsRes.data||[]).filter((row:any)=>row.feedback_status).length,
   };
