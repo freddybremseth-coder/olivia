@@ -35,6 +35,15 @@ import {
   type QueuedFieldObservation,
 } from '../services/fieldOfflineQueue';
 import DonaAnnaBrandMark from './DonaAnnaBrandMark';
+import {
+  fetchFarmIssues,
+  issueTypeForObservation,
+  makeFarmIssueId,
+  updateFarmIssueStatus,
+  type FarmIssue,
+  type FarmIssueSeverity,
+  type FarmIssueStatus,
+} from '../services/farmIssues';
 
 type ObservationCategory = FarmObservation['category'];
 type LoadState = 'loading' | 'supabase' | 'empty' | 'error';
@@ -76,6 +85,26 @@ function makeObservationDraftId() {
   return `obs-${Date.now()}-${performance?.now?.().toString(36).replace('.', '') || 'manual'}`;
 }
 
+function defaultReviewDate(days=7){
+  const date=new Date();
+  date.setDate(date.getDate()+days);
+  return date.toISOString().slice(0,10);
+}
+
+function issueStatusLabel(status:FarmIssueStatus){
+  if(status==='open')return'Åpen';
+  if(status==='monitoring')return'Følges opp';
+  if(status==='resolved')return'Løst';
+  return'Avvist';
+}
+
+function issueSeverityLabel(severity:FarmIssueSeverity){
+  if(severity==='critical')return'Kritisk';
+  if(severity==='high')return'Høy';
+  if(severity==='low')return'Lav';
+  return'Middels';
+}
+
 const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels = [] }) => {
   const [observations, setObservations] = useState<FarmObservation[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
@@ -97,6 +126,16 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
   const [isSyncingOffline,setIsSyncingOffline]=useState(false);
   const [isOnline,setIsOnline]=useState(()=>typeof navigator==='undefined'?true:navigator.onLine);
   const [syncMessage,setSyncMessage]=useState('');
+  const [activeView,setActiveView]=useState<'observations'|'issues'>('observations');
+  const [issues,setIssues]=useState<FarmIssue[]>([]);
+  const [trackAsIssue,setTrackAsIssue]=useState(false);
+  const [linkedIssueId,setLinkedIssueId]=useState<string|undefined>(undefined);
+  const [issueSeverity,setIssueSeverity]=useState<FarmIssueSeverity>('medium');
+  const [issueNextReview,setIssueNextReview]=useState(defaultReviewDate());
+  const [closingIssue,setClosingIssue]=useState<FarmIssue|null>(null);
+  const [closingStatus,setClosingStatus]=useState<'resolved'|'dismissed'>('resolved');
+  const [resolutionNotes,setResolutionNotes]=useState('');
+  const [isUpdatingIssue,setIsUpdatingIssue]=useState(false);
 
   const parcelNameById = useMemo(() => new Map(parcels.map(parcel => [parcel.id, parcel.name])), [parcels]);
   const zoneNameById = useMemo(() => new Map(farmZones.map(zone => [zone.id, zone.name])), [farmZones]);
@@ -135,14 +174,19 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const rows = await fetchRecentFarmObservations(100);
+      const [rows,issueRows] = await Promise.all([
+        fetchRecentFarmObservations(100),
+        fetchFarmIssues({status:'all',limit:200}),
+      ]);
       setObservations(rows);
-      setLoadState(rows.length ? 'supabase' : 'empty');
+      setIssues(issueRows);
+      setLoadState(rows.length||issueRows.length ? 'supabase' : 'empty');
       setLastRefresh(new Date());
     } catch (error) {
       setObservations([]);
+      setIssues([]);
       setLoadState('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente feltobservasjoner fra Supabase.');
+      setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente feltobservasjoner eller oppfølgingssaker fra Supabase.');
     } finally {
       setIsLoading(false);
     }
@@ -202,9 +246,9 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     const last7 = observations.filter(obs => Date.now() - new Date(obs.observed_at).getTime() < 7 * 24 * 36e5).length;
     const irrigation = observations.filter(obs => obs.category === 'irrigation').length;
     const pests = observations.filter(obs => obs.category === 'pest' || obs.category === 'disease').length;
-    const organic = observations.filter(obs => obs.category === 'organic_certification').length;
-    return { last7, irrigation, pests, organic };
-  }, [observations]);
+    const activeIssues=issues.filter(issue=>issue.status==='open'||issue.status==='monitoring').length;
+    return { last7, irrigation, pests, activeIssues };
+  }, [observations,issues]);
 
   const locateCurrentPosition=async(source:'device_live_capture'|'device_at_upload')=>{
     setIsLocating(true);setErrorMessage(null);
@@ -255,6 +299,57 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     setPreviewImageUrls([]);
     setGeoContext(null);
     setParcelSelectionSource('none');
+    setTrackAsIssue(false);
+    setLinkedIssueId(undefined);
+    setIssueSeverity('medium');
+    setIssueNextReview(defaultReviewDate());
+  };
+
+  const openIssueFollowUp=(issue:FarmIssue)=>{
+    resetForm();
+    setActiveView('observations');
+    setLinkedIssueId(issue.id);
+    setForm({
+      ...EMPTY_FORM,
+      parcel_id:issue.parcel_id||'',
+      zone_id:issue.zone_id||'',
+      tree_group_id:issue.tree_group_id||'',
+      category:(issue.issue_type==='other'?'other':issue.issue_type) as ObservationCategory,
+      title:'Kontroll: '+issue.title,
+    });
+    setIsFormOpen(true);
+  };
+
+  const markIssueMonitoring=async(issue:FarmIssue)=>{
+    setIsUpdatingIssue(true);setErrorMessage(null);
+    try{
+      const updated=await updateFarmIssueStatus({
+        id:issue.id,
+        status:'monitoring',
+        nextReviewAt:issue.next_review_at||new Date(defaultReviewDate()+'T12:00:00').toISOString(),
+      });
+      setIssues(current=>current.map(item=>item.id===updated.id?updated:item));
+      window.dispatchEvent(new CustomEvent('olivia:farm-truth-updated'));
+    }catch(error:any){
+      setErrorMessage(error?.message||'Kunne ikke oppdatere oppfølgingssaken.');
+    }finally{setIsUpdatingIssue(false);}
+  };
+
+  const closeIssue=async()=>{
+    if(!closingIssue)return;
+    setIsUpdatingIssue(true);setErrorMessage(null);
+    try{
+      const updated=await updateFarmIssueStatus({
+        id:closingIssue.id,
+        status:closingStatus,
+        resolutionNotes,
+      });
+      setIssues(current=>current.map(item=>item.id===updated.id?updated:item));
+      setClosingIssue(null);setResolutionNotes('');
+      window.dispatchEvent(new CustomEvent('olivia:farm-truth-updated'));
+    }catch(error:any){
+      setErrorMessage(error?.message||'Kunne ikke lukke oppfølgingssaken.');
+    }finally{setIsUpdatingIssue(false);}
   };
 
   const handleSave = async () => {
@@ -292,6 +387,21 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
         geo_match_confidence:geoContext?.matchConfidence,
       };
 
+      const issueDraft=trackAsIssue&&!linkedIssueId
+        ?{
+          id:makeFarmIssueId(),
+          issueType:issueTypeForObservation(form.category),
+          title:form.title.trim(),
+          description:form.notes?.trim()||undefined,
+          severity:issueSeverity,
+          nextReviewAt:issueNextReview?new Date(issueNextReview+'T12:00:00').toISOString():undefined,
+          parcelId:form.parcel_id?.trim()||undefined,
+          zoneId:form.zone_id?.trim()||undefined,
+          treeGroupId:form.tree_group_id?.trim()||undefined,
+          geo:geoContext,
+        }
+        :undefined;
+
       const queued:QueuedFieldObservation={
         id:observationDraftId,
         createdAt:new Date().toISOString(),
@@ -300,6 +410,8 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
         observation,
         imageDataUrls,
         geo:geoContext,
+        issueDraft,
+        existingIssueId:linkedIssueId,
       };
 
       await queueFieldObservation(queued);
@@ -313,7 +425,8 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
           setLoadState('supabase');
           setLastRefresh(new Date());
           synced=true;
-          setSyncMessage('Feltobservasjonen er lagret og synkronisert.');
+          setSyncMessage(linkedIssueId?'Ny kontroll er lagret og koblet til oppfølgingssaken.':issueDraft?'Feltobservasjonen og oppfølgingssaken er lagret.':'Feltobservasjonen er lagret og synkronisert.');
+          await loadObservations();
         }catch(err:any){
           console.warn('[FieldObservationsView] immediate sync failed',err);
           setSyncMessage('Feltobservasjonen er lagret lokalt og venter på synkronisering.');
@@ -380,11 +493,16 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
           { label: 'Siste 7 dager', value: stats.last7, icon: <CheckCircle2 size={18} />, cls: 'border-green-500/20 bg-green-500/10 text-green-400' },
           { label: 'Vanning', value: stats.irrigation, icon: <Droplets size={18} />, cls: 'border-blue-500/20 bg-blue-500/10 text-blue-400' },
           { label: 'Skadedyr/sykdom', value: stats.pests, icon: <Bug size={18} />, cls: 'border-yellow-500/20 bg-yellow-500/10 text-yellow-400' },
-          { label: 'Øko-kontroll', value: stats.organic, icon: <FileCheck2 size={18} />, cls: 'border-lime-500/20 bg-lime-500/10 text-lime-400' },
+          { label: 'Åpne saker', value: stats.activeIssues, icon: <ShieldCheck size={18} />, cls: 'border-purple-500/20 bg-purple-500/10 text-purple-300' },
         ].map(card => <div key={card.label} className={`glass rounded-[2rem] p-5 border ${card.cls}`}><div className="mb-2">{card.icon}</div><p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">{card.label}</p><p className="text-3xl font-black text-white mt-1">{card.value}</p></div>)}
       </div>
 
-      {loadState === 'empty' && !isLoading && (
+      <div className="flex gap-2 rounded-2xl border border-white/10 bg-white/[0.025] p-2">
+        <button onClick={()=>setActiveView('observations')} className={'flex-1 rounded-xl px-4 py-3 text-sm font-black transition '+(activeView==='observations'?'bg-[#d9b657] text-black':'text-slate-400 hover:bg-white/5')}>Observasjoner · {observations.length}</button>
+        <button onClick={()=>setActiveView('issues')} className={'flex-1 rounded-xl px-4 py-3 text-sm font-black transition '+(activeView==='issues'?'bg-purple-500/20 text-purple-200 border border-purple-500/20':'text-slate-400 hover:bg-white/5')}>Oppfølgingssaker · {issues.filter(issue=>issue.status==='open'||issue.status==='monitoring').length}</button>
+      </div>
+
+      {activeView==='observations' && loadState === 'empty' && !isLoading && (
         <div className="rounded-[2rem] border border-dashed border-[#d9b657]/30 bg-[#d9b657]/5 p-8 text-center">
           <Camera className="mx-auto text-[#d9b657] mb-3" size={34} />
           <h4 className="text-white font-bold text-lg">Ingen feltobservasjoner ennå</h4>
@@ -395,7 +513,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
 
       {isLoading && loadState === 'loading' && <div className="glass rounded-[2rem] p-8 border border-white/10 text-slate-400 flex items-center gap-3"><Loader2 size={18} className="animate-spin" /> Henter feltobservasjoner fra Supabase...</div>}
 
-      {observations.length > 0 && (
+      {activeView==='observations' && observations.length > 0 && (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {observations.map(obs => {
             const meta = categoryMeta(obs.category);
@@ -416,6 +534,8 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
                   <span className="text-[10px] px-3 py-1 rounded-full border border-white/10 bg-white/5 text-slate-300 font-bold uppercase tracking-widest">{parcelName}</span>
                   <span className="text-[10px] px-3 py-1 rounded-full border border-white/10 bg-white/5 text-slate-300 font-bold uppercase tracking-widest">{zoneName}</span>
                   {obs.tree_group && <span className="text-[10px] px-3 py-1 rounded-full border border-white/10 bg-white/5 text-slate-300 font-bold uppercase tracking-widest">{obs.tree_group}</span>}
+                  {obs.issue_id&&<span className="text-[10px] px-3 py-1 rounded-full border border-purple-500/20 bg-purple-500/10 text-purple-200 font-bold uppercase tracking-widest">Oppfølgingssak</span>}
+                  {obs.geo_lat!=null&&obs.geo_lon!=null&&<span className="text-[10px] px-3 py-1 rounded-full border border-green-500/15 bg-green-500/[0.05] text-green-300 font-bold uppercase tracking-widest">GEO ±{Math.round(Number(obs.geo_accuracy_m||0))}m</span>}
                 </div>
                 {obs.notes && <p className="text-sm text-slate-400 mt-4 leading-relaxed whitespace-pre-line">{obs.notes}</p>}
                 {obs.image_urls?.length ? <div className="grid grid-cols-3 gap-2 mt-4">{obs.image_urls.slice(0, 6).map(url => <img key={url} src={url} alt="Feltobservasjon" className="h-24 w-full object-cover rounded-xl border border-white/10" />)}</div> : null}
@@ -425,14 +545,48 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
         </div>
       )}
 
+      {activeView==='issues'&&<div className="space-y-4">
+        {issues.length===0?<div className="rounded-[2rem] border border-dashed border-purple-500/20 bg-purple-500/[0.04] p-8 text-center"><ShieldCheck className="mx-auto text-purple-300 mb-3" size={34}/><p className="font-black text-white">Ingen oppfølgingssaker ennå</p><p className="text-sm text-slate-500 mt-2">Opprett sak fra en feltobservasjon når et problem må kontrolleres igjen.</p></div>:
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">{issues.map(issue=>{
+          const parcelName=issue.parcel_id?parcelNameById.get(issue.parcel_id)||issue.parcel_id:'Ingen parsell';
+          const active=issue.status==='open'||issue.status==='monitoring';
+          const reviewAt=issue.next_review_at?new Date(issue.next_review_at):null;
+          const overdue=active&&reviewAt&&!Number.isNaN(reviewAt.getTime())&&reviewAt.getTime()<Date.now();
+          return <article key={issue.id} className={'rounded-[2rem] border p-5 '+(issue.severity==='critical'?'border-red-500/25 bg-red-500/[0.05]':issue.severity==='high'?'border-amber-500/20 bg-amber-500/[0.04]':active?'border-purple-500/15 bg-purple-500/[0.03]':'border-white/10 bg-white/[0.02]')}>
+            <div className="flex items-start justify-between gap-3">
+              <div><div className="flex flex-wrap gap-2"><span className="rounded-full border border-white/10 px-2 py-0.5 text-[9px] font-black text-slate-300">{issueStatusLabel(issue.status)}</span><span className="rounded-full border border-white/10 px-2 py-0.5 text-[9px] font-black text-slate-400">{issueSeverityLabel(issue.severity)}</span>{overdue&&<span className="rounded-full border border-red-500/20 px-2 py-0.5 text-[9px] font-black text-red-300">Kontroll forfalt</span>}</div><h3 className="text-lg font-black text-white mt-2">{issue.title}</h3><p className="text-xs text-slate-500 mt-1">{parcelName} · {issue.issue_type.replaceAll('_',' ')}</p></div>
+              <ShieldCheck size={20} className={active?'text-purple-300':'text-slate-600'}/>
+            </div>
+            {issue.description&&<p className="text-sm text-slate-400 mt-3">{issue.description}</p>}
+            <div className="grid grid-cols-2 gap-2 mt-4"><div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-600">Åpnet</p><p className="text-xs font-bold text-slate-300 mt-1">{new Date(issue.opened_at).toLocaleDateString('no-NO')}</p></div><div className="rounded-xl bg-black/20 p-3"><p className="text-[9px] uppercase tracking-widest text-slate-600">Neste kontroll</p><p className={'text-xs font-bold mt-1 '+(overdue?'text-red-300':'text-slate-300')}>{reviewAt?reviewAt.toLocaleDateString('no-NO'):'Ikke satt'}</p></div></div>
+            {issue.resolution_notes&&<p className="text-xs text-green-200 mt-3">Avslutning: {issue.resolution_notes}</p>}
+            {active&&<div className="flex flex-wrap gap-2 mt-4">
+              <button onClick={()=>openIssueFollowUp(issue)} className="rounded-xl bg-purple-500/15 px-3 py-2 text-xs font-black text-purple-200"><Camera size={13} className="inline mr-1"/>Ny kontroll</button>
+              {issue.status==='open'&&<button onClick={()=>markIssueMonitoring(issue)} disabled={isUpdatingIssue} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300">Følges opp</button>}
+              <button onClick={()=>{setClosingIssue(issue);setClosingStatus('resolved');setResolutionNotes('');}} className="rounded-xl border border-green-500/20 bg-green-500/10 px-3 py-2 text-xs font-bold text-green-300">Løst</button>
+              <button onClick={()=>{setClosingIssue(issue);setClosingStatus('dismissed');setResolutionNotes('');}} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-400">Ikke relevant</button>
+            </div>}
+          </article>;
+        })}</div>}
+      </div>}
+
+      {closingIssue&&<div className="fixed inset-0 z-[2100] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
+        <div className="w-full max-w-lg rounded-[2rem] border border-white/15 bg-[#080b09] p-6 shadow-2xl">
+          <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] uppercase tracking-widest font-black text-purple-300">Avslutt oppfølgingssak</p><h3 className="text-xl font-black text-white mt-1">{closingIssue.title}</h3></div><button onClick={()=>setClosingIssue(null)} className="p-2 text-slate-400"><X size={18}/></button></div>
+          <p className="text-xs text-slate-500 mt-3">{closingStatus==='resolved'?'Løst betyr at dere faktisk har kontrollert og vurderer problemet som avsluttet.':'Ikke relevant brukes når saken ikke skal følges videre.'}</p>
+          <textarea value={resolutionNotes} onChange={e=>setResolutionNotes(e.target.value)} className="mt-4 min-h-[100px] w-full rounded-xl border border-white/10 bg-black/35 p-3 text-sm text-white" placeholder="Hva ble kontrollert / hvorfor lukkes saken?"/>
+          <div className="flex justify-end gap-2 mt-4"><button onClick={()=>setClosingIssue(null)} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-bold text-slate-300">Avbryt</button><button onClick={closeIssue} disabled={isUpdatingIssue} className="rounded-xl bg-green-500 px-4 py-2.5 text-xs font-black text-black disabled:opacity-40">{isUpdatingIssue?'Lagrer…':closingStatus==='resolved'?'Bekreft løst':'Lukk som ikke relevant'}</button></div>
+        </div>
+      </div>}
+
       {isFormOpen && (
         <div className="fixed inset-0 z-[2000] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/80 backdrop-blur-md">
           <div className="glass w-full md:max-w-3xl rounded-t-[2.5rem] md:rounded-[2.5rem] p-6 md:p-8 border border-white/20 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
-            <div className="flex justify-between items-start gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#d9b657]">Supabase · feltdata</p><h3 className="text-2xl font-bold text-white mt-1">Ny feltobservasjon</h3><p className="text-xs text-slate-500 mt-1">Dokumenter faktisk observasjon fra gården.</p></div><button onClick={() => { resetForm(); setIsFormOpen(false); }} className="p-2 text-slate-400 hover:text-white"><X size={24} /></button></div>
+            <div className="flex justify-between items-start gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#d9b657]">Supabase · feltdata</p><h3 className="text-2xl font-bold text-white mt-1">{linkedIssueId?'Ny kontroll':'Ny feltobservasjon'}</h3><p className="text-xs text-slate-500 mt-1">{linkedIssueId?'Denne observasjonen kobles til eksisterende oppfølgingssak.':'Dokumenter faktisk observasjon fra gården.'}</p></div><button onClick={() => { resetForm(); setIsFormOpen(false); }} className="p-2 text-slate-400 hover:text-white"><X size={24} /></button></div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label="Parsell" help="Velg parsell manuelt, eller la GPS foreslå den."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.parcel_id || ''} onChange={event => {setParcelSelectionSource('manual');setForm(prev => ({ ...prev, parcel_id: event.target.value, zone_id: '', tree_group_id: '' }));}}><option className="bg-slate-900" value="">Ingen parsell</option>{parcels.map(parcel => <option key={parcel.id} className="bg-slate-900" value={parcel.id}>{parcel.name}</option>)}</select></Field>
-              <Field label="Kategori" help="Velg hva observasjonen handler om."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.category || 'irrigation'} onChange={event => setForm(prev => ({ ...prev, category: event.target.value as ObservationCategory }))}>{CATEGORY_OPTIONS.map(option => <option key={option.value} className="bg-slate-900" value={option.value}>{option.label}</option>)}</select></Field>
+              <Field label="Kategori" help="Velg hva observasjonen handler om."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.category || 'irrigation'} onChange={event => {const category=event.target.value as ObservationCategory;setForm(prev => ({ ...prev, category }));if(category==='pest'||category==='disease')setTrackAsIssue(true);}}>{CATEGORY_OPTIONS.map(option => <option key={option.value} className="bg-slate-900" value={option.value}>{option.label}</option>)}</select></Field>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -442,6 +596,14 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
 
             <Field label="Tittel *" help="Kort og tydelig observasjon."><input className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" placeholder="F.eks. lav fukt ved unge Gordal" value={form.title || ''} onChange={event => setForm(prev => ({ ...prev, title: event.target.value }))} /></Field>
             <Field label="Notat" help="Beskriv hva du så, hvor og hva som bør gjøres."><textarea className="w-full min-h-[140px] bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.notes || ''} onChange={event => setForm(prev => ({ ...prev, notes: event.target.value }))} /></Field>
+
+            {!linkedIssueId&&<div className="rounded-2xl border border-purple-500/15 bg-purple-500/[0.035] p-4">
+              <label className="flex items-start gap-3 cursor-pointer"><input type="checkbox" checked={trackAsIssue} onChange={e=>setTrackAsIssue(e.target.checked)} className="mt-1"/><span><span className="text-sm font-black text-white">Opprett oppfølgingssak</span><span className="block text-xs text-slate-500 mt-1">Bruk når dette må kontrolleres igjen. Skadedyr og sykdom foreslås automatisk som sak, men du bestemmer.</span></span></label>
+              {trackAsIssue&&<div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                <Field label="Alvorlighet" help="Styrer prioritet i oppfølgingen."><select value={issueSeverity} onChange={e=>setIssueSeverity(e.target.value as FarmIssueSeverity)} className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white"><option value="low">Lav</option><option value="medium">Middels</option><option value="high">Høy</option><option value="critical">Kritisk</option></select></Field>
+                <Field label="Neste kontroll" help="Dato for ny feltkontroll, ikke automatisk løsning."><input type="date" value={issueNextReview} onChange={e=>setIssueNextReview(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white"/></Field>
+              </div>}
+            </div>}
 
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Bilder + GEO</label>
