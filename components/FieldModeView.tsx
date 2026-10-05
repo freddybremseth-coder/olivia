@@ -22,6 +22,7 @@ import{
   fetchFarmZoneGeoSamples,
   fetchTreeGroups,
   insertFarmZoneGeoSample,
+  markFarmGeoLandmarkReviewed,
   upsertFarmGeoLandmark,
   upsertFarmZone,
   upsertTreeGroup,
@@ -115,6 +116,7 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
   const[createVariety,setCreateVariety]=useState('');
   const[createTreeCount,setCreateTreeCount]=useState('');
   const[createLandmarkType,setCreateLandmarkType]=useState<FarmGeoLandmarkType>('other');
+  const[createReviewInterval,setCreateReviewInterval]=useState('');
   const[savingStructure,setSavingStructure]=useState(false);
   const[fixedPointTarget,setFixedPointTarget]=useState<FarmGeoLandmark|null>(null);
   const[savingFixedPoint,setSavingFixedPoint]=useState(false);
@@ -213,6 +215,7 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
     setCreateVariety('');
     setCreateTreeCount('');
     setCreateLandmarkType(kind==='landmark'?'other':'other');
+    setCreateReviewInterval('');
   };
 
   const selectCreateParcel=(parcelId:string)=>{
@@ -297,6 +300,12 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
       }
 
       if(createKind==='landmark'){
+        const reviewDays=createReviewInterval?Math.max(1,Number(createReviewInterval)):undefined;
+        let nextReviewAt:string|undefined;
+        if(reviewDays){
+          const next=new Date();next.setHours(12,0,0,0);next.setDate(next.getDate()+reviewDays);
+          nextReviewAt=next.toISOString().slice(0,10);
+        }
         await upsertFarmGeoLandmark({
           id:crypto.randomUUID(),
           parcel_id:createParcelId,
@@ -310,8 +319,10 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
           altitude_m:geo.altitudeM,
           geo_context:dbGeo,
           status:'active',
+          review_interval_days:reviewDays,
+          next_review_at:nextReviewAt,
         });
-        setMessage('Det faste GEO-punktet er lagret.');
+        setMessage('Det faste GEO-punktet er lagret.'+(reviewDays?' Neste kontroll er planlagt om '+reviewDays+' dager.':''));
       }
 
       setCreateKind(null);
@@ -424,7 +435,9 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
           distanceFromLandmarkM:distance,
         },
       });
-      setMessage('Kontrollbildet er lagret på «'+point.name+'». Olivia har nå '+(fixedPointPhotoCount(point.id)+1)+' bilde'+(fixedPointPhotoCount(point.id)+1===1?'':'r')+' i denne tidslinjen.');
+      const reviewed=await markFarmGeoLandmarkReviewed(point.id,new Date());
+      setLandmarks(current=>current.map(item=>item.id===reviewed.id?reviewed:item));
+      setMessage('Kontrollbildet er lagret på «'+point.name+'». Olivia har nå '+(fixedPointPhotoCount(point.id)+1)+' bilde'+(fixedPointPhotoCount(point.id)+1===1?'':'r')+' i denne tidslinjen.'+(reviewed.next_review_at?' Neste kontroll: '+reviewed.next_review_at+'.':''));
       setFixedPointTarget(null);
       await loadMedia();
       window.dispatchEvent(new CustomEvent('olivia:farm-truth-updated'));
@@ -467,6 +480,18 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
           {createKind==='landmark'&&<label className="text-xs text-slate-400">Punkttype
             <select value={createLandmarkType} onChange={e=>setCreateLandmarkType(e.target.value as FarmGeoLandmarkType)} className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white">
               {Object.entries(LANDMARK_LABELS).map(([value,label])=><option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>}
+          {createKind==='landmark'&&<label className="text-xs text-slate-400">Kontrollfrekvens, valgfritt
+            <select value={createReviewInterval} onChange={e=>setCreateReviewInterval(e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white">
+              <option value="">Ingen fast frekvens</option>
+              <option value="7">Hver 7. dag</option>
+              <option value="14">Hver 14. dag</option>
+              <option value="30">Hver 30. dag</option>
+              <option value="60">Hver 60. dag</option>
+              <option value="90">Hver 90. dag</option>
+              <option value="180">Hver 180. dag</option>
+              <option value="365">Årlig</option>
             </select>
           </label>}
           <label className="text-xs text-slate-400">Navn
@@ -584,7 +609,7 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
           {landmarks.slice(0,4).map(point=>{
             const photoCount=fixedPointPhotoCount(point.id);
             return <div key={point.id} className="mt-2 rounded-lg border border-white/5 bg-white/[0.02] p-2">
-              <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-xs font-bold text-slate-300">{LANDMARK_LABELS[point.landmark_type]} · {point.name}</p><p className="mt-1 text-[9px] text-slate-600">{photoCount} kontrollbilde{photoCount===1?'':'r'}</p></div><Camera size={13} className="shrink-0 text-blue-400"/></div>
+              <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-xs font-bold text-slate-300">{LANDMARK_LABELS[point.landmark_type]} · {point.name}</p><p className="mt-1 text-[9px] text-slate-600">{photoCount} kontrollbilde{photoCount===1?'':'r'}{point.next_review_at?' · neste '+point.next_review_at:''}</p></div><Camera size={13} className="shrink-0 text-blue-400"/></div>
               <button onClick={()=>void startFixedPointCapture(point)} disabled={savingFixedPoint} className="mt-2 w-full rounded-lg border border-blue-500/15 bg-blue-500/[0.05] px-2 py-1.5 text-[9px] font-black text-blue-300 disabled:opacity-35">{savingFixedPoint&&fixedPointTarget?.id===point.id?'Kontrollerer…':'Ta kontrollbilde'}</button>
             </div>;
           })}

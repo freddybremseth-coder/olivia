@@ -109,6 +109,51 @@ export async function upsertFarmGeoLandmark(
   return data as FarmGeoLandmark;
 }
 
+export async function markFarmGeoLandmarkReviewed(
+  landmarkId:string,
+  reviewedAt=new Date(),
+):Promise<FarmGeoLandmark>{
+  if(warnIfSupabaseMissing('markFarmGeoLandmarkReviewed'))throw new Error('Supabase er ikke konfigurert.');
+  const current=await supabase.from('farm_geo_landmarks')
+    .select('*')
+    .eq('id',landmarkId)
+    .single();
+  if(current.error)throwFarmIoTError('markFarmGeoLandmarkReviewed fetch',current.error);
+  const landmark=current.data as FarmGeoLandmark;
+  const date=reviewedAt.toISOString().slice(0,10);
+  let nextReview:string|null=null;
+  if(landmark.review_interval_days){
+    const next=new Date(date+'T12:00:00');
+    next.setDate(next.getDate()+Number(landmark.review_interval_days));
+    nextReview=next.toISOString().slice(0,10);
+  }
+  const updated=await supabase.from('farm_geo_landmarks')
+    .update({
+      last_review_at:date,
+      next_review_at:nextReview,
+      updated_at:new Date().toISOString(),
+    })
+    .eq('id',landmarkId)
+    .select('*')
+    .single();
+  if(updated.error)throwFarmIoTError('markFarmGeoLandmarkReviewed update',updated.error);
+  return updated.data as FarmGeoLandmark;
+}
+
+export async function fetchDueFarmGeoLandmarks(daysAhead=7):Promise<FarmGeoLandmark[]>{
+  if(warnIfSupabaseMissing('fetchDueFarmGeoLandmarks'))return[];
+  const until=new Date();
+  until.setDate(until.getDate()+Math.max(0,daysAhead));
+  const {data,error}=await supabase.from('farm_geo_landmarks')
+    .select('*')
+    .eq('status','active')
+    .not('next_review_at','is',null)
+    .lte('next_review_at',until.toISOString().slice(0,10))
+    .order('next_review_at',{ascending:true});
+  if(error)throwFarmIoTError('fetchDueFarmGeoLandmarks',error);
+  return(data??[]) as FarmGeoLandmark[];
+}
+
 export async function fetchFarmZoneGeoSamples(zoneId?:string,parcelId?:string):Promise<FarmZoneGeoSample[]>{
   if(warnIfSupabaseMissing('fetchFarmZoneGeoSamples'))return[];
   let query=supabase.from('farm_zone_geo_samples').select('*').order('captured_at',{ascending:false});

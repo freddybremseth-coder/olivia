@@ -66,6 +66,9 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
    - faste GEO-punkter kan representere brønn, pumpe, dryppunkt, adkomst, referansetre, problemsted, lager eller bygg
    - faste GEO-punkter kan få gjentatte kontrollbilder som tidslinje; ny live GPS må bekrefte at brukeren faktisk står nær punktet
    - kontrollbildets historikk er sammenligningskontekst, aldri automatisk bevis på dagens tilstand
+   - faste punkt kan ha en eksplisitt, valgfri kontrollfrekvens valgt av brukeren; Olivia finner aldri på en frist
+   - nytt kontrollbilde oppdaterer sist kontrollert og neste kontroll etter den valgte frekvensen
+   - forfalte selvvalgte kontrollpunkt kan vises i Olivia Top 5
    - Feltkonsulent og Beskjæringsekspert får nærliggende operativ gårdsstruktur som kontekst, separat fra historiske observasjoner
    - status: implementert
 
