@@ -15,8 +15,8 @@ import { sedecService } from '../services/sedecService';
 import { useTranslation } from '../services/i18nService';
 import { MUNICIPALITIES, Municipality, PROVINCE_CODE_MAP } from '../data/es_municipalities';
 import { fetchFarmMediaEvidence, type FarmMediaEvidenceRow } from '../services/farmMediaEvidence';
-import { fetchFarmGeoLandmarks, fetchFarmZones, fetchTreeGroups } from '../services/farmIoT';
-import type { FarmGeoLandmark, FarmZone, TreeGroup } from '../types/farmIoT';
+import { fetchFarmGeoLandmarks, fetchFarmZoneGeoSamples, fetchFarmZones, fetchTreeGroups } from '../services/farmIoT';
+import type { FarmGeoLandmark, FarmZone, FarmZoneGeoSample, TreeGroup } from '../types/farmIoT';
 
 import * as turf from '@turf/turf';
 
@@ -71,6 +71,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
   const [farmZones,setFarmZones]=useState<FarmZone[]>([]);
   const [treeGroups,setTreeGroups]=useState<TreeGroup[]>([]);
   const [landmarks,setLandmarks]=useState<FarmGeoLandmark[]>([]);
+  const [zoneSamples,setZoneSamples]=useState<FarmZoneGeoSample[]>([]);
   const [structureLoadError,setStructureLoadError]=useState('');
   const [showLayerPanel, setShowLayerPanel] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
@@ -253,15 +254,17 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     let cancelled=false;
     const load=async()=>{
       try{
-        const [zoneRows,groupRows,landmarkRows]=await Promise.all([
+        const [zoneRows,groupRows,landmarkRows,sampleRows]=await Promise.all([
           fetchFarmZones(),
           fetchTreeGroups(),
           fetchFarmGeoLandmarks(),
+          fetchFarmZoneGeoSamples(),
         ]);
         if(!cancelled){
           setFarmZones(zoneRows);
           setTreeGroups(groupRows);
           setLandmarks(landmarkRows);
+          setZoneSamples(sampleRows);
           setStructureLoadError('');
         }
       }catch(error:any){
@@ -290,6 +293,48 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
 
     const parcelNames=new Map(parcels.map(parcel=>[parcel.id,parcel.name]));
     const zoneNames=new Map(farmZones.map(zone=>[zone.id,zone.name]));
+
+    const samplesByZone=new Map<string,FarmZoneGeoSample[]>();
+    zoneSamples.forEach(sample=>{
+      const rows=samplesByZone.get(sample.zone_id)||[];
+      rows.push(sample);
+      samplesByZone.set(sample.zone_id,rows);
+    });
+
+    for(const zone of farmZones){
+      const samples=samplesByZone.get(zone.id)||[];
+      samples.forEach(sample=>{
+        const lat=Number(sample.lat),lon=Number(sample.lon);
+        if(!Number.isFinite(lat)||!Number.isFinite(lon))return;
+        L.circleMarker([lat,lon],{
+          radius:3.5,weight:1,color:'#86efac',fillColor:'#22c55e',fillOpacity:0.72,
+        }).bindTooltip(zone.name+' · bekreftet sonepunkt').addTo(layer);
+      });
+
+      if(samples.length>=3){
+        try{
+          const points=turf.featureCollection(
+            samples
+              .map(sample=>[Number(sample.lon),Number(sample.lat)] as [number,number])
+              .filter(([lon,lat])=>Number.isFinite(lat)&&Number.isFinite(lon))
+              .map(([lon,lat])=>turf.point([lon,lat]))
+          );
+          const hull=turf.convex(points);
+          if(hull){
+            const latLngs=(hull.geometry.coordinates[0]||[]).map(([lon,lat])=>[lat,lon] as [number,number]);
+            if(latLngs.length>=3){
+              L.polygon(latLngs,{
+                color:'#22c55e',weight:2,fillColor:'#22c55e',fillOpacity:0.06,dashArray:'7,6',
+              })
+                .bindTooltip(zone.name+' · operativt fotavtrykk ('+samples.length+' bekreftede punkt)')
+                .addTo(layer);
+            }
+          }
+        }catch(error){
+          console.warn('[FarmMap] zone operational footprint',zone.id,error);
+        }
+      }
+    }
 
     farmZones.forEach(zone=>{
       const lat=Number(zone.anchor_lat),lon=Number(zone.anchor_lon);
@@ -346,7 +391,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     });
 
     layer.bringToFront?.();
-  },[farmZones,treeGroups,landmarks,isStructureLayerActive,parcels]);
+  },[farmZones,treeGroups,landmarks,zoneSamples,isStructureLayerActive,parcels]);
 
   // Keep refs in sync so the map click closure sees current values
   useEffect(() => { isMapClickModeRef.current = isMapClickMode; }, [isMapClickMode]);
@@ -1001,7 +1046,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
                   {isMediaLayerActive?<Eye size={12} className="ml-auto"/>:<EyeOff size={12} className="ml-auto"/>}
                 </button>
                 <button onClick={()=>setIsStructureLayerActive(!isStructureLayerActive)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-bold transition-all ${isStructureLayerActive ? 'bg-green-500/15 text-green-300 border border-green-500/30' : 'bg-white/5 text-slate-400 border border-white/5'}`}>
-                  <MapPin size={14}/><span>Driftskart (${farmZones.length+treeGroups.length+landmarks.length})</span>
+                  <MapPin size={14}/><span>Driftskart (${farmZones.length+treeGroups.length+landmarks.length} objekt · ${zoneSamples.length} sonepunkt)</span>
                   {isStructureLayerActive?<Eye size={12} className="ml-auto"/>:<EyeOff size={12} className="ml-auto"/>}
                 </button>
                 {mediaLoadError&&<p className="px-2 pt-1 text-[9px] text-amber-300">GEO-bilder: {mediaLoadError}</p>}
