@@ -104,7 +104,7 @@ export async function upsertFarmIssueFromObservation(input:{
     .update({issue_id:input.draft.id})
     .eq('id',input.observation.id);
   if(observationRes.error){
-    await supabase.from('farm_issues').delete().eq('id',input.draft.id).catch(()=>undefined);
+    try{await supabase.from('farm_issues').delete().eq('id',input.draft.id);}catch{}
     throw new Error(observationRes.error.message);
   }
   return issueRes.data as FarmIssue;
