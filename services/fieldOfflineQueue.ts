@@ -2,6 +2,11 @@ import type { FarmObservation } from '../types/farmIoT';
 import type { FarmGeoContext } from '../types/farmGeo';
 import { insertFarmObservation } from './farmIoT';
 import { registerFarmMediaEvidence, uploadDataUrlFarmMedia } from './farmMediaEvidence';
+import {
+  linkObservationToIssue,
+  upsertFarmIssueFromObservation,
+  type FarmIssueDraft,
+} from './farmIssues';
 
 const DB_NAME='olivia-field-offline';
 const DB_VERSION=1;
@@ -17,6 +22,8 @@ export type QueuedFieldObservation={
   imageDataUrls:string[];
   uploadedUrls?:string[];
   geo?:FarmGeoContext|null;
+  issueDraft?:FarmIssueDraft;
+  existingIssueId?:string;
 };
 
 function openDb():Promise<IDBDatabase>{
@@ -116,6 +123,21 @@ export async function syncQueuedFieldObservation(item:QueuedFieldObservation){
       metadata:{observationParcelId:saved.parcel_id||null,category:saved.category,offlineQueue:true},
       createdBy:'Olivia',
     });
+
+    if(item.issueDraft){
+      await upsertFarmIssueFromObservation({
+        draft:{
+          ...item.issueDraft,
+          parcelId:item.issueDraft.parcelId||saved.parcel_id,
+          zoneId:item.issueDraft.zoneId||saved.zone_id,
+          treeGroupId:item.issueDraft.treeGroupId||saved.tree_group_id,
+          geo:item.issueDraft.geo||item.geo,
+        },
+        observation:saved,
+      });
+    }else if(item.existingIssueId){
+      await linkObservationToIssue(item.existingIssueId,saved);
+    }
 
     await removeQueuedFieldObservation(item.id);
     window.dispatchEvent(new CustomEvent('olivia:farm-truth-updated'));
