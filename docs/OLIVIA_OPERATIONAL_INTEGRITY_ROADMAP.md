@@ -56,8 +56,9 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
    - semantisk samme manglende faktum samles på tvers av Feltkonsulent, Beskjæringsekspert og andre agenter
    - ett svar lukker samme kunnskapsbehov og oppretter én verifisert kunnskapssannhet
    - Daily/Intelligence teller unike kunnskapsbehov, ikke rå duplikatrader
-   - foto-behov skal videre bli konkrete feltoppgaver
-   - status: semantisk deduplisering implementert; fotooppgaver er neste del
+   - konkrete foto-behov blir deterministiske feltoppgaver med riktig parsell
+   - tekstsvar fullfører aldri en fotooppgave; faktisk oppgaveutførelse må bekreftes eksplisitt
+   - status: implementert
 
 9. **Task-sensitive arbeidsvindu fra vær**
    - vær påvirker timing, aldri sannhetsstatus
