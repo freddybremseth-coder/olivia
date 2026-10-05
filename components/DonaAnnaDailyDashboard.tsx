@@ -847,7 +847,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   const currentMonth = new Date().getMonth() + 1;
   const oilWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_oil;
   const tableWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_table_olives;
-  const sourceLabel = loadState === 'supabase' ? (sourceFailures.length ? `Supabase · ${13-sourceFailures.length}/13 kilder` : 'Supabase · 13/13 kilder') : loadState === 'empty' ? 'Supabase · ingen data ennå' : loadState === 'error' ? 'Supabase-feil' : 'Laster Supabase';
+  const sourceLabel = loadState === 'supabase' ? (sourceFailures.length ? `Daily · ${13-sourceFailures.length}/13 kilder` : 'Daily · 13/13 kilder') : loadState === 'empty' ? 'Ingen driftsdata ennå' : loadState === 'error' ? 'Daily-datafeil' : 'Laster Daily-kilder';
   const orderAttention = commerceAttention.filter(item => item.event_type === 'order_process');
   const readyToShip = commerceAttention.filter(item => item.event_type === 'order_ready_to_ship');
   const overdueInvoices = commerceAttention.filter(item => item.event_type === 'invoice_overdue');
