@@ -184,7 +184,7 @@ async function ensureKnowledgePhotoTask(need:string,parcelId?:string|null){
   const id=knowledgePhotoTaskId(need,parcelId);
   const existing=await supabase.from('tasks').select('id,status').eq('id',id).maybeSingle();
   if(existing.error)throw new Error(existing.error.message);
-  if(existing.data?.status==='DONE')return;
+  if(existing.data)return;
   const {error}=await supabase.from('tasks').upsert({
     id,
     title:spec.title,
@@ -195,16 +195,6 @@ async function ensureKnowledgePhotoTask(need:string,parcelId?:string|null){
     parcel_id:parcelId||null,
     due_date:daysFromNow(7),
   },{onConflict:'id'});
-  if(error)throw new Error(error.message);
-}
-
-async function completeKnowledgePhotoTask(need:string,parcelId?:string|null){
-  const spec=knowledgePhotoTaskSpec(need);
-  if(!spec)return;
-  const {error}=await supabase.from('tasks')
-    .update({status:'DONE'})
-    .eq('id',knowledgePhotoTaskId(need,parcelId))
-    .neq('status','DONE');
   if(error)throw new Error(error.message);
 }
 
@@ -364,7 +354,6 @@ export async function answerFarmQuestion(questionId:string,answer:string,answerJ
     if(closeSiblings.error)throw new Error(closeSiblings.error.message);
   }
 
-  await completeKnowledgePhotoTask(semanticKnowledgeNeed(question.question),question.parcel_id);
 }
 
 export async function dismissFarmQuestion(questionId:string){
