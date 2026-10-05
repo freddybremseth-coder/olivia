@@ -47,6 +47,11 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
    - manuell parsellkorrigering er autoritativ for det konkrete GEO-punktet
    - senere GPS-punkter kan bruke tidligere manuelle/høysikre GEO-punkter som romlig hukommelse når polygonmatch mangler
    - romlig hukommelse får aldri endre juridiske/Catastro-grenser automatisk
+   - operativ struktur bygges som parsell → sone → tregruppe → fast GEO-punkt
+   - sone- og tregruppeankre opprettes fra faktisk feltposisjon og kan forbedres når flere ekte data finnes
+   - faste GEO-punkter kan representere brønn, pumpe, dryppunkt, adkomst, referansetre, problemsted, lager eller bygg
+   - Feltkonsulent og Beskjæringsekspert får nærliggende operativ gårdsstruktur som kontekst, separat fra historiske observasjoner
+   - status: implementert
 
 7. **Farm issues / oppfølgingssaker**
    - skadedyr, sykdom, vanningsfeil og andre avvik får livssyklus fra første observasjon til lukket sak

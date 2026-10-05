@@ -16,6 +16,18 @@ export type SpatialMemoryObservation={
   distanceM:number;
 };
 
+export type SpatialStructureAnchor={
+  kind:'zone'|'tree_group'|'landmark';
+  id:string;
+  parcelId?:string;
+  zoneId?:string;
+  name:string;
+  detail?:string;
+  lat:number;
+  lon:number;
+  distanceM:number;
+};
+
 function finite(value:unknown):number|undefined{
   const n=Number(value);
   return Number.isFinite(n)?n:undefined;
@@ -99,30 +111,140 @@ export async function fetchNearbySpatialObservations(input:{
     .slice(0,limit);
 }
 
+export async function fetchNearbySpatialStructure(input:{
+  geo:Pick<FarmGeoContext,'lat'|'lon'>;
+  parcelId?:string;
+  radiusM?:number;
+  limit?:number;
+}):Promise<SpatialStructureAnchor[]>{
+  if(!isSupabaseConfigured)return[];
+  const radiusM=Math.max(10,Math.min(500,input.radiusM??160));
+  const limit=Math.max(1,Math.min(30,input.limit??12));
+
+  const zoneQuery=supabase.from('farm_zones')
+    .select('id,parcel_id,name,description,anchor_lat,anchor_lon')
+    .not('anchor_lat','is',null)
+    .not('anchor_lon','is',null)
+    .limit(250);
+  const groupQuery=supabase.from('tree_groups')
+    .select('id,parcel_id,zone_id,name,variety,tree_count,anchor_lat,anchor_lon')
+    .not('anchor_lat','is',null)
+    .not('anchor_lon','is',null)
+    .limit(250);
+  const landmarkQuery=supabase.from('farm_geo_landmarks')
+    .select('id,parcel_id,zone_id,landmark_type,name,description,lat,lon')
+    .eq('status','active')
+    .limit(250);
+
+  if(input.parcelId){
+    zoneQuery.eq('parcel_id',input.parcelId);
+    groupQuery.eq('parcel_id',input.parcelId);
+    landmarkQuery.eq('parcel_id',input.parcelId);
+  }
+
+  const [zoneRes,groupRes,landmarkRes]=await Promise.all([zoneQuery,groupQuery,landmarkQuery]);
+  const error=zoneRes.error||groupRes.error||landmarkRes.error;
+  if(error)throw new Error(error.message);
+
+  const anchors:SpatialStructureAnchor[]=[];
+
+  for(const row of zoneRes.data||[]){
+    const lat=finite((row as any).anchor_lat),lon=finite((row as any).anchor_lon);
+    if(lat==null||lon==null)continue;
+    const distanceM=Math.round(haversineMeters(input.geo,{lat,lon}));
+    if(distanceM>radiusM)continue;
+    anchors.push({
+      kind:'zone',id:String((row as any).id),parcelId:(row as any).parcel_id||undefined,
+      name:String((row as any).name||'Sone'),
+      detail:(row as any).description?String((row as any).description).slice(0,220):undefined,
+      lat,lon,distanceM,
+    });
+  }
+
+  for(const row of groupRes.data||[]){
+    const lat=finite((row as any).anchor_lat),lon=finite((row as any).anchor_lon);
+    if(lat==null||lon==null)continue;
+    const distanceM=Math.round(haversineMeters(input.geo,{lat,lon}));
+    if(distanceM>radiusM)continue;
+    const details=[
+      (row as any).variety?('sort '+String((row as any).variety)):'',
+      (row as any).tree_count!=null?(String((row as any).tree_count)+' trær'):'',
+    ].filter(Boolean).join(', ');
+    anchors.push({
+      kind:'tree_group',id:String((row as any).id),parcelId:(row as any).parcel_id||undefined,
+      zoneId:(row as any).zone_id||undefined,name:String((row as any).name||'Tregruppe'),
+      detail:details||undefined,lat,lon,distanceM,
+    });
+  }
+
+  for(const row of landmarkRes.data||[]){
+    const lat=finite((row as any).lat),lon=finite((row as any).lon);
+    if(lat==null||lon==null)continue;
+    const distanceM=Math.round(haversineMeters(input.geo,{lat,lon}));
+    if(distanceM>radiusM)continue;
+    const detail=[
+      String((row as any).landmark_type||'punkt').replaceAll('_',' '),
+      (row as any).description?String((row as any).description).slice(0,180):'',
+    ].filter(Boolean).join(' · ');
+    anchors.push({
+      kind:'landmark',id:String((row as any).id),parcelId:(row as any).parcel_id||undefined,
+      zoneId:(row as any).zone_id||undefined,name:String((row as any).name||'Fast punkt'),
+      detail:detail||undefined,lat,lon,distanceM,
+    });
+  }
+
+  return anchors.sort((a,b)=>a.distanceM-b.distanceM).slice(0,limit);
+}
+
 export async function buildSpatialMemoryContext(input:{
   geo?:FarmGeoContext|null;
   parcelId?:string;
   radiusM?:number;
 }):Promise<string>{
   if(!input.geo)return'';
-  const rows=await fetchNearbySpatialObservations({
-    geo:input.geo,
-    parcelId:input.parcelId||input.geo.parcelId,
-    radiusM:input.radiusM??120,
-    limit:8,
-  });
-  if(!rows.length){
-    return [
-      'GEO ROMLIG HUKOMMELSE:',
-      'Ingen tidligere GEO-merkede feltobservasjoner er funnet nær dagens posisjon.',
-      'Dette er mangel på historikk, ikke bevis på at området er problemfritt.',
-    ].join('\n');
+  const [rows,structure]=await Promise.all([
+    fetchNearbySpatialObservations({
+      geo:input.geo,
+      parcelId:input.parcelId||input.geo.parcelId,
+      radiusM:input.radiusM??120,
+      limit:8,
+    }),
+    fetchNearbySpatialStructure({
+      geo:input.geo,
+      parcelId:input.parcelId||input.geo.parcelId,
+      radiusM:Math.max(input.radiusM??120,160),
+      limit:12,
+    }),
+  ]);
+
+  const lines:string[]=[];
+
+  if(structure.length){
+    lines.push(
+      'KJENT OPERATIV GÅRDSSTRUKTUR NÆR DAGENS GPS:',
+      'Dette er menneskelig registrert driftsgeografi (soner, tregrupper og faste punkter), ikke juridiske/Catastro-grenser.'
+    );
+    for(const item of structure){
+      const kind=item.kind==='zone'?'sone':item.kind==='tree_group'?'tregruppe':'fast punkt';
+      lines.push('- '+item.distanceM+' m unna · '+kind+' · '+item.name+(item.detail?' · '+item.detail:''));
+    }
+  }else{
+    lines.push('OPERATIV GÅRDSSTRUKTUR: Ingen GEO-ankret sone, tregruppe eller fast punkt er registrert nær dagens posisjon ennå.');
   }
 
-  const lines=[
+  if(!rows.length){
+    lines.push(
+      'GEO ROMLIG HUKOMMELSE:',
+      'Ingen tidligere GEO-merkede feltobservasjoner er funnet nær dagens posisjon.',
+      'Dette er mangel på historikk, ikke bevis på at området er problemfritt.'
+    );
+    return lines.join('\n').slice(0,9000);
+  }
+
+  lines.push(
     'GEO ROMLIG HUKOMMELSE FRA SAMME OMRÅDE:',
-    'Dagens GPS-posisjon kan kobles til tidligere observasjoner i nærheten. Historiske forhold er KUN kontekst og må ikke beskrives som dagens tilstand uten nytt visuelt/målt bevis.',
-  ];
+    'Dagens GPS-posisjon kan kobles til tidligere observasjoner i nærheten. Historiske forhold er KUN kontekst og må ikke beskrives som dagens tilstand uten nytt visuelt/målt bevis.'
+  );
 
   for(const row of rows){
     const age=ageDays(row.observedAt);

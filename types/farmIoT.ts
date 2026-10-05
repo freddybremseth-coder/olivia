@@ -25,6 +25,10 @@ export interface FarmZone {
   boundaries?: [number, number][];
   status?: ZoneStatus;
   notes?: string;
+  anchor_lat?: number;
+  anchor_lon?: number;
+  anchor_accuracy_m?: number;
+  geo_context?: Record<string,unknown>;
   created_at?: string;
   updated_at?: string;
 }
@@ -32,7 +36,7 @@ export interface FarmZone {
 export interface TreeGroup {
   id: string;
   parcel_id: string;
-  zone_id: string;
+  zone_id?: string;
   name: string;
   variety?: string;
   tree_count?: number;
@@ -40,8 +44,32 @@ export interface TreeGroup {
   production_goal?: 'oil' | 'table_olives' | 'mixed';
   health_status?: ZoneStatus;
   notes?: string;
+  anchor_lat?: number;
+  anchor_lon?: number;
+  anchor_accuracy_m?: number;
+  geo_context?: Record<string,unknown>;
   created_at?: string;
   updated_at?: string;
+}
+
+export type FarmGeoLandmarkType='well'|'pump'|'irrigation'|'access'|'tree_reference'|'problem_point'|'storage'|'building'|'other';
+
+export interface FarmGeoLandmark {
+  id:string;
+  parcel_id?:string;
+  zone_id?:string;
+  tree_group_id?:string;
+  landmark_type:FarmGeoLandmarkType;
+  name:string;
+  description?:string;
+  lat:number;
+  lon:number;
+  accuracy_m?:number;
+  altitude_m?:number;
+  geo_context?:Record<string,unknown>;
+  status:'active'|'inactive'|'removed';
+  created_at?:string;
+  updated_at?:string;
 }
 
 export interface SensorDevice {
