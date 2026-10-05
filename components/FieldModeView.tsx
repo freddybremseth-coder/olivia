@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useState}from'react';
+import React,{useEffect,useMemo,useRef,useState}from'react';
 import{
   Camera,Droplets,Leaf,Loader2,Map,MapPin,RefreshCcw,Scissors,
   Sparkles,Wheat,ClipboardCheck,Navigation,ShieldCheck,Plus,X,Save,Layers
@@ -6,13 +6,16 @@ import{
 import type{Parcel}from'../types';
 import type{FarmGeoContext}from'../types/farmGeo';
 import type{FarmGeoLandmark,FarmGeoLandmarkType,FarmZone,FarmZoneGeoSample,TreeGroup}from'../types/farmIoT';
-import{assignGeoParcelManually,geoContextSummary,requestFarmGeo}from'../services/farmGeo';
+import{assignGeoParcelManually,farmGeoDistanceMeters,geoContextSummary,requestFarmGeo}from'../services/farmGeo';
 import{loadActiveFarmGeo,saveActiveFarmGeo}from'../services/farmGeoSession';
 import{
   fetchFarmMediaEvidence,
   geoContextToDb,
+  registerFarmMediaEvidence,
+  uploadDataUrlFarmMedia,
   type FarmMediaEvidenceRow
 }from'../services/farmMediaEvidence';
+import{filesToResizedDataUrls}from'../lib/imageUpload';
 import{
   fetchFarmGeoLandmarks,
   fetchFarmZones,
@@ -68,6 +71,7 @@ function sourceLabel(value:string){
     pruning:'Beskjæring',
     pruning_outcome:'Etterkontroll',
     variety_reference:'Sortreferanse',
+    fixed_point_check:'Kontrollpunkt',
   };
   return labels[value]||value.replaceAll('_',' ');
 }
@@ -112,6 +116,9 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
   const[createTreeCount,setCreateTreeCount]=useState('');
   const[createLandmarkType,setCreateLandmarkType]=useState<FarmGeoLandmarkType>('other');
   const[savingStructure,setSavingStructure]=useState(false);
+  const[fixedPointTarget,setFixedPointTarget]=useState<FarmGeoLandmark|null>(null);
+  const[savingFixedPoint,setSavingFixedPoint]=useState(false);
+  const fixedPointInputRef=useRef<HTMLInputElement>(null);
 
   const currentParcel=geo?.parcelId?parcels.find(parcel=>parcel.id===geo.parcelId):undefined;
 
@@ -351,9 +358,88 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
     }
   };
 
+  const fixedPointPhotoCount=(pointId:string)=>media.filter(row=>row.source_module==='fixed_point_check'&&row.source_ref===pointId).length;
+
+  const startFixedPointCapture=async(point:FarmGeoLandmark)=>{
+    setError('');setMessage('');
+    setSavingFixedPoint(true);
+    try{
+      const next=await requestFarmGeo(parcels,'device_live_capture');
+      setGeo(next);saveActiveFarmGeo(next);
+
+      if(point.parcel_id&&next.parcelId&&point.parcel_id!==next.parcelId){
+        setError('Du står på en annen parsell enn kontrollpunktet. Gå nærmere riktig punkt og prøv igjen.');
+        return;
+      }
+      if(next.accuracyM>25){
+        setError('GPS ±'+Math.round(next.accuracyM)+' m er for svak for et gjentatt kontrollbilde. Prøv igjen i åpent område til GPS er ±25 m eller bedre.');
+        return;
+      }
+      const distance=Math.round(farmGeoDistanceMeters([next.lat,next.lon],[Number(point.lat),Number(point.lon)]));
+      const allowed=Math.max(15,Math.min(30,next.accuracyM*1.25));
+      if(distance>allowed){
+        setError('Du er ca. '+distance+' m fra «'+point.name+'». Gå nærmere (innen ca. '+Math.round(allowed)+' m) før kontrollbildet tas.');
+        return;
+      }
+
+      setFixedPointTarget(point);
+      fixedPointInputRef.current?.click();
+    }catch(err:any){
+      setError(err?.message||'Kunne ikke kontrollere posisjon for fast punkt.');
+    }finally{
+      setSavingFixedPoint(false);
+    }
+  };
+
+  const saveFixedPointPhoto=async(fileList:FileList|null)=>{
+    const point=fixedPointTarget;
+    if(!point||!fileList?.length)return;
+    setSavingFixedPoint(true);setError('');setMessage('');
+    try{
+      const files=Array.from(fileList).filter(file=>file.type.startsWith('image/')).slice(0,1);
+      if(!files.length)throw new Error('Velg et gyldig bilde.');
+      if(!geo)throw new Error('Live GPS mangler. Start kontrollbildet på nytt.');
+
+      const distance=Math.round(farmGeoDistanceMeters([geo.lat,geo.lon],[Number(point.lat),Number(point.lon)]));
+      const dataUrls=await filesToResizedDataUrls(files,{maxDim:1600,quality:0.78});
+      const sourceRef=point.id;
+      const urls=await uploadDataUrlFarmMedia({
+        images:dataUrls,
+        sourceModule:'fixed_point_check',
+        sourceRef,
+        parcelId:point.parcel_id||geo.parcelId,
+      });
+      await registerFarmMediaEvidence({
+        urls,
+        sourceModule:'fixed_point_check',
+        sourceRef,
+        parcelId:point.parcel_id||geo.parcelId,
+        zoneId:point.zone_id||undefined,
+        geo,
+        metadata:{
+          landmarkId:point.id,
+          landmarkName:point.name,
+          landmarkType:point.landmark_type,
+          repeatPhoto:true,
+          distanceFromLandmarkM:distance,
+        },
+      });
+      setMessage('Kontrollbildet er lagret på «'+point.name+'». Olivia har nå '+(fixedPointPhotoCount(point.id)+1)+' bilde'+(fixedPointPhotoCount(point.id)+1===1?'':'r')+' i denne tidslinjen.');
+      setFixedPointTarget(null);
+      await loadMedia();
+      window.dispatchEvent(new CustomEvent('olivia:farm-truth-updated'));
+    }catch(err:any){
+      setError(err?.message||'Kunne ikke lagre kontrollbildet.');
+    }finally{
+      setSavingFixedPoint(false);
+      if(fixedPointInputRef.current)fixedPointInputRef.current.value='';
+    }
+  };
+
   const zoneSampleCount=(zoneId:string)=>zoneSamples.filter(sample=>sample.zone_id===zoneId).length;
 
   return <div className="mx-auto max-w-5xl space-y-5 pb-28">
+    <input ref={fixedPointInputRef} type="file" accept="image/*" capture="environment" onChange={e=>void saveFixedPointPhoto(e.target.files)} className="hidden"/>
     {createKind&&<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
       <div className="w-full max-w-xl rounded-[2rem] border border-green-500/20 bg-[#07100a] p-6 shadow-2xl">
         <div className="flex items-start justify-between gap-3">
@@ -493,7 +579,17 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
           {!zones.length&&<p className="mt-1 text-xs text-slate-600">Ingen</p>}
         </div>
         <div className="rounded-xl border border-white/10 bg-black/15 p-3"><p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Tregrupper</p>{treeGroups.slice(0,4).map(group=><p key={group.id} className="mt-1 truncate text-xs text-slate-300">{group.name}{group.variety?' · '+group.variety:''}</p>)}{!treeGroups.length&&<p className="mt-1 text-xs text-slate-600">Ingen</p>}</div>
-        <div className="rounded-xl border border-white/10 bg-black/15 p-3"><p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Faste punkt</p>{landmarks.slice(0,4).map(point=><p key={point.id} className="mt-1 truncate text-xs text-slate-300">{LANDMARK_LABELS[point.landmark_type]} · {point.name}</p>)}{!landmarks.length&&<p className="mt-1 text-xs text-slate-600">Ingen</p>}</div>
+        <div className="rounded-xl border border-white/10 bg-black/15 p-3">
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Faste punkt</p>
+          {landmarks.slice(0,4).map(point=>{
+            const photoCount=fixedPointPhotoCount(point.id);
+            return <div key={point.id} className="mt-2 rounded-lg border border-white/5 bg-white/[0.02] p-2">
+              <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-xs font-bold text-slate-300">{LANDMARK_LABELS[point.landmark_type]} · {point.name}</p><p className="mt-1 text-[9px] text-slate-600">{photoCount} kontrollbilde{photoCount===1?'':'r'}</p></div><Camera size={13} className="shrink-0 text-blue-400"/></div>
+              <button onClick={()=>void startFixedPointCapture(point)} disabled={savingFixedPoint} className="mt-2 w-full rounded-lg border border-blue-500/15 bg-blue-500/[0.05] px-2 py-1.5 text-[9px] font-black text-blue-300 disabled:opacity-35">{savingFixedPoint&&fixedPointTarget?.id===point.id?'Kontrollerer…':'Ta kontrollbilde'}</button>
+            </div>;
+          })}
+          {!landmarks.length&&<p className="mt-1 text-xs text-slate-600">Ingen</p>}
+        </div>
       </div>:null}
     </div>
 

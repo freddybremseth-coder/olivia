@@ -52,8 +52,12 @@ function parcelShape(parcel:Parcel):ParcelShape|null{
   return{parcel,polygon,center};
 }
 
-function distanceMeters(a:[number,number],b:[number,number]){
+export function farmGeoDistanceMeters(a:[number,number],b:[number,number]){
   return turf.distance(turf.point([a[1],a[0]]),turf.point([b[1],b[0]]),{units:'kilometers'})*1000;
+}
+
+function distanceMeters(a:[number,number],b:[number,number]){
+  return farmGeoDistanceMeters(a,b);
 }
 
 type GeoMemoryAnchor={

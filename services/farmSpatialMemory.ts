@@ -145,8 +145,15 @@ export async function fetchNearbySpatialStructure(input:{
     sampleQuery=sampleQuery.eq('parcel_id',input.parcelId);
   }
 
-  const [zoneRes,groupRes,landmarkRes,sampleRes]=await Promise.all([zoneQuery,groupQuery,landmarkQuery,sampleQuery]);
-  const error=zoneRes.error||groupRes.error||landmarkRes.error||sampleRes.error;
+  let repeatPhotoQuery=supabase.from('farm_media_evidence')
+    .select('source_ref,parcel_id,geo_captured_at,created_at')
+    .eq('source_module','fixed_point_check')
+    .order('geo_captured_at',{ascending:false,nullsFirst:false})
+    .limit(600);
+  if(input.parcelId)repeatPhotoQuery=repeatPhotoQuery.eq('parcel_id',input.parcelId);
+
+  const [zoneRes,groupRes,landmarkRes,sampleRes,repeatPhotoRes]=await Promise.all([zoneQuery,groupQuery,landmarkQuery,sampleQuery,repeatPhotoQuery]);
+  const error=zoneRes.error||groupRes.error||landmarkRes.error||sampleRes.error||repeatPhotoRes.error;
   if(error)throw new Error(error.message);
 
   const anchors:SpatialStructureAnchor[]=[];
@@ -202,14 +209,27 @@ export async function fetchNearbySpatialStructure(input:{
     });
   }
 
+  const repeatByLandmark=new Map<string,{count:number;latest?:string}>();
+  for(const row of repeatPhotoRes.data||[]){
+    const landmarkId=String((row as any).source_ref||'');
+    if(!landmarkId)continue;
+    const existing=repeatByLandmark.get(landmarkId)||{count:0,latest:undefined};
+    existing.count+=1;
+    const at=String((row as any).geo_captured_at||(row as any).created_at||'');
+    if(at&&(!existing.latest||at>existing.latest))existing.latest=at;
+    repeatByLandmark.set(landmarkId,existing);
+  }
+
   for(const row of landmarkRes.data||[]){
     const lat=finite((row as any).lat),lon=finite((row as any).lon);
     if(lat==null||lon==null)continue;
     const distanceM=Math.round(haversineMeters(input.geo,{lat,lon}));
     if(distanceM>radiusM)continue;
+    const repeat=repeatByLandmark.get(String((row as any).id));
     const detail=[
       String((row as any).landmark_type||'punkt').replaceAll('_',' '),
       (row as any).description?String((row as any).description).slice(0,180):'',
+      repeat?.count?(repeat.count+' kontrollbilde'+(repeat.count===1?'':'r')+(repeat.latest?' · siste '+repeat.latest.slice(0,10):'')):'',
     ].filter(Boolean).join(' · ');
     anchors.push({
       kind:'landmark',id:String((row as any).id),parcelId:(row as any).parcel_id||undefined,
@@ -282,7 +302,7 @@ export async function buildSpatialMemoryContext(input:{
   }
 
   lines.push(
-    'SPATIAL REGEL: Gjentatte observasjoner på omtrent samme sted kan brukes til å foreslå hva som bør kontrolleres først, men ikke til å hevde at problemet fortsatt finnes. Ny observasjon/måling har alltid forrang.'
+    'SPATIAL REGEL: Gjentatte observasjoner på omtrent samme sted kan brukes til å foreslå hva som bør kontrolleres først, men ikke til å hevde at problemet fortsatt finnes. En kontrollbildeserie på et fast punkt betyr bare at historisk visuell evidens finnes; innholdet skal ikke beskrives uten at bildene faktisk analyseres. Ny observasjon/måling har alltid forrang.'
   );
   return lines.join('\n').slice(0,7000);
 }

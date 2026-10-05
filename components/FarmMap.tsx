@@ -46,6 +46,7 @@ function mediaSourceLabel(source:string){
     pruning_outcome:'Beskjæring · etterbilde',
     variety_reference:'Sortreferanse',
     farm_journal:'Driftsjournal',
+    fixed_point_check:'Kontrollpunkt',
   };
   return labels[source]||source.replaceAll('_',' ');
 }
@@ -375,23 +376,34 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     landmarks.forEach(point=>{
       const lat=Number(point.lat),lon=Number(point.lon);
       if(!Number.isFinite(lat)||!Number.isFinite(lon))return;
+      const repeatPhotos=mediaEvidence
+        .filter(row=>row.source_module==='fixed_point_check'&&row.source_ref===point.id)
+        .sort((a,b)=>new Date(String(b.geo_captured_at||b.created_at)).getTime()-new Date(String(a.geo_captured_at||a.created_at)).getTime());
+      const latestRepeat=repeatPhotos[0];
+      const latestLabel=latestRepeat
+        ?new Date(String(latestRepeat.geo_captured_at||latestRepeat.created_at)).toLocaleDateString('no-NO')
+        :'Ingen kontrollbilder';
       const marker=L.circleMarker([lat,lon],{
         radius:7,weight:2,color:'#ffffff',fillColor:'#3b82f6',fillOpacity:0.92,
       });
       marker.bindPopup(`
-        <div style="font-family:system-ui,sans-serif;color:#111;min-width:190px">
+        <div style="font-family:system-ui,sans-serif;color:#111;min-width:210px">
           <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#1d4ed8">FAST GEO-PUNKT · ${escapeHtml(point.landmark_type)}</div>
           <div style="font-size:14px;font-weight:900;margin-top:3px">${escapeHtml(point.name)}</div>
           <div style="font-size:11px;color:#555;margin-top:4px">${escapeHtml(parcelNames.get(point.parcel_id||'')||point.parcel_id||'Ingen parsell')}</div>
           ${point.description?`<div style="font-size:11px;color:#666;margin-top:5px">${escapeHtml(point.description)}</div>`:''}
+          <div style="margin-top:7px;padding:6px 8px;border-radius:8px;background:#eff6ff;color:#1e3a8a;font-size:10px;font-weight:800">
+            Kontrollbilder: ${repeatPhotos.length} · siste: ${escapeHtml(latestLabel)}
+          </div>
+          ${latestRepeat?`<img src="${escapeHtml(latestRepeat.media_url)}" alt="Siste kontrollbilde" style="width:100%;height:95px;object-fit:cover;border-radius:8px;margin-top:7px" />`:''}
           ${point.accuracy_m!=null?`<div style="font-size:10px;color:#888;margin-top:5px">GPS ±${Math.round(Number(point.accuracy_m))} m</div>`:''}
         </div>`);
-      marker.bindTooltip(point.name);
+      marker.bindTooltip(point.name+(repeatPhotos.length?' · '+repeatPhotos.length+' kontrollbilder':''));
       marker.addTo(layer);
     });
 
     layer.bringToFront?.();
-  },[farmZones,treeGroups,landmarks,zoneSamples,isStructureLayerActive,parcels]);
+  },[farmZones,treeGroups,landmarks,zoneSamples,isStructureLayerActive,parcels,mediaEvidence]);
 
   // Keep refs in sync so the map click closure sees current values
   useEffect(() => { isMapClickModeRef.current = isMapClickMode; }, [isMapClickMode]);
