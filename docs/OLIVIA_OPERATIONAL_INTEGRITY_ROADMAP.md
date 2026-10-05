@@ -101,6 +101,8 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
 
 11. **Live Daily**
     - Daily skal refreshe etter sannhetsendringer, fokus/tilbakekomst og synkronisering
+    - offline felt-synk sender samme farm-truth-signal slik at Daily ikke blir stående med gammel status etter gjenopprettet nett
+    - status: implementert
 
 ## Ikke prioritert før grunnmuren er fylt med data
 
