@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from './supabaseClient';
 import type { PostgrestError } from '@supabase/supabase-js';
 import type { SensorType } from '../types';
 import type {
+  FarmGeoLandmark,
   FarmObservation,
   FarmZone,
   IrrigationEvent,
@@ -86,6 +87,25 @@ export async function upsertTreeGroup(group: Partial<TreeGroup> & { parcel_id: s
     .single();
   if (error) throwFarmIoTError('upsertTreeGroup', error);
   return data as TreeGroup;
+}
+
+export async function fetchFarmGeoLandmarks(parcelId?:string):Promise<FarmGeoLandmark[]>{
+  if(warnIfSupabaseMissing('fetchFarmGeoLandmarks'))return[];
+  let query=supabase.from('farm_geo_landmarks').select('*').eq('status','active').order('created_at',{ascending:false});
+  if(parcelId)query=query.eq('parcel_id',parcelId);
+  const {data,error}=await query;
+  if(error)throwFarmIoTError('fetchFarmGeoLandmarks',error);
+  return(data??[]) as FarmGeoLandmark[];
+}
+
+export async function upsertFarmGeoLandmark(
+  landmark:Partial<FarmGeoLandmark>&Pick<FarmGeoLandmark,'name'|'landmark_type'|'lat'|'lon'>
+):Promise<FarmGeoLandmark>{
+  if(warnIfSupabaseMissing('upsertFarmGeoLandmark'))throw new Error('Supabase er ikke konfigurert.');
+  const row={...landmark,status:landmark.status||'active',updated_at:new Date().toISOString()};
+  const {data,error}=await supabase.from('farm_geo_landmarks').upsert(row).select('*').single();
+  if(error)throwFarmIoTError('upsertFarmGeoLandmark',error);
+  return data as FarmGeoLandmark;
 }
 
 export async function fetchSensorDevices(): Promise<SensorDevice[]> {
