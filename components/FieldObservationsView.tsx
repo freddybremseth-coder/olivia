@@ -285,7 +285,11 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
       if(targetParcelId){
         let suggestion:OperationalGeoSuggestion|null=null;
         try{
-          suggestion=await suggestOperationalContextForGeo({geo,parcelId:targetParcelId});
+          suggestion=await suggestOperationalContextForGeo({
+            geo,
+            parcelId:targetParcelId,
+            preferredZoneId:zoneSelectionSource==='manual'?(form.zone_id||undefined):undefined,
+          });
           setOperationalGeoSuggestion(suggestion);
         }catch(error){
           console.warn('[FieldObservationsView] operational GEO suggestion',error);
