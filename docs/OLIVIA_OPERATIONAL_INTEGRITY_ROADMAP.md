@@ -50,7 +50,7 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
    - oppfølgingsintensjon beholdes også i offline-kø
    - ny kontroll kobles til samme sak og oppdaterer latest observation
    - resolved/dismissed krever eksplisitt menneskelig handling; AI lukker aldri saken
-   - status: implementering pågår
+   - status: implementert
 
 8. **Kunnskapskø i stedet for dupliserte spørsmål**
    - semantisk samme manglende faktum samles på tvers av Feltkonsulent, Beskjæringsekspert og andre agenter
@@ -62,7 +62,11 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
 
 9. **Task-sensitive arbeidsvindu fra vær**
    - vær påvirker timing, aldri sannhetsstatus
-   - sprøyting, beskjæring, høsting og vanning bruker ulike kriterier
+   - sprøyting, beskjæring, høsting, vanning og feltkontroll bruker ulike kriterier
+   - Daily rangerer beste dag i et femdagers vindu og viser regn, sannsynlighet og vind
+   - sesongrelevans og aktive årshjulspunkter styrer hvilke arbeidsvinduer som vises
+   - produktetikett, regelverk og faktisk feltbehov har alltid forrang
+   - status: implementert
 
 10. **Dokumentert øko/CAECV-status**
     - sertifisering og compliance skal komme fra dokumentert status, ikke UI-inferens
