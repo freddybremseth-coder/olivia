@@ -36,7 +36,7 @@ export interface FarmZone {
 export interface TreeGroup {
   id: string;
   parcel_id: string;
-  zone_id: string;
+  zone_id?: string;
   name: string;
   variety?: string;
   tree_count?: number;
