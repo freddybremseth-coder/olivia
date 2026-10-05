@@ -56,6 +56,8 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
    - manuell sone/tregruppe overstyrer alltid GEO-forslag og blir ikke erstattet ved ny GPS-oppdatering
    - tvetydig sone/tregruppe blir aldri auto-valgt
    - observasjoner lagrer om sone/tregruppe kom fra manuelt valg eller GEO-forslag, inklusive metode og sikkerhet
+   - fersk felt-GEO kan følge mellom Feltmodus, Feltlogg, Feltkonsulent og Beskjæring i samme nettlesersesjon
+   - aktiv felt-GEO utløper etter fem minutter og må da hentes på nytt; gammel sesjonsposisjon skal aldri late som live-posisjon
    - faste GEO-punkter kan representere brønn, pumpe, dryppunkt, adkomst, referansetre, problemsted, lager eller bygg
    - Feltkonsulent og Beskjæringsekspert får nærliggende operativ gårdsstruktur som kontekst, separat fra historiske observasjoner
    - status: implementert

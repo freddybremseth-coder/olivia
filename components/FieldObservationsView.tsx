@@ -25,6 +25,7 @@ import {
   fetchTreeGroups,
 } from '../services/farmIoT';
 import { assignGeoParcelManually, geoContextSummary, requestFarmGeo } from '../services/farmGeo';
+import { loadActiveFarmGeo, saveActiveFarmGeo } from '../services/farmGeoSession';
 import {
   shouldAutoApplyTreeGroup,
   shouldAutoApplyZone,
@@ -125,7 +126,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
   const [treeGroups, setTreeGroups] = useState<TreeGroup[]>([]);
   const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
   const [previewImageUrls, setPreviewImageUrls] = useState<string[]>([]);
-  const [geoContext,setGeoContext]=useState<FarmGeoContext|null>(null);
+  const [geoContext,setGeoContext]=useState<FarmGeoContext|null>(()=>loadActiveFarmGeo()?.geo||null);
   const [isLocating,setIsLocating]=useState(false);
   const [parcelSelectionSource,setParcelSelectionSource]=useState<'none'|'manual'|'geo'>('none');
   const [zoneSelectionSource,setZoneSelectionSource]=useState<'none'|'manual'|'geo'>('none');
@@ -220,6 +221,12 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     };
   }, [previewImageUrls]);
 
+  useEffect(()=>{
+    if(!isFormOpen||form.parcel_id||!geoContext?.parcelId||parcelSelectionSource!=='none')return;
+    setForm(prev=>({...prev,parcel_id:geoContext.parcelId||''}));
+    setParcelSelectionSource('geo');
+  },[isFormOpen,form.parcel_id,geoContext?.parcelId,parcelSelectionSource]);
+
   useEffect(() => {
     if (!isFormOpen || !form.parcel_id) {
       setFarmZones([]);
@@ -281,6 +288,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
       }
 
       setGeoContext(geo);
+      saveActiveFarmGeo(geo);
 
       if(targetParcelId){
         let suggestion:OperationalGeoSuggestion|null=null;
@@ -358,6 +366,17 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     setLinkedIssueId(undefined);
     setIssueSeverity('medium');
     setIssueNextReview(defaultReviewDate());
+  };
+
+  const openNewObservation=()=>{
+    const activeGeo=loadActiveFarmGeo();
+    setGeoContext(activeGeo?.geo||null);
+    setParcelSelectionSource(activeGeo?.geo.parcelId?'geo':'none');
+    setZoneSelectionSource('none');
+    setTreeGroupSelectionSource('none');
+    setOperationalGeoSuggestion(null);
+    setForm({...EMPTY_FORM,parcel_id:activeGeo?.geo.parcelId||''});
+    setIsFormOpen(true);
   };
 
   const openIssueFollowUp=(issue:FarmIssue)=>{
@@ -543,7 +562,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
             <button onClick={loadObservations} disabled={isLoading} className="p-3.5 glass border border-white/10 rounded-2xl text-[#d9b657] hover:bg-white/5 transition-all disabled:opacity-50">
               {isLoading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
             </button>
-            <button onClick={() => setIsFormOpen(true)} className="bg-[#d9b657] hover:bg-[#f0cf70] text-black px-6 py-3.5 rounded-2xl font-bold transition-all shadow-xl shadow-[#d9b657]/20 flex items-center gap-2">
+            <button onClick={openNewObservation} className="bg-[#d9b657] hover:bg-[#f0cf70] text-black px-6 py-3.5 rounded-2xl font-bold transition-all shadow-xl shadow-[#d9b657]/20 flex items-center gap-2">
               <Plus size={20} /> Ny observasjon
             </button>
           </div>
@@ -667,7 +686,11 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
       setForm(prev=>({...prev,parcel_id:parcelId,zone_id:'',tree_group_id:''}));
       if(geoContext&&parcelId){
         const parcel=parcels.find(item=>item.id===parcelId);
-        if(parcel)setGeoContext(assignGeoParcelManually(geoContext,parcel)||geoContext);
+        if(parcel){
+          const corrected=assignGeoParcelManually(geoContext,parcel)||geoContext;
+          setGeoContext(corrected);
+          saveActiveFarmGeo(corrected);
+        }
       }
     }}><option className="bg-slate-900" value="">Ingen parsell</option>{parcels.map(parcel => <option key={parcel.id} className="bg-slate-900" value={parcel.id}>{parcel.name}</option>)}</select></Field>
               <Field label="Kategori" help="Velg hva observasjonen handler om."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.category || 'irrigation'} onChange={event => {const category=event.target.value as ObservationCategory;setForm(prev => ({ ...prev, category }));if(category==='pest'||category==='disease')setTrackAsIssue(true);}}>{CATEGORY_OPTIONS.map(option => <option key={option.value} className="bg-slate-900" value={option.value}>{option.label}</option>)}</select></Field>
