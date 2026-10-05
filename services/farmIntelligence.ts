@@ -138,6 +138,76 @@ function canonicalKnowledgeKey(value:string,parcelId?:string|null){
   return'need.'+(parcelId||'farm')+'.'+semanticKnowledgeNeed(value);
 }
 
+type KnowledgePhotoTaskSpec={
+  title:string;
+  category:string;
+  priority:'Lav'|'Middels'|'Høy'|'Kritisk';
+};
+
+function knowledgePhotoTaskSpec(need:string):KnowledgePhotoTaskSpec|undefined{
+  if(need==='variety-endocarp-reference-photo')return{
+    title:'Ta referansebilde av olivenstein / endokarp',
+    category:'Feltfoto · Sort',
+    priority:'Middels',
+  };
+  if(need==='mature-tree-multi-angle-reference-photos')return{
+    title:'Ta bilder av modent oliventre fra flere vinkler',
+    category:'Feltfoto · Beskjæring',
+    priority:'Middels',
+  };
+  if(need==='variety-leaf-fruit-reference-photos')return{
+    title:'Ta nærbilder av bladverk og frukt',
+    category:'Feltfoto · Sort',
+    priority:'Middels',
+  };
+  if(need==='variety-fruit-morphology-photo')return{
+    title:'Ta nærbilde av frukt med form og størrelse',
+    category:'Feltfoto · Sort',
+    priority:'Middels',
+  };
+  return undefined;
+}
+
+function knowledgePhotoTaskId(need:string,parcelId?:string|null){
+  return('knowledge-photo-'+(parcelId||'farm')+'-'+need).replace(/[^a-zA-Z0-9-_]/g,'-').slice(0,180);
+}
+
+function daysFromNow(days:number){
+  const date=new Date();
+  date.setDate(date.getDate()+days);
+  return date.toISOString().slice(0,10);
+}
+
+async function ensureKnowledgePhotoTask(need:string,parcelId?:string|null){
+  const spec=knowledgePhotoTaskSpec(need);
+  if(!spec)return;
+  const id=knowledgePhotoTaskId(need,parcelId);
+  const existing=await supabase.from('tasks').select('id,status').eq('id',id).maybeSingle();
+  if(existing.error)throw new Error(existing.error.message);
+  if(existing.data?.status==='DONE')return;
+  const {error}=await supabase.from('tasks').upsert({
+    id,
+    title:spec.title,
+    priority:spec.priority,
+    category:spec.category,
+    user_name:'Olivia',
+    status:'TODO',
+    parcel_id:parcelId||null,
+    due_date:daysFromNow(7),
+  },{onConflict:'id'});
+  if(error)throw new Error(error.message);
+}
+
+async function completeKnowledgePhotoTask(need:string,parcelId?:string|null){
+  const spec=knowledgePhotoTaskSpec(need);
+  if(!spec)return;
+  const {error}=await supabase.from('tasks')
+    .update({status:'DONE'})
+    .eq('id',knowledgePhotoTaskId(need,parcelId))
+    .neq('status','DONE');
+  if(error)throw new Error(error.message);
+}
+
 function questionSemanticKey(question:Pick<FarmQuestion,'question'|'related_knowledge_key'|'parcel_id'>){
   const canonicalPrefix='need.'+(question.parcel_id||'farm')+'.';
   if(question.related_knowledge_key?.startsWith(canonicalPrefix))return question.related_knowledge_key;
@@ -293,6 +363,8 @@ export async function answerFarmQuestion(questionId:string,answer:string,answerJ
       .eq('status','open');
     if(closeSiblings.error)throw new Error(closeSiblings.error.message);
   }
+
+  await completeKnowledgePhotoTask(semanticKnowledgeNeed(question.question),question.parcel_id);
 }
 
 export async function dismissFarmQuestion(questionId:string){
@@ -332,6 +404,9 @@ export async function recordAgentAssessment(input:AgentAssessmentInput):Promise<
       dedupeKey:'knowledge-need:'+(input.parcelId||'farm')+':'+semanticKnowledgeNeed(uncertainty),
     });
     if(q)created.push(q);
+    await ensureKnowledgePhotoTask(semanticKnowledgeNeed(uncertainty),input.parcelId).catch(err=>
+      console.warn('[farmIntelligence] knowledge photo task',err)
+    );
   }
   return{assessmentId,questions:created};
 }
