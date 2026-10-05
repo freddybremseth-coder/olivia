@@ -62,6 +62,8 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
    - GPS-kvalitet styrer hva som kan læres inn: sonepunkt krever ca. ±35 m eller bedre, tregruppe ±25 m eller bedre, fast punkt ±20 m eller bedre
    - svakere GPS kan fortsatt lagres som observasjon/evidens, men får ikke lære operativ kartstruktur
    - faste GEO-punkter kan representere brønn, pumpe, dryppunkt, adkomst, referansetre, problemsted, lager eller bygg
+   - faste GEO-punkter kan få gjentatte kontrollbilder som tidslinje; ny live GPS må bekrefte at brukeren faktisk står nær punktet
+   - kontrollbildets historikk er sammenligningskontekst, aldri automatisk bevis på dagens tilstand
    - Feltkonsulent og Beskjæringsekspert får nærliggende operativ gårdsstruktur som kontekst, separat fra historiske observasjoner
    - status: implementert
 
