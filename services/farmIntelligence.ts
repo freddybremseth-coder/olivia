@@ -69,6 +69,81 @@ function normalizeKey(value:string){
     .slice(0,120);
 }
 
+function normalizedKnowledgeText(value:string){
+  return String(value||'')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9æøå]+/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+export function semanticKnowledgeNeed(value:string):string{
+  const text=normalizedKnowledgeText(value);
+
+  if(
+    /(unge|ungt|young)/.test(text)
+    && /(plantet|planting|planted|tilbakeskaret|tilbakeskåret|kuttet tilbake|cut back|backcut)/.test(text)
+  )return'young-tree-established-or-cutback-date';
+
+  if(
+    /(jordfukt|soil moisture|fuktighetsniv|moisture level)/.test(text)
+    && /(navarende|nåværende|current|ulike deler|different parts|parsell|parcel)/.test(text)
+  )return'parcel-current-soil-moisture';
+
+  if(
+    /(jordanaly|soil analys|bladanaly|leaf analys)/.test(text)
+    && /(gjod|gjød|fertiliz|naring|næring|nutrient)/.test(text)
+  )return'parcel-soil-leaf-analysis';
+
+  if(
+    /(endokarp|endocarp|stein|pit|stone)/.test(text)
+    && /(bilde|photo|image|sort|variet)/.test(text)
+  )return'variety-endocarp-reference-photo';
+
+  if(
+    /(modne tr|modent tre|mature tree)/.test(text)
+    && /(flere vink|multiple angle|kroneform|canopy|fruktved)/.test(text)
+  )return'mature-tree-multi-angle-reference-photos';
+
+  if(
+    /(bladverk|bladform|leaves|leaf|frukt|fruit)/.test(text)
+    && /(narbilde|nærbilde|close up|closeup|bilde|photo|image)/.test(text)
+    && /(sort|variet|diagnos|sykdom|disease|unge|modne|young|mature)/.test(text)
+  )return'variety-leaf-fruit-reference-photos';
+
+  if(
+    /(del av|part of|eksisterende|existing)/.test(text)
+    && /(genoesa|genovesa|sort|variet)/.test(text)
+    && /(nylig|nye tr|new tree|plant)/.test(text)
+  )return'variety-tree-membership';
+
+  if(
+    /(gardsregister|gårdsregister|register|parcel|parsell)/.test(text)
+    && /(sort|variet|genoesa|genovesa)/.test(text)
+    && /(visuell|visual|bilde|image|forskjell|difference|konflikt|conflict)/.test(text)
+  )return'variety-registry-visual-conflict';
+
+  if(
+    /(frukt|fruit)/.test(text)
+    && /(storrelse|størrelse|size|form|shape)/.test(text)
+    && /(bilde|photo|image|narbilde|nærbilde)/.test(text)
+  )return'variety-fruit-morphology-photo';
+
+  return'custom-'+normalizeKey(value);
+}
+
+function canonicalKnowledgeKey(value:string,parcelId?:string|null){
+  return'need.'+(parcelId||'farm')+'.'+semanticKnowledgeNeed(value);
+}
+
+function questionSemanticKey(question:Pick<FarmQuestion,'question'|'related_knowledge_key'|'parcel_id'>){
+  const canonicalPrefix='need.'+(question.parcel_id||'farm')+'.';
+  if(question.related_knowledge_key?.startsWith(canonicalPrefix))return question.related_knowledge_key;
+  return canonicalKnowledgeKey(question.question,question.parcel_id);
+}
+
 export async function fetchFarmKnowledge(params:{parcelId?:string;limit?:number}={}):Promise<FarmKnowledgeItem[]>{
   let query=supabase.from('farm_knowledge_items')
     .select('*')
@@ -83,18 +158,26 @@ export async function fetchFarmKnowledge(params:{parcelId?:string;limit?:number}
 }
 
 export async function fetchOpenFarmQuestions(params:{parcelId?:string;agentType?:FarmAgentType;limit?:number}={}):Promise<FarmQuestion[]>{
+  const requestedLimit=params.limit||50;
   let query=supabase.from('farm_questions')
     .select('*')
     .eq('status','open')
     .order('created_at',{ascending:false})
-    .limit(params.limit||50);
+    .limit(Math.max(50,requestedLimit*4));
   if(params.parcelId)query=query.or('parcel_id.eq.'+params.parcelId+',parcel_id.is.null');
   if(params.agentType)query=query.or('agent_type.eq.'+params.agentType+',agent_type.is.null');
   const {data,error}=await query;
   if(error)throw new Error(error.message);
   const rows=(data||[]) as FarmQuestion[];
   const rank:Record<FarmQuestionPriority,number>={critical:4,high:3,medium:2,low:1};
-  return rows.sort((a,b)=>rank[b.priority]-rank[a.priority]||String(b.created_at).localeCompare(String(a.created_at)));
+  const sorted=rows.sort((a,b)=>rank[b.priority]-rank[a.priority]||String(b.created_at).localeCompare(String(a.created_at)));
+  const seen=new Set<string>();
+  return sorted.filter(row=>{
+    const key=questionSemanticKey(row);
+    if(seen.has(key))return false;
+    seen.add(key);
+    return true;
+  }).slice(0,requestedLimit);
 }
 
 export async function createFarmQuestion(input:{
@@ -116,6 +199,19 @@ export async function createFarmQuestion(input:{
     input.parcelId||'farm',
     normalizeKey(input.question),
   ].join(':');
+
+  if(input.relatedKnowledgeKey){
+    let relatedQuery=supabase.from('farm_questions')
+      .select('*')
+      .eq('related_knowledge_key',input.relatedKnowledgeKey)
+      .eq('status','open')
+      .limit(1);
+    if(input.parcelId)relatedQuery=relatedQuery.eq('parcel_id',input.parcelId);
+    else relatedQuery=relatedQuery.is('parcel_id',null);
+    const related=await relatedQuery.maybeSingle();
+    if(related.error)throw new Error(related.error.message);
+    if(related.data)return related.data as FarmQuestion;
+  }
 
   const existing=await supabase.from('farm_questions').select('*').eq('dedupe_key',dedupe).eq('status','open').maybeSingle();
   if(existing.error)throw new Error(existing.error.message);
@@ -148,12 +244,55 @@ export async function createFarmQuestion(input:{
 export async function answerFarmQuestion(questionId:string,answer:string,answerJson?:any){
   const clean=answer.trim();
   if(!clean)throw new Error('Svar kan ikke være tomt.');
+
+  const selected=await supabase.from('farm_questions')
+    .select('*')
+    .eq('id',questionId)
+    .single();
+  if(selected.error)throw new Error(selected.error.message);
+  const question=selected.data as FarmQuestion;
+  const canonicalKey=questionSemanticKey(question);
+
+  const openRes=await supabase.from('farm_questions')
+    .select('*')
+    .eq('status','open')
+    .limit(250);
+  if(openRes.error)throw new Error(openRes.error.message);
+  const siblings=((openRes.data||[]) as FarmQuestion[]).filter(row=>
+    (row.parcel_id||null)===(question.parcel_id||null)
+    && questionSemanticKey(row)===canonicalKey
+  );
+
+  const siblingIds=siblings.map(row=>row.id);
+  if(siblingIds.length){
+    const canonicalize=await supabase.from('farm_questions')
+      .update({related_knowledge_key:canonicalKey,updated_at:new Date().toISOString()})
+      .in('id',siblingIds);
+    if(canonicalize.error)throw new Error(canonicalize.error.message);
+  }
+
   const {error}=await supabase.rpc('answer_farm_question',{
     p_question_id:questionId,
     p_answer:clean,
     p_answer_json:answerJson??null,
   });
   if(error)throw new Error(error.message);
+
+  const remainingIds=siblingIds.filter(id=>id!==questionId);
+  if(remainingIds.length){
+    const now=new Date().toISOString();
+    const closeSiblings=await supabase.from('farm_questions')
+      .update({
+        status:'answered',
+        answer:clean,
+        answer_json:answerJson??null,
+        answered_at:now,
+        updated_at:now,
+      })
+      .in('id',remainingIds)
+      .eq('status','open');
+    if(closeSiblings.error)throw new Error(closeSiblings.error.message);
+  }
 }
 
 export async function dismissFarmQuestion(questionId:string){
@@ -189,8 +328,8 @@ export async function recordAgentAssessment(input:AgentAssessmentInput):Promise<
       priority:confidence<0.45?'high':'medium',
       parcelId:input.parcelId,
       agentType:input.agentType,
-      relatedKnowledgeKey:'agent.'+input.agentType+'.'+(input.parcelId||'farm')+'.'+normalizeKey(uncertainty),
-      dedupeKey:'agent-missing:'+(input.agentType)+':'+(input.parcelId||'farm')+':'+normalizeKey(uncertainty),
+      relatedKnowledgeKey:canonicalKnowledgeKey(uncertainty,input.parcelId),
+      dedupeKey:'knowledge-need:'+(input.parcelId||'farm')+':'+semanticKnowledgeNeed(uncertainty),
     });
     if(q)created.push(q);
   }
@@ -320,16 +459,25 @@ export async function buildLearningContext(parcelId?:string):Promise<string>{
 export async function fetchFarmIntelligenceSummary(){
   const [knowledgeRes,questionsRes,assessmentsRes]=await Promise.all([
     supabase.from('farm_knowledge_items').select('id,status').in('status',['verified','provisional','disputed']),
-    supabase.from('farm_questions').select('id,priority,status').eq('status','open'),
+    supabase.from('farm_questions').select('id,question,priority,status,parcel_id,related_knowledge_key').eq('status','open').limit(500),
     supabase.from('farm_agent_assessments').select('id,feedback_status').limit(1000),
   ]);
   const error=knowledgeRes.error||questionsRes.error||assessmentsRes.error;
   if(error)throw new Error(error.message);
-  const questions=(questionsRes.data||[]) as any[];
+  const questions=(questionsRes.data||[]) as FarmQuestion[];
+  const grouped=new Map<string,FarmQuestion>();
+  const rank:Record<FarmQuestionPriority,number>={critical:4,high:3,medium:2,low:1};
+  for(const question of questions){
+    const key=questionSemanticKey(question);
+    const existing=grouped.get(key);
+    if(!existing||rank[question.priority]>rank[existing.priority])grouped.set(key,question);
+  }
+  const uniqueQuestions=Array.from(grouped.values());
   return{
     knowledgeCount:(knowledgeRes.data||[]).length,
-    openQuestionCount:questions.length,
-    highQuestionCount:questions.filter(q=>['high','critical'].includes(q.priority)).length,
+    openQuestionCount:uniqueQuestions.length,
+    rawOpenQuestionRowCount:questions.length,
+    highQuestionCount:uniqueQuestions.filter(q=>['high','critical'].includes(q.priority)).length,
     assessmentCount:(assessmentsRes.data||[]).length,
     feedbackCount:(assessmentsRes.data||[]).filter((row:any)=>row.feedback_status).length,
   };
