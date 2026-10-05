@@ -37,6 +37,7 @@ import AgentFeedbackPanel from './AgentFeedbackPanel';
 import OlivePhotoProtocol from './OlivePhotoProtocol';
 import { removePruningOutcomeTruth, savePruningOutcome } from '../services/pruningOutcome';
 import { assignGeoParcelManually, geoContextSummary, requestFarmGeo } from '../services/farmGeo';
+import { loadActiveFarmGeo, saveActiveFarmGeo } from '../services/farmGeoSession';
 import type { FarmGeoContext } from '../types/farmGeo';
 import { registerFarmMediaEvidence, uploadDataUrlFarmMedia } from '../services/farmMediaEvidence';
 import { buildSpatialMemoryContext } from '../services/farmSpatialMemory';
@@ -140,6 +141,7 @@ const PruningAdvisorView: React.FC = () => {
   const [geoContext,setGeoContext]=useState<FarmGeoContext|null>(null);
   const [isLocating,setIsLocating]=useState(false);
   const [parcelSelectionSource,setParcelSelectionSource]=useState<'none'|'manual'|'geo'>('none');
+  const [geoInheritedFromFieldMode,setGeoInheritedFromFieldMode]=useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -181,7 +183,15 @@ const PruningAdvisorView: React.FC = () => {
       ]);
       if (settings?.language) setLanguage(settings.language as Language);
       setParcels(parcelRows);
-      setSelectedParcelId(prev => prev);
+      const activeGeo=loadActiveFarmGeo();
+      if(activeGeo?.geo){
+        setGeoContext(activeGeo.geo);
+        setGeoInheritedFromFieldMode(true);
+        if(activeGeo.geo.parcelId&&parcelRows.some(parcel=>parcel.id===activeGeo.geo.parcelId)){
+          setSelectedParcelId(prev=>prev||activeGeo.geo.parcelId||'');
+          setParcelSelectionSource(prev=>prev==='manual'?prev:'geo');
+        }
+      }
       setHistory(historyRows);
     } catch (err) {
       console.error('[PruningAdvisorView] loadData', err);
@@ -213,6 +223,8 @@ const PruningAdvisorView: React.FC = () => {
     try{
       const geo=await requestFarmGeo(parcels,'device_live_capture');
       setGeoContext(geo);
+      saveActiveFarmGeo(geo);
+      setGeoInheritedFromFieldMode(false);
       if(geo.parcelId&&parcelSelectionSource!=='manual'){
         setSelectedParcelId(geo.parcelId);
         setParcelSelectionSource('geo');
@@ -647,7 +659,12 @@ const PruningAdvisorView: React.FC = () => {
       setParcelSelectionSource(parcelId?'manual':'none');
       if(geoContext&&parcelId){
         const parcel=parcels.find(item=>item.id===parcelId);
-        if(parcel)setGeoContext(assignGeoParcelManually(geoContext,parcel)||geoContext);
+        if(parcel){
+          const corrected=assignGeoParcelManually(geoContext,parcel)||geoContext;
+          setGeoContext(corrected);
+          saveActiveFarmGeo(corrected);
+          setGeoInheritedFromFieldMode(false);
+        }
       }
     }}>
               <option value="">Velg parsell / bruk GEO</option>
@@ -656,7 +673,7 @@ const PruningAdvisorView: React.FC = () => {
             {selectedParcel && <p className="text-xs text-slate-500 flex items-center gap-2"><MapPin size={12} /> {selectedParcel.municipality || 'Biar'} · {selectedParcel.treeVariety || selectedParcel.crop || 'oliven'}</p>}
             <div className="flex flex-wrap items-center gap-2">
               <button type="button" onClick={()=>captureLiveGeo()} disabled={isLocating} className="rounded-xl border border-green-500/20 bg-green-500/10 px-3 py-2 text-[10px] font-black text-green-300 disabled:opacity-50">{isLocating?'Henter GPS…':'Bruk live GPS'}</button>
-              {geoContext&&<span className="text-[10px] text-slate-400">{geoContextSummary(geoContext)}</span>}
+              {geoContext&&<span className="text-[10px] text-slate-400">{geoContextSummary(geoContext)}{geoInheritedFromFieldMode?' · fra Feltmodus':''}</span>}
             </div>
             {geoContext&&<p className="text-[10px] text-slate-600">Live kamerabilder kan knyttes til denne posisjonen. Galleriopplasting får ikke automatisk dagens GPS som original bildeposisjon.</p>}
             <div className="rounded-xl border border-green-500/15 bg-green-500/[0.04] p-3">
