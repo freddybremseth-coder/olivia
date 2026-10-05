@@ -52,6 +52,10 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
    - brukeren kan bekrefte flere feltpunkter i samme sone; punktene er menneskelig bekreftet operativ geografi
    - tre eller flere sonepunkter kan vises som et stiplet operativt fotavtrykk, aldri som juridisk/Catastro-grense
    - AI bruker nærmeste bekreftede sonepunkt i stedet for bare første soneanker når slik historikk finnes
+   - live feltobservasjoner kan få forslag til sone og tregruppe bare ved entydig høy GEO-sikkerhet
+   - manuell sone/tregruppe overstyrer alltid GEO-forslag og blir ikke erstattet ved ny GPS-oppdatering
+   - tvetydig sone/tregruppe blir aldri auto-valgt
+   - observasjoner lagrer om sone/tregruppe kom fra manuelt valg eller GEO-forslag, inklusive metode og sikkerhet
    - faste GEO-punkter kan representere brønn, pumpe, dryppunkt, adkomst, referansetre, problemsted, lager eller bygg
    - Feltkonsulent og Beskjæringsekspert får nærliggende operativ gårdsstruktur som kontekst, separat fra historiske observasjoner
    - status: implementert

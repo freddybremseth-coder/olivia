@@ -25,6 +25,12 @@ import {
   fetchTreeGroups,
 } from '../services/farmIoT';
 import { assignGeoParcelManually, geoContextSummary, requestFarmGeo } from '../services/farmGeo';
+import {
+  shouldAutoApplyTreeGroup,
+  shouldAutoApplyZone,
+  suggestOperationalContextForGeo,
+  type OperationalGeoSuggestion,
+} from '../services/farmOperationalGeo';
 import { filesToResizedDataUrls } from '../lib/imageUpload';
 import type { FarmGeoContext } from '../types/farmGeo';
 import {
@@ -122,6 +128,9 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
   const [geoContext,setGeoContext]=useState<FarmGeoContext|null>(null);
   const [isLocating,setIsLocating]=useState(false);
   const [parcelSelectionSource,setParcelSelectionSource]=useState<'none'|'manual'|'geo'>('none');
+  const [zoneSelectionSource,setZoneSelectionSource]=useState<'none'|'manual'|'geo'>('none');
+  const [treeGroupSelectionSource,setTreeGroupSelectionSource]=useState<'none'|'manual'|'geo'>('none');
+  const [operationalGeoSuggestion,setOperationalGeoSuggestion]=useState<OperationalGeoSuggestion|null>(null);
   const [offlineQueueCount,setOfflineQueueCount]=useState(0);
   const [isSyncingOffline,setIsSyncingOffline]=useState(false);
   const [isOnline,setIsOnline]=useState(()=>typeof navigator==='undefined'?true:navigator.onLine);
@@ -224,9 +233,9 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
       .then(async zones => {
         if (cancelled) return;
         setFarmZones(zones);
-        const groupsNested = await Promise.all(zones.map(zone => fetchTreeGroups(zone.id)));
+        const allGroups=await fetchTreeGroups(undefined);
         if (cancelled) return;
-        setTreeGroups(groupsNested.flat());
+        setTreeGroups(allGroups.filter(group=>group.parcel_id===form.parcel_id));
       })
       .catch(error => {
         console.warn('[FieldObservationsView] Could not load zones/tree groups', error);
@@ -251,15 +260,58 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
   }, [observations,issues]);
 
   const locateCurrentPosition=async(source:'device_live_capture'|'device_at_upload')=>{
-    setIsLocating(true);setErrorMessage(null);
+    setIsLocating(true);setErrorMessage(null);setOperationalGeoSuggestion(null);
     try{
-      const geo=await requestFarmGeo(parcels,source);
-      setGeoContext(geo);
-      if(geo.parcelId&&parcelSelectionSource!=='manual'){
-        setForm(prev=>({...prev,parcel_id:geo.parcelId,zone_id:'',tree_group_id:''}));
+      const rawGeo=await requestFarmGeo(parcels,source);
+      let geo=rawGeo;
+      let targetParcelId=rawGeo.parcelId||'';
+
+      if(parcelSelectionSource==='manual'&&form.parcel_id){
+        const selected=parcels.find(parcel=>parcel.id===form.parcel_id);
+        if(selected){
+          if(rawGeo.parcelId&&rawGeo.parcelId!==selected.id){
+            setErrorMessage('GPS foreslo '+(rawGeo.parcelName||rawGeo.parcelId)+', men manuelt valgt parsell beholdes. Kontroller at du står på riktig sted.');
+          }
+          geo=assignGeoParcelManually(rawGeo,selected)||rawGeo;
+          targetParcelId=selected.id;
+        }
+      }else if(rawGeo.parcelId){
+        targetParcelId=rawGeo.parcelId;
         setParcelSelectionSource('geo');
-      }else if(geo.parcelId&&form.parcel_id&&form.parcel_id!==geo.parcelId){
-        setErrorMessage('GPS peker mot '+(geo.parcelName||geo.parcelId)+', mens du har valgt en annen parsell. Kontroller parsellvalget før lagring.');
+      }
+
+      setGeoContext(geo);
+
+      if(targetParcelId){
+        let suggestion:OperationalGeoSuggestion|null=null;
+        try{
+          suggestion=await suggestOperationalContextForGeo({
+            geo,
+            parcelId:targetParcelId,
+            preferredZoneId:zoneSelectionSource==='manual'?(form.zone_id||undefined):undefined,
+          });
+          setOperationalGeoSuggestion(suggestion);
+        }catch(error){
+          console.warn('[FieldObservationsView] operational GEO suggestion',error);
+        }
+
+        setForm(prev=>{
+          const next={...prev,parcel_id:targetParcelId};
+          if(parcelSelectionSource!=='manual'&&prev.parcel_id!==targetParcelId){
+            next.zone_id='';
+            next.tree_group_id='';
+          }
+          if(suggestion&&zoneSelectionSource!=='manual'&&shouldAutoApplyZone(suggestion)){
+            next.zone_id=suggestion.zoneId;
+          }
+          if(suggestion&&treeGroupSelectionSource!=='manual'&&shouldAutoApplyTreeGroup(suggestion)){
+            next.tree_group_id=suggestion.treeGroupId;
+          }
+          return next;
+        });
+
+        if(suggestion&&zoneSelectionSource!=='manual'&&shouldAutoApplyZone(suggestion))setZoneSelectionSource('geo');
+        if(suggestion&&treeGroupSelectionSource!=='manual'&&shouldAutoApplyTreeGroup(suggestion))setTreeGroupSelectionSource('geo');
       }
       return geo;
     }catch(error:any){
@@ -299,6 +351,9 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     setPreviewImageUrls([]);
     setGeoContext(null);
     setParcelSelectionSource('none');
+    setZoneSelectionSource('none');
+    setTreeGroupSelectionSource('none');
+    setOperationalGeoSuggestion(null);
     setTrackAsIssue(false);
     setLinkedIssueId(undefined);
     setIssueSeverity('medium');
@@ -385,6 +440,24 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
         geo_source:geoContext?.source,
         geo_match_method:geoContext?.matchMethod,
         geo_match_confidence:geoContext?.matchConfidence,
+        geo_structure_context:{
+          zone_selection_source:zoneSelectionSource,
+          tree_group_selection_source:treeGroupSelectionSource,
+          zone_suggestion:operationalGeoSuggestion?{
+            id:operationalGeoSuggestion.zoneId,
+            name:operationalGeoSuggestion.zoneName,
+            confidence:operationalGeoSuggestion.zoneConfidence,
+            method:operationalGeoSuggestion.zoneMethod,
+            distance_m:operationalGeoSuggestion.zoneDistanceM,
+          }:undefined,
+          tree_group_suggestion:operationalGeoSuggestion?{
+            id:operationalGeoSuggestion.treeGroupId,
+            name:operationalGeoSuggestion.treeGroupName,
+            confidence:operationalGeoSuggestion.treeGroupConfidence,
+            method:operationalGeoSuggestion.treeGroupMethod,
+            distance_m:operationalGeoSuggestion.treeGroupDistanceM,
+          }:undefined,
+        },
       };
 
       const issueDraft=trackAsIssue&&!linkedIssueId
@@ -588,6 +661,9 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
               <Field label="Parsell" help="Velg parsell manuelt, eller la GPS foreslå den."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.parcel_id || ''} onChange={event => {
       const parcelId=event.target.value;
       setParcelSelectionSource(parcelId?'manual':'none');
+      setZoneSelectionSource('none');
+      setTreeGroupSelectionSource('none');
+      setOperationalGeoSuggestion(null);
       setForm(prev=>({...prev,parcel_id:parcelId,zone_id:'',tree_group_id:''}));
       if(geoContext&&parcelId){
         const parcel=parcels.find(item=>item.id===parcelId);
@@ -598,8 +674,17 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label="Sone" help="Velg sone hvis den finnes i Supabase.">{isLoadingFarmContext ? <div className="text-xs text-slate-500 py-3 flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Laster soner...</div> : <select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.zone_id || ''} onChange={event => setForm(prev => ({ ...prev, zone_id: event.target.value, tree_group_id: '' }))}><option className="bg-slate-900" value="">Ingen sone</option>{farmZones.map(zone => <option key={zone.id} className="bg-slate-900" value={zone.id}>{zone.name}</option>)}</select>}</Field>
-              <Field label="Tregruppe" help="Valgfritt, hvis observasjonen gjelder en gruppe trær."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.tree_group_id || ''} onChange={event => setForm(prev => ({ ...prev, tree_group_id: event.target.value }))}><option className="bg-slate-900" value="">Ingen tregruppe</option>{filteredTreeGroups.map(group => <option key={group.id} className="bg-slate-900" value={group.id}>{group.name}</option>)}</select></Field>
+              <Field label="Sone" help="Velg sone hvis den finnes i Supabase.">{isLoadingFarmContext ? <div className="text-xs text-slate-500 py-3 flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Laster soner...</div> : <select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.zone_id || ''} onChange={event => {
+                const zoneId=event.target.value;
+                setZoneSelectionSource(zoneId?'manual':'none');
+                setTreeGroupSelectionSource('none');
+                setForm(prev=>({...prev,zone_id:zoneId,tree_group_id:''}));
+              }}><option className="bg-slate-900" value="">Ingen sone</option>{farmZones.map(zone => <option key={zone.id} className="bg-slate-900" value={zone.id}>{zone.name}</option>)}</select>}</Field>
+              <Field label="Tregruppe" help="Valgfritt, hvis observasjonen gjelder en gruppe trær."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.tree_group_id || ''} onChange={event => {
+                const treeGroupId=event.target.value;
+                setTreeGroupSelectionSource(treeGroupId?'manual':'none');
+                setForm(prev=>({...prev,tree_group_id:treeGroupId}));
+              }}><option className="bg-slate-900" value="">Ingen tregruppe</option>{filteredTreeGroups.map(group => <option key={group.id} className="bg-slate-900" value={group.id}>{group.name}</option>)}</select></Field>
             </div>
 
             <Field label="Tittel *" help="Kort og tydelig observasjon."><input className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" placeholder="F.eks. lav fukt ved unge Gordal" value={form.title || ''} onChange={event => setForm(prev => ({ ...prev, title: event.target.value }))} /></Field>
@@ -633,6 +718,12 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
                 <p className="text-[9px] uppercase tracking-widest font-black text-green-300">GEO registrert</p>
                 <p className="text-xs text-slate-300 mt-1">{geoContextSummary(geoContext)}</p>
                 <p className="text-[10px] text-slate-500 mt-1">{geoContext.source==='device_live_capture'?'Posisjon hentet sammen med live bildeopptak.':'Posisjon hentet ved opplasting/registrering, ikke fra bildefilens EXIF.'}</p>
+                {operationalGeoSuggestion&&<div className="mt-2 border-t border-white/10 pt-2">
+                  <p className="text-[9px] uppercase tracking-widest font-black text-[#d9b657]">Operativ GEO-match</p>
+                  {operationalGeoSuggestion.zoneId?<p className="text-[10px] text-slate-400 mt-1">Sone: <span className="text-white font-bold">{operationalGeoSuggestion.zoneName}</span> · {Math.round(operationalGeoSuggestion.zoneConfidence*100)}%{zoneSelectionSource==='geo'?' · foreslått automatisk':''}</p>:operationalGeoSuggestion.zoneMethod==='ambiguous'?<p className="text-[10px] text-amber-200 mt-1">Flere soner passer omtrent like godt. Velg sone manuelt.</p>:<p className="text-[10px] text-slate-500 mt-1">Ingen sone kan foreslås sikkert her ennå.</p>}
+                  {operationalGeoSuggestion.treeGroupId?<p className="text-[10px] text-slate-400 mt-1">Tregruppe: <span className="text-white font-bold">{operationalGeoSuggestion.treeGroupName}</span> · {Math.round(operationalGeoSuggestion.treeGroupConfidence*100)}%{treeGroupSelectionSource==='geo'?' · foreslått automatisk':''}</p>:operationalGeoSuggestion.treeGroupMethod==='ambiguous'?<p className="text-[10px] text-amber-200 mt-1">Flere tregrupper ligger for tett til sikker match.</p>:null}
+                  <p className="text-[9px] text-slate-600 mt-2">Manuelt valg overstyrer alltid GEO-forslaget.</p>
+                </div>}
               </div>}
               {previewImageUrls.length > 0 && <div className="grid grid-cols-3 gap-2 mt-3">{previewImageUrls.map((url, index) => <div key={url} className="relative"><img src={url} alt="Forhåndsvisning" className="h-24 w-full object-cover rounded-xl border border-white/10" /><button type="button" onClick={() => removeSelectedImage(index)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><X size={12} /></button></div>)}</div>}
             </div>

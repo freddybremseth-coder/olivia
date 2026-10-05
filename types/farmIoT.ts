@@ -187,6 +187,24 @@ export interface FarmObservation {
   geo_source?: string;
   geo_match_method?: string;
   geo_match_confidence?: number;
+  geo_structure_context?: {
+    zone_selection_source?: 'none'|'manual'|'geo';
+    tree_group_selection_source?: 'none'|'manual'|'geo';
+    zone_suggestion?: {
+      id?: string;
+      name?: string;
+      confidence?: number;
+      method?: string;
+      distance_m?: number;
+    };
+    tree_group_suggestion?: {
+      id?: string;
+      name?: string;
+      confidence?: number;
+      method?: string;
+      distance_m?: number;
+    };
+  };
   issue_id?: string;
 }
 
