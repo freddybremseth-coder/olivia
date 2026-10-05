@@ -15,6 +15,8 @@ import { sedecService } from '../services/sedecService';
 import { useTranslation } from '../services/i18nService';
 import { MUNICIPALITIES, Municipality, PROVINCE_CODE_MAP } from '../data/es_municipalities';
 import { fetchFarmMediaEvidence, type FarmMediaEvidenceRow } from '../services/farmMediaEvidence';
+import { fetchFarmGeoLandmarks, fetchFarmZones, fetchTreeGroups } from '../services/farmIoT';
+import type { FarmGeoLandmark, FarmZone, TreeGroup } from '../types/farmIoT';
 
 import * as turf from '@turf/turf';
 
@@ -63,8 +65,13 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
   const [isElectricityLayerActive, setIsElectricityLayerActive] = useState(false);
   const [isWaterLayerActive, setIsWaterLayerActive] = useState(false);
   const [isMediaLayerActive,setIsMediaLayerActive]=useState(true);
+  const [isStructureLayerActive,setIsStructureLayerActive]=useState(true);
   const [mediaEvidence,setMediaEvidence]=useState<FarmMediaEvidenceRow[]>([]);
   const [mediaLoadError,setMediaLoadError]=useState('');
+  const [farmZones,setFarmZones]=useState<FarmZone[]>([]);
+  const [treeGroups,setTreeGroups]=useState<TreeGroup[]>([]);
+  const [landmarks,setLandmarks]=useState<FarmGeoLandmark[]>([]);
+  const [structureLoadError,setStructureLoadError]=useState('');
   const [showLayerPanel, setShowLayerPanel] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
 
@@ -111,6 +118,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
   const drawingLayerRef = useRef<L.LayerGroup>(L.layerGroup());
   const gpsLayerRef = useRef<L.LayerGroup>(L.layerGroup());
   const mediaLayerRef = useRef<L.LayerGroup>(L.layerGroup());
+  const structureLayerRef = useRef<L.LayerGroup>(L.layerGroup());
   const cadastreWmsRef = useRef<L.TileLayer.WMS | null>(null);
   const electricityLayerRef = useRef<L.TileLayer | null>(null);
   const waterLayerRef = useRef<L.TileLayer | null>(null);
@@ -165,6 +173,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
       drawingLayerRef.current.addTo(mapRef.current);
       gpsLayerRef.current.addTo(mapRef.current);
       mediaLayerRef.current.addTo(mapRef.current);
+      structureLayerRef.current.addTo(mapRef.current);
       updateMapBaseLayer('satellite');
 
       const resizeObserver = new ResizeObserver(() => {
@@ -239,6 +248,105 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
     });
     layer.bringToFront?.();
   },[mediaEvidence,isMediaLayerActive,parcels]);
+
+  useEffect(()=>{
+    let cancelled=false;
+    const load=async()=>{
+      try{
+        const [zoneRows,groupRows,landmarkRows]=await Promise.all([
+          fetchFarmZones(),
+          fetchTreeGroups(),
+          fetchFarmGeoLandmarks(),
+        ]);
+        if(!cancelled){
+          setFarmZones(zoneRows);
+          setTreeGroups(groupRows);
+          setLandmarks(landmarkRows);
+          setStructureLoadError('');
+        }
+      }catch(error:any){
+        console.warn('[FarmMap] spatial structure load failed',error);
+        if(!cancelled)setStructureLoadError(error?.message||'Kunne ikke hente operativ gårdsstruktur.');
+      }
+    };
+    void load();
+    const refresh=()=>void load();
+    window.addEventListener('olivia:farm-truth-updated',refresh as EventListener);
+    return()=>{
+      cancelled=true;
+      window.removeEventListener('olivia:farm-truth-updated',refresh as EventListener);
+    };
+  },[]);
+
+  useEffect(()=>{
+    const layer=structureLayerRef.current;
+    layer.clearLayers();
+    if(!mapRef.current)return;
+    if(!isStructureLayerActive){
+      if(mapRef.current.hasLayer(layer))mapRef.current.removeLayer(layer);
+      return;
+    }
+    if(!mapRef.current.hasLayer(layer))layer.addTo(mapRef.current);
+
+    const parcelNames=new Map(parcels.map(parcel=>[parcel.id,parcel.name]));
+    const zoneNames=new Map(farmZones.map(zone=>[zone.id,zone.name]));
+
+    farmZones.forEach(zone=>{
+      const lat=Number(zone.anchor_lat),lon=Number(zone.anchor_lon);
+      if(!Number.isFinite(lat)||!Number.isFinite(lon))return;
+      const marker=L.circleMarker([lat,lon],{
+        radius:10,weight:2,color:'#ffffff',fillColor:'#22c55e',fillOpacity:0.78,
+      });
+      marker.bindPopup(`
+        <div style="font-family:system-ui,sans-serif;color:#111;min-width:190px">
+          <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#166534">OPERATIV SONE</div>
+          <div style="font-size:14px;font-weight:900;margin-top:3px">${escapeHtml(zone.name)}</div>
+          <div style="font-size:11px;color:#555;margin-top:4px">${escapeHtml(parcelNames.get(zone.parcel_id)||zone.parcel_id)}</div>
+          ${zone.description?`<div style="font-size:11px;color:#666;margin-top:5px">${escapeHtml(zone.description)}</div>`:''}
+          <div style="font-size:10px;color:#888;margin-top:5px">GEO-anker · ikke juridisk grense</div>
+        </div>`);
+      marker.bindTooltip('Sone · '+zone.name);
+      marker.addTo(layer);
+    });
+
+    treeGroups.forEach(group=>{
+      const lat=Number(group.anchor_lat),lon=Number(group.anchor_lon);
+      if(!Number.isFinite(lat)||!Number.isFinite(lon))return;
+      const marker=L.circleMarker([lat,lon],{
+        radius:8,weight:2,color:'#ffffff',fillColor:'#d9b657',fillOpacity:0.9,
+      });
+      marker.bindPopup(`
+        <div style="font-family:system-ui,sans-serif;color:#111;min-width:190px">
+          <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#92400e">TREGUPPE</div>
+          <div style="font-size:14px;font-weight:900;margin-top:3px">${escapeHtml(group.name)}</div>
+          <div style="font-size:11px;color:#555;margin-top:4px">${escapeHtml(zoneNames.get(group.zone_id||'')||parcelNames.get(group.parcel_id)||group.parcel_id)}</div>
+          ${group.variety?`<div style="font-size:11px;color:#555;margin-top:4px">Sort: ${escapeHtml(group.variety)}</div>`:''}
+          ${group.tree_count!=null?`<div style="font-size:11px;color:#555;margin-top:2px">${escapeHtml(group.tree_count)} trær</div>`:''}
+        </div>`);
+      marker.bindTooltip('Tregruppe · '+group.name);
+      marker.addTo(layer);
+    });
+
+    landmarks.forEach(point=>{
+      const lat=Number(point.lat),lon=Number(point.lon);
+      if(!Number.isFinite(lat)||!Number.isFinite(lon))return;
+      const marker=L.circleMarker([lat,lon],{
+        radius:7,weight:2,color:'#ffffff',fillColor:'#3b82f6',fillOpacity:0.92,
+      });
+      marker.bindPopup(`
+        <div style="font-family:system-ui,sans-serif;color:#111;min-width:190px">
+          <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#1d4ed8">FAST GEO-PUNKT · ${escapeHtml(point.landmark_type)}</div>
+          <div style="font-size:14px;font-weight:900;margin-top:3px">${escapeHtml(point.name)}</div>
+          <div style="font-size:11px;color:#555;margin-top:4px">${escapeHtml(parcelNames.get(point.parcel_id||'')||point.parcel_id||'Ingen parsell')}</div>
+          ${point.description?`<div style="font-size:11px;color:#666;margin-top:5px">${escapeHtml(point.description)}</div>`:''}
+          ${point.accuracy_m!=null?`<div style="font-size:10px;color:#888;margin-top:5px">GPS ±${Math.round(Number(point.accuracy_m))} m</div>`:''}
+        </div>`);
+      marker.bindTooltip(point.name);
+      marker.addTo(layer);
+    });
+
+    layer.bringToFront?.();
+  },[farmZones,treeGroups,landmarks,isStructureLayerActive,parcels]);
 
   // Keep refs in sync so the map click closure sees current values
   useEffect(() => { isMapClickModeRef.current = isMapClickMode; }, [isMapClickMode]);
@@ -892,7 +1000,12 @@ const FarmMap: React.FC<FarmMapProps> = ({ parcels, onParcelSave, onParcelDelete
                   <Camera size={14}/><span>Feltbilder (${mediaEvidence.length})</span>
                   {isMediaLayerActive?<Eye size={12} className="ml-auto"/>:<EyeOff size={12} className="ml-auto"/>}
                 </button>
+                <button onClick={()=>setIsStructureLayerActive(!isStructureLayerActive)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-bold transition-all ${isStructureLayerActive ? 'bg-green-500/15 text-green-300 border border-green-500/30' : 'bg-white/5 text-slate-400 border border-white/5'}`}>
+                  <MapPin size={14}/><span>Driftskart (${farmZones.length+treeGroups.length+landmarks.length})</span>
+                  {isStructureLayerActive?<Eye size={12} className="ml-auto"/>:<EyeOff size={12} className="ml-auto"/>}
+                </button>
                 {mediaLoadError&&<p className="px-2 pt-1 text-[9px] text-amber-300">GEO-bilder: {mediaLoadError}</p>}
+                {structureLoadError&&<p className="px-2 pt-1 text-[9px] text-amber-300">Driftskart: {structureLoadError}</p>}
               </div>
             </div>
           )}
