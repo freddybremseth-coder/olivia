@@ -24,7 +24,7 @@ import {
   fetchRecentFarmObservations,
   fetchTreeGroups,
 } from '../services/farmIoT';
-import { geoContextSummary, requestFarmGeo } from '../services/farmGeo';
+import { assignGeoParcelManually, geoContextSummary, requestFarmGeo } from '../services/farmGeo';
 import { filesToResizedDataUrls } from '../lib/imageUpload';
 import type { FarmGeoContext } from '../types/farmGeo';
 import {
@@ -585,7 +585,15 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
             <div className="flex justify-between items-start gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#d9b657]">Supabase · feltdata</p><h3 className="text-2xl font-bold text-white mt-1">{linkedIssueId?'Ny kontroll':'Ny feltobservasjon'}</h3><p className="text-xs text-slate-500 mt-1">{linkedIssueId?'Denne observasjonen kobles til eksisterende oppfølgingssak.':'Dokumenter faktisk observasjon fra gården.'}</p></div><button onClick={() => { resetForm(); setIsFormOpen(false); }} className="p-2 text-slate-400 hover:text-white"><X size={24} /></button></div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label="Parsell" help="Velg parsell manuelt, eller la GPS foreslå den."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.parcel_id || ''} onChange={event => {setParcelSelectionSource('manual');setForm(prev => ({ ...prev, parcel_id: event.target.value, zone_id: '', tree_group_id: '' }));}}><option className="bg-slate-900" value="">Ingen parsell</option>{parcels.map(parcel => <option key={parcel.id} className="bg-slate-900" value={parcel.id}>{parcel.name}</option>)}</select></Field>
+              <Field label="Parsell" help="Velg parsell manuelt, eller la GPS foreslå den."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.parcel_id || ''} onChange={event => {
+      const parcelId=event.target.value;
+      setParcelSelectionSource(parcelId?'manual':'none');
+      setForm(prev=>({...prev,parcel_id:parcelId,zone_id:'',tree_group_id:''}));
+      if(geoContext&&parcelId){
+        const parcel=parcels.find(item=>item.id===parcelId);
+        if(parcel)setGeoContext(assignGeoParcelManually(geoContext,parcel)||geoContext);
+      }
+    }}><option className="bg-slate-900" value="">Ingen parsell</option>{parcels.map(parcel => <option key={parcel.id} className="bg-slate-900" value={parcel.id}>{parcel.name}</option>)}</select></Field>
               <Field label="Kategori" help="Velg hva observasjonen handler om."><select className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-[#d9b657]/60" value={form.category || 'irrigation'} onChange={event => {const category=event.target.value as ObservationCategory;setForm(prev => ({ ...prev, category }));if(category==='pest'||category==='disease')setTrackAsIssue(true);}}>{CATEGORY_OPTIONS.map(option => <option key={option.value} className="bg-slate-900" value={option.value}>{option.label}</option>)}</select></Field>
             </div>
 
