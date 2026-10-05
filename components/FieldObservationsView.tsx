@@ -368,6 +368,17 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
     setIssueNextReview(defaultReviewDate());
   };
 
+  const openNewObservation=()=>{
+    const activeGeo=loadActiveFarmGeo();
+    setGeoContext(activeGeo?.geo||null);
+    setParcelSelectionSource(activeGeo?.geo.parcelId?'geo':'none');
+    setZoneSelectionSource('none');
+    setTreeGroupSelectionSource('none');
+    setOperationalGeoSuggestion(null);
+    setForm({...EMPTY_FORM,parcel_id:activeGeo?.geo.parcelId||''});
+    setIsFormOpen(true);
+  };
+
   const openIssueFollowUp=(issue:FarmIssue)=>{
     resetForm();
     setActiveView('observations');
@@ -551,7 +562,7 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
             <button onClick={loadObservations} disabled={isLoading} className="p-3.5 glass border border-white/10 rounded-2xl text-[#d9b657] hover:bg-white/5 transition-all disabled:opacity-50">
               {isLoading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCcw size={18} />}
             </button>
-            <button onClick={() => setIsFormOpen(true)} className="bg-[#d9b657] hover:bg-[#f0cf70] text-black px-6 py-3.5 rounded-2xl font-bold transition-all shadow-xl shadow-[#d9b657]/20 flex items-center gap-2">
+            <button onClick={openNewObservation} className="bg-[#d9b657] hover:bg-[#f0cf70] text-black px-6 py-3.5 rounded-2xl font-bold transition-all shadow-xl shadow-[#d9b657]/20 flex items-center gap-2">
               <Plus size={20} /> Ny observasjon
             </button>
           </div>
