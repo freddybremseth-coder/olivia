@@ -65,6 +65,7 @@ function nearestDistinct<T extends {id:string;lat:number;lon:number}>(
 export async function suggestOperationalContextForGeo(input:{
   geo:FarmGeoContext;
   parcelId:string;
+  preferredZoneId?:string;
 }):Promise<OperationalGeoSuggestion>{
   const reasons:string[]=[];
   const [zones,allGroups,samples]=await Promise.all([
@@ -153,7 +154,8 @@ export async function suggestOperationalContextForGeo(input:{
   let treeGroupDistanceM:number|undefined;
   let ambiguousTreeGroupIds:string[]|undefined;
 
-  const candidateGroups=(zoneId?groups.filter(group=>group.zone_id===zoneId):groups)
+  const treeGroupZoneId=input.preferredZoneId||zoneId;
+  const candidateGroups=(treeGroupZoneId?groups.filter(group=>group.zone_id===treeGroupZoneId):groups)
     .flatMap(group=>{
       const lat=finite(group.anchor_lat),lon=finite(group.anchor_lon);
       return lat!=null&&lon!=null?[{id:group.id,name:group.name,lat,lon}]:[];
