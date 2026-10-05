@@ -44,6 +44,9 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
    - nye analyser kan bruke nærliggende historiske observasjoner som romlig hukommelse
    - gammel tilstand er kun historisk kontekst; ny observasjon/måling har alltid forrang
    - gjentatte GEO-punkter kan senere danne faktiske drifts-soner/hotspots, men først når nok ekte data finnes
+   - manuell parsellkorrigering er autoritativ for det konkrete GEO-punktet
+   - senere GPS-punkter kan bruke tidligere manuelle/høysikre GEO-punkter som romlig hukommelse når polygonmatch mangler
+   - romlig hukommelse får aldri endre juridiske/Catastro-grenser automatisk
 
 7. **Farm issues / oppfølgingssaker**
    - skadedyr, sykdom, vanningsfeil og andre avvik får livssyklus fra første observasjon til lukket sak
