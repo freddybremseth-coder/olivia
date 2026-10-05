@@ -19,6 +19,7 @@ import {
   HelpCircle,
   CloudRain,
   Wind,
+  MapPinned,
 } from 'lucide-react';
 import {
   DONA_ANNA_BIAR_SEASON_SETTINGS,
@@ -50,6 +51,7 @@ import { fetchFarmTruthSummary } from '../services/farmJournal';
 import { fetchFarmIntelligenceSummary, fetchOpenFarmQuestions, type FarmQuestion } from '../services/farmIntelligence';
 import FarmQuestionsPanel from './FarmQuestionsPanel';
 import { fetchFarmIssues, type FarmIssue } from '../services/farmIssues';
+import { fetchFarmSpatialCoverage, type FarmSpatialCoverage } from '../services/farmSpatialCoverage';
 import {
   bestWorkWindow,
   fetchWorkWindowForecast,
@@ -758,6 +760,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   const [farmQuestions, setFarmQuestions] = useState<FarmQuestion[]>([]);
   const [activeIssues, setActiveIssues] = useState<FarmIssue[]>([]);
   const [workForecast, setWorkForecast] = useState<WorkWindowForecast | null>(null);
+  const [spatialCoverage,setSpatialCoverage]=useState<FarmSpatialCoverage|null>(null);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -771,7 +774,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
     setErrorMessage(null);
     try {
       const failures:string[]=[];
-      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness, seasonStatus, executionStatus, truthStatus, intelligenceStatus, questionRows, issueRows, forecast] = await Promise.all([
+      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness, seasonStatus, executionStatus, truthStatus, intelligenceStatus, questionRows, issueRows, forecast, mappingCoverage] = await Promise.all([
         safeLoad(fetchLatestSensorReadings(300),'Sensorer',[],failures),
         safeLoad(fetchOpenSensorAlerts(),'Sensorvarsler',[],failures),
         safeLoad(fetchRecentIrrigationEvents(10),'Vanningslogg',[],failures),
@@ -785,6 +788,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
         safeLoad(fetchOpenFarmQuestions({limit:5}),'Olivia-spørsmål',[],failures),
         safeLoad(fetchFarmIssues({status:'active',limit:50}),'Oppfølgingssaker',[],failures),
         safeLoad(fetchWorkWindowForecast({days:5}),'Arbeidsvindu',null,failures),
+        safeLoad(fetchFarmSpatialCoverage(),'Kartleggingsdekning',null,failures),
       ]);
       setSourceFailures(failures);
 
@@ -801,6 +805,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       setFarmQuestions(questionRows);
       setActiveIssues(issueRows);
       setWorkForecast(forecast);
+      setSpatialCoverage(mappingCoverage);
       setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length || (readiness && readiness.issues ? readiness.issues.length : 0) || (seasonStatus && seasonStatus.steps ? seasonStatus.steps.length : 0) || (executionStatus && executionStatus.parcels ? executionStatus.parcels.length : 0) || truthStatus || (intelligenceStatus && intelligenceStatus.openQuestionCount ? intelligenceStatus.openQuestionCount : 0) || issueRows.length ? 'supabase' : 'empty');
       setLastRefresh(new Date());
     } catch (error) {
@@ -817,6 +822,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       setFarmQuestions([]);
       setActiveIssues([]);
       setWorkForecast(null);
+      setSpatialCoverage(null);
       setSourceFailures(['Daily']);
       setLoadState('error');
       setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente Daily Dashboard-data fra Supabase.');
@@ -847,7 +853,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   const currentMonth = new Date().getMonth() + 1;
   const oilWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_oil;
   const tableWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_table_olives;
-  const sourceLabel = loadState === 'supabase' ? (sourceFailures.length ? `Daily · ${13-sourceFailures.length}/13 kilder` : 'Daily · 13/13 kilder') : loadState === 'empty' ? 'Ingen driftsdata ennå' : loadState === 'error' ? 'Daily-datafeil' : 'Laster Daily-kilder';
+  const sourceLabel = loadState === 'supabase' ? (sourceFailures.length ? `Daily · ${14-sourceFailures.length}/14 kilder` : 'Daily · 14/14 kilder') : loadState === 'empty' ? 'Ingen driftsdata ennå' : loadState === 'error' ? 'Daily-datafeil' : 'Laster Daily-kilder';
   const orderAttention = commerceAttention.filter(item => item.event_type === 'order_process');
   const readyToShip = commerceAttention.filter(item => item.event_type === 'order_ready_to_ship');
   const overdueInvoices = commerceAttention.filter(item => item.event_type === 'invoice_overdue');
@@ -916,6 +922,38 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
           })}
         </div>
       </div>
+
+      {spatialCoverage&&spatialCoverage.totalParcels>0&&<div className="glass rounded-[2rem] p-6 border border-emerald-400/15 bg-emerald-400/[0.025]">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.24em] font-black text-emerald-300">Gårdskart · operativ kunnskap</p>
+            <h3 className="text-xl font-black text-white mt-1">Hvor godt kjenner Olivia parsellene?</h3>
+            <p className="text-xs text-slate-500 mt-2">Måler faktisk operativ kartlegging: soner, bekreftede sonepunkter, tregrupper og GEO-evidens. Dette er ikke juridiske grenser.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-right">
+              <p className="text-[9px] uppercase tracking-widest text-slate-500">Dekning</p>
+              <p className="text-lg font-black text-white">{spatialCoverage.averageScore}%</p>
+            </div>
+            {onNavigate&&<button onClick={()=>onNavigate('field_mode')} className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-300 flex items-center gap-2"><MapPinned size={14}/> Feltmodus</button>}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-5">
+          {spatialCoverage.parcels.slice(0,6).map(row=><button key={row.parcelId} onClick={()=>onNavigate?.('field_mode')} className={'rounded-2xl border p-4 text-left transition hover:bg-white/[0.05] '+(row.score>=90?'border-green-500/15 bg-green-500/[0.04]':row.score>=50?'border-amber-400/15 bg-amber-400/[0.04]':'border-white/10 bg-black/20')}>
+            <div className="flex items-start justify-between gap-3">
+              <div><p className="text-sm font-black text-white">{row.parcelName}</p><p className="text-[10px] text-slate-500 mt-1">{row.nextActionLabel}</p></div>
+              <span className={'rounded-full border px-2 py-1 text-[10px] font-black '+(row.score>=90?'border-green-500/20 text-green-300':row.score>=50?'border-amber-400/20 text-amber-200':'border-white/10 text-slate-400')}>{row.score}%</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-white/5 overflow-hidden mt-3"><div className="h-full bg-emerald-500" style={{width:row.score+'%'}}/></div>
+            <p className="text-[10px] text-slate-500 mt-3 leading-relaxed">{row.nextActionReason}</p>
+            <p className="text-[9px] text-slate-600 mt-2">{row.zoneCount} soner · {row.footprintZoneCount} fotavtrykk · {row.treeGroupCount} tregrupper · {row.geoMediaCount} GEO-bilder</p>
+          </button>)}
+        </div>
+        {spatialCoverage.nextParcel&&<div className="mt-4 rounded-2xl border border-[#d9b657]/15 bg-[#d9b657]/[0.04] p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div><p className="text-[9px] uppercase tracking-widest font-black text-[#d9b657]">Neste kartleggingshandling</p><p className="text-sm font-black text-white mt-1">{spatialCoverage.nextParcel.parcelName}: {spatialCoverage.nextParcel.nextActionLabel}</p><p className="text-[10px] text-slate-500 mt-1">{spatialCoverage.nextParcel.nextActionReason}</p></div>
+          {onNavigate&&<button onClick={()=>onNavigate('field_mode')} className="rounded-xl bg-[#d9b657] px-4 py-2.5 text-xs font-black text-black whitespace-nowrap">Kartlegg i Feltmodus →</button>}
+        </div>}
+      </div>}
 
       {farmTruth&&<div className="glass rounded-[2rem] p-6 border border-white/10">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
