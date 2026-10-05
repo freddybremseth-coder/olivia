@@ -39,6 +39,7 @@ import { removePruningOutcomeTruth, savePruningOutcome } from '../services/pruni
 import { geoContextSummary, requestFarmGeo } from '../services/farmGeo';
 import type { FarmGeoContext } from '../types/farmGeo';
 import { registerFarmMediaEvidence, uploadDataUrlFarmMedia } from '../services/farmMediaEvidence';
+import { buildSpatialMemoryContext } from '../services/farmSpatialMemory';
 
 function makeId(prefix: string) {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `${prefix}-${crypto.randomUUID()}`;
@@ -300,7 +301,12 @@ const PruningAdvisorView: React.FC = () => {
     setHistorySaved(false);
     setTaskSaved(false);
     try {
-      const raw = await geminiService.analyzePruning(base64List, language, farmContext, selectedParcelId||undefined);
+      const spatialContext=await buildSpatialMemoryContext({
+        geo:geoContext,
+        parcelId:selectedParcelId||geoContext?.parcelId,
+      }).catch(err=>{console.warn('[PruningAdvisorView] spatial memory',err);return'';});
+      const analysisContext=[farmContext,spatialContext].filter(Boolean).join('\n\n');
+      const raw = await geminiService.analyzePruning(base64List, language, analysisContext, selectedParcelId||undefined);
       const normalized = normalizePlan(raw);
       setPlan(normalized);
       const uncertainties=Array.from(new Set([
@@ -311,7 +317,7 @@ const PruningAdvisorView: React.FC = () => {
         agentType:'pruning_assistant',
         parcelId:selectedParcelId||undefined,
         result:normalized,
-        contextSnapshot:farmContext,
+        contextSnapshot:analysisContext,
         confidence:Math.max(0,Math.min(1,Number(normalized.confidence||0)/100)),
         uncertainties,
         sourceRef:'Beskjæringsassistent '+new Date().toISOString(),
