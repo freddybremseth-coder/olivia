@@ -440,6 +440,24 @@ const FieldObservationsView: React.FC<FieldObservationsViewProps> = ({ parcels =
         geo_source:geoContext?.source,
         geo_match_method:geoContext?.matchMethod,
         geo_match_confidence:geoContext?.matchConfidence,
+        geo_structure_context:{
+          zone_selection_source:zoneSelectionSource,
+          tree_group_selection_source:treeGroupSelectionSource,
+          zone_suggestion:operationalGeoSuggestion?{
+            id:operationalGeoSuggestion.zoneId,
+            name:operationalGeoSuggestion.zoneName,
+            confidence:operationalGeoSuggestion.zoneConfidence,
+            method:operationalGeoSuggestion.zoneMethod,
+            distance_m:operationalGeoSuggestion.zoneDistanceM,
+          }:undefined,
+          tree_group_suggestion:operationalGeoSuggestion?{
+            id:operationalGeoSuggestion.treeGroupId,
+            name:operationalGeoSuggestion.treeGroupName,
+            confidence:operationalGeoSuggestion.treeGroupConfidence,
+            method:operationalGeoSuggestion.treeGroupMethod,
+            distance_m:operationalGeoSuggestion.treeGroupDistanceM,
+          }:undefined,
+        },
       };
 
       const issueDraft=trackAsIssue&&!linkedIssueId
