@@ -47,6 +47,10 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
 
 7. **Farm issues / oppfølgingssaker**
    - skadedyr, sykdom, vanningsfeil og andre avvik får livssyklus fra første observasjon til lukket sak
+   - oppfølgingsintensjon beholdes også i offline-kø
+   - ny kontroll kobles til samme sak og oppdaterer latest observation
+   - resolved/dismissed krever eksplisitt menneskelig handling; AI lukker aldri saken
+   - status: implementering pågår
 
 8. **Kunnskapskø i stedet for dupliserte spørsmål**
    - semantisk samme manglende faktum skal samles
