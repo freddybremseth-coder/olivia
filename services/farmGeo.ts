@@ -1,6 +1,7 @@
 import * as turf from '@turf/turf';
 import type { Parcel } from '../types';
 import type { FarmGeoContext, FarmGeoSource } from '../types/farmGeo';
+import { isSupabaseConfigured, supabase } from './supabaseClient';
 
 export type { FarmGeoContext, FarmGeoSource, FarmGeoMatchMethod } from '../types/farmGeo';
 
@@ -53,6 +54,79 @@ function parcelShape(parcel:Parcel):ParcelShape|null{
 
 function distanceMeters(a:[number,number],b:[number,number]){
   return turf.distance(turf.point([a[1],a[0]]),turf.point([b[1],b[0]]),{units:'kilometers'})*1000;
+}
+
+type GeoMemoryAnchor={
+  parcel_id:string;
+  lat:number;
+  lon:number;
+  accuracy_m?:number|null;
+  match_method:string;
+  match_confidence?:number|null;
+};
+
+async function matchGeoToSpatialMemory(
+  fix:Pick<FarmGeoContext,'lat'|'lon'|'accuracyM'>,
+  parcels:Parcel[],
+){
+  if(!isSupabaseConfigured)return null;
+  const {data,error}=await supabase.from('farm_media_evidence')
+    .select('parcel_id,lat,lon,accuracy_m,match_method,match_confidence,geo_captured_at')
+    .not('parcel_id','is',null)
+    .not('lat','is',null)
+    .not('lon','is',null)
+    .in('match_method',['manual','polygon'])
+    .gte('match_confidence',0.8)
+    .order('geo_captured_at',{ascending:false,nullsFirst:false})
+    .limit(300);
+  if(error){
+    console.warn('[farmGeo] spatial memory unavailable',error);
+    return null;
+  }
+
+  const radiusM=Math.max(18,Math.min(60,fix.accuracyM*1.4));
+  const anchors=(data||[]) as GeoMemoryAnchor[];
+  const nearby=anchors.map(anchor=>({
+    anchor,
+    distanceM:distanceMeters([fix.lat,fix.lon],[Number(anchor.lat),Number(anchor.lon)]),
+  })).filter(item=>item.distanceM<=radiusM);
+
+  if(!nearby.length)return null;
+
+  const byParcel=new Map<string,{count:number;weighted:number;nearest:number;manual:number}>();
+  for(const item of nearby){
+    const row=byParcel.get(item.anchor.parcel_id)||{count:0,weighted:0,nearest:Number.POSITIVE_INFINITY,manual:0};
+    const weight=Math.max(0.1,1-item.distanceM/(radiusM+1))*(item.anchor.match_method==='manual'?1.35:1);
+    row.count+=1;
+    row.weighted+=weight;
+    row.nearest=Math.min(row.nearest,item.distanceM);
+    if(item.anchor.match_method==='manual')row.manual+=1;
+    byParcel.set(item.anchor.parcel_id,row);
+  }
+
+  const ranked=[...byParcel.entries()].sort((a,b)=>b[1].weighted-a[1].weighted||b[1].count-a[1].count);
+  const [top,second]=ranked;
+  if(!top)return null;
+  const [parcelId,stats]=top;
+  const strongManual=stats.manual>=1&&stats.nearest<=Math.min(18,radiusM);
+  const repeated=stats.count>=2;
+  const dominant=!second||stats.weighted>=second[1].weighted*1.7;
+  if(!(dominant&&(repeated||strongManual)))return null;
+
+  const parcel=parcels.find(item=>item.id===parcelId);
+  if(!parcel)return null;
+
+  const base=strongManual?0.82:0.76;
+  const support=Math.min(0.1,Math.max(0,stats.count-2)*0.025);
+  const confidence=confidenceFromAccuracy(fix.accuracyM,base+support);
+
+  return{
+    parcelId,
+    parcelName:parcel.name,
+    matchMethod:'spatial_memory' as const,
+    matchDistanceM:Math.round(stats.nearest),
+    matchConfidence:Math.min(0.92,confidence),
+  };
 }
 
 function confidenceFromAccuracy(accuracyM:number,base:number){
@@ -180,7 +254,15 @@ export async function requestFarmGeo(
     capturedAt:new Date(position.timestamp||Date.now()).toISOString(),
     source,
   };
-  const match=matchGeoToParcels(base,parcels);
+  let match=matchGeoToParcels(base,parcels);
+  if(match.matchMethod==='unmatched'||(match.matchMethod==='nearest'&&match.matchConfidence<0.7)){
+    try{
+      const memory=await matchGeoToSpatialMemory(base,parcels);
+      if(memory)match=memory;
+    }catch(error){
+      console.warn('[farmGeo] spatial-memory fallback failed',error);
+    }
+  }
   return{...base,...match};
 }
 
@@ -211,5 +293,6 @@ export function geoContextSummary(geo?:FarmGeoContext|null){
     :geo.ambiguousParcelIds?.length
       ?'Tvetydig parselltreff'
       :'Ingen sikker parsellmatch';
-  return match+' · GPS ±'+Math.round(geo.accuracyM)+' m';
+  const source=geo.matchMethod==='spatial_memory'?' · lært fra bekreftede GEO-punkter':'';
+  return match+' · GPS ±'+Math.round(geo.accuracyM)+' m'+source;
 }
