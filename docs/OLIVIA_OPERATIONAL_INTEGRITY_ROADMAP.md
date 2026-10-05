@@ -73,6 +73,10 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
 
 10. **Dokumentert øko/CAECV-status**
     - sertifisering og compliance skal komme fra dokumentert status, ikke UI-inferens
+    - parsellstatus er eksplisitt: ukjent, søknad pågår, overgang, sertifisert, suspendert eller avvik
+    - sertifikatnummer, gyldighet, inspeksjon og dokumentgrunnlag lagres separat fra selve parsellen
+    - aktiv CAECV-sak kan gi kontekst, men skal ikke tolkes som ferdig sertifisering
+    - status: implementert
 
 11. **Live Daily**
     - Daily skal refreshe etter sannhetsendringer, fokus/tilbakekomst og synkronisering
