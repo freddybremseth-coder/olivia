@@ -127,7 +127,7 @@ export async function insertFarmZoneGeoSample(
     ...sample,
     id:sample.id||((typeof crypto!=='undefined'&&'randomUUID' in crypto)?crypto.randomUUID():'zone-sample-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),
   };
-  const {data,error}=await supabase.from('farm_zone_geo_samples').insert(row).select('*').single();
+  const {data,error}=await supabase.from('farm_zone_geo_samples').upsert(row,{onConflict:'id'}).select('*').single();
   if(error)throwFarmIoTError('insertFarmZoneGeoSample',error);
   return data as FarmZoneGeoSample;
 }
