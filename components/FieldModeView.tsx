@@ -7,6 +7,7 @@ import type{Parcel}from'../types';
 import type{FarmGeoContext}from'../types/farmGeo';
 import type{FarmGeoLandmark,FarmGeoLandmarkType,FarmZone,FarmZoneGeoSample,TreeGroup}from'../types/farmIoT';
 import{assignGeoParcelManually,geoContextSummary,requestFarmGeo}from'../services/farmGeo';
+import{loadActiveFarmGeo,saveActiveFarmGeo}from'../services/farmGeoSession';
 import{
   fetchFarmMediaEvidence,
   geoContextToDb,
@@ -72,7 +73,7 @@ function sourceLabel(value:string){
 }
 
 const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
-  const[geo,setGeo]=useState<FarmGeoContext|null>(null);
+  const[geo,setGeo]=useState<FarmGeoContext|null>(()=>loadActiveFarmGeo()?.geo||null);
   const[locating,setLocating]=useState(false);
   const[error,setError]=useState('');
   const[message,setMessage]=useState('');
@@ -89,7 +90,7 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
   const[createKind,setCreateKind]=useState<CreateKind|null>(null);
   const[createName,setCreateName]=useState('');
   const[createDescription,setCreateDescription]=useState('');
-  const[createParcelId,setCreateParcelId]=useState('');
+  const[createParcelId,setCreateParcelId]=useState(()=>loadActiveFarmGeo()?.geo.parcelId||'');
   const[createZoneId,setCreateZoneId]=useState('');
   const[createVariety,setCreateVariety]=useState('');
   const[createTreeCount,setCreateTreeCount]=useState('');
@@ -133,7 +134,7 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
 
   useEffect(()=>{
     void loadMedia();
-    void loadStructure();
+    void loadStructure(geo?.parcelId||undefined);
     const refresh=()=>{void loadMedia();void loadStructure(geo?.parcelId||undefined);};
     window.addEventListener('olivia:farm-truth-updated',refresh as EventListener);
     return()=>window.removeEventListener('olivia:farm-truth-updated',refresh as EventListener);
@@ -144,6 +145,7 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
     try{
       const next=await requestFarmGeo(parcels,'device_at_upload');
       setGeo(next);
+      saveActiveFarmGeo(next);
       setCreateParcelId(next.parcelId||'');
       await loadStructure(next.parcelId||undefined);
     }catch(err:any){setError(err?.message||'Kunne ikke hente posisjon.');}
@@ -174,7 +176,11 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
     setCreateZoneId('');
     if(geo&&parcelId){
       const parcel=parcels.find(item=>item.id===parcelId);
-      if(parcel)setGeo(assignGeoParcelManually(geo,parcel)||geo);
+      if(parcel){
+        const corrected=assignGeoParcelManually(geo,parcel)||geo;
+        setGeo(corrected);
+        saveActiveFarmGeo(corrected);
+      }
     }
   };
 
