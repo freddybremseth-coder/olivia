@@ -59,6 +59,8 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
    - fersk felt-GEO kan følge mellom Feltmodus, Feltlogg, Feltkonsulent og Beskjæring i samme nettlesersesjon
    - aktiv felt-GEO utløper etter fem minutter og må da hentes på nytt; gammel sesjonsposisjon skal aldri late som live-posisjon
    - Feltmodus viser en enkel kartleggingsrunde per aktiv parsell slik at gårdskunnskapen fylles systematisk uten ny modul
+   - Daily viser kartleggingsdekning per parsell og én konkret neste kartleggingshandling, slik at GEO-grunnmuren faktisk blir fylt med ekte feltdata
+   - kartleggingsdekning er operativ modenhet, ikke juridisk eller agronomisk sertifisering
    - GPS-kvalitet styrer hva som kan læres inn: sonepunkt krever ca. ±35 m eller bedre, tregruppe ±25 m eller bedre, fast punkt ±20 m eller bedre
    - svakere GPS kan fortsatt lagres som observasjon/evidens, men får ikke lære operativ kartstruktur
    - faste GEO-punkter kan representere brønn, pumpe, dryppunkt, adkomst, referansetre, problemsted, lager eller bygg
