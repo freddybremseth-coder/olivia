@@ -5,7 +5,7 @@ import{
 }from'lucide-react';
 import type{Parcel}from'../types';
 import type{FarmGeoContext}from'../types/farmGeo';
-import type{FarmGeoLandmark,FarmGeoLandmarkType,FarmZone,TreeGroup}from'../types/farmIoT';
+import type{FarmGeoLandmark,FarmGeoLandmarkType,FarmZone,FarmZoneGeoSample,TreeGroup}from'../types/farmIoT';
 import{assignGeoParcelManually,geoContextSummary,requestFarmGeo}from'../services/farmGeo';
 import{
   fetchFarmMediaEvidence,
@@ -15,7 +15,9 @@ import{
 import{
   fetchFarmGeoLandmarks,
   fetchFarmZones,
+  fetchFarmZoneGeoSamples,
   fetchTreeGroups,
+  insertFarmZoneGeoSample,
   upsertFarmGeoLandmark,
   upsertFarmZone,
   upsertTreeGroup,
@@ -80,7 +82,9 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
   const[zones,setZones]=useState<FarmZone[]>([]);
   const[treeGroups,setTreeGroups]=useState<TreeGroup[]>([]);
   const[landmarks,setLandmarks]=useState<FarmGeoLandmark[]>([]);
+  const[zoneSamples,setZoneSamples]=useState<FarmZoneGeoSample[]>([]);
   const[loadingStructure,setLoadingStructure]=useState(false);
+  const[savingZoneSampleId,setSavingZoneSampleId]=useState<string|null>(null);
 
   const[createKind,setCreateKind]=useState<CreateKind|null>(null);
   const[createName,setCreateName]=useState('');
@@ -113,10 +117,14 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
         :await fetchTreeGroups(undefined);
       const byId=new Map<string,TreeGroup>();
       groupRows.forEach(group=>byId.set(group.id,group));
-      const landmarkRows=await fetchFarmGeoLandmarks(parcelId);
+      const [landmarkRows,sampleRows]=await Promise.all([
+        fetchFarmGeoLandmarks(parcelId),
+        fetchFarmZoneGeoSamples(undefined,parcelId),
+      ]);
       setZones(zoneRows);
       setTreeGroups([...byId.values()]);
       setLandmarks(landmarkRows);
+      setZoneSamples(sampleRows);
     }catch(err:any){
       console.warn('[FieldMode] structure',err);
       setError(err?.message||'Kunne ikke hente soner og tregrupper.');
@@ -188,7 +196,7 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
     try{
       const dbGeo=geoContextToDb(geo)||{};
       if(createKind==='zone'){
-        await upsertFarmZone({
+        const zone=await upsertFarmZone({
           id:crypto.randomUUID(),
           parcel_id:createParcelId,
           name:createName.trim(),
@@ -201,7 +209,18 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
           status:'watch',
           notes:'Opprettet i Feltmodus fra GEO-posisjon. Operativ sone, ikke juridisk grense.',
         });
-        setMessage('Sonen er opprettet på denne GEO-posisjonen.');
+        await insertFarmZoneGeoSample({
+          zone_id:zone.id,
+          parcel_id:createParcelId,
+          lat:geo.lat,
+          lon:geo.lon,
+          accuracy_m:geo.accuracyM,
+          altitude_m:geo.altitudeM,
+          captured_at:geo.capturedAt,
+          source:'zone_creation',
+          notes:'Første bekreftede punkt da sonen ble opprettet.',
+        });
+        setMessage('Sonen er opprettet, og første bekreftede GEO-punkt er lagret.');
       }
 
       if(createKind==='tree_group'){
@@ -247,6 +266,40 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
       setError(err?.message||'Kunne ikke lagre gårdsstrukturen.');
     }finally{setSavingStructure(false);}
   };
+
+  const confirmCurrentPointInZone=async(zone:FarmZone)=>{
+    if(!geo){
+      setError('Hent GPS-posisjon først.');
+      return;
+    }
+    if(geo.parcelId&&geo.parcelId!==zone.parcel_id){
+      setError('GPS er koblet til en annen parsell enn sonen. Kontroller parsell før du bekrefter punktet.');
+      return;
+    }
+    setSavingZoneSampleId(zone.id);setError('');setMessage('');
+    try{
+      await insertFarmZoneGeoSample({
+        zone_id:zone.id,
+        parcel_id:zone.parcel_id,
+        lat:geo.lat,
+        lon:geo.lon,
+        accuracy_m:geo.accuracyM,
+        altitude_m:geo.altitudeM,
+        captured_at:geo.capturedAt,
+        source:'manual_field_confirmation',
+        notes:'Bruker bekreftet i Feltmodus at denne posisjonen tilhører sonen.',
+      });
+      setMessage('Posisjonen er bekreftet som del av «'+zone.name+'».');
+      await loadStructure(zone.parcel_id);
+      window.dispatchEvent(new CustomEvent('olivia:farm-truth-updated'));
+    }catch(err:any){
+      setError(err?.message||'Kunne ikke lagre sonepunktet.');
+    }finally{
+      setSavingZoneSampleId(null);
+    }
+  };
+
+  const zoneSampleCount=(zoneId:string)=>zoneSamples.filter(sample=>sample.zone_id===zoneId).length;
 
   return <div className="mx-auto max-w-5xl space-y-5 pb-28">
     {createKind&&<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
@@ -356,7 +409,14 @@ const FieldModeView:React.FC<Props>=({parcels,onNavigate})=>{
       {!geo&&<p className="mt-3 text-[10px] text-amber-200">Hent GPS først. Olivia skal ikke opprette et GEO-område uten faktisk posisjon.</p>}
 
       {(zones.length||treeGroups.length||landmarks.length)?<div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-3">
-        <div className="rounded-xl border border-white/10 bg-black/15 p-3"><p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Soner</p>{zones.slice(0,4).map(zone=><p key={zone.id} className="mt-1 truncate text-xs text-slate-300">{zone.name}</p>)}{!zones.length&&<p className="mt-1 text-xs text-slate-600">Ingen</p>}</div>
+        <div className="rounded-xl border border-white/10 bg-black/15 p-3">
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Soner</p>
+          {zones.slice(0,4).map(zone=><div key={zone.id} className="mt-2 rounded-lg border border-white/5 bg-white/[0.02] p-2">
+            <div className="flex items-center justify-between gap-2"><p className="truncate text-xs font-bold text-slate-300">{zone.name}</p><span className="text-[9px] text-slate-600">{zoneSampleCount(zone.id)} punkt</span></div>
+            <button onClick={()=>confirmCurrentPointInZone(zone)} disabled={!geo||savingZoneSampleId===zone.id} className="mt-2 w-full rounded-lg border border-green-500/15 bg-green-500/[0.05] px-2 py-1.5 text-[9px] font-black text-green-300 disabled:opacity-35">{savingZoneSampleId===zone.id?'Lagrer…':'Jeg står fortsatt i denne sonen'}</button>
+          </div>)}
+          {!zones.length&&<p className="mt-1 text-xs text-slate-600">Ingen</p>}
+        </div>
         <div className="rounded-xl border border-white/10 bg-black/15 p-3"><p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Tregrupper</p>{treeGroups.slice(0,4).map(group=><p key={group.id} className="mt-1 truncate text-xs text-slate-300">{group.name}{group.variety?' · '+group.variety:''}</p>)}{!treeGroups.length&&<p className="mt-1 text-xs text-slate-600">Ingen</p>}</div>
         <div className="rounded-xl border border-white/10 bg-black/15 p-3"><p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Faste punkt</p>{landmarks.slice(0,4).map(point=><p key={point.id} className="mt-1 truncate text-xs text-slate-300">{LANDMARK_LABELS[point.landmark_type]} · {point.name}</p>)}{!landmarks.length&&<p className="mt-1 text-xs text-slate-600">Ingen</p>}</div>
       </div>:null}

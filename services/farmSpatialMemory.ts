@@ -121,43 +121,68 @@ export async function fetchNearbySpatialStructure(input:{
   const radiusM=Math.max(10,Math.min(500,input.radiusM??160));
   const limit=Math.max(1,Math.min(30,input.limit??12));
 
-  const zoneQuery=supabase.from('farm_zones')
+  let zoneQuery=supabase.from('farm_zones')
     .select('id,parcel_id,name,description,anchor_lat,anchor_lon')
-    .not('anchor_lat','is',null)
-    .not('anchor_lon','is',null)
     .limit(250);
-  const groupQuery=supabase.from('tree_groups')
+  let groupQuery=supabase.from('tree_groups')
     .select('id,parcel_id,zone_id,name,variety,tree_count,anchor_lat,anchor_lon')
     .not('anchor_lat','is',null)
     .not('anchor_lon','is',null)
     .limit(250);
-  const landmarkQuery=supabase.from('farm_geo_landmarks')
+  let landmarkQuery=supabase.from('farm_geo_landmarks')
     .select('id,parcel_id,zone_id,landmark_type,name,description,lat,lon')
     .eq('status','active')
     .limit(250);
+  let sampleQuery=supabase.from('farm_zone_geo_samples')
+    .select('zone_id,parcel_id,lat,lon,captured_at')
+    .order('captured_at',{ascending:false})
+    .limit(800);
 
   if(input.parcelId){
-    zoneQuery.eq('parcel_id',input.parcelId);
-    groupQuery.eq('parcel_id',input.parcelId);
-    landmarkQuery.eq('parcel_id',input.parcelId);
+    zoneQuery=zoneQuery.eq('parcel_id',input.parcelId);
+    groupQuery=groupQuery.eq('parcel_id',input.parcelId);
+    landmarkQuery=landmarkQuery.eq('parcel_id',input.parcelId);
+    sampleQuery=sampleQuery.eq('parcel_id',input.parcelId);
   }
 
-  const [zoneRes,groupRes,landmarkRes]=await Promise.all([zoneQuery,groupQuery,landmarkQuery]);
-  const error=zoneRes.error||groupRes.error||landmarkRes.error;
+  const [zoneRes,groupRes,landmarkRes,sampleRes]=await Promise.all([zoneQuery,groupQuery,landmarkQuery,sampleQuery]);
+  const error=zoneRes.error||groupRes.error||landmarkRes.error||sampleRes.error;
   if(error)throw new Error(error.message);
 
   const anchors:SpatialStructureAnchor[]=[];
+  const samplesByZone=new Map<string,Array<{lat:number;lon:number}>>();
+  for(const row of sampleRes.data||[]){
+    const lat=finite((row as any).lat),lon=finite((row as any).lon);
+    if(lat==null||lon==null)continue;
+    const zoneId=String((row as any).zone_id||'');
+    if(!zoneId)continue;
+    const rows=samplesByZone.get(zoneId)||[];
+    rows.push({lat,lon});
+    samplesByZone.set(zoneId,rows);
+  }
 
   for(const row of zoneRes.data||[]){
-    const lat=finite((row as any).anchor_lat),lon=finite((row as any).anchor_lon);
-    if(lat==null||lon==null)continue;
-    const distanceM=Math.round(haversineMeters(input.geo,{lat,lon}));
-    if(distanceM>radiusM)continue;
+    const zoneId=String((row as any).id);
+    const candidates:Array<{lat:number;lon:number}>=[...(samplesByZone.get(zoneId)||[])];
+    const anchorLat=finite((row as any).anchor_lat),anchorLon=finite((row as any).anchor_lon);
+    if(anchorLat!=null&&anchorLon!=null)candidates.push({lat:anchorLat,lon:anchorLon});
+    if(!candidates.length)continue;
+
+    const nearest=candidates.map(point=>({
+      ...point,
+      distanceM:Math.round(haversineMeters(input.geo,point)),
+    })).sort((a,b)=>a.distanceM-b.distanceM)[0];
+    if(!nearest||nearest.distanceM>radiusM)continue;
+    const sampleCount=samplesByZone.get(zoneId)?.length||0;
+    const detail=[
+      (row as any).description?String((row as any).description).slice(0,180):'',
+      sampleCount?(sampleCount+' bekreftede feltpunkt'):'',
+    ].filter(Boolean).join(' · ');
     anchors.push({
-      kind:'zone',id:String((row as any).id),parcelId:(row as any).parcel_id||undefined,
+      kind:'zone',id:zoneId,parcelId:(row as any).parcel_id||undefined,
       name:String((row as any).name||'Sone'),
-      detail:(row as any).description?String((row as any).description).slice(0,220):undefined,
-      lat,lon,distanceM,
+      detail:detail||undefined,
+      lat:nearest.lat,lon:nearest.lon,distanceM:nearest.distanceM,
     });
   }
 

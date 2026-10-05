@@ -49,6 +49,9 @@ Ingen forslag, planer, kjøp eller AI-vurderinger skal bli behandlet som utført
    - romlig hukommelse får aldri endre juridiske/Catastro-grenser automatisk
    - operativ struktur bygges som parsell → sone → tregruppe → fast GEO-punkt
    - sone- og tregruppeankre opprettes fra faktisk feltposisjon og kan forbedres når flere ekte data finnes
+   - brukeren kan bekrefte flere feltpunkter i samme sone; punktene er menneskelig bekreftet operativ geografi
+   - tre eller flere sonepunkter kan vises som et stiplet operativt fotavtrykk, aldri som juridisk/Catastro-grense
+   - AI bruker nærmeste bekreftede sonepunkt i stedet for bare første soneanker når slik historikk finnes
    - faste GEO-punkter kan representere brønn, pumpe, dryppunkt, adkomst, referansetre, problemsted, lager eller bygg
    - Feltkonsulent og Beskjæringsekspert får nærliggende operativ gårdsstruktur som kontekst, separat fra historiske observasjoner
    - status: implementert

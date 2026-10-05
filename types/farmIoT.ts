@@ -54,6 +54,20 @@ export interface TreeGroup {
 
 export type FarmGeoLandmarkType='well'|'pump'|'irrigation'|'access'|'tree_reference'|'problem_point'|'storage'|'building'|'other';
 
+export interface FarmZoneGeoSample {
+  id:string;
+  zone_id:string;
+  parcel_id:string;
+  lat:number;
+  lon:number;
+  accuracy_m?:number;
+  altitude_m?:number;
+  captured_at:string;
+  source:'manual_field_confirmation'|'zone_creation'|'imported';
+  notes?:string;
+  created_at?:string;
+}
+
 export interface FarmGeoLandmark {
   id:string;
   parcel_id?:string;

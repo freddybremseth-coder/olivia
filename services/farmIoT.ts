@@ -4,6 +4,7 @@ import type { SensorType } from '../types';
 import type {
   FarmGeoLandmark,
   FarmObservation,
+  FarmZoneGeoSample,
   FarmZone,
   IrrigationEvent,
   SensorAlert,
@@ -106,6 +107,29 @@ export async function upsertFarmGeoLandmark(
   const {data,error}=await supabase.from('farm_geo_landmarks').upsert(row).select('*').single();
   if(error)throwFarmIoTError('upsertFarmGeoLandmark',error);
   return data as FarmGeoLandmark;
+}
+
+export async function fetchFarmZoneGeoSamples(zoneId?:string,parcelId?:string):Promise<FarmZoneGeoSample[]>{
+  if(warnIfSupabaseMissing('fetchFarmZoneGeoSamples'))return[];
+  let query=supabase.from('farm_zone_geo_samples').select('*').order('captured_at',{ascending:false});
+  if(zoneId)query=query.eq('zone_id',zoneId);
+  if(parcelId)query=query.eq('parcel_id',parcelId);
+  const {data,error}=await query;
+  if(error)throwFarmIoTError('fetchFarmZoneGeoSamples',error);
+  return(data??[]) as FarmZoneGeoSample[];
+}
+
+export async function insertFarmZoneGeoSample(
+  sample:Omit<FarmZoneGeoSample,'id'|'created_at'> & {id?:string}
+):Promise<FarmZoneGeoSample>{
+  if(warnIfSupabaseMissing('insertFarmZoneGeoSample'))throw new Error('Supabase er ikke konfigurert.');
+  const row={
+    ...sample,
+    id:sample.id||((typeof crypto!=='undefined'&&'randomUUID' in crypto)?crypto.randomUUID():'zone-sample-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),
+  };
+  const {data,error}=await supabase.from('farm_zone_geo_samples').insert(row).select('*').single();
+  if(error)throwFarmIoTError('insertFarmZoneGeoSample',error);
+  return data as FarmZoneGeoSample;
 }
 
 export async function fetchSensorDevices(): Promise<SensorDevice[]> {
