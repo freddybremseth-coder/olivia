@@ -82,6 +82,9 @@ export interface FarmGeoLandmark {
   altitude_m?:number;
   geo_context?:Record<string,unknown>;
   status:'active'|'inactive'|'removed';
+  review_interval_days?:number;
+  last_review_at?:string;
+  next_review_at?:string;
   created_at?:string;
   updated_at?:string;
 }
