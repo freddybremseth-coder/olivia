@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import {
   DONA_ANNA_BIAR_SEASON_SETTINGS,
+  type FarmGeoLandmark,
   type FarmObservation,
   type IrrigationEvent,
   type SensorAlert,
@@ -34,6 +35,7 @@ import {
   isSensorReadingQualityAcceptable,
   SENSOR_ACTION_MAX_AGE_HOURS,
   SENSOR_MIN_QUALITY_SCORE,
+  fetchDueFarmGeoLandmarks,
   fetchLatestSensorReadings,
   fetchOpenSensorAlerts,
   fetchRecentFarmObservations,
@@ -74,7 +76,7 @@ type DailyPriorityItem = {
   id:string;
   title:string;
   description:string;
-  source:'Årshjul'|'Olivia'|'Sesong'|'Felt'|'Sak';
+  source:'Årshjul'|'Olivia'|'Sesong'|'Felt'|'Sak'|'Kontrollpunkt';
   priority:ActionCard['priority'];
   score:number;
   targetTab?:string;
@@ -589,6 +591,7 @@ function buildDailyTopFive(params:{
   seasonExecution:SeasonExecution|null;
   actions:ActionCard[];
   activeIssues:FarmIssue[];
+  fixedPointReviews:FarmGeoLandmark[];
 }):DailyPriorityItem[]{
   const items:DailyPriorityItem[]=[];
   const today=new Date();
@@ -682,6 +685,28 @@ function buildDailyTopFive(params:{
     });
   }
 
+  for(const point of params.fixedPointReviews||[]){
+    if(!point.next_review_at)continue;
+    const due=new Date(point.next_review_at+'T12:00:00');
+    if(Number.isNaN(due.getTime()))continue;
+    const days=Math.round((due.getTime()-today.getTime())/86400000);
+    const overdue=days<0?Math.abs(days):0;
+    items.push({
+      id:'landmark-review-'+point.id,
+      title:'Kontrollpunkt · '+point.name,
+      description:overdue
+        ?'Selvvalgt kontrollfrekvens er '+overdue+' dag'+(overdue===1?'':'er')+' forsinket. Ta et nytt kontrollbilde når du faktisk står ved punktet.'
+        :days===0
+          ?'Selvvalgt kontroll er planlagt i dag. Ta nytt kontrollbilde i Feltmodus.'
+          :'Neste selvvalgte kontroll er '+point.next_review_at+'.',
+      source:'Kontrollpunkt',
+      priority:overdue>=7?'Høy':'Middels',
+      score:overdue>=7?82:overdue?72:days===0?68:50,
+      targetTab:'field_mode',
+      actionLabel:'Ta kontrollbilde',
+    });
+  }
+
   const qScore:Record<string,number>={critical:98,high:86,medium:62,low:42};
   const qPriority:Record<string,ActionCard['priority']>={critical:'Kritisk',high:'Høy',medium:'Middels',low:'Lav'};
   for(const q of params.farmQuestions||[]){
@@ -761,6 +786,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   const [activeIssues, setActiveIssues] = useState<FarmIssue[]>([]);
   const [workForecast, setWorkForecast] = useState<WorkWindowForecast | null>(null);
   const [spatialCoverage,setSpatialCoverage]=useState<FarmSpatialCoverage|null>(null);
+  const [fixedPointReviews,setFixedPointReviews]=useState<FarmGeoLandmark[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -774,7 +800,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
     setErrorMessage(null);
     try {
       const failures:string[]=[];
-      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness, seasonStatus, executionStatus, truthStatus, intelligenceStatus, questionRows, issueRows, forecast, mappingCoverage] = await Promise.all([
+      const [latestReadings, openAlerts, recentIrrigation, recentObservations, commerceRows, readiness, seasonStatus, executionStatus, truthStatus, intelligenceStatus, questionRows, issueRows, forecast, mappingCoverage, dueFixedPoints] = await Promise.all([
         safeLoad(fetchLatestSensorReadings(300),'Sensorer',[],failures),
         safeLoad(fetchOpenSensorAlerts(),'Sensorvarsler',[],failures),
         safeLoad(fetchRecentIrrigationEvents(10),'Vanningslogg',[],failures),
@@ -789,6 +815,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
         safeLoad(fetchFarmIssues({status:'active',limit:50}),'Oppfølgingssaker',[],failures),
         safeLoad(fetchWorkWindowForecast({days:5}),'Arbeidsvindu',null,failures),
         safeLoad(fetchFarmSpatialCoverage(),'Kartleggingsdekning',null,failures),
+        safeLoad(fetchDueFarmGeoLandmarks(7),'Kontrollpunkter',[],failures),
       ]);
       setSourceFailures(failures);
 
@@ -806,6 +833,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       setActiveIssues(issueRows);
       setWorkForecast(forecast);
       setSpatialCoverage(mappingCoverage);
+      setFixedPointReviews(dueFixedPoints);
       setLoadState(latestReadings.length || openAlerts.length || recentIrrigation.length || recentObservations.length || commerceRows.length || (readiness && readiness.issues ? readiness.issues.length : 0) || (seasonStatus && seasonStatus.steps ? seasonStatus.steps.length : 0) || (executionStatus && executionStatus.parcels ? executionStatus.parcels.length : 0) || truthStatus || (intelligenceStatus && intelligenceStatus.openQuestionCount ? intelligenceStatus.openQuestionCount : 0) || issueRows.length ? 'supabase' : 'empty');
       setLastRefresh(new Date());
     } catch (error) {
@@ -823,6 +851,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
       setActiveIssues([]);
       setWorkForecast(null);
       setSpatialCoverage(null);
+      setFixedPointReviews([]);
       setSourceFailures(['Daily']);
       setLoadState('error');
       setErrorMessage(error instanceof Error ? error.message : 'Kunne ikke hente Daily Dashboard-data fra Supabase.');
@@ -845,7 +874,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   }, [loadDashboard]);
 
   const actions = buildActionCards(advice, readings, alerts, irrigationEvents, observations);
-  const topFive = buildDailyTopFive({farmTruth,farmQuestions,seasonExecution,actions,activeIssues});
+  const topFive = buildDailyTopFive({farmTruth,farmQuestions,seasonExecution,actions,activeIssues,fixedPointReviews});
   const delaySummary = buildDelaySummary(farmTruth);
   const parcelAttention = buildParcelAttention(farmTruth);
   const weekBrief = buildWeekBrief(farmTruth);
@@ -853,7 +882,7 @@ const DonaAnnaDailyDashboard: React.FC<{ onNavigate?: (tab: string) => void; onS
   const currentMonth = new Date().getMonth() + 1;
   const oilWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_oil;
   const tableWindow = DONA_ANNA_BIAR_SEASON_SETTINGS.harvest_window_table_olives;
-  const sourceLabel = loadState === 'supabase' ? (sourceFailures.length ? `Daily · ${14-sourceFailures.length}/14 kilder` : 'Daily · 14/14 kilder') : loadState === 'empty' ? 'Ingen driftsdata ennå' : loadState === 'error' ? 'Daily-datafeil' : 'Laster Daily-kilder';
+  const sourceLabel = loadState === 'supabase' ? (sourceFailures.length ? `Daily · ${15-sourceFailures.length}/15 kilder` : 'Daily · 15/15 kilder') : loadState === 'empty' ? 'Ingen driftsdata ennå' : loadState === 'error' ? 'Daily-datafeil' : 'Laster Daily-kilder';
   const orderAttention = commerceAttention.filter(item => item.event_type === 'order_process');
   const readyToShip = commerceAttention.filter(item => item.event_type === 'order_ready_to_ship');
   const overdueInvoices = commerceAttention.filter(item => item.event_type === 'invoice_overdue');
