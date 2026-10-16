@@ -23,12 +23,9 @@ type MenuGroup = { id: string; label: string; icon: React.ElementType; items: Me
 
 const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange, onLogout, language, portalMode = 'olivia' }) => {
   const internalUser = user.role === 'farmer' || user.role === 'super_admin';
-  const routePath = typeof window === 'undefined' ? '' : window.location.pathname.replace(/\/+$/, '') || '/';
-  const routeWantsB2B = routePath === '/b2b' ? true : routePath === '/olivia' || routePath === '/app' ? false : portalMode === 'b2b';
-  // Use the actual route and active screen to keep farm and B2B menus distinct.
-  // Authorized farm users can switch back to Olivia from the B2B menu.
-  const isFarmScreen = activeTab !== 'b2b_portal' && activeTab !== 'settings' && activeTab !== 'commerce';
-  const isB2B = !isFarmScreen && routeWantsB2B;
+  // App.tsx resolves routing and permissions. The navigation shell must use that
+  // same effective portal rather than independently interpreting URL/tab state.
+  const isB2B = portalMode === 'b2b';
   const portalName = isB2B ? 'Doña Anna B2B' : 'Olivia OS';
   const { t } = useTranslation(language);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
