@@ -183,7 +183,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
 
   const menuContent = (isMobile: boolean) => (
     <div className="space-y-3">
-      {menuGroups.map(group => renderGroup(group, isMobile))}
+      {(isMobile && !isB2B ? menuGroups.filter(group => group.id !== 'commerce') : menuGroups).map(group => renderGroup(group, isMobile))}
       {adminItems.length > 0 && <div className="pt-3 border-t border-white/10 space-y-1">{adminItems.map(item => renderMenuItem(item, isMobile))}</div>}
     </div>
   );
@@ -202,7 +202,19 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
 
       {isMobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-40 bg-black/95 pt-20 px-6 overflow-y-auto">
+          <div className="mb-5 border-b border-white/10 pb-4">
+            <p className="text-sm font-bold text-white">{isB2B ? 'Doña Anna B2B – Salg og kunder' : 'Olivia OS – Gårdsdrift'}</p>
+            <p className="mt-1 text-xs text-slate-400">{isB2B ? 'Kundeportal og salgsarbeid' : 'Felt, drift, vann, produksjon og oppgaver'}</p>
+          </div>
           {menuContent(true)}
+          {!isB2B && internalUser && (
+            <div className="mt-6 border-t border-white/10 pt-4">
+              <button onClick={() => { onTabChange('b2b_portal'); setIsMobileMenuOpen(false); }}
+                className="w-full flex items-center gap-3 rounded-xl border border-white/10 p-4 text-left text-sm text-slate-300 hover:bg-white/5">
+                <Store size={18} /> Åpne Doña Anna B2B – Salg og kunder
+              </button>
+            </div>
+          )}
           <div className="pt-8 border-t border-white/10 mt-8 space-y-2">
             <button onClick={() => { onTabChange('settings'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-4 p-4 rounded-2xl font-medium ${activeTab === 'settings' ? 'text-green-400' : 'text-slate-500'}`}>
               <Settings size={20} /> <span>{t('settings')}</span>
