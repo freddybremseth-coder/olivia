@@ -25,12 +25,10 @@ const Layout: React.FC<LayoutProps> = ({ children, user, activeTab, onTabChange,
   const internalUser = user.role === 'farmer' || user.role === 'super_admin';
   const routePath = typeof window === 'undefined' ? '' : window.location.pathname.replace(/\/+$/, '') || '/';
   const routeWantsB2B = routePath === '/b2b' ? true : routePath === '/olivia' || routePath === '/app' ? false : portalMode === 'b2b';
-  // Internal farm users always keep the Olivia navigation shell.
-  // B2B is a module inside Olivia for them; only customer accounts get the B2B shell.
-  // Farm content takes precedence over a stale B2B route during mobile navigation
-  // and session restoration. B2B customer pages retain their own sales menu.
+  // Use the actual route and active screen to keep farm and B2B menus distinct.
+  // Authorized farm users can switch back to Olivia from the B2B menu.
   const isFarmScreen = activeTab !== 'b2b_portal' && activeTab !== 'settings' && activeTab !== 'commerce';
-  const isB2B = !isFarmScreen && !internalUser && routeWantsB2B;
+  const isB2B = !isFarmScreen && routeWantsB2B;
   const portalName = isB2B ? 'Doña Anna B2B' : 'Olivia OS';
   const { t } = useTranslation(language);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
