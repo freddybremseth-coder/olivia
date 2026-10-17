@@ -1,4 +1,4 @@
-const CACHE='olivia-field-shell-v1';
+const CACHE='olivia-field-shell-v2';
 const APP_SHELL=['/olivia','/site.webmanifest'];
 
 self.addEventListener('install',event=>{
@@ -55,7 +55,8 @@ self.addEventListener('fetch',event=>{
         }
         return response;
       }).catch(()=>cached||Response.error());
-      return cached||network;
+      // Deploys must win over stale cached app navigation/scripts.
+      return request.destination==='script'||request.destination==='style' ? network : cached||network;
     })
   );
 });
