@@ -6,6 +6,8 @@ import './tailwind.css';
 
 const loadProfessionalLinks = () => {
   if (typeof document === 'undefined') return;
+  // The legacy public product menu must never be injected into either private portal.
+  if (/^\/(olivia|app|b2b)(\/|$)/.test(window.location.pathname)) return;
   if (document.querySelector('script[data-donaanna-links="true"]')) return;
 
   const script = document.createElement('script');
