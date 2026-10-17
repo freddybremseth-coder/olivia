@@ -1,5 +1,42 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { rejectCrossOrigin, sameOriginCorsHeaders } from '../_lib/cors';
+
+// Keep the serverless entry point self-contained: Vercel Node ESM runtime
+// cannot resolve the extensionless cross-function imports used previously.
+function sameOriginCorsHeaders(
+  req: IncomingMessage,
+  methods = 'POST,OPTIONS',
+  allowHeaders = 'Content-Type, Authorization',
+): Record<string,string> {
+  const source = req.headers.origin;
+  const origin = (Array.isArray(source) ? source[0] : source || '').trim();
+  const hostSource = req.headers.host;
+  const host = (Array.isArray(hostSource) ? hostSource[0] : hostSource || '').toLowerCase();
+  const headers: Record<string,string> = {
+    'Access-Control-Allow-Methods': methods,
+    'Access-Control-Allow-Headers': allowHeaders,
+    Vary: 'Origin',
+  };
+  if (origin && host) {
+    try {
+      if (new URL(origin).host.toLowerCase() === host) headers['Access-Control-Allow-Origin'] = origin;
+    } catch {}
+  }
+  return headers;
+}
+function rejectCrossOrigin(req: IncomingMessage, res: ServerResponse): boolean {
+  const source = req.headers.origin;
+  const origin = (Array.isArray(source) ? source[0] : source || '').trim();
+  if (!origin) return false;
+  const hostSource = req.headers.host;
+  const host = (Array.isArray(hostSource) ? hostSource[0] : hostSource || '').toLowerCase();
+  let valid = false;
+  try { valid = Boolean(host && new URL(origin).host.toLowerCase() === host); } catch {}
+  if (valid) return false;
+  res.writeHead(403, { ...sameOriginCorsHeaders(req), 'Cache-Control': 'no-store', 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: { message: 'Cross-origin AI requests are not allowed.' } }));
+  return true;
+}
+
 
 async function readJsonBody(req: IncomingMessage & { body?: unknown }): Promise<string> {
   if (req.body !== undefined && req.body !== null) {

@@ -23,6 +23,17 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+      - name: Verify AI serverless function entrypoints
+        run: |
+          node --test tests/aiFunctionEntrypoints.test.mjs
+          npx esbuild \
+            api/ai/gemini-vision.ts \
+            api/ai/anthropic-messages.ts \
+            api/ai/openai-chat.ts \
+            'api/ai/gemini/v1beta/models/gemini-2.5-flash:generateContent.ts' \
+            api/ai/anthropic/v1/messages.ts \
+            api/ai/openai/v1/chat/completions.ts \
+            --outdir=/tmp/olivia-ai-functions-check --bundle --platform=node --format=esm
       - name: Validate public measurement script
         run: node --check public/donaanna-analytics.js
       - name: Test public/app menu isolation
