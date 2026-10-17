@@ -1,4 +1,6 @@
 (() => {
+  // This script is only for the public Doña Anna marketing pages.
+  const isPrivatePortal = () => /^\/(olivia|app|b2b)(\/|$)/.test(window.location.pathname);
   const mainLinks = [
     ['Oljen', '/organic-extra-virgin-olive-oil.html'],
     ['For hjemmet', '/organic-extra-virgin-olive-oil.html'],
@@ -63,6 +65,8 @@
   };
 
   const createMenu = () => {
+    // Timers can fire after React switches from the public site to an app route.
+    if (isPrivatePortal()) return;
     if (document.getElementById('donaanna-safe-mobile-menu')) return;
 
     const allLinks = [...mainLinks, ...productLinks];
@@ -95,6 +99,7 @@
   };
 
   const patchLabelSectionOnce = () => {
+    if (isPrivatePortal()) return;
     const section = document.getElementById('label');
     if (!section || section.dataset.donaannaPatched === 'true') return;
 
@@ -141,6 +146,7 @@
   };
 
   const init = () => {
+    if (isPrivatePortal()) return;
     setFavicon();
     addStyle();
     setTimeout(createMenu, 300);
