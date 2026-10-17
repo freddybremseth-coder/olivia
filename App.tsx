@@ -149,6 +149,14 @@ const App: React.FC = () => {
   const [pendingFarmJournalTab,setPendingFarmJournalTab]=useState<FarmJournalTab|undefined>(undefined);
   const [pendingFarmJournalParcelId,setPendingFarmJournalParcelId]=useState<string|undefined>(undefined);
 
+  // Public-site links are appended outside React. Remove any previously injected
+  // marketing navigation when changing to Olivia or B2B without a page reload.
+  useEffect(() => {
+    if (showPublicSite) return;
+    document.getElementById('donaanna-safe-mobile-menu')?.remove();
+    document.getElementById('donaanna-safe-desktop-links')?.remove();
+  }, [showPublicSite, effectivePortalMode, isLoggedIn]);
+
   useEffect(()=>{
     if(!isStandaloneOliviaRootLaunch())return;
     window.history.replaceState({},'',OLIVIA_OS_PATH);
