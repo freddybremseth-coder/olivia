@@ -168,6 +168,22 @@ export default async function handler(req: IncomingMessage & { method?: string }
     const brandId = cleanString(payload.brand?.id) || 'donaanna';
     const slug = slugify(cleanString(payload.content?.slug) || cleanString(payload.content?.title));
 
+    // Editorially approved content must not be removed by an older upstream source.
+    if (sourceId) {
+      const protectedMatch = await supabase.from('website_posts')
+        .select('id,raw_payload')
+        .eq('brand_id', 'donaanna')
+        .eq('source_system', sourceSystem)
+        .eq('source_type', sourceType)
+        .eq('source_id', sourceId)
+        .maybeSingle();
+      if (protectedMatch.error) { json(res, 500, { error: 'Could not check editorial protection' }); return; }
+      if (protectedMatch.data?.raw_payload?.editorial_backup_2026_11_09) {
+        json(res, 409, { error: 'Redaksjonelt godkjent artikkel er beskyttet mot sletting fra publiseringskilden.' });
+        return;
+      }
+    }
+
     let query = supabase.from('website_posts').delete().select('slug,destination_path');
     if (sourceId) {
       query = query
@@ -223,6 +239,35 @@ export default async function handler(req: IncomingMessage & { method?: string }
   const publishedAt = status === 'published'
     ? cleanString(payload.publishedAt) || new Date().toISOString()
     : null;
+
+  // Existing curated Doña Anna articles are deliberately source-locked. A new
+  // RealtyFlow export must never revert their reviewed copy, image or SEO slug.
+  if (sourceId) {
+    const protectedMatch = await supabase.from('website_posts')
+      .select('id,raw_payload')
+      .eq('brand_id', 'donaanna')
+      .eq('source_system', sourceSystem)
+      .eq('source_type', sourceType)
+      .eq('source_id', sourceId)
+      .maybeSingle();
+    if (protectedMatch.error) { json(res, 500, { error: 'Could not check editorial protection' }); return; }
+    if (protectedMatch.data?.raw_payload?.editorial_backup_2026_11_09) {
+      json(res, 409, { error: 'Redaksjonelt godkjent artikkel er beskyttet. Rediger den godkjente versjonen i CMS før ny publisering.' });
+      return;
+    }
+  }
+
+  if (status === 'published') {
+    const generic = /^(?:dona-anna-article|article(?:-|\\d)|untitled|test(?:-|$))/i;
+    if (generic.test(slug) || generic.test(title) || title.length < 18) {
+      json(res, 422, { error: 'Publisering krever en konkret, beskrivende tittel og URL.' });
+      return;
+    }
+    if (cleanString(payload.content?.summary).length < 45) {
+      json(res, 422, { error: 'Publisering krever en redaksjonell metabeskrivelse på minst 45 tegn.' });
+      return;
+    }
+  }
 
   const row = {
     source_system: sourceSystem,
