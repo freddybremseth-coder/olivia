@@ -681,15 +681,6 @@ function pageHtml(page: EvergreenPage) {
   };
 
   const productDefinition = DONA_ANNA_PRODUCTS_BY_SLUG[page.slug];
-  const product = productDefinition
-    ? {
-        name: 'Doña Anna ' + productDefinition.name,
-        category: productDefinition.category,
-        size: productDefinition.size,
-        role: productDefinition.role,
-        status: productDefinition.status,
-      }
-    : undefined;
   const visual = productDefinition
     ? {
         displayName: productDefinition.name,
@@ -715,22 +706,7 @@ function pageHtml(page: EvergreenPage) {
     });
   }
 
-  if (product) {
-    schema['@graph'].push({
-      '@type': 'Product',
-      '@id': canonical + '#product',
-      name: product.name,
-      description: page.description,
-      url: canonical,
-      brand: { '@id': ORG },
-      category: product.category,
-      ...(product.size ? { size: product.size } : {}),
-      additionalProperty: [
-        { '@type': 'PropertyValue', name: 'Produktrolle', value: product.role },
-        { '@type': 'PropertyValue', name: 'Status', value: product.status },
-      ],
-    });
-  }
+  // Product rich-result markup is added only when verifiable offer or review data exists.
 
   const sections = page.sections.map(section =>
     '<section class="article-section"><h2>' + escapeHtml(section.heading) + '</h2>' +
