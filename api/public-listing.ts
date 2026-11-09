@@ -163,6 +163,7 @@ export default async function handler(
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
     '<title>' + escapeHtml(config.seoTitle) + '</title>' +
     '<meta name="description" content="' + escapeHtml(config.description) + '">' +
+    (articles.length ? '' : '<meta name="robots" content="noindex,follow">') +
     '<link rel="canonical" href="' + canonical + '">' +
     '<meta property="og:type" content="website"><meta property="og:site_name" content="Doña Anna">' +
     '<meta property="og:url" content="' + canonical + '">' +

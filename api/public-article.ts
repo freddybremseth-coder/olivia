@@ -124,6 +124,7 @@ export default async function handler(
   const title = String(data.title || '');
   const summary = String(data.summary || 'Les om oliven, olivenolje og livet på Doña Anna i Biar, Alicante.').slice(0, 250);
   const canonical = SITE + '/' + destination + '/' + encodeURIComponent(slug);
+  const metaDescription = summary.slice(0, 160);
   let image = '';
   try {
     const source = String(data.image_url || '').trim();
@@ -143,6 +144,7 @@ export default async function handler(
         description: summary,
         url: canonical,
         mainEntityOfPage: canonical,
+        about: [{ '@type': 'Place', name: 'Biar, Alicante, Spania' }, { '@type': 'Thing', name: 'Olivenolje' }],
         image: image || undefined,
         datePublished: data.published_at || undefined,
         dateModified: data.updated_at || data.published_at || undefined,
@@ -197,13 +199,17 @@ export default async function handler(
   const html = '<!doctype html><html lang="no"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
     '<title>' + escapeHtml(title) + ' | Doña Anna</title>' +
-    '<meta name="description" content="' + escapeHtml(summary) + '">' +
+    '<meta name="description" content="' + escapeHtml(metaDescription) + '">' +
     '<link rel="canonical" href="' + escapeHtml(canonical) + '">' +
     '<meta property="og:type" content="article"><meta property="og:site_name" content="Doña Anna">' +
     '<meta property="og:url" content="' + escapeHtml(canonical) + '">' +
     '<meta property="og:title" content="' + escapeHtml(title) + '">' +
     '<meta property="og:description" content="' + escapeHtml(summary) + '"><meta name="author" content="Doña Anna">' +
-    (image ? '<meta property="og:image" content="' + escapeHtml(image) + '">' : '') +
+    (image ? '<meta property="og:image" content="' + escapeHtml(image) + '"><meta property="og:image:alt" content="' + escapeHtml(title) + '">' : '') +
+    '<meta name="twitter:card" content="' + (image ? 'summary_large_image' : 'summary') + '">' +
+    '<meta name="twitter:title" content="' + escapeHtml(title) + '">' +
+    '<meta name="twitter:description" content="' + escapeHtml(metaDescription) + '">' +
+    (image ? '<meta name="twitter:image" content="' + escapeHtml(image) + '">' : '') +
     '<script type="application/ld+json">' + JSON.stringify(schema).replace(/</g, '\\u003c') + '</script>' +
     '<style>' + css + '</style></head><body>' +
     '<header><nav><a href="/">DOÑA ANNA</a><a href="/guider">Guider</a><a href="/magasin">Magasin</a><a href="/artikler">Artikler</a><a href="/oppskrifter">Oppskrifter</a><a href="/#tasting">Kontakt</a></nav></header>' +

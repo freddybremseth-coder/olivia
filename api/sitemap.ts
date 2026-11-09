@@ -65,8 +65,10 @@ export default async function handler(_req: IncomingMessage, res: ServerResponse
     if (!result.error && result.data) rows.push(...result.data);
   }
 
+  const publishedDestinations = new Set(rows.map(row => String(row.destination_path || row.destination_id || '').replace(/^\/+|\/+$/g, '')));
+  const publicCategoryPaths = new Set(['/magasin', '/artikler', '/blogg', '/oppskrifter']);
   const urls = [
-    ...staticPaths.map(path => ({ loc: `${BASE}${path}`, lastmod: '' })),
+    ...staticPaths.filter(path => !publicCategoryPaths.has(path) || publishedDestinations.has(path.slice(1))).map(path => ({ loc: `${BASE}${path}`, lastmod: '' })),
     ...rows
       .map(row => ({
         loc: publishedPostUrl(row),
