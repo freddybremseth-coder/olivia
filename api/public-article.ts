@@ -92,14 +92,14 @@ export default async function handler(
   }
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRole) {
+  const publicReadKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !publicReadKey) {
     res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end('Innholdet er midlertidig utilgjengelig');
     return;
   }
 
-  const supabase = createClient(supabaseUrl, serviceRole, {
+  const supabase = createClient(supabaseUrl, publicReadKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data, error } = await supabase.from('website_posts')
