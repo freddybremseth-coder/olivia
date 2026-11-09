@@ -195,6 +195,11 @@
   ],
   "redirects": [
     {
+      "source": "/magasin/varen-blomstrer-i-olivenlunden-var-i-spania-og-vi-kan-ikke-vente-med-a-dele-de-gode-nyhete",
+      "destination": "/magasin/varen-i-olivenlunden-biar",
+      "statusCode": 301
+    },
+    {
       "source": "/magasin/dona-anna-article-facebook",
       "destination": "/magasin/oppbevaring-av-olivenolje",
       "statusCode": 301
