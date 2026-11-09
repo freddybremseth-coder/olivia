@@ -195,6 +195,21 @@
   ],
   "redirects": [
     {
+      "source": "/magasin/dona-anna-article-facebook",
+      "destination": "/magasin/oppbevaring-av-olivenolje",
+      "permanent": true
+    },
+    {
+      "source": "/magasin/dona-anna-article-nettside",
+      "destination": "/magasin/tidlig-hostet-olivenolje-biar",
+      "permanent": true
+    },
+    {
+      "source": "/artikler/dona-anna-article-nettside",
+      "destination": "/artikler/hvordan-velge-god-olivenolje",
+      "permanent": true
+    },
+    {
       "source": "/product-verde-vivo.html",
       "destination": "/verde-vivo",
       "permanent": true
