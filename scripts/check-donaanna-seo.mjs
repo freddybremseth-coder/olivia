@@ -50,7 +50,7 @@ for (const category of ['/magasin', '/artikler', '/blogg', '/oppskrifter']) {
     const response = await request(base + category);
     const html = await response.text();
     const indexed = urls.includes(base + category);
-    const noindex = /<meta\\s+name=["']robots["']\\s+content=["']noindex,follow["']/i.test(html);
+    const noindex = /<meta\s+name=["']robots["']\s+content=["']noindex,follow["']/i.test(html);
     if (response.status !== 200) note('Category returned HTTP ' + response.status + ': ' + category);
     if (indexed && noindex) note('Sitemap category unexpectedly noindex: ' + category);
     if (!indexed && !noindex) note('Unlisted empty category missing noindex: ' + category);
