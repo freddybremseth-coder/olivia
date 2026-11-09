@@ -45,13 +45,16 @@ for (const [source, destination] of legacy) {
     if (new URL(location, base).pathname !== destination) note(source + ' redirect target mismatch: ' + location);
   } catch (error) { note(source + ' redirect check failed: ' + error.message); }
 }
-for (const empty of ['/blogg', '/oppskrifter']) {
-  if (urls.includes(base + empty)) note('Empty category included in sitemap: ' + empty);
+for (const category of ['/magasin', '/artikler', '/blogg', '/oppskrifter']) {
   try {
-    const response = await request(base + empty);
+    const response = await request(base + category);
     const html = await response.text();
-    if (response.status !== 200 || !/<meta\s+name=["']robots["']\s+content=["']noindex,follow["']/i.test(html)) note('Empty category missing noindex: ' + empty);
-  } catch (error) { note('Empty category failed: ' + empty + ': ' + error.message); }
+    const indexed = urls.includes(base + category);
+    const noindex = /<meta\\s+name=["']robots["']\\s+content=["']noindex,follow["']/i.test(html);
+    if (response.status !== 200) note('Category returned HTTP ' + response.status + ': ' + category);
+    if (indexed && noindex) note('Sitemap category unexpectedly noindex: ' + category);
+    if (!indexed && !noindex) note('Unlisted empty category missing noindex: ' + category);
+  } catch (error) { note('Category failed: ' + category + ': ' + error.message); }
 }
 if (failures.length) {
   console.error(failures.length + ' SEO check(s) failed');
