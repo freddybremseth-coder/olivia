@@ -265,6 +265,45 @@ export default async function handler(req: IncomingMessage & { method?: string }
     }
   }
 
+  if (status === 'published') {
+    // Conservative preflight only: reject exact/near-exact duplicates and a
+    // short set of unambiguous medical/guaranteed-product claims for review.
+    // This is not a substitute for human editorial fact-checking.
+    const normalize = (value: string) => value.normalize('NFKC').toLocaleLowerCase('nb-NO')
+      .replace(/[^\\p{L}\\p{N}]+/gu, ' ').replace(/\\s+/g, ' ').trim();
+    const normalizedTitle = normalize(title);
+    const normalizedBody = normalize(markdown);
+    const riskyClaims = [
+      /\\b(?:kurerer|helbreder|behandler)\\s+(?:kreft|diabetes|sykdom|betennelse)/i,
+      /\\b(?:forebygger|hindrer)\\s+(?:kreft|diabetes|hjertesykdom)/i,
+      /\\b(?:garantert|dokumentert)\\s+(?:helseeffekt|medisinsk effekt)/i,
+      /\\b(?:sertifisert|økologisk sertifisert)\\s+produkt/i,
+    ];
+    if (riskyClaims.some(pattern => pattern.test(title + ' ' + markdown))) {
+      json(res, 422, { error: 'Påstanden krever dokumentasjon og redaksjonell godkjenning før publisering.' });
+      return;
+    }
+    const recent = await supabase.from('website_posts')
+      .select('id,source_system,source_type,source_id,title,markdown')
+      .eq('brand_id', 'donaanna').eq('status', 'published')
+      .order('updated_at', { ascending: false }).limit(500);
+    if (recent.error) {
+      json(res, 500, { error: 'Kunne ikke kontrollere duplikatinnhold før publisering.' });
+      return;
+    }
+    const duplicate = (recent.data || []).find(other => {
+      if (sourceId && other.source_id === sourceId && other.source_system === sourceSystem && other.source_type === sourceType) return false;
+      const otherTitle = normalize(String(other.title || ''));
+      const otherBody = normalize(String(other.markdown || ''));
+      return (normalizedTitle.length >= 20 && normalizedTitle === otherTitle)
+        || (normalizedBody.length >= 250 && normalizedBody === otherBody);
+    });
+    if (duplicate) {
+      json(res, 409, { error: 'Et publisert innlegg med samme tittel eller tekst finnes allerede. Redaksjonell kontroll kreves.' });
+      return;
+    }
+  }
+
   const row = {
     source_system: sourceSystem,
     source_type: sourceType,
