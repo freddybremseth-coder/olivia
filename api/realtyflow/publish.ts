@@ -270,14 +270,14 @@ export default async function handler(req: IncomingMessage & { method?: string }
     // short set of unambiguous medical/guaranteed-product claims for review.
     // This is not a substitute for human editorial fact-checking.
     const normalize = (value: string) => value.normalize('NFKC').toLocaleLowerCase('nb-NO')
-      .replace(/[^\\p{L}\\p{N}]+/gu, ' ').replace(/\\s+/g, ' ').trim();
+      .replace(/[^\p{L}\p{N}]+/gu, ' ').replace(/\s+/g, ' ').trim();
     const normalizedTitle = normalize(title);
     const normalizedBody = normalize(markdown);
     const riskyClaims = [
-      /\\b(?:kurerer|helbreder|behandler)\\s+(?:kreft|diabetes|sykdom|betennelse)/i,
-      /\\b(?:forebygger|hindrer)\\s+(?:kreft|diabetes|hjertesykdom)/i,
-      /\\b(?:garantert|dokumentert)\\s+(?:helseeffekt|medisinsk effekt)/i,
-      /\\b(?:sertifisert|økologisk sertifisert)\\s+produkt/i,
+      /\b(?:kurerer|helbreder|behandler)\s+(?:kreft|diabetes|sykdom|betennelse)/i,
+      /\b(?:forebygger|hindrer)\s+(?:kreft|diabetes|hjertesykdom)/i,
+      /\b(?:garantert|dokumentert)\s+(?:helseeffekt|medisinsk effekt)/i,
+      /\b(?:sertifisert|økologisk sertifisert)\s+produkt/i,
     ];
     if (riskyClaims.some(pattern => pattern.test(title + ' ' + markdown))) {
       json(res, 422, { error: 'Påstanden krever dokumentasjon og redaksjonell godkjenning før publisering.' });
