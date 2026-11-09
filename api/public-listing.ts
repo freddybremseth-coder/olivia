@@ -74,6 +74,7 @@ export default async function handler(
     .limit(100);
 
   if (error) {
+    console.error('Doña Anna public listing query failed', { code: error.code, message: error.message });
     res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end('Innholdet er midlertidig utilgjengelig');
     return;
