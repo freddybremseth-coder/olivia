@@ -55,7 +55,7 @@ export default async function handler(
   }
 
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const roleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const roleKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !roleKey) {
     res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end('Innholdet er midlertidig utilgjengelig');
