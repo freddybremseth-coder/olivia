@@ -170,7 +170,10 @@ const PAGES: Record<string, EvergreenPage> = {
     ],
     faqs: [
       { question: 'Hva finner jeg i Doña Anna-guidene?', answer: 'Evergreen-svar om Biar, tidlig høsting, Verde Vivo, restaurantbruk og planene for bordoliven.' },
-      { question: 'Er guidene det samme som magasinet?', answer: 'Nei. Guidene dekker stabile søkeintensjoner, mens magasinet brukes til redaksjonelle og tidsaktuelle saker.' }
+      { question: 'Er guidene det samme som magasinet?', answer: 'Nei. Guidene dekker stabile søkeintensjoner, mens magasinet brukes til redaksjonelle og tidsaktuelle saker.' },
+      { question: 'Hva er forskjellen på Verde Vivo og Verde Alto?', answer: 'Verde Vivo er definert som en tidlig høstet olivenolje i 500 ml. Verde Alto er en egen, mer balansert produktretning. Endelig sensorikk, kvalitet og batchdata bekreftes først når dokumentasjonen foreligger.' },
+      { question: 'Hvordan vurderes extra virgin-olivenolje?', answer: 'Kvalitetsklassen fastsettes for den konkrete oljen gjennom relevante kjemiske analyser og sensorisk vurdering. En produktbeskrivelse alene dokumenterer ikke extra virgin-kvalitet.' },
+      { question: 'Hvordan bør olivenolje oppbevares?', answer: 'Oppbevar olivenolje tett lukket, kjølig og mørkt, beskyttet mot lys, varme og luft. Se vår artikkel om oppbevaring for praktiske råd.' }
     ],
     primaryCta: { label: 'Start med olivenolje fra Biar', href: '/olivenolje-fra-biar' }
   },
@@ -786,6 +789,7 @@ function pageHtml(page: EvergreenPage) {
     '<main><div class="article-grid"><article>' + sections +
     '<section class="faq"><h2>Vanlige spørsmål</h2>' + faq + '</section>' +
     '<section class="next"><h2>Neste steg</h2><p>Se riktig produkt, les mer om gården eller meld interesse dersom du vurderer Doña Anna for restaurant, hotell, butikk eller import.</p><a class="button primary" href="' + escapeHtml(page.primaryCta.href) + '">' + escapeHtml(page.primaryCta.label) + '</a><div class="cluster"><a href="/produkter">Alle produkter</a><a href="/verde-vivo">Verde Vivo</a><a href="/verde-alto">Verde Alto</a><a href="/raiz-antigua">Raíz Antigua</a><a href="/cocina-viva">Cocina Viva</a><a href="/mesa-gordal-noble">Mesa · Gordal Noble</a></div></section>' +
+    '<section class="faq"><h2>Les også fra Doña Anna</h2><ul><li><a href="/artikler/hvordan-velge-god-olivenolje">Slik velger du god olivenolje</a></li><li><a href="/magasin/tidlig-hostet-olivenolje-biar">Tidlig høstet olivenolje fra Biar</a></li><li><a href="/magasin/oppbevaring-av-olivenolje">Slik oppbevarer du olivenolje</a></li></ul></section>' +
     '<p class="author">Oppdatert 2. oktober 2026 · Innhold fra Doña Anna. <a href="/om-dona-anna">Anna og Freddy Bremseth driver prosjektet sammen.</a></p></article>' +
     '<aside class="aside"><strong>Utforsk Doña Anna</strong><nav><a href="/">Forsiden</a><a href="/produkter">Produkter</a><a href="/guider">Guider</a><a href="/#estate">Gården i Biar</a><a href="/verde-vivo">Verde Vivo</a><a href="/verde-alto">Verde Alto</a><a href="/raiz-antigua">Raíz Antigua</a><a href="/cocina-viva">Cocina Viva</a><a href="/mesa-gordal-noble">Mesa · Gordal Noble</a><a href="/#b2b">For profesjonelle</a><a href="/om-dona-anna">Om Anna og Freddy</a><a href="/#tasting">Kontakt</a></nav></aside></div></main>' +
     '<footer class="footer"><a href="/om-dona-anna">Anna & Freddy</a><a href="/personvern">Personvern</a><a href="https://www.freddybremseth.com/">FreddyBremseth.com</a><a href="https://www.pinosoecolife.com/">Pinoso Eco Life</a></footer>' +
