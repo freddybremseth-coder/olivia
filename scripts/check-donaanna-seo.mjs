@@ -5,6 +5,7 @@ const legacy = new Map([
   ['/artikler/dona-anna-article-nettside', '/artikler/hvordan-velge-god-olivenolje'],
   ['/magasin/dona-anna-article-nettside', '/magasin/tidlig-hostet-olivenolje-biar'],
   ['/magasin/dona-anna-article-facebook', '/magasin/oppbevaring-av-olivenolje'],
+  ['/magasin/varen-blomstrer-i-olivenlunden-var-i-spania-og-vi-kan-ikke-vente-med-a-dele-de-gode-nyhete', '/magasin/varen-i-olivenlunden-biar'],
 ]);
 const failures = [];
 async function request(url, redirect = 'follow') {
