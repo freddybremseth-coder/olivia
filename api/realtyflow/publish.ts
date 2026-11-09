@@ -259,6 +259,10 @@ export default async function handler(req: IncomingMessage & { method?: string }
       json(res, 422, { error: 'Publisering krever en konkret, beskrivende tittel og URL.' });
       return;
     }
+    if (brandId === 'donaanna' && slug.length > 70) {
+      json(res, 422, { error: 'Artikkeladressen er for lang. Angi en kort, beskrivende URL på maks 70 tegn i RealtyFlow før publisering.' });
+      return;
+    }
     if (cleanString(payload.content?.summary).length < 45) {
       json(res, 422, { error: 'Publisering krever en redaksjonell metabeskrivelse på minst 45 tegn.' });
       return;
