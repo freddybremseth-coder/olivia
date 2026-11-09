@@ -225,6 +225,7 @@ export default async function handler(req: IncomingMessage & { method?: string }
     return;
   }
 
+  const brandId = cleanString(payload.brand?.id) || 'donaanna';
   const destination = payload.destination || {};
   const destinationId = cleanString(destination.id) || 'artikler';
   const destinationLabel = cleanString(destination.label) || 'Artikler';
