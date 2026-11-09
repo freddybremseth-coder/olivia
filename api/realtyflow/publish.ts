@@ -169,14 +169,12 @@ export default async function handler(req: IncomingMessage & { method?: string }
     const slug = slugify(cleanString(payload.content?.slug) || cleanString(payload.content?.title));
 
     // Editorially approved content must not be removed by an older upstream source.
-    if (sourceId) {
-      const protectedMatch = await supabase.from('website_posts')
-        .select('id,raw_payload')
-        .eq('brand_id', 'donaanna')
-        .eq('source_system', sourceSystem)
-        .eq('source_type', sourceType)
-        .eq('source_id', sourceId)
-        .maybeSingle();
+    {
+      let protectionQuery = supabase.from('website_posts').select('id,raw_payload').eq('brand_id', 'donaanna');
+      protectionQuery = sourceId
+        ? protectionQuery.eq('source_system', sourceSystem).eq('source_type', sourceType).eq('source_id', sourceId)
+        : protectionQuery.eq('destination_id', destinationId).eq('slug', slug);
+      const protectedMatch = await protectionQuery.maybeSingle();
       if (protectedMatch.error) { json(res, 500, { error: 'Could not check editorial protection' }); return; }
       if (protectedMatch.data?.raw_payload?.editorial_backup_2026_11_09) {
         json(res, 409, { error: 'Redaksjonelt godkjent artikkel er beskyttet mot sletting fra publiseringskilden.' });
@@ -242,14 +240,12 @@ export default async function handler(req: IncomingMessage & { method?: string }
 
   // Existing curated Doña Anna articles are deliberately source-locked. A new
   // RealtyFlow export must never revert their reviewed copy, image or SEO slug.
-  if (sourceId) {
-    const protectedMatch = await supabase.from('website_posts')
-      .select('id,raw_payload')
-      .eq('brand_id', 'donaanna')
-      .eq('source_system', sourceSystem)
-      .eq('source_type', sourceType)
-      .eq('source_id', sourceId)
-      .maybeSingle();
+  {
+    let protectionQuery = supabase.from('website_posts').select('id,raw_payload').eq('brand_id', 'donaanna');
+    protectionQuery = sourceId
+      ? protectionQuery.eq('source_system', sourceSystem).eq('source_type', sourceType).eq('source_id', sourceId)
+      : protectionQuery.eq('destination_id', destinationId).eq('slug', slug);
+    const protectedMatch = await protectionQuery.maybeSingle();
     if (protectedMatch.error) { json(res, 500, { error: 'Could not check editorial protection' }); return; }
     if (protectedMatch.data?.raw_payload?.editorial_backup_2026_11_09) {
       json(res, 409, { error: 'Redaksjonelt godkjent artikkel er beskyttet. Rediger den godkjente versjonen i CMS før ny publisering.' });
