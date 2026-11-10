@@ -40,8 +40,8 @@ const copy = {
 };
 
 const imagePaths = {
-  estateHero: '/donaanna/hero-image.jpg',
-  oliveGrove: '/donaanna/olive-trees.jpg',
+  estateHero: 'https://ereapsfcsqtdmzosgnnn.supabase.co/storage/v1/object/public/content-images/dona-anna/garden-2025/ChatGPT-bilde%2010.%20nov.%202026%2C%2012_19_52.jpg',
+  oliveGrove: 'https://ereapsfcsqtdmzosgnnn.supabase.co/storage/v1/object/public/content-images/dona-anna/garden-2025/ChatGPT-bilde%2010.%20nov.%202026%2C%2012_19_18.jpg',
   harvestHands: '/donaanna/hero-image.jpg',
   harvestClose: '/donaanna/farming-2.jpg',
 };
@@ -148,7 +148,7 @@ const b2bPackages = [
     title: 'Butikk og import',
     audience: 'Gourmetbutikk / import',
     image: imagePaths.oliveGrove,
-    imageAlt: 'Doña Anna olivengård i Alicante-innlandet',
+    imageAlt: 'Oliven på Doña Anna-gården i Biar',
     text: 'Ta kontakt for dialog om Verde Vivo, Verde Alto, Raíz Antigua, Cocina Viva eller planlagte Mesa · Gordal Noble. Format, dokumentasjon og distribusjon behandles per produkt.',
   },
 ];
@@ -209,8 +209,8 @@ const knowledgeCards = [
   {
     title: 'Sporbar dokumentasjon',
     kicker: 'Batch for batch',
-    image: '/donaanna/olive-trees.jpg',
-    imageAlt: 'Doña Anna olivenlund i Biar før høsting',
+    image: imagePaths.oliveGrove,
+    imageAlt: 'Oliven i ulike modningsstadier på gården i Biar',
     text: 'Høstedato, produksjonsdata, analyse og sensorikk skal knyttes til den konkrete batchen når informasjonen er klar.',
   },
 ];
@@ -337,7 +337,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       </nav>
 
       <header id="top" className="relative min-h-screen overflow-hidden">
-        <img src={imagePaths.estateHero} alt="Doña Anna olivenlund i Biar, Alicante" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-42" />
+        <img src={imagePaths.estateHero} alt="Mørke oliven på trærne på Doña Anna-gården i Biar" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-42" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_42%,rgba(212,175,55,.16),transparent_34%),linear-gradient(90deg,rgba(13,13,13,.98),rgba(13,13,13,.78),rgba(13,13,13,.42))]" />
         <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col justify-end px-5 pb-12 pt-28 md:px-8">
           <div className="max-w-4xl animate-in fade-in duration-700">
@@ -605,7 +605,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
         <section className="relative overflow-hidden bg-[#0d0d0d] py-24">
           <div className="absolute inset-0 opacity-24">
-            <img src={imagePaths.oliveGrove} alt="Doña Anna olivenlund og råvare fra Biar" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+            <img src={imagePaths.oliveGrove} alt="Oliven i ulike modningsstadier på Doña Anna-gården" loading="lazy" decoding="async" className="h-full w-full object-cover" />
           </div>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,#0d0d0d,rgba(13,13,13,.78),#0d0d0d)]" />
           <div className="relative mx-auto grid max-w-7xl gap-10 px-5 md:grid-cols-[0.8fr_1.2fr] md:px-8">
