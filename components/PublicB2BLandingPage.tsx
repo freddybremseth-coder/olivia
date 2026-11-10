@@ -841,7 +841,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <a href="mailto:info@donaanna.com">info@donaanna.com</a>
               <a href="/om-dona-anna">Anna & Freddy · om Doña Anna</a>
               <a href="/personvern">Personvern</a>
-              <span>Oppdatert 2. oktober 2026</span>
+              <span>Fra olivengården vår i Biar, Alicante</span>
             </div>
             <nav aria-label="Relaterte prosjekter" className="flex flex-wrap gap-x-4 gap-y-2 text-[10px] uppercase tracking-[0.16em] text-white/38">
               <span className="text-[#d4af37]">Relatert</span>
