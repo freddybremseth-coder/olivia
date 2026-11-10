@@ -49,6 +49,18 @@ function articleMarkup(markdown: string) {
     const line = raw.trim();
     if (!line) { flushLists(); continue; }
 
+    const image = line.match(/^!\[([^\]]*)\]\((https:\/\/[^\s)]+)\)$/);
+    if (image) {
+      flushLists();
+      try {
+        const src = new URL(image[2]);
+        if (src.protocol === 'https:') {
+          output.push('<figure class="article-figure"><img loading="lazy" decoding="async" src="' + escapeHtml(src.href) + '" alt="' + escapeHtml(image[1]) + '"></figure>');
+          continue;
+        }
+      } catch {}
+    }
+
     if (/^[-*]\s+/.test(line)) {
       if (ordered.length) flushLists();
       unordered.push(line.replace(/^[-*]\s+/, ''));
@@ -192,7 +204,7 @@ export default async function handler(
     'main{max-width:1040px;margin:0 auto;padding:clamp(46px,7vw,88px) 22px 100px}.crumbs{font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:#7a7062;margin-bottom:30px}' +
     'article{max-width:820px}h1,h2,h3{font-family:Georgia,serif;line-height:1.12}h1{font-size:clamp(2.7rem,7vw,5.4rem);letter-spacing:-.035em;margin:.15em 0 .35em}h2{font-size:clamp(2rem,4vw,3rem);margin-top:2.4rem}h3{font-size:1.55rem;margin-top:2rem}' +
     'p,li{font-size:1.08rem;color:#4d473d}.summary{font-size:clamp(1.2rem,2vw,1.45rem);color:#554d40;max-width:760px}.direct{margin:28px 0;padding:20px 22px;border:1px solid #cfbd91;background:#fff9e9;color:#403a31}.direct strong{color:#765916}' +
-    '.byline{color:#7c7264;font-size:.92rem;margin:12px 0 28px}.hero-image{width:100%;height:auto;margin:26px 0 38px;border-radius:2px}.author-card{border:1px solid var(--line);background:#fff;padding:24px;margin:46px 0}' +
+    '.byline{color:#7c7264;font-size:.92rem;margin:12px 0 28px}.hero-image{width:100%;height:auto;margin:26px 0 38px;border-radius:2px}.article-figure{margin:30px 0}.article-figure img{display:block;width:100%;height:auto;border-radius:3px}.author-card{border:1px solid var(--line);background:#fff;padding:24px;margin:46px 0}' +
     '.next{margin:38px 0;padding:30px;background:#15120e;color:#fff}.next h2{margin-top:0;color:#fff}.next p{color:#d0c7b8}.next a{color:#d4af37}.next-links{display:flex;flex-wrap:wrap;gap:12px 20px;margin-top:18px}' +
     '.network{border-top:1px solid rgba(255,255,255,.1);background:#0d0d0d;padding:28px clamp(20px,5vw,70px);color:#8f8372;font-size:.82rem}.network strong{display:block;color:#d4af37;margin-bottom:10px;letter-spacing:.12em;text-transform:uppercase}.network a{color:#b9aa8c;margin-right:16px;white-space:nowrap}' +
     '@media(max-width:640px){header nav a:nth-child(n+4){display:none}main{padding-inline:18px}.next{padding:22px}}';
@@ -213,7 +225,7 @@ export default async function handler(
     '<script type="application/ld+json">' + JSON.stringify(schema).replace(/</g, '\\u003c') + '</script>' +
     '<style>' + css + '</style></head><body>' +
     '<header><nav><a href="/">DOÑA ANNA</a><a href="/guider">Guider</a><a href="/magasin">Magasin</a><a href="/artikler">Artikler</a><a href="/oppskrifter">Oppskrifter</a><a href="/#tasting">Kontakt</a></nav></header>' +
-    '<main><p class="crumbs"><a href="/">Doña Anna</a> · <a href="/' + destination + '">' + escapeHtml(destination) + '</a></p><article><h1>' + escapeHtml(title) + '</h1><p class="summary">' + escapeHtml(summary) + '</p><div class="direct"><strong>Kort fortalt:</strong> ' + escapeHtml(summary) + '</div>' +
+    '<main><p class="crumbs"><a href="/">Doña Anna</a> · <a href="/' + destination + '">' + escapeHtml(destination) + '</a></p><article><h1>' + escapeHtml(title) + '</h1><p class="summary">' + escapeHtml(summary) + '</p>' +
     '<p class="byline">Doña Anna redaksjon · <a href="/om-dona-anna">Anna og Freddy Bremseth</a>' +
     (data.updated_at || data.published_at ? ' · Oppdatert ' + escapeHtml(new Intl.DateTimeFormat('nb-NO',{day:'numeric',month:'long',year:'numeric',timeZone:'Europe/Oslo'}).format(new Date(data.updated_at || data.published_at))) : '') + '</p>' +
     (image ? '<img class="hero-image" src="' + escapeHtml(image) + '" alt="' + escapeHtml(title) + '">' : '') +
