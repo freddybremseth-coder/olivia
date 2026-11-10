@@ -46,6 +46,8 @@ const imagePaths = {
   harvestClose: '/donaanna/farming-2.jpg',
 };
 
+const biarGrovePhoto = 'https://ereapsfcsqtdmzosgnnn.supabase.co/storage/v1/object/public/content-images/dona-anna/garden-2025/ChatGPT-bilde%2010.%20nov.%202026%2C%2012_18_07.jpg';
+
 type ProductMedia = {
   slug: string;
   approvedProductImage: string | null;
@@ -443,7 +445,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
         <section id="estate" className="relative overflow-hidden border-y border-white/10 bg-[#111111] py-24">
           <div className="absolute inset-y-0 right-0 hidden w-1/2 md:block">
-            <img src="/donaanna/olive-trees.jpg" alt="Doña Anna olivenlund i Biar" loading="lazy" decoding="async" className="h-full w-full object-cover opacity-38" />
+            <img src={biarGrovePhoto} alt="Et gammelt oliventre på Doña Anna-gården i Biar" loading="lazy" decoding="async" className="h-full w-full object-cover opacity-38" />
             <div className="absolute inset-0 bg-[linear-gradient(90deg,#111111,rgba(17,17,17,.42),rgba(17,17,17,.72))]" />
           </div>
           <div className="relative mx-auto max-w-7xl px-5 md:px-8">
