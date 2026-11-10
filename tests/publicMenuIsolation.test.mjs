@@ -5,6 +5,11 @@ import vm from 'node:vm';
 
 const source = readFileSync(new URL('../public/donaanna-site-links.js', import.meta.url), 'utf8');
 
+test('public entrypoint uses the React navigation without injecting a second menu', () => {
+  const entrypoint = readFileSync(new URL('../index.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(entrypoint, /donaanna-site-links\.js|loadProfessionalLinks/);
+});
+
 function runScript(pathname) {
   const created = [];
   const scheduled = [];
