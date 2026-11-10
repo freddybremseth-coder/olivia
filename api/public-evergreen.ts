@@ -630,6 +630,16 @@ function escapeHtml(value: unknown) {
 
 function pageHtml(page: EvergreenPage) {
   const canonical = SITE + '/' + page.slug;
+  // FAQ entries should add something beyond the page introduction and sections.
+  // Keep the editorial selection in one place so visible FAQs and JSON-LD agree.
+  const usefulFaqQuestions: Record<string, string[]> = {
+    guider: ['Hva er forskjellen på Verde Vivo og Verde Alto?', 'Hvordan vurderes extra virgin-olivenolje?', 'Hvordan bør olivenolje oppbevares?'],
+    'olivenolje-for-restauranter': ['Kan en restaurant melde interesse for smaksprøve?', 'Har alle produktene samme format?'],
+    'verde-alto': ['Kan profesjonelle kjøpere melde interesse?'],
+    'cocina-viva': ['Kan restauranter melde interesse?'],
+    'mesa-gordal-noble': ['Hvilken olivensort skal brukes?'],
+  };
+  const usefulFaqs = page.faqs.filter(item => usefulFaqQuestions[page.slug]?.includes(item.question));
   const schema: any = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -672,16 +682,20 @@ function pageHtml(page: EvergreenPage) {
           { '@type': 'ListItem', position: 2, name: page.h1, item: canonical },
         ],
       },
-      {
-        '@type': 'FAQPage',
-        mainEntity: page.faqs.map(item => ({
-          '@type': 'Question',
-          name: item.question,
-          acceptedAnswer: { '@type': 'Answer', text: item.answer },
-        })),
-      },
     ],
   };
+
+
+  if (usefulFaqs.length) {
+    schema['@graph'].push({
+      '@type': 'FAQPage',
+      mainEntity: usefulFaqs.map(item => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: { '@type': 'Answer', text: item.answer },
+      })),
+    });
+  }
 
   const productDefinition = DONA_ANNA_PRODUCTS_BY_SLUG[page.slug];
   const visual = productDefinition
@@ -716,7 +730,7 @@ function pageHtml(page: EvergreenPage) {
     section.body.map(paragraph => '<p>' + escapeHtml(paragraph) + '</p>').join('') + '</section>'
   ).join('');
 
-  const faq = page.faqs.map(item =>
+  const faq = usefulFaqs.map(item =>
     '<details><summary>' + escapeHtml(item.question) + '</summary><p>' + escapeHtml(item.answer) + '</p></details>'
   ).join('');
 
@@ -796,7 +810,7 @@ function pageHtml(page: EvergreenPage) {
     farmGallery +
     productHub +
     '<main><div class="article-grid"><article>' + sections +
-    '<section class="faq"><h2>Vanlige spørsmål</h2>' + faq + '</section>' +
+    (faq ? '<section class="faq"><h2>Vanlige spørsmål</h2>' + faq + '</section>' : '') +
     '<section class="next"><h2>Neste steg</h2><p>Se riktig produkt, les mer om gården eller meld interesse dersom du vurderer Doña Anna for restaurant, hotell, butikk eller import.</p><a class="button primary" href="' + escapeHtml(page.primaryCta.href) + '">' + escapeHtml(page.primaryCta.label) + '</a><div class="cluster"><a href="/produkter">Alle produkter</a><a href="/verde-vivo">Verde Vivo</a><a href="/verde-alto">Verde Alto</a><a href="/raiz-antigua">Raíz Antigua</a><a href="/cocina-viva">Cocina Viva</a><a href="/mesa-gordal-noble">Mesa · Gordal Noble</a></div></section>' +
     '<section class="faq"><h2>Les også fra Doña Anna</h2><ul><li><a href="/artikler/hvordan-velge-god-olivenolje">Slik velger du god olivenolje</a></li><li><a href="/magasin/tidlig-hostet-olivenolje-biar">Tidlig høstet olivenolje fra Biar</a></li><li><a href="/magasin/oppbevaring-av-olivenolje">Slik oppbevarer du olivenolje</a></li></ul></section>' +
     '<p class="author">Oppdatert 2. oktober 2026 · Innhold fra Doña Anna. <a href="/om-dona-anna">Anna og Freddy Bremseth driver prosjektet sammen.</a></p></article>' +
