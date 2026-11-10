@@ -4,21 +4,6 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './tailwind.css';
 
-const loadProfessionalLinks = () => {
-  if (typeof document === 'undefined') return;
-  // The legacy public product menu must never be injected into either private portal.
-  if (/^\/(olivia|app|b2b)(\/|$)/.test(window.location.pathname)) return;
-  if (document.querySelector('script[data-donaanna-links="true"]')) return;
-
-  const script = document.createElement('script');
-  script.src = '/donaanna-site-links.js';
-  script.defer = true;
-  script.dataset.donaannaLinks = 'true';
-  document.body.appendChild(script);
-};
-
-loadProfessionalLinks();
-
 const registerOliviaServiceWorker=()=>{
   if(typeof window==='undefined'||!('serviceWorker' in navigator))return;
   const path=window.location.pathname.replace(/\/+$/,'')||'/';
