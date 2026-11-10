@@ -569,7 +569,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             <div className="grid gap-5 lg:grid-cols-3">
               {knowledgeCards.map(card => (
                 <article key={card.title} className="group overflow-hidden border border-black/10 bg-white">
-                  <div className="h-56 overflow-hidden bg-black">
+                  <div className="h-48 overflow-hidden bg-black sm:h-56">
                     <img src={card.image} alt={card.imageAlt} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
                   </div>
                   <div className="p-6">
@@ -581,13 +581,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               ))}
             </div>
             <div className="mt-10 grid gap-5 border border-black/10 bg-[#111111] p-5 text-white lg:grid-cols-[0.82fr_1.18fr]">
-              <div className="relative min-h-[360px] overflow-hidden">
+              <div className="relative min-h-[320px] overflow-hidden sm:min-h-[360px]">
                 <img src={imagePaths.harvestClose} alt="Oliven på trærne på Doña Anna-gården i Biar" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-72" />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.78))]" />
-                <div className="absolute bottom-0 p-6">
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.92))]" />
+                <div className="absolute bottom-0 p-5 sm:p-6">
                   <Sparkles className="text-[#d4af37]" size={26} />
-                  <h3 className="mt-4 font-serif text-4xl">Kvalitetsforskjellen</h3>
-                  <p className="mt-3 max-w-md leading-7 text-white/68">Fruktighet, bitterhet, skarphet og balanse vurderes før en batch får sin plass i porteføljen. Det gir kokker en olje som oppfører seg forutsigbart på tallerkenen.</p>
+                  <h3 className="mt-4 font-serif text-3xl sm:text-4xl">Kvalitetsforskjellen</h3>
+                  <p className="mt-3 max-w-md leading-7 text-white/85">Fruktighet, bitterhet, skarphet og balanse vurderes før en batch får sin plass i porteføljen. Det gir kokker en olje som oppfører seg forutsigbart på tallerkenen.</p>
                 </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -722,7 +722,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             <div className="grid gap-5 lg:grid-cols-3">
               {b2bPackages.map(item => (
                 <article key={item.title} className="border border-black/10 bg-white">
-                  <div className="h-64 overflow-hidden bg-black">
+                  <div className="h-52 overflow-hidden bg-black sm:h-64">
                     <img src={item.image} alt={item.imageAlt} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-700 hover:scale-105" />
                   </div>
                   <div className="p-6">
