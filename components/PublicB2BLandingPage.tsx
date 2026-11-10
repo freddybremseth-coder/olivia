@@ -490,9 +490,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {portfolioItems.map(item => (
-              <article key={item.name} className="group border border-white/10 bg-white/[0.035] p-4 transition hover:border-[#d4af37]/50">
+              <article key={item.name} className="group flex h-full flex-col border border-white/10 bg-white/[0.035] p-3 transition hover:border-[#d4af37]/50 sm:p-4">
                 <div className="grid gap-3">
-                  <div className="relative flex h-72 items-center justify-center overflow-hidden bg-[#e9e1cf]">
+                  <div className="relative flex h-60 items-center justify-center overflow-hidden bg-[#e9e1cf] sm:h-72">
                     {productMedia(item.name).approvedProductImage ? (
                       <img
                         src={productMedia(item.name).approvedProductImage as string}
@@ -512,8 +512,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                         />
                         <div className="absolute inset-0 bg-[#e9e1cf]/72" />
                         <img src="/labels/dona-anna-figure.svg" alt="" className="relative h-36 w-36 object-contain opacity-85" />
-                        <div className="absolute inset-x-4 top-4 flex justify-end">
-                          <span className="border border-black/15 bg-white/80 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.16em] text-black/55 backdrop-blur">
+                        <div className="absolute inset-x-3 top-3 flex justify-end sm:inset-x-4 sm:top-4">
+                          <span className="max-w-full border border-black/15 bg-white/90 px-2 py-1 text-right text-[9px] font-bold uppercase leading-4 tracking-[0.12em] text-black/65 backdrop-blur sm:tracking-[0.16em]">
                             {productMedia(item.name).labelStatus === 'verified' ? 'Etikett verifisert · produktfoto venter' : 'Produktfoto venter på godkjent etikett'}
                           </span>
                         </div>
@@ -528,7 +528,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                     </div>
                   </div>
                 </div>
-                <div className="p-2 pt-5">
+                <div className="flex flex-1 flex-col p-2 pt-5">
                   <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#d4af37]">{item.role}</p>
                   <h3 className="mt-2 font-serif text-3xl"><a href={productHref(item.name)} className="hover:text-[#d4af37]">{item.name}</a></h3>
                   <p className="mt-3 border-y border-white/10 py-3 text-[10px] font-bold uppercase tracking-[0.24em] text-white/72">{item.labelName}</p>
@@ -546,6 +546,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                     </div>
                   )}
                   <p className="mt-4 leading-7 text-white/64">{item.text}</p>
+                  <a href={productHref(item.name)} className="mt-6 inline-flex min-h-11 items-center justify-between gap-3 border-t border-[#d4af37]/35 pt-4 text-xs font-bold uppercase tracking-[0.17em] text-[#d4af37] transition group-hover:text-white sm:mt-auto sm:pt-5">
+                    Se produktinformasjon <ArrowRight size={17} aria-hidden="true" />
+                  </a>
                 </div>
               </article>
             ))}
