@@ -313,12 +313,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               {copy.portal}
             </button>
           </div>
-          <button className="lg:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="Meny">
+          <button className="lg:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Lukk meny' : 'Åpne meny'} aria-expanded={menuOpen} aria-controls="donaanna-mobile-navigation">
             {menuOpen ? <X /> : <Menu />}
           </button>
         </div>
         {menuOpen && (
-          <div className="mx-auto max-w-7xl border-t border-white/10 py-4 lg:hidden">
+          <div id="donaanna-mobile-navigation" className="mx-auto max-w-7xl border-t border-white/10 py-4 lg:hidden">
             {navLinks.map(([label, href]) => (
               <a key={href} href={href} onClick={() => setMenuOpen(false)} className="block py-3 text-sm uppercase tracking-[0.2em] text-white/78">
                 {label}
@@ -405,7 +405,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section id="customer-path" className="border-b border-white/10 bg-[#f8f5ea] px-5 py-14 text-black md:px-8 md:py-20">
+        <section id="customer-path" className="scroll-mt-20 border-b border-white/10 bg-[#f8f5ea] px-5 py-14 text-black md:px-8 md:py-20">
           <div className="mx-auto max-w-7xl">
             <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr]">
               <div>
@@ -443,7 +443,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section id="estate" className="relative overflow-hidden border-y border-white/10 bg-[#111111] py-14 md:py-24">
+        <section id="estate" className="relative scroll-mt-20 overflow-hidden border-y border-white/10 bg-[#111111] py-14 md:py-24">
           <div className="absolute inset-y-0 right-0 hidden w-1/2 md:block">
             <img src={biarGrovePhoto} alt="Et gammelt oliventre på Doña Anna-gården i Biar" loading="lazy" decoding="async" className="h-full w-full object-cover opacity-38" />
             <div className="absolute inset-0 bg-[linear-gradient(90deg,#111111,rgba(17,17,17,.42),rgba(17,17,17,.72))]" />
@@ -478,7 +478,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section id="portfolio" className="mx-auto max-w-7xl px-5 py-14 md:px-8 md:py-24">
+        <section id="portfolio" className="mx-auto max-w-7xl scroll-mt-20 px-5 py-14 md:px-8 md:py-24">
           <div className="mb-12 grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Portefølje</p>
@@ -552,7 +552,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section id="knowledge" className="border-y border-white/10 bg-[#f8f5ea] px-5 py-14 text-black md:px-8 md:py-24">
+        <section id="knowledge" className="scroll-mt-20 border-y border-white/10 bg-[#f8f5ea] px-5 py-14 text-black md:px-8 md:py-24">
           <div className="mx-auto max-w-7xl">
             <div className="mb-12 grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
               <div>
@@ -630,7 +630,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section id="traceability" className="border-y border-white/10 bg-[#111111] py-14 md:py-24">
+        <section id="traceability" className="scroll-mt-20 border-y border-white/10 bg-[#111111] py-14 md:py-24">
           <div className="mx-auto grid max-w-7xl gap-10 px-5 md:grid-cols-[0.95fr_1.05fr] md:px-8">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">{copy.traceTitle}</p>
@@ -694,7 +694,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section id="b2b" className="bg-[#f8f5ea] px-5 py-14 text-black md:px-8 md:py-24">
+        <section id="b2b" className="scroll-mt-20 bg-[#f8f5ea] px-5 py-14 text-black md:px-8 md:py-24">
           <div className="mx-auto max-w-7xl">
             <div className="mb-12 grid gap-8 md:grid-cols-[0.78fr_1.22fr]">
               <div>
@@ -743,7 +743,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section id="specs" className="mx-auto max-w-7xl px-5 py-14 md:px-8 md:py-24">
+        <section id="specs" className="mx-auto max-w-7xl scroll-mt-20 px-5 py-14 md:px-8 md:py-24">
           <div className="grid gap-10 md:grid-cols-[0.8fr_1.2fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Produktdata</p>
@@ -763,7 +763,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section id="people" className="border-y border-white/10 bg-[#111111] px-5 py-14 md:px-8 md:py-20">
+        <section id="people" className="scroll-mt-20 border-y border-white/10 bg-[#111111] px-5 py-14 md:px-8 md:py-20">
           <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[0.78fr_1.22fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Bak Doña Anna</p>
@@ -781,7 +781,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
-        <section id="tasting" className="bg-[#f8f5ea] px-5 py-14 text-black md:px-8 md:py-24">
+        <section id="tasting" className="scroll-mt-20 bg-[#f8f5ea] px-5 py-14 text-black md:px-8 md:py-24">
           <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[1fr_0.9fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">Smaksprøve</p>
