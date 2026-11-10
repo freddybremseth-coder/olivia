@@ -338,7 +338,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
       <header id="top" className="relative min-h-[100svh] overflow-hidden">
         <img src={imagePaths.estateHero} alt="Mørke oliven på trærne på Doña Anna-gården i Biar" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-42" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_42%,rgba(212,175,55,.16),transparent_34%),linear-gradient(90deg,rgba(13,13,13,.98),rgba(13,13,13,.78),rgba(13,13,13,.42))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(13,13,13,.60),rgba(13,13,13,.88)_65%,rgba(13,13,13,.98))] md:bg-[radial-gradient(circle_at_72%_42%,rgba(212,175,55,.16),transparent_34%),linear-gradient(90deg,rgba(13,13,13,.98),rgba(13,13,13,.78),rgba(13,13,13,.42))]" />
         <div className="relative mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-end px-5 pb-8 pt-24 md:px-8 md:pb-12 md:pt-28">
           <div className="max-w-4xl animate-in fade-in duration-700">
             <p className="mb-5 text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">{copy.eyebrow}</p>
