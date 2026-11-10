@@ -31,7 +31,7 @@ interface LandingPageProps {
 const copy = {
   eyebrow: 'Olivenprosjekt fra Biar · Alicante · Anna & Freddy Bremseth',
   headline: 'Doña Anna – olivenolje og produkter fra Biar.',
-  subhead: 'Doña Anna er vårt felles olivenprosjekt i Biar. Produktlinjen består av Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva som egne olivenoljeprodukter. Mesa · Gordal Noble er et eget bordolivenprodukt som foreløpig står som planlagt. Batchdata, analyser, format og tilgjengelighet publiseres per produkt når produksjonen er dokumentert.',
+  subhead: 'Fra vår olivengård i Biar utvikler vi Doña Anna med respekt for råvaren, tydelig opprinnelse og egne produkter for ulike bruksområder. Her kan du bli kjent med gården, utforske produktene og følge arbeidet frem mot dokumenterte lanseringer.',
   cta: 'Meld interesse for smaksprøve',
   portal: 'B2B portal',
   specTitle: 'Produktdata publiseres per produkt',
@@ -380,25 +380,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Kort fortalt</p>
                 <h2 id="quick-answers-title" className="mt-3 font-serif text-3xl leading-tight md:text-5xl">Hva er Doña Anna?</h2>
                 <p className="mt-4 max-w-xl text-lg leading-8 text-white/64">
-                  Doña Anna er olivenprosjektet til Anna og Freddy Bremseth i Biar, Alicante. Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva er separate olivenoljeprodukter med egne roller og etiketter. Mesa · Gordal Noble er et eget planlagt bordolivenprodukt og markedsføres ikke som tilgjengelig ennå.
+                  Anna og Freddy Bremseth står bak en olivengård på rundt 60 000 m² i Biar. Doña Anna er merkevaren vi bygger rundt trærne, menneskene og produktene som vokser frem her.
                 </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <article className="border border-white/10 bg-white/[0.035] p-5">
                   <h3 className="font-serif text-2xl">Hvor kommer olivenoljen fra?</h3>
-                  <p className="mt-3 leading-7 text-white/62">Fra Doña Annas olivenlunder i Biar i Alicante. Sort, høstedato, analyse og endelig kvalitetsklasse dokumenteres for den konkrete batchen når produksjonen er klar.</p>
+                  <p className="mt-3 leading-7 text-white/62">Fra vår egen gård i Biar, Alicante. Her følger vi trærne gjennom sesongene og dokumenterer råvaren når oljen produseres.</p>
                 </article>
                 <article className="border border-white/10 bg-white/[0.035] p-5">
                   <h3 className="font-serif text-2xl">Hva kjennetegner oljen?</h3>
-                  <p className="mt-3 leading-7 text-white/62">Verde Vivo utvikles rundt tidlig høsting og tydelig opprinnelse. Ekstraksjon, sensorisk profil, analyseverdier og endelig kvalitetsklasse dokumenteres først for den faktiske batchen.</p>
+                  <p className="mt-3 leading-7 text-white/62">Høstetidspunkt, olivensort og behandling påvirker smaken. Den konkrete smaksprofilen kan først beskrives etter produksjon og vurdering.</p>
                 </article>
                 <article className="border border-white/10 bg-white/[0.035] p-5">
                   <h3 className="font-serif text-2xl">Kan restauranter få smaksprøve?</h3>
-                  <p className="mt-3 leading-7 text-white/62">Ja. Restauranter, hoteller, butikker og distributører kan melde interesse. Vi bekrefter tilgjengelighet, batchdata, pris og levering når produksjonen er klar.</p>
+                  <p className="mt-3 leading-7 text-white/62">Profesjonelle kjøpere kan melde interesse nå. Vi tar kontakt om smaksprøver og betingelser når aktuell olje er klar.</p>
                 </article>
                 <article className="border border-white/10 bg-white/[0.035] p-5">
                   <h3 className="font-serif text-2xl">Hvem står bak?</h3>
-                  <p className="mt-3 leading-7 text-white/62">Anna Bremseth og Freddy Bremseth driver Doña Anna sammen i Biar. <a className="text-[#d4af37] underline-offset-4 hover:underline" href="/om-dona-anna">Les om prosjektet og hvem som står bak</a>.</p>
+                  <p className="mt-3 leading-7 text-white/62">Vi er Anna og Freddy Bremseth. <a className="text-[#d4af37] underline-offset-4 hover:underline" href="/om-dona-anna">Bli bedre kjent med oss og gården</a>.</p>
                 </article>
               </div>
             </div>
@@ -485,7 +485,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Én merkevare. Flere tydelige produkter.</h2>
             </div>
             <p className="self-end text-lg leading-8 text-white/66">
-              Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva skal behandles som separate olivenoljeprodukter – aldri som varianter av samme side eller etikett. Mesa · Gordal Noble er et eget bordolivenprodukt som står som planlagt frem til produksjon og tilgjengelighet er bekreftet.
+              Utforsk olivenoljene Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva, hver med sin egen rolle. Mesa · Gordal Noble er vår planlagte satsing på bordoliven. Produktsidene viser hva som er utviklet, og hva som fortsatt gjenstår før lansering.
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -560,7 +560,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Smak, jord og høstetid henger sammen.</h2>
               </div>
               <p className="self-end text-lg leading-8 text-black/66">
-                Premium extra virgin olivenolje må beskrives med dokumentasjon fra den faktiske produksjonen. Derfor skiller vi mellom det vi vet om gården nå, og batchdata som først publiseres etter høsting og analyse.
+                Når olivenene modnes, endres også mulighetene for smak og oljeutbytte. Her forklarer vi sammenhengen mellom høsting, sorter og kvalitet – og hva som må undersøkes før en olje kan beskrives presist.
               </p>
             </div>
             <div className="grid gap-5 lg:grid-cols-3">
@@ -703,7 +703,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               </div>
               <div className="self-end">
                 <p className="text-lg leading-8 text-black/66">
-                  For kjøkken, butikk og import samler Doña Anna dokumentasjon separat for hvert produkt. Smaksprøve, pris, format, produktark og levering bekreftes for riktig produkt og batch.
+                  For restauranter, hoteller og faghandel gjør vi det enkelt å ta kontakt om riktig bruksområde. Når produktene er klare, følger konkrete produktark, priser og leveringsvilkår med dialogen.
                 </p>
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                   <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-black px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-[#8a6a19]">
@@ -787,7 +787,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">Smaksprøve</p>
               <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Meld interesse for smaksprøve.</h2>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-black/66">
-                Restauranter, hoteller, butikker og distributører kan velge hvilket Doña Anna-produkt de er interessert i. Vi svarer med relevant tilgjengelighet, batchdata, produktark, pris og levering når opplysningene er klare.
+                Velg produktet du ønsker å høre mer om, og fortell oss hvor det skal brukes. Da kan vi følge opp med relevant informasjon og eventuell smaksprøve når produktet blir tilgjengelig.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a href="mailto:info@donaanna.com?subject=Produktark%20Do%C3%B1a%20Anna" className="inline-flex items-center gap-2 border border-black/15 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em]">
