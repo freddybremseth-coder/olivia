@@ -172,7 +172,7 @@ export default async function handler(
     '<style>' + css + '</style></head><body>' +
     '<header><nav><a href="/">DOÑA ANNA</a><a href="/guider">Guider</a><a href="/magasin">Magasin</a>' +
     '<a href="/artikler">Artikler</a><a href="/blogg">Blogg</a><a href="/oppskrifter">Oppskrifter</a><a href="/#tasting">Kontakt</a></nav></header>' +
-    '<section class="hero"><div class="hero-inner"><p class="eyebrow">Doña Anna · kunnskap</p><h1>' + escapeHtml(config.heading) + '</h1><p class="intro">' + escapeHtml(config.description) + '</p><div class="direct"><strong>Kort fortalt:</strong> ' + escapeHtml(config.description) + '</div><p class="byline">Redaksjonelt innhold fra Doña Anna · <a href="/om-dona-anna">Anna og Freddy Bremseth</a></p></div></section>' +
+    '<section class="hero"><div class="hero-inner"><p class="eyebrow">Doña Anna · kunnskap</p><h1>' + escapeHtml(config.heading) + '</h1><p class="intro">' + escapeHtml(config.description) + '</p><p class="byline">Redaksjonelt innhold fra Doña Anna · <a href="/om-dona-anna">Anna og Freddy Bremseth</a></p></div></section>' +
     '<main>' +
     (cards ? '<section class="cards" aria-label="' + escapeHtml(config.label) + '">' + cards + '</section>'
       : '<p>Her finner du publiserte saker når de er klare.</p>') +
