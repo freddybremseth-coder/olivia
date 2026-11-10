@@ -313,12 +313,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               {copy.portal}
             </button>
           </div>
-          <button className="lg:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Lukk meny' : 'Åpne meny'} aria-expanded={menuOpen} aria-controls="donaanna-mobile-navigation">
+          <button type="button" className="inline-flex h-11 w-11 items-center justify-center lg:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Lukk meny' : 'Åpne meny'} aria-expanded={menuOpen} aria-controls="donaanna-mobile-navigation">
             {menuOpen ? <X /> : <Menu />}
           </button>
         </div>
         {menuOpen && (
-          <div id="donaanna-mobile-navigation" className="mx-auto max-w-7xl border-t border-white/10 py-4 lg:hidden">
+          <div id="donaanna-mobile-navigation" className="mx-auto max-h-[calc(100dvh-4rem)] max-w-7xl overflow-y-auto overscroll-contain border-t border-white/10 py-4 lg:hidden">
             {navLinks.map(([label, href]) => (
               <a key={href} href={href} onClick={() => setMenuOpen(false)} className="block py-3 text-sm uppercase tracking-[0.2em] text-white/78">
                 {label}
@@ -336,15 +336,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
         )}
       </nav>
 
-      <header id="top" className="relative min-h-screen overflow-hidden">
+      <header id="top" className="relative min-h-[100svh] overflow-hidden">
         <img src={imagePaths.estateHero} alt="Mørke oliven på trærne på Doña Anna-gården i Biar" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-42" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_42%,rgba(212,175,55,.16),transparent_34%),linear-gradient(90deg,rgba(13,13,13,.98),rgba(13,13,13,.78),rgba(13,13,13,.42))]" />
-        <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col justify-end px-5 pb-12 pt-28 md:px-8">
+        <div className="relative mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-end px-5 pb-8 pt-24 md:px-8 md:pb-12 md:pt-28">
           <div className="max-w-4xl animate-in fade-in duration-700">
             <p className="mb-5 text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">{copy.eyebrow}</p>
-            <h1 className="font-serif text-5xl leading-[0.95] tracking-normal md:text-7xl">{copy.headline}</h1>
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-white/72 md:text-xl">{copy.subhead}</p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <h1 className="font-serif text-4xl leading-[1.04] tracking-normal sm:text-5xl md:text-7xl md:leading-[0.95]">{copy.headline}</h1>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-white/72 md:mt-7 md:text-xl md:leading-8">{copy.subhead}</p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row md:mt-9">
               <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
                 {copy.cta} <ArrowRight size={17} />
               </a>
@@ -356,7 +356,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               </a>
             </div>
           </div>
-          <div className="mt-12 grid max-w-5xl grid-cols-2 border border-white/12 bg-black/22 backdrop-blur md:grid-cols-4">
+          <div className="mt-8 grid max-w-5xl grid-cols-2 border border-white/12 bg-black/22 backdrop-blur md:mt-12 md:grid-cols-4">
             {[
               ['Sted', signal.heroMetric],
               ['Areal', 'ca. 60 000 m²'],
