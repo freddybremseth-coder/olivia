@@ -14,6 +14,7 @@ Ingen e-postnøkler skal legges i Vite-klientvariabler (`VITE_*`).
    - `SUPABASE_URL` og `SUPABASE_SERVICE_ROLE_KEY` (server-only; eksisterende prosjekt)
 2. Opprett en **Database Webhook** i Supabase Dashboard for schema `olivia`, table `b2b_tasting_requests`, event `INSERT` til `https://www.donaanna.com/api/b2b/notify` (eller korrekt deploy-host). Sett header `x-donaanna-webhook-secret` lik serverhemmeligheten. Ikke bruk service-role-nøkkelen i webhook-headeren.
 3. Bekreft at URL-en ikke omdirigerer, og at deploy-plattformen kjører serverless API-ruten.
+   Endepunktet håndterer både Vercels ferdig parsede JSON-body og rå HTTP-body. Payload-grense: 16 KiB.
 4. Send én kontrollert henvendelse via offentlig skjema. Bekreft at henvendelsen ligger i administratoroversikten **og** at kun én e-post mottas.
 5. Test ugyldig webhook-hemmelighet (`401`), feil hendelsestype (`400`) og midlertidig e-postleveransefeil (`502`). Ved leveransefeil finnes henvendelsen fortsatt i databasen og må følges opp fra administratoroversikten.
 

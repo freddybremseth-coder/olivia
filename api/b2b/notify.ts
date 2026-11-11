@@ -15,7 +15,14 @@ function equalsSecret(actual: string, expected: string): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-async function bodyText(req: IncomingMessage): Promise<string> {
+async function bodyText(req: IncomingMessage & { body?: unknown }): Promise<string> {
+  // Vercel parses application/json into request.body before invoking Node functions.
+  if (req.body !== undefined && req.body !== null) {
+    const parsed = typeof req.body === 'string' ? req.body :
+      Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body);
+    if (Buffer.byteLength(parsed, 'utf8') > MAX_BODY_BYTES) throw new Error('payload_too_large');
+    return parsed;
+  }
   let size = 0;
   const parts: Buffer[] = [];
   for await (const part of req) {

@@ -39,6 +39,8 @@ test('B2B email notifications are server-only, authenticated and re-read stored 
   assert.match(handler, /\.eq\('id', id\)\.maybeSingle\(\)/);
   assert.match(handler, /htmlEscape\(value\)/);
   assert.match(handler, /Idempotency-Key/);
+  assert.match(handler, /req\.body !== undefined && req\.body !== null/);
+  assert.match(handler, /MAX_BODY_BYTES/);
   assert.match(setup, /ikke aktivert/);
   assert.match(setup, /Database Webhook/);
   assert.doesNotMatch(handler, /import\.meta\.env|VITE_RESEND/);
