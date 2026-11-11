@@ -29,3 +29,17 @@ test('admin B2B inbox supports refresh and tracked follow-up states', () => {
     assert.match(hub, new RegExp(`value="${status}"`));
   }
 });
+
+test('B2B email notifications are server-only, authenticated and re-read stored records', () => {
+  const handler = read('api/b2b/notify.ts');
+  const setup = read('docs/b2b-email-notifications.md');
+  assert.match(handler, /timingSafeEqual/);
+  assert.match(handler, /DONAANNA_B2B_WEBHOOK_SECRET/);
+  assert.match(handler, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(handler, /\.eq\('id', id\)\.maybeSingle\(\)/);
+  assert.match(handler, /htmlEscape\(value\)/);
+  assert.match(handler, /Idempotency-Key/);
+  assert.match(setup, /ikke aktivert/);
+  assert.match(setup, /Database Webhook/);
+  assert.doesNotMatch(handler, /import\.meta\.env|VITE_RESEND/);
+});
