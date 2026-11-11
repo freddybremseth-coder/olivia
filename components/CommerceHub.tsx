@@ -56,8 +56,9 @@ import CommerceReadinessPanel from './CommerceReadinessPanel';
 import CommercialFinancePanel from './CommercialFinancePanel';
 import CommerceTemplatePanel from './CommerceTemplatePanel';
 import PaymentReminderPanel from './PaymentReminderPanel';
+import { fetchB2BTastingRequests, updateB2BInquiryStatus, type B2BInquiryStatus } from '../services/b2bTasting';
 
-type CommerceTab = 'overview' | 'products' | 'customers' | 'orders' | 'invoices' | 'followup' | 'shipments' | 'messages' | 'content';
+type CommerceTab = 'overview' | 'products' | 'customers' | 'inquiries' | 'orders' | 'invoices' | 'followup' | 'shipments' | 'messages' | 'content';
 type CustomerPortalTab = 'overview' | 'products' | 'orders' | 'invoices' | 'shipments' | 'qr' | 'messages' | 'profile';
 type AdminRows = {
   customers: Array<Record<string, string | number>>;
@@ -107,6 +108,43 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
   });
   const [businessMetrics, setBusinessMetrics] = useState<CommerceBusinessMetrics | null>(null);
   const [inventoryUnits, setInventoryUnits] = useState(0);
+  const [b2bInquiries, setB2bInquiries] = useState<Array<Record<string, string | number>>>([]);
+  const [inquiryError, setInquiryError] = useState('');
+  const [inquirySaving, setInquirySaving] = useState('');
+  const [inquiryLoading, setInquiryLoading] = useState(false);
+  const [inquiryUpdatedAt, setInquiryUpdatedAt] = useState('');
+
+  const refreshInquiries = async () => {
+    setInquiryLoading(true);
+    setInquiryError('');
+    try {
+      const rows = await fetchB2BTastingRequests();
+      setB2bInquiries(rows);
+      setInquiryUpdatedAt(new Date().toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' }));
+    } catch (error) {
+      setInquiryError(error instanceof Error ? error.message : 'Kunne ikke hente B2B-henvendelser.');
+    } finally {
+      setInquiryLoading(false);
+    }
+  };
+
+  const changeInquiryStatus = async (id: string, status: B2BInquiryStatus) => {
+    setInquiryError('');
+    setInquirySaving(id);
+    try {
+      await updateB2BInquiryStatus(id, status);
+      setB2bInquiries(rows => rows.map(row => row.ID === id ? { ...row, Status: status } : row));
+    } catch (error) {
+      setInquiryError(error instanceof Error ? error.message : 'Kunne ikke lagre status.');
+    } finally {
+      setInquirySaving('');
+    }
+  };
+
+  useEffect(() => {
+    void refreshInquiries();
+    // Intentionally loaded once; user can refresh manually for new inquiries.
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,6 +169,7 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
     { id: 'overview', label: 'Oversikt', icon: Store },
     { id: 'products', label: 'Produkter', icon: Package },
     { id: 'customers', label: 'Kunder/B2B', icon: Building2 },
+    { id: 'inquiries', label: `B2B-henvendelser${b2bInquiries.filter(row => row.Status === 'new').length ? ` (${b2bInquiries.filter(row => row.Status === 'new').length} nye)` : ''}`, icon: MessageSquare },
     { id: 'orders', label: 'Ordre', icon: ShoppingCart },
     { id: 'invoices', label: 'Faktura', icon: ReceiptText },
     { id: 'followup', label: 'Oppfølging', icon: BellRing },
@@ -197,6 +236,37 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
       {activeTab === 'overview' && <CommerceOverview />}
       {activeTab === 'products' && <ProductCatalog />}
       {activeTab === 'customers' && <DataTable title="Kunder og B2B-kontoer" rows={adminRows.customers} />}
+      {activeTab === 'inquiries' && <>
+        {inquiryError && <p role="alert" className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">{inquiryError}</p>}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xl font-bold text-white">B2B-henvendelser fra donaanna.com ({b2bInquiries.length})</h3>
+              {inquiryUpdatedAt && <p className="mt-1 text-xs text-slate-400">Sist oppdatert kl. {inquiryUpdatedAt}</p>}
+            </div>
+            <button type="button" disabled={inquiryLoading} onClick={() => void refreshInquiries()} className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50">{inquiryLoading ? 'Oppdaterer…' : 'Oppdater henvendelser'}</button>
+          </div>
+          {!b2bInquiries.length && !inquiryError && <p className="text-sm text-slate-400">Ingen registrerte henvendelser ennå.</p>}
+          {b2bInquiries.map(row => (
+            <div key={String(row.ID)} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h4 className="font-bold text-white">{row.Bedrift}</h4>
+                  <p className="mt-1 text-sm text-slate-400">{row.Kontakt} · {row.Type} · {row.Dato}</p>
+                  <p className="mt-2 text-sm text-amber-200">{row.Produkt} · {row.Behov || 'Behov ikke oppgitt'}</p>
+                  <a href={`mailto:${row.Epost}`} className="mt-2 inline-block text-sm text-sky-300 underline">{row.Epost}</a>
+                  {row.Melding && <p className="mt-3 max-w-3xl whitespace-pre-wrap text-sm text-slate-300">{row.Melding}</p>}
+                </div>
+                <label className="text-xs text-slate-400">Status
+                  <select aria-label={`Status for ${row.Bedrift}`} disabled={inquirySaving === row.ID} value={String(row.Status)} onChange={event => changeInquiryStatus(String(row.ID), event.target.value as B2BInquiryStatus)} className="mt-2 block rounded-lg border border-white/20 bg-slate-900 p-2 text-sm text-white">
+                    <option value="new">Ny</option><option value="qualified">Kvalifisert</option><option value="contacted">Kontaktet</option><option value="closed">Avsluttet</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>}
       {activeTab === 'orders' && <DataTable title="Ordre og tilbud" rows={adminRows.orders} />}
       {activeTab === 'invoices' && <DataTable title="Faktura og betaling" rows={adminRows.invoices} />}
       {activeTab === 'followup' && <PaymentReminderPanel />}
