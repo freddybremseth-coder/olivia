@@ -43,3 +43,14 @@ test('B2B email notifications are server-only, authenticated and re-read stored 
   assert.match(setup, /Database Webhook/);
   assert.doesNotMatch(handler, /import\.meta\.env|VITE_RESEND/);
 });
+
+test('B2B admin CSV handoff is explicit and does not silently create RealtyFlow contacts', () => {
+  const service = read('services/b2bTasting.ts');
+  const hub = read('components/CommerceHub.tsx');
+  const guide = read('docs/b2b-realtyflow-handoff.md');
+  assert.match(service, /export function exportB2BInquiriesCsv/);
+  assert.match(service, /\[=\+@-\]/);
+  assert.match(hub, /Eksporter CSV/);
+  assert.match(guide, /manuell handoff/);
+  assert.match(guide, /donaanna/);
+});

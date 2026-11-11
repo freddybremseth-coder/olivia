@@ -56,7 +56,7 @@ import CommerceReadinessPanel from './CommerceReadinessPanel';
 import CommercialFinancePanel from './CommercialFinancePanel';
 import CommerceTemplatePanel from './CommerceTemplatePanel';
 import PaymentReminderPanel from './PaymentReminderPanel';
-import { fetchB2BTastingRequests, updateB2BInquiryStatus, type B2BInquiryStatus } from '../services/b2bTasting';
+import { exportB2BInquiriesCsv, fetchB2BTastingRequests, updateB2BInquiryStatus, type B2BInquiryStatus } from '../services/b2bTasting';
 
 type CommerceTab = 'overview' | 'products' | 'customers' | 'inquiries' | 'orders' | 'invoices' | 'followup' | 'shipments' | 'messages' | 'content';
 type CustomerPortalTab = 'overview' | 'products' | 'orders' | 'invoices' | 'shipments' | 'qr' | 'messages' | 'profile';
@@ -139,6 +139,19 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
     } finally {
       setInquirySaving('');
     }
+  };
+
+  const downloadInquiryCsv = () => {
+    if (!b2bInquiries.length) return;
+    const blob = new Blob([exportB2BInquiriesCsv(b2bInquiries)], { type: 'text/csv;charset=utf-8' });
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = href;
+    link.download = `donaanna-b2b-henvendelser-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(href), 1000);
   };
 
   useEffect(() => {
@@ -244,7 +257,10 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
               <h3 className="text-xl font-bold text-white">B2B-henvendelser fra donaanna.com ({b2bInquiries.length})</h3>
               {inquiryUpdatedAt && <p className="mt-1 text-xs text-slate-400">Sist oppdatert kl. {inquiryUpdatedAt}</p>}
             </div>
-            <button type="button" disabled={inquiryLoading} onClick={() => void refreshInquiries()} className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50">{inquiryLoading ? 'Oppdaterer…' : 'Oppdater henvendelser'}</button>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" disabled={!b2bInquiries.length || inquiryLoading} onClick={downloadInquiryCsv} className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50"><Download size={16} /> Eksporter CSV</button>
+              <button type="button" disabled={inquiryLoading} onClick={() => void refreshInquiries()} className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50">{inquiryLoading ? 'Oppdaterer…' : 'Oppdater henvendelser'}</button>
+            </div>
           </div>
           {!b2bInquiries.length && !inquiryError && <p className="text-sm text-slate-400">Ingen registrerte henvendelser ennå.</p>}
           {b2bInquiries.map(row => (

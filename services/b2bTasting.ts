@@ -75,6 +75,18 @@ export async function fetchB2BTastingRequests(): Promise<Array<Record<string, st
 
 export type B2BInquiryStatus = 'new' | 'qualified' | 'contacted' | 'closed';
 
+/** Admin-only handoff while RealtyFlow lacks a Doña Anna-specific intake contract. */
+export function exportB2BInquiriesCsv(rows: Array<Record<string, string | number>>): string {
+  const headers = ['ID', 'Dato', 'Bedrift', 'Kontakt', 'Type', 'Produkt', 'Behov', 'Epost', 'Rolle', 'Område', 'Melding', 'Status'];
+  const escapeCell = (value: string | number | undefined): string => {
+    const raw = String(value ?? '');
+    // Protect CRM / spreadsheet imports from formula execution in untrusted form fields.
+    const safe = /^[\s\u0000-\u001f]*[=+@-]/.test(raw) ? `'${raw}` : raw;
+    return `"${safe.replace(/"/g, '""')}"`;
+  };
+  return '\uFEFF' + [headers.map(escapeCell).join(';'), ...rows.map(row => headers.map(key => escapeCell(row[key])).join(';'))].join('\r\n');
+}
+
 /** Database policy also limits UPDATE to Olivia super-admins and these two columns. */
 export async function updateB2BInquiryStatus(id: string, status: B2BInquiryStatus): Promise<void> {
   const { data, error } = await supabase
