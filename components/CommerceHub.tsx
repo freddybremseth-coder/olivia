@@ -113,6 +113,17 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
   const [inquirySaving, setInquirySaving] = useState('');
   const [inquiryLoading, setInquiryLoading] = useState(false);
   const [inquiryUpdatedAt, setInquiryUpdatedAt] = useState('');
+  const [inquiryQuery, setInquiryQuery] = useState('');
+  const [inquiryStatusFilter, setInquiryStatusFilter] = useState('all');
+  const visibleInquiries = useMemo(() => {
+    const query = inquiryQuery.trim().toLocaleLowerCase('nb-NO');
+    return b2bInquiries.filter(row => {
+      if (inquiryStatusFilter !== 'all' && row.Status !== inquiryStatusFilter) return false;
+      if (!query) return true;
+      return ['Bedrift', 'Kontakt', 'Epost', 'Produkt', 'Type', 'Behov', 'Melding']
+        .some(key => String(row[key] ?? '').toLocaleLowerCase('nb-NO').includes(query));
+    });
+  }, [b2bInquiries, inquiryQuery, inquiryStatusFilter]);
 
   const refreshInquiries = async () => {
     setInquiryLoading(true);
@@ -142,8 +153,8 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
   };
 
   const downloadInquiryCsv = () => {
-    if (!b2bInquiries.length) return;
-    const blob = new Blob([exportB2BInquiriesCsv(b2bInquiries)], { type: 'text/csv;charset=utf-8' });
+    if (!visibleInquiries.length) return;
+    const blob = new Blob([exportB2BInquiriesCsv(visibleInquiries)], { type: 'text/csv;charset=utf-8' });
     const href = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = href;
@@ -258,12 +269,23 @@ const CommerceHub: React.FC<CommerceHubProps> = ({ user, mode = 'backend' }) => 
               {inquiryUpdatedAt && <p className="mt-1 text-xs text-slate-400">Sist oppdatert kl. {inquiryUpdatedAt}</p>}
             </div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" disabled={!b2bInquiries.length || inquiryLoading} onClick={downloadInquiryCsv} className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50"><Download size={16} /> Eksporter CSV</button>
+              <button type="button" disabled={!visibleInquiries.length || inquiryLoading} onClick={downloadInquiryCsv} className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50"><Download size={16} /> Eksporter viste ({visibleInquiries.length})</button>
               <button type="button" disabled={inquiryLoading} onClick={() => void refreshInquiries()} className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50">{inquiryLoading ? 'Oppdaterer…' : 'Oppdater henvendelser'}</button>
             </div>
           </div>
+          <div className="flex flex-wrap gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+            <label className="min-w-[200px] flex-1 text-xs font-semibold text-slate-300">Søk i henvendelser
+              <input type="search" value={inquiryQuery} onChange={event => setInquiryQuery(event.target.value)} placeholder="Bedrift, kontakt, e-post eller produkt" className="mt-1 block w-full rounded-lg border border-white/20 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500" />
+            </label>
+            <label className="text-xs font-semibold text-slate-300">Vis status
+              <select value={inquiryStatusFilter} onChange={event => setInquiryStatusFilter(event.target.value)} className="mt-1 block min-w-[150px] rounded-lg border border-white/20 bg-slate-900 px-3 py-2 text-sm text-white">
+                <option value="all">Alle</option><option value="new">Nye</option><option value="qualified">Kvalifiserte</option><option value="contacted">Kontaktet</option><option value="closed">Avsluttet</option>
+              </select>
+            </label>
+          </div>
           {!b2bInquiries.length && !inquiryError && <p className="text-sm text-slate-400">Ingen registrerte henvendelser ennå.</p>}
-          {b2bInquiries.map(row => (
+          {!!b2bInquiries.length && !visibleInquiries.length && <p className="text-sm text-slate-400">Ingen henvendelser samsvarer med søket eller statusfilteret.</p>}
+          {visibleInquiries.map(row => (
             <div key={String(row.ID)} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>

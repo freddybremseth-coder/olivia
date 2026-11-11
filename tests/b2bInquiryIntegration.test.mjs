@@ -50,7 +50,15 @@ test('B2B admin CSV handoff is explicit and does not silently create RealtyFlow 
   const guide = read('docs/b2b-realtyflow-handoff.md');
   assert.match(service, /export function exportB2BInquiriesCsv/);
   assert.match(service, /\[=\+@-\]/);
-  assert.match(hub, /Eksporter CSV/);
+  assert.match(hub, /Eksporter viste/);
   assert.match(guide, /manuell handoff/);
   assert.match(guide, /donaanna/);
+});
+
+test('admin inquiry list supports search and status filtering, and exports only visible rows', () => {
+  const hub = read('components/CommerceHub.tsx');
+  assert.match(hub, /inquiryQuery/);
+  assert.match(hub, /inquiryStatusFilter/);
+  assert.match(hub, /visibleInquiries\.map/);
+  assert.match(hub, /exportB2BInquiriesCsv\(visibleInquiries\)/);
 });
