@@ -1031,7 +1031,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   <button disabled={inquiryStatus === 'sending'} className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-black px-5 text-xs font-bold uppercase tracking-[0.2em] text-white disabled:opacity-50">
                     {directInquiryEnabled ? (inquiryStatus === 'sending' ? 'Sender …' : 'Send forespørsel') : 'Åpne e-postforespørsel'} <ArrowRight size={17} />
                   </button>
-                  {directInquiryEnabled && <button type="button" onClick={emailFallback} className="mt-3 min-h-11 w-full text-xs font-bold uppercase tracking-[0.15em] text-[#705515] underline">Åpne e-postforespørsel i stedet</button>}
+                  {directInquiryEnabled && <button type="button" disabled={inquiryStatus === 'sending'} onClick={emailFallback} className="mt-3 min-h-11 w-full disabled:opacity-50 text-xs font-bold uppercase tracking-[0.15em] text-[#705515] underline">Åpne e-postforespørsel i stedet</button>}
                 </>
               )}
             </form>
