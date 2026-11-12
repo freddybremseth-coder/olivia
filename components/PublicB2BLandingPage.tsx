@@ -21,6 +21,7 @@ import {
 import { fetchPublicEstateSignal, PublicEstateSignal } from '../services/publicEstate';
 import { fetchPublicCommerceProducts, type PublicCommerceProduct } from '../services/publicCommerce';
 import { DONA_ANNA_PRODUCTS, donaAnnaProductByName } from '../content/donaAnnaProducts';
+import { estatePhotos, estatePhotosPublished } from '../data/estatePhotos';
 
 interface LandingPageProps {
   onLogin: () => void;
@@ -482,7 +483,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
         <section id="story" aria-labelledby="story-heading" className="scroll-mt-20 border-y border-white/10 bg-[#171711] px-5 py-14 md:px-8 md:py-24">
           <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2">
-            <img src={biarGrovePhoto} alt="Olivenlund på gården i Biar" loading="lazy" className="h-80 w-full border border-white/10 object-cover md:h-[28rem]" />
+            <figure className="border border-white/10 bg-[#0d0d0d]">
+              <img
+                src={estatePhotosPublished ? estatePhotos.heritageTree.src : biarGrovePhoto}
+                alt={estatePhotosPublished ? estatePhotos.heritageTree.alt : 'Olivenlund på gården i Biar'}
+                loading="lazy"
+                decoding="async"
+                className="h-80 w-full object-cover object-center md:h-[28rem]"
+              />
+              {estatePhotosPublished && <figcaption className="px-4 py-3 text-sm text-white/60">{estatePhotos.heritageTree.caption}</figcaption>}
+            </figure>
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#d4af37]">Menneskene · gården · opprinnelsen</p>
               <h2 id="story-heading" className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Fra vår gård i Biar. Til ditt bord.</h2>
@@ -492,6 +502,28 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             </div>
           </div>
         </section>
+
+        {estatePhotosPublished && (
+          <section id="grove-gallery" aria-labelledby="grove-gallery-heading" className="scroll-mt-20 bg-[#0e0e0e] px-5 py-14 md:px-8 md:py-24">
+            <div className="mx-auto max-w-7xl">
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#d4af37]">Bilder fra gården</p>
+              <h2 id="grove-gallery-heading" className="mt-4 max-w-3xl font-serif text-4xl leading-tight md:text-5xl">Trær, røtter og oliven. Fra Biar.</h2>
+              <p className="mt-5 max-w-3xl leading-8 text-white/65">Et glimt fra lunden gjennom fruktens ulike stadier. Bildene viser gården og er ikke dokumentasjon for sort, batch eller ferdige produkter.</p>
+              <div className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {[estatePhotos.grove, estatePhotos.mixed, estatePhotos.roots].map((photo) => (
+                  <figure key={photo.original} className="border border-white/10 bg-white/[0.03]">
+                    <img src={photo.src} alt={photo.alt} loading="lazy" decoding="async" className="aspect-[4/5] w-full object-cover" />
+                    <figcaption className="px-5 py-4 text-sm leading-6 text-white/65">{photo.caption}</figcaption>
+                  </figure>
+                ))}
+              </div>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <a href="/olivenolje-fra-biar" className="inline-flex h-11 items-center gap-2 border border-white/20 px-5 text-xs font-bold uppercase tracking-[0.17em] text-white hover:border-[#d4af37]">Om opprinnelsen <ArrowRight size={16} /></a>
+                <a href="/tidlig-hostet-olivenolje" className="inline-flex h-11 items-center gap-2 border border-white/20 px-5 text-xs font-bold uppercase tracking-[0.17em] text-white hover:border-[#d4af37]">Om høstingen <ArrowRight size={16} /></a>
+              </div>
+            </div>
+          </section>
+        )}
 
         <section id="gifts" aria-labelledby="gifts-heading" className="scroll-mt-20 bg-[#f8f5ea] px-5 py-14 text-black md:px-8 md:py-24">
           <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr]">
