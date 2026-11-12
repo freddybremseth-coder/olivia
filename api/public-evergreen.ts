@@ -586,16 +586,24 @@ const PAGES: Record<string, EvergreenPage> = {
   personvern: {
     slug: 'personvern',
     title: 'Personvern og kontakt | Doña Anna olivenolje fra Biar',
-    description: 'Slik fungerer kontakt og personopplysninger på DoñaAnna.com: smaksprøveforespørsler åpner e-post, og B2B-portalen er en separat innlogget tjeneste.',
+    description: 'Slik håndterer Doña Anna kontakt via e-post: hva du oppgir, hvordan vi svarer og hvordan du kan ta kontakt om personopplysninger.',
     eyebrow: 'Personvern · kontakt',
     h1: 'Personvern og kontakt på DoñaAnna.com',
-    answer: 'Den offentlige smaksprøveforespørselen på DoñaAnna.com åpner en e-post i brukerens eget e-postprogram. Opplysningene sendes ikke til et offentlig nettskjema på siden.',
+    answer: 'På den offentlige siden åpner interesseskjemaet en e-post i brukerens eget e-postprogram. Vi mottar innholdet når du selv sender e-posten, og bruker opplysningene til å besvare henvendelsen. Den planlagte direkteinnsendingen er foreløpig deaktivert.',
     sections: [
       {
         heading: 'Hvordan sendes en forespørsel om smaksprøve?',
         body: [
           'Når du fyller ut den offentlige forespørselen og trykker send, åpnes en e-post til info@donaanna.com med opplysningene du har skrevet inn.',
           'Selve den offentlige nettsiden lagrer ikke disse feltene som en skjemainnsending.'
+        ]
+      },
+      {
+        heading: 'Hva skjer med opplysningene når du sender oss e-post?',
+        body: [
+          'Hvis du sender en e-post til Doña Anna, mottar vi de opplysningene du selv tar med, for eksempel navn, e-postadresse, produktinteresse og melding. Vi bruker dem til å besvare henvendelsen og følge opp spørsmålet ditt.',
+          'E-posten behandles i e-postsystemene til avsenderen og mottakeren. Dette er noe annet enn at et offentlig nettskjema lagrer opplysninger i en egen kundedatabase. Ikke send helseopplysninger, betalingskortopplysninger eller andre sensitive opplysninger i en vanlig e-post.',
+          'Du kan kontakte info@donaanna.com for spørsmål om hvilke opplysninger som er mottatt og for å be om innsyn eller sletting der det er aktuelt. Henvendelser og lovpålagte oppbevaringshensyn må vurderes konkret.'
         ]
       },
       {
