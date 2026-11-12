@@ -1,0 +1,31 @@
+# Doña Anna – direkte forespørsler fra nettsiden (trinn 1)
+
+Status: sikker, deaktivert API-klargjøring. **Nettsidens eksisterende mailto-funksjon fortsetter som før.** Ingen ny behandling av kundeopplysninger er aktivert.
+
+## Implementert
+
+`POST /api/public-inquiry` tar på sikt imot `kind` (`tasting`, `gift`, `corporate-gift`), `product`, `audience`, `name`, `email`, `company`, `role`, `area`, `message`, `website` (spam-felle) og `turnstileToken`. Ved gyldig innsending og bekreftet botkontroll kan meldingen leveres som e-post til `info@donaanna.com`.
+
+Endpoint er **bevisst inaktiv** (503) uten alle tre server-only miljøvariabler:
+- `DONAANNA_RESEND_API_KEY` — Resend-prosjektnøkkel med avgrenset sendetilgang;
+- `DONAANNA_MAIL_FROM` — bekreftet avsenderadresse på et verifisert Doña Anna-domene;
+- `DONAANNA_TURNSTILE_SECRET` — Cloudflare Turnstile serverhemmelighet.
+
+Ikke legg noen av disse i `VITE_*` eller `NEXT_PUBLIC_*`. Alle tre er hemmelige på Vercel-serveren. Endepunktet har ingen lagring av henvendelser i database og skriver ikke kundeopplysninger i logger.
+
+## Krav før trinn 2 / aktivisering
+
+1. Konfigurer og verifiser e-postdomenet med SPF/DKIM hos leverandør og Resend; opprett servernøkkel.
+2. Opprett Turnstile site key + secret med vertene `www.donaanna.com` og `donaanna.com` (prøvedomener særskilt). Verifiser serverrespons per kall.
+3. Oppdater personvernteksten med datakategorier, formål, databehandler, lagringstid og opplyste kontaktpunkter. Få juridisk godkjenning før opptak av persondata.
+4. Implementer frontend med Turnstile-komponent og robust statusbehandling: ikke gi «sendt»-melding før `accepted: true`; bruk fortsatt e-postfallback når endepunktet returnerer 503. Resett challenge per forsøk.
+5. Utfør spam-, rate-/bot-, origin-, størrelses- og e-postleveringstest i preview. Turnstile er bare et lag: dersom trafikk øker, legg til varig rate limiting via godkjent datalager/gateway før bred utrulling.
+6. Sett opp rutine for besvaring og sletting av kundehenvendelser i innboksen.
+
+## Avgrensninger
+
+- Ikke la en nettleser velge mottakeradresse eller avsender.
+- Ingen direkte utsendelse til kunde, ordrebekreftelse, lagerreservasjon eller automatisk oppfølging.
+- Ingen database/CRM-lagring uten særskilt beslutning om databehandling og tilgangsstyring.
+- Ikke annonser at skjemaet virker direkte før testen er grønn og nødvendig infrastruktur er aktivert.
+- Dette PR-et leverer **kun backend under sikker standard-avslått konfigurasjon og dokumentasjon**.
