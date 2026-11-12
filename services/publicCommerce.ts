@@ -41,6 +41,8 @@ function productPhoto(row: any): { url: string; approved: boolean } {
 
 function priceLabel(row: any): string {
   const metadata = row.metadata || {};
+  // Individual stock and price approval is separate from general public-site approval.
+  if (metadata.public_price_approved !== true) return 'Pris på forespørsel';
   if (metadata.price_label) return text(metadata.price_label);
   const value = Number(row.price_b2b || row.price_retail || row.unit_price || 0);
   if (!value) return 'B2B quote';
@@ -52,6 +54,7 @@ function priceLabel(row: any): string {
 }
 
 function stockLabel(row: any): string {
+  if (row.metadata?.public_stock_approved !== true) return 'Tilgjengelighet bekreftes ved forespørsel';
   const stock = Number(row.stock_quantity ?? row.stock ?? 0);
   const unit = text(row.unit) || 'stk';
   return stock > 0 ? `${stock.toLocaleString('nb-NO')} ${unit}` : 'På forespørsel';
