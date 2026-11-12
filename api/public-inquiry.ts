@@ -25,7 +25,11 @@ function text(value: unknown, max: number): string {
 }
 
 async function readBody(req: Request): Promise<unknown> {
-  if (req.body !== undefined) return req.body;
+  // Some runtimes pre-parse JSON bodies. Enforce the same size cap either way.
+  if (req.body !== undefined) {
+    if (Buffer.byteLength(JSON.stringify(req.body), 'utf8') > MAX_BODY_BYTES) throw new Error('too-large');
+    return req.body;
+  }
   const chunks: Buffer[] = [];
   let bytes = 0;
   for await (const chunk of req) {
@@ -47,14 +51,18 @@ export default async function handler(req: Request, res: ServerResponse) {
   const apiKey = process.env.DONAANNA_RESEND_API_KEY;
   const from = process.env.DONAANNA_MAIL_FROM;
   const secret = process.env.DONAANNA_TURNSTILE_SECRET;
-  if (!apiKey || !from || !secret) return respond(res, 503, { error: 'not_configured' });
+  // Explicit publication gate: provisioning secrets alone must never turn on intake.
+  if (process.env.DONAANNA_INQUIRY_ENABLED !== 'true' || !apiKey || !from || !secret) {
+    return respond(res, 503, { error: 'not_configured' });
+  }
 
   const origin = req.headers.origin || '';
   if (origin !== SITE && origin !== 'https://donaanna.com') {
     return respond(res, 403, { error: 'origin_not_allowed' });
   }
   const length = Number(req.headers['content-length'] || 0);
-  if (length > MAX_BODY_BYTES || !String(req.headers['content-type'] || '').startsWith('application/json')) {
+  if (!Number.isFinite(length) || length < 0 || length > MAX_BODY_BYTES ||
+      !/^application\/json(?:\s*;|\s*$)/i.test(String(req.headers['content-type'] || ''))) {
     return respond(res, 413, { error: 'invalid_content' });
   }
 
@@ -80,6 +88,7 @@ export default async function handler(req: Request, res: ServerResponse) {
   const token = text(data.turnstileToken, 2_048);
 
   if (!KINDS.has(kind) || (kind === 'tasting' && !PRODUCTS.has(product)) ||
+      (kind === 'corporate-gift' && audience !== 'business') ||
       !['private', 'business'].includes(audience) || !name || !email ||
       (audience === 'business' && !company) ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !token) {
