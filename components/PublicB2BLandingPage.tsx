@@ -56,6 +56,7 @@ type ProductMedia = {
   safeContextImage: string;
   labelStatus: 'verified' | 'pending';
   availability: 'current' | 'planned';
+  availabilityText: string;
 };
 
 const productMedia = (name: string): ProductMedia => {
@@ -67,6 +68,7 @@ const productMedia = (name: string): ProductMedia => {
         safeContextImage: product.safeContextImage,
         labelStatus: product.labelStatus,
         availability: product.availability,
+        availabilityText: product.availabilityText,
       }
     : {
         slug: 'produkter',
@@ -74,6 +76,7 @@ const productMedia = (name: string): ProductMedia => {
         safeContextImage: imagePaths.oliveGrove,
         labelStatus: 'pending',
         availability: 'planned',
+        availabilityText: 'Produktinformasjon er ikke tilgjengelig ennå',
       };
 };
 
