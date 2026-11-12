@@ -315,7 +315,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     DONA_ANNA_PRODUCTS.flatMap(product => [product.name.toLowerCase(), ...product.aliases])
   );
   const approvedLivePortfolio = livePortfolio.filter(item => approvedNames.has(item.name.trim().toLowerCase()));
-  const portfolioItems = approvedLivePortfolio.length >= 4 ? approvedLivePortfolio : portfolio;
+  // Preserve the five canonical editorial identities and their availability messaging.
+  // A partial, internal commercial feed must not replace or hide products.
+  const portfolioItems = portfolio.map(item => {
+    const registry = donaAnnaProductByName(item.name);
+    const live = approvedLivePortfolio.find(entry => entry.name.trim().toLowerCase() === item.name.toLowerCase());
+    return registry?.availability === 'planned' || !live
+      ? item
+      : { ...item, priceLabel: live.priceLabel, stockLabel: live.stockLabel };
+  });
 
   const chooseInquiry = (kind: 'tasting' | 'gift' | 'corporate-gift', audience: 'private' | 'business' = 'private', preference: 'tasting-set' | 'personal-gift' = 'tasting-set') => {
     setInquiryKind(kind);
@@ -733,6 +741,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   <h3 className="mt-2 font-serif text-3xl"><a href={productHref(item.name)} className="hover:text-[#d4af37]">{item.name}</a></h3>
                   <p className="mt-3 border-y border-white/10 py-3 text-[10px] font-bold uppercase tracking-[0.24em] text-white/72">{item.labelName}</p>
                   <p className="mt-1 text-xs uppercase tracking-[0.2em] text-white/48">{item.format}</p>
+                  <p className="mt-3 text-xs leading-5 text-white/65">{productMedia(item.name).availabilityText}</p>
                   {'priceLabel' in item && (
                     <div className="mt-4 grid grid-cols-2 gap-2 border-y border-white/10 py-3">
                       <div>
