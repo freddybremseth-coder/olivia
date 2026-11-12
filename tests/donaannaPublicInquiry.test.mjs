@@ -97,6 +97,23 @@ test('only confirmed verification and mail provider success count as accepted', 
   assert.deepEqual(envelope.reply_to, ['visitor@example.net']);
 });
 
+test('gift preference is validated and carried into provider email', { concurrency: false }, async () => {
+  configure(true);
+  const sent = [];
+  globalThis.fetch = async (url, options) => {
+    sent.push({ url, options });
+    if (url.includes('turnstile')) return { ok: true, json: async () => ({ success: true, hostname: 'www.donaanna.com' }) };
+    return { ok: true };
+  };
+  const gift = { ...valid, kind: 'gift', product: '', giftPreference: 'personal-gift' };
+  assert.equal((await call({ body: { ...gift, giftPreference: 'invented' } })).status, 400);
+  assert.equal(sent.length, 0);
+  assert.equal((await call({ body: gift })).status, 200);
+  assert.equal(sent.length, 2);
+  const email = JSON.parse(sent[1].options.body);
+  assert.match(email.text, /Gavetype: Personlig gave/);
+});
+
 test('provider failure never returns acceptance', { concurrency: false }, async () => {
   configure(true);
   globalThis.fetch = async (url) =>
