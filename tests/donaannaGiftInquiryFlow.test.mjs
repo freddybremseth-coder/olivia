@@ -28,3 +28,10 @@ test('gift selector retains an explicit preference', () => {
   assert.match(source, /value="personal-gift">Personlig gave/);
   assert.match(source, /giftPreference === 'personal-gift' \? 'Personlig gave' : 'Smakssett'/);
 });
+
+test('tasting calls to action return to tasting context after a gift selection', () => {
+  assert.match(source, /href="#tasting" onClick=\{\(\) => chooseInquiry\('tasting'\)\}/);
+  assert.match(source, /href="#tasting" onClick=\{\(\) => chooseInquiry\('tasting', 'business'\)\}/);
+  assert.match(source, /setMenuOpen\(false\); chooseInquiry\('tasting'\);/);
+  assert.doesNotMatch(source, /href="#tasting" className=/);
+});
