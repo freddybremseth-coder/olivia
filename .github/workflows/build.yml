@@ -42,6 +42,8 @@ jobs:
         run: node --test tests/donaannaPublicInquiry.test.mjs
       - name: Test staged public inquiry client and safe fallback contract
         run: node --test tests/donaannaPublicInquiryClient.test.mjs
+      - name: Test unified gift inquiry regression
+        run: node --test tests/donaannaGiftInquiryFlow.test.mjs
       - name: Validate public measurement script
         run: node --check public/donaanna-analytics.js
       - name: Test public/app menu isolation
