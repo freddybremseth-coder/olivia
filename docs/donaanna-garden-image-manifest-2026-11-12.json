@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "collection": "donaanna-biar-garden-2026",
+  "status": "awaiting-approved-public-image-urls",
+  "licenseVerified": false,
+  "originVerified": false,
+  "assetRoot": null,
+  "items": [
+    {
+      "id": "biar-oliventre-grov-stamme",
+      "sourceFile": "IMG_8395(1).jpeg",
+      "priority": "primary",
+      "alt": "Oliventre med kraftig stamme i Doña Annas olivenlund i Biar",
+      "slots": [
+        "home.story",
+        "about.feature"
+      ],
+      "publicUrl": null,
+      "width": null,
+      "height": null,
+      "licenseVerified": false,
+      "originVerified": false
+    },
+    {
+      "id": "biar-oliven-gronn-fiolett",
+      "sourceFile": "IMG_8332.jpeg",
+      "priority": "primary",
+      "alt": "Grønne og fiolette oliven på samme gren i olivenlunden i Biar",
+      "slots": [
+        "guide.ripening.primary"
+      ],
+      "publicUrl": null,
+      "width": null,
+      "height": null,
+      "licenseVerified": false,
+      "originVerified": false
+    },
+    {
+      "id": "biar-gronne-oliven",
+      "sourceFile": "IMG_8320.jpeg",
+      "priority": "primary",
+      "alt": "Grønne oliven på en gren på gården i Biar",
+      "slots": [
+        "product.verde-vivo.context"
+      ],
+      "publicUrl": null,
+      "width": null,
+      "height": null,
+      "licenseVerified": false,
+      "originVerified": false
+    },
+    {
+      "id": "biar-oliventre-bark-rotter",
+      "sourceFile": "IMG_8396.jpeg",
+      "priority": "primary",
+      "alt": "Grov bark og røtter på et gammelt oliventre på gården i Biar",
+      "slots": [
+        "product.raiz-antigua.context",
+        "home.story.secondary"
+      ],
+      "publicUrl": null,
+      "width": null,
+      "height": null,
+      "licenseVerified": false,
+      "originVerified": false
+    },
+    {
+      "id": "biar-morke-oliven",
+      "sourceFile": "IMG_8338.jpeg",
+      "priority": "primary",
+      "alt": "Mørke oliven som henger på en gren i Biar",
+      "slots": [
+        "guide.ripening.secondary"
+      ],
+      "publicUrl": null,
+      "width": null,
+      "height": null,
+      "licenseVerified": false,
+      "originVerified": false
+    },
+    {
+      "id": "biar-olivenlund-landskap",
+      "sourceFile": "IMG_8331.jpeg",
+      "priority": "primary",
+      "alt": "Olivenlund med spredte oliventrær og blå himmel i Biar",
+      "slots": [
+        "origin.primary",
+        "home.estate"
+      ],
+      "publicUrl": null,
+      "width": null,
+      "height": null,
+      "licenseVerified": false,
+      "originVerified": false
+    },
+    {
+      "id": "biar-oliventre-lund",
+      "sourceFile": "IMG_8391.jpeg",
+      "priority": "secondary",
+      "alt": "Oliventre i lunden i Biar",
+      "slots": [
+        "about.gallery"
+      ],
+      "publicUrl": null,
+      "width": null,
+      "height": null,
+      "licenseVerified": false,
+      "originVerified": false
+    },
+    {
+      "id": "biar-gronne-oliven-grener",
+      "sourceFile": "IMG_8383.jpeg",
+      "priority": "secondary",
+      "alt": "Grønne oliven og grener på gården i Biar",
+      "slots": [
+        "guide.early-harvest.secondary",
+        "product.verde-alto.context"
+      ],
+      "publicUrl": null,
+      "width": null,
+      "height": null,
+      "licenseVerified": false,
+      "originVerified": false
+    },
+    {
+      "id": "biar-oliven-mot-himmel",
+      "sourceFile": "IMG_8343.jpeg",
+      "priority": "secondary",
+      "alt": "Grønne og fiolette oliven på en gren mot blå himmel",
+      "slots": [
+        "guide.ripening.tertiary"
+      ],
+      "publicUrl": null,
+      "width": null,
+      "height": null,
+      "licenseVerified": false,
+      "originVerified": false
+    },
+    {
+      "id": "biar-oliventre-hul-stamme",
+      "sourceFile": "IMG_8334.jpeg",
+      "priority": "secondary",
+      "alt": "Hul stamme på oliventre i lunden i Biar",
+      "slots": [
+        "product.raiz-antigua.context.secondary"
+      ],
+      "publicUrl": null,
+      "width": null,
+      "height": null,
+      "licenseVerified": false,
+      "originVerified": false
+    }
+  ]
+}
