@@ -526,27 +526,43 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
         )}
 
         <section id="gifts" aria-labelledby="gifts-heading" className="scroll-mt-20 bg-[#f8f5ea] px-5 py-14 text-black md:px-8 md:py-24">
-          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#8a6a19]">Smaksopplevelser og gaver</p>
-              <h2 id="gifts-heading" className="mt-4 font-serif text-4xl leading-tight md:text-6xl">En gave med en historie.</h2>
-              <p className="mt-6 text-lg leading-8 text-black/70">Vi utforsker smakssett og gavepresentasjoner med Doña Anna-produkter. Målet er å gjøre smaken, opprinnelsen og historien fra gården til en helhetlig opplevelse.</p>
-              <p className="mt-4 leading-7 text-black/60">Gaveformatene er under utvikling. Forespørselen er ikke en bestilling, og tilgjengelighet, pris og levering er ikke fastsatt.</p>
-              <a href="mailto:info@donaanna.com?subject=Interesse%20for%20gaveesker%20og%20smakssett" className="mt-7 inline-flex h-12 items-center gap-2 bg-black px-6 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-[#705515]">Meld interesse <ArrowRight size={16} /></a>
+          <div className="mx-auto max-w-7xl">
+            <div className="grid items-end gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#8a6a19]">Smaksopplevelser og gaver</p>
+                <h2 id="gifts-heading" className="mt-4 font-serif text-4xl leading-tight md:text-6xl">En gave med en historie.</h2>
+              </div>
+              <p className="max-w-2xl text-lg leading-8 text-black/70">En god gave handler ikke bare om innholdet. Den kan også formidle et sted, menneskene bak og tanken som ligger i råvaren. Derfor utforsker vi gavepresentasjoner og smaksopplevelser fra Doña Anna.</p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <article className="border border-black/10 bg-white p-7">
-                <Package size={26} className="text-[#8a6a19]" />
-                <h3 className="mt-6 font-serif text-3xl">Smakssett</h3>
-                <p className="mt-4 leading-7 text-black/65">En mulig introduksjon til ulike oljer, deres bruk og dokumenterte særpreg.</p>
-                <p className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-[#8a6a19]">Under utvikling</p>
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
+              <article className="flex h-full flex-col border border-black/10 bg-white p-7">
+                <Package size={27} className="text-[#8a6a19]" />
+                <p className="mt-6 text-xs font-bold uppercase tracking-[0.15em] text-[#8a6a19]">Konsept under utvikling</p>
+                <h3 className="mt-2 font-serif text-3xl">Smakssett</h3>
+                <p className="mt-4 flex-1 leading-7 text-black/65">Et mulig utvalg av oljer med veiledning om bruk, opprinnelse og dokumenterte forskjeller – for matinteresserte som vil lære mer.</p>
+                <a href="mailto:info@donaanna.com?subject=Interesse%20for%20Do%C3%B1a%20Anna%20smakssett&body=Hei%2C%20jeg%20vil%20gjerne%20h%C3%B8re%20mer%20om%20smakssett.%0A%C3%98nsket%20antall%3A%20%0ANavn%3A%20"
+                  className="mt-7 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#705515] underline-offset-4 hover:underline">Meld interesse <ArrowRight size={16} /></a>
               </article>
-              <article className="border border-black/10 bg-white p-7">
-                <Sparkles size={26} className="text-[#8a6a19]" />
-                <h3 className="mt-6 font-serif text-3xl">Gavepresentasjon</h3>
-                <p className="mt-4 leading-7 text-black/65">En gjennomtenkt gave for matinteresserte, vertskap og bedrifter med sans for opprinnelse.</p>
-                <p className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-[#8a6a19]">Meld interesse</p>
+              <article className="flex h-full flex-col border border-black/10 bg-white p-7">
+                <Sparkles size={27} className="text-[#8a6a19]" />
+                <p className="mt-6 text-xs font-bold uppercase tracking-[0.15em] text-[#8a6a19]">Konsept under utvikling</p>
+                <h3 className="mt-2 font-serif text-3xl">Personlig gave</h3>
+                <p className="mt-4 flex-1 leading-7 text-black/65">For vertskap og matglade mennesker. En gjennomtenkt presentasjon med fortellingen om gården som en del av opplevelsen.</p>
+                <a href="mailto:info@donaanna.com?subject=Interesse%20for%20personlig%20gave%20fra%20Do%C3%B1a%20Anna&body=Hei%2C%20jeg%20vil%20gjerne%20h%C3%B8re%20mer%20om%20gavepresentasjoner.%0AAnledning%3A%20%0A%C3%98nsket%20antall%3A%20"
+                  className="mt-7 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#705515] underline-offset-4 hover:underline">Meld interesse <ArrowRight size={16} /></a>
               </article>
+              <article className="flex h-full flex-col border border-black/10 bg-white p-7">
+                <Building2 size={27} className="text-[#8a6a19]" />
+                <p className="mt-6 text-xs font-bold uppercase tracking-[0.15em] text-[#8a6a19]">Forespørsel for bedrifter</p>
+                <h3 className="mt-2 font-serif text-3xl">Firmagaver</h3>
+                <p className="mt-4 flex-1 leading-7 text-black/65">En mulig gave til kunder, ansatte og samarbeidspartnere. Fortell oss om anledning, antall og behov, så vurderer vi hva som kan tilbys.</p>
+                <a href="mailto:info@donaanna.com?subject=Foresp%C3%B8rsel%20firmagaver%20Do%C3%B1a%20Anna&body=Bedrift%3A%20%0AKontaktperson%3A%20%0A%C3%98nsket%20antall%3A%20%0AAnledning%3A%20%0A%C3%98nsket%20tidspunkt%3A%20"
+                  className="mt-7 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#705515] underline-offset-4 hover:underline">Spør om mulighetene <ArrowRight size={16} /></a>
+              </article>
+            </div>
+            <div className="mt-7 flex flex-wrap items-center justify-between gap-4 border-t border-black/10 pt-6">
+              <p className="max-w-2xl text-sm leading-6 text-black/60">Dette er interessehenvendelser – ikke bestillinger. Vi bekrefter ingen pris, varetilgjengelighet, gaveemballasje eller levering før produktene og betingelsene er klare.</p>
+              <a href="/om-dona-anna" className="inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#705515] underline-offset-4 hover:underline">Les historien om gården <ArrowRight size={16} /></a>
             </div>
           </div>
         </section>
