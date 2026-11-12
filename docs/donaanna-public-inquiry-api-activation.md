@@ -29,3 +29,16 @@ Ikke legg noen av disse i `VITE_*` eller `NEXT_PUBLIC_*`. Alle tre er hemmelige 
 - Ingen database/CRM-lagring uten særskilt beslutning om databehandling og tilgangsstyring.
 - Ikke annonser at skjemaet virker direkte før testen er grønn og nødvendig infrastruktur er aktivert.
 - Dette PR-et leverer **kun backend under sikker standard-avslått konfigurasjon og dokumentasjon**.
+
+## Sikker aktivering – ny ekstra port (12. november 2026)
+
+`DONAANNA_INQUIRY_ENABLED=true` må legges inn **kun etter** at alle krav er oppfylt, i tillegg til Resend/Turnstile-hemmelighetene. Å sette inn API-nøkler alene aktiverer ikke mottaket. Miljøvariabelen skal holdes fraværende eller `false` frem til juridisk og teknisk godkjenning.
+
+Automatiske tester i `tests/donaannaPublicInquiry.test.mjs` kontrollerer:
+- Avslått mottak selv om e-postnøkler ligger i miljøet.
+- Avvisning av feil origin og store JSON-bodies (også ferdig parsede body-objekter).
+- Avvisning av ugyldige produkter og bot-verifisering som feiler.
+- Aksept først etter vellykket bot-kontroll **og** e-postleverandørrespons.
+- HTTP 502 ved feil hos e-postleverandøren, uten falskt «sendt»-signal.
+
+Ingen ende-til-ende-test med ekte e-postadresse, Resend eller Turnstile er gjennomført. Slike tester må utføres før nettskjemaet byttes fra e-postfallback til direktesending.
