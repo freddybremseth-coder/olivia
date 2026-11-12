@@ -280,6 +280,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   const navLinks = [
     ['Gården', '#estate'],
     ['Produkter', '#portfolio'],
+    ['Historien', '#story'],
+    ['Gaver', '#gifts'],
     ['Kunnskap', '#knowledge'],
     ['Guider', '/guider'],
     ['Magasin', '/magasin'],
@@ -474,6 +476,45 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   </article>
                 ))}
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="story" aria-labelledby="story-heading" className="scroll-mt-20 border-y border-white/10 bg-[#171711] px-5 py-14 md:px-8 md:py-24">
+          <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2">
+            <img src={biarGrovePhoto} alt="Olivenlund på gården i Biar" loading="lazy" className="h-80 w-full border border-white/10 object-cover md:h-[28rem]" />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#d4af37]">Menneskene · gården · opprinnelsen</p>
+              <h2 id="story-heading" className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Fra vår gård i Biar. Til ditt bord.</h2>
+              <p className="mt-6 text-lg leading-8 text-white/72">Doña Anna er Anna og Freddys olivenprosjekt i innlandet av Alicante. Vi vil dele historien om stedet, menneskene og arbeidet bak hver olje – ikke bare vise frem en flaske.</p>
+              <p className="mt-4 leading-8 text-white/62">Det som står på etiketten, skal kunne følges tilbake til dokumenterte produkter og batcher. De forskjellige oljene har hver sin identitet, men alle bærer navnet Doña Anna og historien fra Biar.</p>
+              <a href="/om-dona-anna" className="mt-7 inline-flex h-12 items-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-white">Bli kjent med Doña Anna <ArrowRight size={16} /></a>
+            </div>
+          </div>
+        </section>
+
+        <section id="gifts" aria-labelledby="gifts-heading" className="scroll-mt-20 bg-[#f8f5ea] px-5 py-14 text-black md:px-8 md:py-24">
+          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr]">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#8a6a19]">Smaksopplevelser og gaver</p>
+              <h2 id="gifts-heading" className="mt-4 font-serif text-4xl leading-tight md:text-6xl">En gave med en historie.</h2>
+              <p className="mt-6 text-lg leading-8 text-black/70">Vi utforsker smakssett og gavepresentasjoner med Doña Anna-produkter. Målet er å gjøre smaken, opprinnelsen og historien fra gården til en helhetlig opplevelse.</p>
+              <p className="mt-4 leading-7 text-black/60">Gaveformatene er under utvikling. Forespørselen er ikke en bestilling, og tilgjengelighet, pris og levering er ikke fastsatt.</p>
+              <a href="mailto:info@donaanna.com?subject=Interesse%20for%20gaveesker%20og%20smakssett" className="mt-7 inline-flex h-12 items-center gap-2 bg-black px-6 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-[#705515]">Meld interesse <ArrowRight size={16} /></a>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <article className="border border-black/10 bg-white p-7">
+                <Package size={26} className="text-[#8a6a19]" />
+                <h3 className="mt-6 font-serif text-3xl">Smakssett</h3>
+                <p className="mt-4 leading-7 text-black/65">En mulig introduksjon til ulike oljer, deres bruk og dokumenterte særpreg.</p>
+                <p className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-[#8a6a19]">Under utvikling</p>
+              </article>
+              <article className="border border-black/10 bg-white p-7">
+                <Sparkles size={26} className="text-[#8a6a19]" />
+                <h3 className="mt-6 font-serif text-3xl">Gavepresentasjon</h3>
+                <p className="mt-4 leading-7 text-black/65">En gjennomtenkt gave for matinteresserte, vertskap og bedrifter med sans for opprinnelse.</p>
+                <p className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-[#8a6a19]">Meld interesse</p>
+              </article>
             </div>
           </div>
         </section>
