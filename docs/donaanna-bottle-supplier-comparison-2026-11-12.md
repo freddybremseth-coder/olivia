@@ -81,3 +81,28 @@ Doña Anna
 5. Først deretter oppdateres godkjent produktfoto på donaanna.com.
 
 **Ingen e-poster er sendt fra dette dokumentet.**
+
+## Verifiserte kontaktkanaler og oppdaterte prisindikasjoner (12.11.2026)
+
+### Vicrisol
+
+- Offisiell kontaktside: https://www.vicrisol.com/contacto-vicrisol/
+- E-post vist på selskapets produkt-/kontaktinformasjon: **vicrisol@vicrisol.com** (og **jsoler@vicrisol.com** i enkelte produktvisninger)
+- Telefon: **+34 960 268 101**, Benissoda (Valencia).
+- Anbefalt første kontakt: forespørsel på spansk til vicrisol@vicrisol.com eller skjema på kontaktsiden. Send bilder av eksisterende etikett bare etter at mottaker er bekreftet.
+- Konkret offentlig prisindikasjon: **BIOLIO DOP 500 ml, pakke på 210 stk, annonsert til 336,38 € inkl. IVA** i den levende kategorivisningen (https://www.vicrisol.com/anchura-mm/78/). Det tilsvarer ca. **1,60 € inkl. IVA per tom flaske**, eksklusive frakt, etikett, lukning og eventuell bedriftspris. Siden kan endres; dette er **ikke et innhentet tilbud**.
+- DÓRICA DOP 500 ml **pakke på 30 stk, vist til 31,46 € inkl. IVA** i Vicrisols sortiment (https://www.vicrisol.com/altura-mm/268/?pdf-catalog=314&pdf-catalog=full&taxonomy=pa_altura-mm), ca. **1,05 € inkl. IVA per flaske**, med samme forbehold.
+- Spør eksplisitt om hvilken kompatibel lukning som har dokumentert tamper-evident egenskap; «DOP» i flaskehalsnavnet alene bekrefter ikke at lokk følger med eller oppfyller alle krav.
+
+### Berlin Packaging
+
+- Offisiell ORIGINAE-serie: https://berlinpackaging.eu/es-es/markets/food/collections/originae
+- Offisiell EMEA-forespørsel: https://berlinpackaging.eu/es-international/supplier-enquiry
+- Innkjøpskontakt oppgitt i offisielle vilkår: **info.eu@berlinpackaging.com**, https://berlinpackaging.eu/es-international/terms-and-conditions
+- Spør om **500 ml Dark Green** i **Eolia, Seed eller Bellagio**, minsteordre, total pakkepris, lukning og eventuell prøvetjeneste. De finnes også i andre modeller; begrens første runde til maks tre slik at tilbudene kan sammenlignes.
+
+### Retningslinje for kontakt
+
+- **Ingen leverandør er kontaktet eller har gitt tilbud i dette arbeidet.** Kontaktopplysningene er kontrollert mot leverandørenes egne sider, men må testes ved første utsendelse.
+- RFQ-teksten i dette dokumentet er klar til manuell utsendelse. Ikke bruk masseutsendelse eller bekreft levering/bestilling.
+- Få først svar om 1–2 fysiske prøver og 100/300/1000 stk før innkjøp; ikke bind Doña Anna til pallstørrelser uten å vite etterspørsel.
