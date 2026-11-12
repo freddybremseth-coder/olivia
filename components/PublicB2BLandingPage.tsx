@@ -560,6 +560,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   className="mt-7 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#705515] underline-offset-4 hover:underline">Spør om mulighetene <ArrowRight size={16} /></a>
               </article>
             </div>
+            <div className="mt-8 grid gap-6 border border-black/10 bg-[#eee7d7] p-6 md:grid-cols-[0.75fr_1.25fr] md:p-8">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#705515]">Vår designfilosofi</p>
+                <h3 className="mt-3 font-serif text-3xl leading-tight md:text-4xl">Historien skal være like ekte som innholdet.</h3>
+              </div>
+              <div>
+                <p className="leading-7 text-black/70">Vi utvikler emballasjen rundt én tydelig Doña Anna-identitet: respekt for gården i Biar, egne produktnavn og informasjon som kan dokumenteres. En vakker flaske er viktig, men kvaliteten på råvaren og det vi kan fortelle sant om den kommer først.</p>
+                <p className="mt-3 text-sm leading-6 text-black/60">Flasker, gaveesker og nye etiketter er fremdeles til vurdering. Endelig utforming vises først når fysiske prøver og nødvendig produktinformasjon er godkjent.</p>
+                <a href="/om-dona-anna" className="mt-4 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#705515] underline-offset-4 hover:underline">Om gården og menneskene <ArrowRight size={16} /></a>
+              </div>
+            </div>
             <div className="mt-7 flex flex-wrap items-center justify-between gap-4 border-t border-black/10 pt-6">
               <p className="max-w-2xl text-sm leading-6 text-black/60">Dette er interessehenvendelser – ikke bestillinger. Vi bekrefter ingen pris, varetilgjengelighet, gaveemballasje eller levering før produktene og betingelsene er klare.</p>
               <a href="/om-dona-anna" className="inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#705515] underline-offset-4 hover:underline">Les historien om gården <ArrowRight size={16} /></a>
