@@ -409,7 +409,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             ))}
           </div>
           <div className="hidden items-center gap-2 lg:flex">
-            <a href="#tasting" className="inline-flex h-10 items-center gap-2 border border-[#d4af37]/55 px-4 text-xs font-bold uppercase tracking-[0.18em] text-[#f7f1df] transition hover:bg-[#d4af37] hover:text-black">
+            <a href="#tasting" onClick={() => chooseInquiry('tasting')} className="inline-flex h-10 items-center gap-2 border border-[#d4af37]/55 px-4 text-xs font-bold uppercase tracking-[0.18em] text-[#f7f1df] transition hover:bg-[#d4af37] hover:text-black">
               Be om smaksprøve
             </a>
             <button data-testid="b2b-portal-nav" onClick={onLogin} className="inline-flex h-10 items-center gap-2 bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-[#d4af37]">
@@ -428,7 +428,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               </a>
             ))}
             <div className="mt-3 grid gap-2">
-              <a href="#tasting" onClick={() => setMenuOpen(false)} className="w-full bg-[#d4af37] px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-black">
+              <a href="#tasting" onClick={() => { setMenuOpen(false); chooseInquiry('tasting'); }} className="w-full bg-[#d4af37] px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-black">
                 Be om smaksprøve
               </a>
               <button data-testid="b2b-portal-mobile-menu" onClick={() => { setMenuOpen(false); onLogin(); }} className="w-full border border-white/12 px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.2em] text-white/72">
@@ -448,7 +448,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             <h1 className="font-serif text-4xl leading-[1.04] tracking-normal sm:text-5xl md:text-7xl md:leading-[0.95]">{copy.headline}</h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-white/72 md:mt-7 md:text-xl md:leading-8">{copy.subhead}</p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row md:mt-9">
-              <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
+              <a href="#tasting" onClick={() => chooseInquiry('tasting')} className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
                 {copy.cta} <ArrowRight size={17} />
               </a>
               <a href="#portfolio" className="inline-flex h-12 items-center justify-center gap-2 border border-white/18 px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-white/8">
@@ -517,7 +517,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <p className="mt-5 max-w-xl text-lg leading-8 text-black/64">Start med behovet ditt. Derfra kan du gå direkte til riktig produktinformasjon, kunnskap eller kontaktpunkt.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
-                <a href="#tasting" className="group border border-black/10 bg-white p-6 transition hover:-translate-y-1 hover:border-[#8a6a19]/55">
+                <a href="#tasting" onClick={() => chooseInquiry('tasting', 'business')} className="group border border-black/10 bg-white p-6 transition hover:-translate-y-1 hover:border-[#8a6a19]/55">
                   <Building2 size={24} className="text-[#8a6a19]" />
                   <h3 className="mt-8 font-serif text-3xl">Restaurant eller hotell</h3>
                   <p className="mt-3 leading-7 text-black/62">Velg produktet du er interessert i og få relevant batch- og produktinformasjon når den er klar.</p>
@@ -560,7 +560,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   Doña Anna ligger i Biar i Alicante og omfatter rundt 60 000 m² med om lag 1 500 oliventrær. Vi bygger merkevaren på den faktiske gården, sortene vi har og dokumentasjon fra den konkrete produksjonen – ikke på generiske smaks- eller terroirpåstander.
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
+                  <a href="#tasting" onClick={() => chooseInquiry('tasting')} className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
                     {copy.cta} <ArrowRight size={17} />
                   </a>
                   <a href="#traceability" className="inline-flex h-12 items-center justify-center gap-2 border border-white/18 px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-white/8">
@@ -891,7 +891,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <h2 className="mt-2 font-serif text-3xl md:text-4xl">Smak før du bestemmer deg.</h2>
               <p className="mt-2 max-w-2xl text-white/62">Velg produktet du er interessert i. Vi bekrefter smaksprøve, produktark, pris og levering når den aktuelle produksjonen er klar.</p>
             </div>
-            <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
+            <a href="#tasting" onClick={() => chooseInquiry('tasting')} className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
               {copy.cta} <ArrowRight size={17} />
             </a>
           </div>
@@ -909,7 +909,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   For restauranter, hoteller og faghandel gjør vi det enkelt å ta kontakt om riktig bruksområde. Når produktene er klare, følger konkrete produktark, priser og leveringsvilkår med dialogen.
                 </p>
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-black px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-[#8a6a19]">
+                  <a href="#tasting" onClick={() => chooseInquiry('tasting')} className="inline-flex h-12 items-center justify-center gap-2 bg-black px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-[#8a6a19]">
                     {copy.cta} <ArrowRight size={17} />
                   </a>
                   <button data-testid="b2b-portal-section" onClick={onLogin} className="inline-flex h-12 items-center justify-center gap-2 border border-black/15 px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
@@ -1097,7 +1097,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       </footer>
 
       <div className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-2 gap-2 border-t border-white/10 bg-[#0d0d0d]/94 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl lg:hidden">
-        <a href="#tasting" className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] text-xs font-bold uppercase tracking-[0.16em] text-black">
+        <a href="#tasting" onClick={() => chooseInquiry('tasting')} className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] text-xs font-bold uppercase tracking-[0.16em] text-black">
           <Building2 size={16} /> Smaksprøve
         </a>
         <a href="#portfolio" className="inline-flex h-12 items-center justify-center gap-2 border border-white/14 text-xs font-bold uppercase tracking-[0.16em] text-white/78">
