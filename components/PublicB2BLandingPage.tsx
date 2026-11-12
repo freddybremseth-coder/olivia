@@ -328,7 +328,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     const subject = `${inquiryLabel} (${isBusiness ? 'bedrift' : 'privat'}) – Doña Anna`;
     const body = [
       `Type forespørsel: ${inquiryLabel}`,
-      `Produktinteresse: ${tastingRequest.product}`,
+      `Produktinteresse: ${tastingRequest.product || 'Ikke bestemt'}`,
       `Kundetype: ${isBusiness ? 'Restaurant / bedrift' : 'Privatperson'}`,
       `Navn: ${tastingRequest.name}`,
       ...(isBusiness ? [`Restaurant / virksomhet: ${tastingRequest.company}`, `Rolle: ${tastingRequest.role || 'Ikke oppgitt'}`] : []),
@@ -1011,7 +1011,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <option value="business">Restaurant / bedrift</option>
               </select>
               <label htmlFor="tasting-product" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">{inquiryKind === 'tasting' ? 'Produkt' : 'Produktinteresse (valgfritt)'}</label>
-              <select id="tasting-product" required value={tastingRequest.product} onChange={(event) => setTastingRequest({ ...tastingRequest, product: event.target.value })} className="mt-2 h-12 w-full border border-black/12 bg-white px-3 outline-none focus:border-[#d4af37]">
+              <select id="tasting-product" required={inquiryKind === 'tasting'} value={tastingRequest.product} onChange={(event) => setTastingRequest({ ...tastingRequest, product: event.target.value })} className="mt-2 h-12 w-full border border-black/12 bg-white px-3 outline-none focus:border-[#d4af37]">
                 {inquiryKind !== 'tasting' && <option value="">Ikke bestemt ennå</option>}
                 <option>Verde Vivo</option>
                 <option>Verde Alto</option>
