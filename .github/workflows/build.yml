@@ -40,6 +40,8 @@ jobs:
         run: npx esbuild api/public-inquiry.ts --outfile=/tmp/donaanna-public-inquiry.js --bundle --platform=node --format=esm
       - name: Test disabled-by-default contact intake and mail delivery safeguards
         run: node --test tests/donaannaPublicInquiry.test.mjs
+      - name: Test staged public inquiry client and safe fallback contract
+        run: node --test tests/donaannaPublicInquiryClient.test.mjs
       - name: Validate public measurement script
         run: node --check public/donaanna-analytics.js
       - name: Test public/app menu isolation

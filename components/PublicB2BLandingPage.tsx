@@ -22,6 +22,7 @@ import { fetchPublicEstateSignal, PublicEstateSignal } from '../services/publicE
 import { fetchPublicCommerceProducts, type PublicCommerceProduct } from '../services/publicCommerce';
 import { DONA_ANNA_PRODUCTS, donaAnnaProductByName } from '../content/donaAnnaProducts';
 import { estatePhotos, estatePhotosPublished } from '../data/estatePhotos';
+import { sendPublicInquiry } from '../services/publicInquiry';
 
 interface LandingPageProps {
   onLogin: () => void;
@@ -227,10 +228,27 @@ const videoStories: Array<{ title: string; eyebrow: string; src: string; poster:
 
 const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(value);
 
+const directInquiryEnabled =
+  import.meta.env.VITE_DONAANNA_DIRECT_INQUIRY === 'true' &&
+  Boolean(import.meta.env.VITE_DONAANNA_TURNSTILE_SITE_KEY);
+
+type TurnstileApi = {
+  render: (element: HTMLElement, options: {
+    sitekey: string;
+    callback: (token: string) => void;
+    'expired-callback': () => void;
+    'error-callback': () => void;
+  }) => string;
+  remove: (widgetId: string) => void;
+};
+
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [livePortfolio, setLivePortfolio] = useState<PublicCommerceProduct[]>([]);
   const [tastingRequest, setTastingRequest] = useState({ product: 'Verde Vivo', audience: 'private', name: '', company: '', role: '', email: '', address: '', notes: '' });
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [inquiryStatus, setInquiryStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+
   const [signal, setSignal] = useState<PublicEstateSignal>({
     isLive: false,
     parcelCount: 0,
@@ -258,14 +276,43 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     }
   }, []);
 
+  useEffect(() => {
+    if (!directInquiryEnabled) return;
+    let active = true;
+    let widgetId: string | undefined;
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (!active) return;
+      const turnstile = (window as Window & { turnstile?: TurnstileApi }).turnstile;
+      const target = document.getElementById('donaanna-inquiry-turnstile');
+      if (!turnstile || !target) return;
+      widgetId = turnstile.render(target, {
+        sitekey: import.meta.env.VITE_DONAANNA_TURNSTILE_SITE_KEY,
+        callback: setTurnstileToken,
+        'expired-callback': () => setTurnstileToken(''),
+        'error-callback': () => setTurnstileToken(''),
+      });
+    };
+    document.head.appendChild(script);
+    return () => {
+      active = false;
+      if (widgetId !== undefined) {
+        (window as Window & { turnstile?: TurnstileApi }).turnstile?.remove(widgetId);
+      }
+      script.remove();
+    };
+  }, []);
+
   const approvedNames = new Set(
     DONA_ANNA_PRODUCTS.flatMap(product => [product.name.toLowerCase(), ...product.aliases])
   );
   const approvedLivePortfolio = livePortfolio.filter(item => approvedNames.has(item.name.trim().toLowerCase()));
   const portfolioItems = approvedLivePortfolio.length >= 4 ? approvedLivePortfolio : portfolio;
 
-  const handleTastingRequest = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const emailFallback = () => {
     const isBusiness = tastingRequest.audience === 'business';
     const subject = `Interesse for ${tastingRequest.product} (${isBusiness ? 'bedrift' : 'privat'}) – Doña Anna`;
     const body = [
@@ -277,8 +324,35 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       ...(tastingRequest.address.trim() ? [`Område / leveringssted: ${tastingRequest.address}`] : []),
       ...(tastingRequest.notes.trim() ? [`Melding: ${tastingRequest.notes}`] : []),
     ].join('\n');
-
     window.location.href = `mailto:info@donaanna.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
+  const handleTastingRequest = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!directInquiryEnabled) {
+      emailFallback();
+      return;
+    }
+    if (inquiryStatus === 'sending') return;
+    if (!turnstileToken) {
+      setInquiryStatus('error');
+      return;
+    }
+    setInquiryStatus('sending');
+    const response = await sendPublicInquiry({
+      kind: 'tasting',
+      product: tastingRequest.product,
+      audience: tastingRequest.audience as 'private' | 'business',
+      name: tastingRequest.name,
+      email: tastingRequest.email,
+      company: tastingRequest.company,
+      role: tastingRequest.role,
+      area: tastingRequest.address,
+      message: tastingRequest.notes,
+      turnstileToken,
+    });
+    setInquiryStatus(response.accepted ? 'sent' : 'error');
+    setTurnstileToken('');
   };
 
   const navLinks = [
@@ -934,10 +1008,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <input id="tasting-address" value={tastingRequest.address} onChange={(event) => setTastingRequest({ ...tastingRequest, address: event.target.value })} placeholder="For eksempel Alicante eller Norge" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
               <label htmlFor="tasting-notes" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Hva ønsker du å vite? (valgfritt)</label>
               <textarea id="tasting-notes" value={tastingRequest.notes} onChange={(event) => setTastingRequest({ ...tastingRequest, notes: event.target.value })} className="mt-2 h-24 w-full border border-black/12 p-3 outline-none focus:border-[#d4af37]" />
-              <p className="mt-4 text-sm leading-6 text-black/60">Knappen åpner en ferdig utfylt e-post i e-postprogrammet ditt. Ingenting sendes direkte fra nettstedet, og en smaksprøve er ikke bekreftet før vi har svart.</p>
-              <button className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-black px-5 text-xs font-bold uppercase tracking-[0.2em] text-white">
-                Åpne e-postforespørsel <ArrowRight size={17} />
-              </button>
+              {directInquiryEnabled && <div id="donaanna-inquiry-turnstile" className="mt-5" aria-label="Spamkontroll" />}
+              {inquiryStatus === 'sent' ? (
+                <p role="status" className="mt-4 border border-green-700/30 bg-green-50 p-4 text-sm text-green-900">Takk! Henvendelsen ble mottatt av vår e-posttjeneste. Vi tar kontakt når vi har mer informasjon. Dette er ikke en bestillingsbekreftelse.</p>
+              ) : (
+                <>
+                  <p className="mt-4 text-sm leading-6 text-black/60">{directInquiryEnabled
+                    ? 'Opplysningene sendes via et sikkert nettskjema. En smaksprøve er ikke bekreftet før vi har svart.'
+                    : 'Knappen åpner en ferdig utfylt e-post i e-postprogrammet ditt. Ingenting sendes direkte fra nettstedet, og en smaksprøve er ikke bekreftet før vi har svart.'}</p>
+                  {inquiryStatus === 'error' && <p role="alert" className="mt-3 text-sm text-red-800">Vi kunne ikke bekrefte innsendingen. Prøv igjen med ny spamkontroll eller åpne e-postforespørselen i stedet.</p>}
+                  <button disabled={inquiryStatus === 'sending'} className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-black px-5 text-xs font-bold uppercase tracking-[0.2em] text-white disabled:opacity-50">
+                    {directInquiryEnabled ? (inquiryStatus === 'sending' ? 'Sender …' : 'Send forespørsel') : 'Åpne e-postforespørsel'} <ArrowRight size={17} />
+                  </button>
+                  {directInquiryEnabled && <button type="button" onClick={emailFallback} className="mt-3 min-h-11 w-full text-xs font-bold uppercase tracking-[0.15em] text-[#705515] underline">Åpne e-postforespørsel i stedet</button>}
+                </>
+              )}
             </form>
           </div>
         </section>

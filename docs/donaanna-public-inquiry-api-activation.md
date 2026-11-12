@@ -42,3 +42,15 @@ Automatiske tester i `tests/donaannaPublicInquiry.test.mjs` kontrollerer:
 - HTTP 502 ved feil hos e-postleverandøren, uten falskt «sendt»-signal.
 
 Ingen ende-til-ende-test med ekte e-postadresse, Resend eller Turnstile er gjennomført. Slike tester må utføres før nettskjemaet byttes fra e-postfallback til direktesending.
+
+## Trinn 2 – frontend klargjort, men ikke aktivert
+
+`components/PublicB2BLandingPage.tsx` støtter nå et alternativt direkte innsendingløp, kontrollert av **begge** følgende offentlige Vite-variabler i bygget:
+- `VITE_DONAANNA_DIRECT_INQUIRY=true`
+- `VITE_DONAANNA_TURNSTILE_SITE_KEY=<offentlig site key>`
+
+Disse skal **ikke** settes før hele aktiveringslisten er fullført, inkludert `DONAANNA_INQUIRY_ENABLED=true` på serveren, godkjent personverntekst og en fysisk e-postleveringstest. Per nå er ingen av front-end flaggene konfigurert: dagens mailto-funksjon forblir uendret.
+
+Når flaggene er satt, rendres en Turnstile-kontroll og klienten kontrollerer spesifikt `{ accepted: true }` fra API-et før den viser kvittering. Ved 503, nettverksfeil eller leveringsfeil kommer tydelig feilmelding og en tilgjengelig knapp for mailto-reserve. Klientens feilflyt er testet i `tests/donaannaPublicInquiryClient.test.mjs`.
+
+**Driftskrav før aktivering:** oppdater /personvern i samme produksjonsendring, test på mobil og desktop, og bekreft at `info@donaanna.com` faktisk mottar en testmelding. Den serverbaserte løsningen og frontend må publiseres som én kontrollert operasjon; bare å konfigurere den ene siden er utilstrekkelig.
