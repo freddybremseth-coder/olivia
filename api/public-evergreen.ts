@@ -784,6 +784,86 @@ function pageHtml(page: EvergreenPage) {
       '</div></section>'
     : '';
 
+  // Page-specific reading journeys connect the estate story to relevant product
+  // knowledge, rather than sending every visitor to the same generic next step.
+  const readingJourneys: Record<string, { heading: string; intro: string; links: { href: string; label: string }[] }> = {
+    'om-dona-anna': {
+      heading: 'Fra gården til råvaren',
+      intro: 'Se hvordan landskapet i Biar, olivenene og høstetidspunktet henger sammen med Doña Annas produktarbeid.',
+      links: [
+        { href: '/olivenolje-fra-biar', label: 'Oliven fra Biar og opprinnelsen' },
+        { href: '/tidlig-hostet-olivenolje', label: 'Hva betyr tidlig høsting?' },
+        { href: '/produkter', label: 'Bli kjent med produktfamilien' },
+      ],
+    },
+    'olivenolje-fra-biar': {
+      heading: 'Utforsk olivenlunden videre',
+      intro: 'Lær mer om modning, produktidentitet og menneskene som utvikler Doña Anna.',
+      links: [
+        { href: '/tidlig-hostet-olivenolje', label: 'Modning og høstetidspunkt' },
+        { href: '/raiz-antigua', label: 'Raíz Antigua – røtter og opprinnelse' },
+        { href: '/om-dona-anna', label: 'Historien om Anna og Freddy' },
+      ],
+    },
+    'tidlig-hostet-olivenolje': {
+      heading: 'Fra oliven til produkt',
+      intro: 'Tidlig høsting er et produksjonsvalg. Endelig kvalitetsklasse og sensorikk bekreftes per batch.',
+      links: [
+        { href: '/verde-vivo', label: 'Verde Vivo – tidlig høsting' },
+        { href: '/verde-alto', label: 'Verde Alto – egen produktidentitet' },
+        { href: '/olivenolje-fra-biar', label: 'Les om gården i Biar' },
+      ],
+    },
+    'verde-vivo': {
+      heading: 'Bak Verde Vivo',
+      intro: 'Se hva tidlig høsting innebærer og hvordan vi dokumenterer opprinnelsen.',
+      links: [
+        { href: '/tidlig-hostet-olivenolje', label: 'Guide til tidlig høsting' },
+        { href: '/olivenolje-fra-biar', label: 'Hvor olivenene kommer fra' },
+      ],
+    },
+    'verde-alto': {
+      heading: 'Oppdag forskjellene',
+      intro: 'Hvert Doña Anna-produkt har sin egen rolle. Kvalitet og smak dokumenteres for den konkrete produksjonen.',
+      links: [
+        { href: '/verde-vivo', label: 'Sammenlign med Verde Vivo' },
+        { href: '/produkter', label: 'Se alle produktene' },
+      ],
+    },
+    'raiz-antigua': {
+      heading: 'Røttene bak navnet',
+      intro: 'Lær mer om gården og hvorfor opprinnelse må kunne dokumenteres, også når historien står sentralt.',
+      links: [
+        { href: '/om-dona-anna', label: 'Menneskene og gården' },
+        { href: '/olivenolje-fra-biar', label: 'Biar som opprinnelse' },
+      ],
+    },
+    'cocina-viva': {
+      heading: 'For profesjonelle kjøkken',
+      intro: 'Produktformat og levering oppgis først når de er bekreftet. Her finner du relevant innkjøpsinformasjon.',
+      links: [
+        { href: '/olivenolje-for-restauranter', label: 'Guide for restauranter' },
+        { href: '/produkter', label: 'Andre Doña Anna-produkter' },
+      ],
+    },
+    'mesa-gordal-noble': {
+      heading: 'Et eget produktspor',
+      intro: 'Mesa · Gordal Noble er under utvikling. Les om bordoliven og gården mens produktet klargjøres.',
+      links: [
+        { href: '/bordoliven-fra-biar', label: 'Guide om bordoliven' },
+        { href: '/om-dona-anna', label: 'Historien fra Biar' },
+      ],
+    },
+  };
+  const journey = readingJourneys[page.slug];
+  const relatedJourney = journey
+    ? '<section class="related-journey" aria-label="Anbefalt videre lesning">' +
+      '<p class="related-kicker">Utforsk videre</p><h2>' + escapeHtml(journey.heading) + '</h2>' +
+      '<p>' + escapeHtml(journey.intro) + '</p><ul>' +
+      journey.links.map(item => '<li><a href="' + escapeHtml(item.href) + '">' + escapeHtml(item.label) + ' →</a></li>').join('') +
+      '</ul></section>'
+    : '';
+
   const farmGallery = page.slug === 'om-dona-anna'
     ? '<section class="farm-gallery" aria-label="Bilder fra olivengården i Biar">' +
       '<figure><img loading="lazy" decoding="async" src="https://ereapsfcsqtdmzosgnnn.supabase.co/storage/v1/object/public/content-images/dona-anna/garden-2025/ChatGPT-bilde%2010.%20nov.%202026%2C%2012_18_07.jpg" alt="Gammelt oliventre på gården i Biar"><figcaption>Et av de gamle oliventrærne på gården vår i Biar.</figcaption></figure>' +
@@ -801,7 +881,7 @@ function pageHtml(page: EvergreenPage) {
     .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}.button{display:inline-flex;min-height:48px;align-items:center;padding:0 20px;text-decoration:none;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.14em}.primary{background:var(--gold2);color:#111}.secondary{border:1px solid rgba(255,255,255,.2);color:#fff}
     .product-identity{display:grid;grid-template-columns:minmax(220px,.65fr) minmax(0,1.35fr);max-width:1120px;margin:0 auto;padding:42px clamp(20px,5vw,54px);gap:34px;align-items:stretch}.product-mark{min-height:350px;display:flex;align-items:center;justify-content:center;background:#e9e1cf;border:1px solid rgba(30,24,15,.12)}.product-mark img{width:150px;height:250px;object-fit:contain;filter:invert(1)}.product-copy{padding:10px 0}.product-kicker{margin:0;color:#8a6a19;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.22em}.product-copy h2{margin:8px 0 2px;font:600 clamp(34px,5vw,58px)/1 Georgia,serif}.product-type{margin:0 0 24px;color:#655d51}.product-copy dl{display:grid;gap:0;margin:0;border-top:1px solid var(--line)}.product-copy dl div{display:grid;grid-template-columns:110px 1fr;gap:18px;padding:14px 0;border-bottom:1px solid var(--line)}.product-copy dt{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:#8a6a19}.product-copy dd{margin:0;color:#463f35}.product-note{margin-top:20px;padding:16px 18px;background:#fff;border:1px solid var(--line);color:#655d51;font-size:14px}
     .product-hub{max-width:1120px;margin:0 auto;padding:42px clamp(20px,5vw,54px) 10px}.product-hub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.product-hub-card{display:flex;flex-direction:column;min-height:430px;padding:20px;border:1px solid var(--line);background:#fff}.product-hub-mark{height:150px;display:flex;align-items:center;justify-content:center;background:#e9e1cf}.product-hub-mark img{width:80px;height:130px;object-fit:contain;filter:invert(1)}.product-hub-type{margin:18px 0 0;color:#8a6a19;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.16em}.product-hub-card h2{margin:6px 0 0;font:600 30px/1.05 Georgia,serif}.product-hub-card h2 a{text-decoration:none}.product-hub-role{margin:10px 0 0;color:#514a40}.product-hub-status{margin:14px 0 0;padding-top:12px;border-top:1px solid var(--line);font-size:13px;color:#746b5e}.product-hub-actions{display:flex;flex-wrap:wrap;gap:10px 14px;margin-top:auto;padding-top:18px}.product-hub-actions a{color:#705515;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;text-underline-offset:3px}
-    .farm-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1120px;margin:42px auto 0;padding:0 clamp(20px,5vw,54px)}.farm-gallery figure{margin:0;background:#fff;border:1px solid var(--line)}.farm-gallery img{display:block;width:100%;height:340px;object-fit:cover}.farm-gallery figcaption{padding:14px 17px;font-size:14px;color:#554e43}
+    .related-journey{margin:0 0 46px;padding:28px 30px;border:1px solid var(--line);background:#fff}.related-journey h2{font:600 clamp(28px,3vw,40px)/1.1 Georgia,serif;margin:8px 0 12px}.related-journey p{color:#514a40}.related-journey .related-kicker{color:#886718;text-transform:uppercase;font-size:11px;font-weight:800;letter-spacing:.18em}.related-journey ul{display:grid;gap:10px;padding-left:20px}.related-journey li a{color:#705515;text-underline-offset:3px}\n    .farm-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1120px;margin:42px auto 0;padding:0 clamp(20px,5vw,54px)}.farm-gallery figure{margin:0;background:#fff;border:1px solid var(--line)}.farm-gallery img{display:block;width:100%;height:340px;object-fit:cover}.farm-gallery figcaption{padding:14px 17px;font-size:14px;color:#554e43}
     main{max-width:1120px;margin:auto;padding:clamp(52px,7vw,88px) clamp(20px,5vw,54px)}.article-grid{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:clamp(36px,7vw,86px);align-items:start}.article-section{padding:0 0 46px;border-bottom:1px solid var(--line);margin-bottom:46px}.article-section h2,.faq h2,.next h2{font:600 clamp(30px,4vw,48px)/1.08 Georgia,serif;margin:0 0 18px}.article-section p{font-size:17px;color:#4f493f}.aside{position:sticky;top:92px;border:1px solid var(--line);background:#fff;padding:24px}.aside strong{display:block;font:600 24px Georgia,serif}.aside nav{display:grid;gap:12px;margin-top:18px}.aside a{color:#705515;text-underline-offset:3px}
     .faq{padding:20px 0 58px}.faq details{border-top:1px solid var(--line);padding:18px 0}.faq details:last-child{border-bottom:1px solid var(--line)}.faq summary{cursor:pointer;font-weight:800}.faq details p{color:#554e43}
     .next{margin-top:16px;padding:34px;background:#15120e;color:#fff}.next p{color:#cfc6b6;max-width:720px}.next .button{margin-top:10px}.cluster{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:26px}.cluster a{color:#d4af37}
@@ -826,7 +906,7 @@ function pageHtml(page: EvergreenPage) {
     productIdentity +
     farmGallery +
     productHub +
-    '<main><div class="article-grid"><article>' + sections +
+    '<main><div class="article-grid"><article>' + sections + relatedJourney +
     (faq ? '<section class="faq"><h2>Vanlige spørsmål</h2>' + faq + '</section>' : '') +
     '<section class="next"><h2>Neste steg</h2><p>Se riktig produkt, les mer om gården eller meld interesse dersom du vurderer Doña Anna for restaurant, hotell, butikk eller import.</p><a class="button primary" href="' + escapeHtml(page.primaryCta.href) + '">' + escapeHtml(page.primaryCta.label) + '</a><div class="cluster"><a href="/produkter">Alle produkter</a><a href="/verde-vivo">Verde Vivo</a><a href="/verde-alto">Verde Alto</a><a href="/raiz-antigua">Raíz Antigua</a><a href="/cocina-viva">Cocina Viva</a><a href="/mesa-gordal-noble">Mesa · Gordal Noble</a></div></section>' +
     '<section class="faq"><h2>Les også fra Doña Anna</h2><ul><li><a href="/artikler/hvordan-velge-god-olivenolje">Slik velger du god olivenolje</a></li><li><a href="/magasin/tidlig-hostet-olivenolje-biar">Tidlig høstet olivenolje fra Biar</a></li><li><a href="/magasin/oppbevaring-av-olivenolje">Slik oppbevarer du olivenolje</a></li></ul></section>' +
