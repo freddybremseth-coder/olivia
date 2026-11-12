@@ -318,7 +318,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
   const chooseInquiry = (kind: 'tasting' | 'gift' | 'corporate-gift', audience: 'private' | 'business' = 'private') => {
     setInquiryKind(kind);
-    setTastingRequest(current => ({ ...current, audience }));
+    setTastingRequest(current => ({ ...current, audience, product: kind === 'tasting' ? (current.product || 'Verde Vivo') : '' }));
     setInquiryStatus('idle');
   };
 
