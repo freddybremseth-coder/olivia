@@ -43,6 +43,8 @@ test('authentic-photo descriptions must not claim a named cultivar or an exact t
   assert.ok(registry.includes('NOT verified pictures of any'));
   assert.ok(!registry.includes('500 years'));
   for (const key of ['heritageTree','roots','grove','green','mixed','dark','hollow','wholeTree','branches','color']) {
-    assert.match(registry, new RegExp(key + ': \\{[\\s\\S]*?alt: \\'[^\\']+\\''));
+    const start = registry.indexOf(key + ': {');
+    assert.ok(start >= 0, 'Missing image key ' + key);
+    assert.ok(registry.slice(start, start + 320).includes("alt: '"), 'Missing descriptive alt for ' + key);
   }
 });
