@@ -4,6 +4,7 @@
  */
 export type PublicInquiryPayload = {
   kind: 'tasting' | 'gift' | 'corporate-gift';
+  giftPreference?: 'tasting-set' | 'personal-gift';
   product: string;
   audience: 'private' | 'business';
   name: string;

@@ -247,6 +247,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   const [menuOpen, setMenuOpen] = useState(false);
   const [livePortfolio, setLivePortfolio] = useState<PublicCommerceProduct[]>([]);
   const [inquiryKind, setInquiryKind] = useState<'tasting' | 'gift' | 'corporate-gift'>('tasting');
+  const [giftPreference, setGiftPreference] = useState<'tasting-set' | 'personal-gift'>('tasting-set');
   const [tastingRequest, setTastingRequest] = useState({ product: 'Verde Vivo', audience: 'private', name: '', company: '', role: '', email: '', address: '', notes: '' });
   const [turnstileToken, setTurnstileToken] = useState('');
   const turnstileWidgetId = useRef<string | null>(null);
@@ -316,15 +317,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   const approvedLivePortfolio = livePortfolio.filter(item => approvedNames.has(item.name.trim().toLowerCase()));
   const portfolioItems = approvedLivePortfolio.length >= 4 ? approvedLivePortfolio : portfolio;
 
-  const chooseInquiry = (kind: 'tasting' | 'gift' | 'corporate-gift', audience: 'private' | 'business' = 'private') => {
+  const chooseInquiry = (kind: 'tasting' | 'gift' | 'corporate-gift', audience: 'private' | 'business' = 'private', preference: 'tasting-set' | 'personal-gift' = 'tasting-set') => {
     setInquiryKind(kind);
+    if (kind === 'gift') setGiftPreference(preference);
     setTastingRequest(current => ({ ...current, audience, product: kind === 'tasting' ? (current.product || 'Verde Vivo') : '' }));
     setInquiryStatus('idle');
   };
 
   const emailFallback = () => {
     const isBusiness = tastingRequest.audience === 'business';
-    const inquiryLabel = inquiryKind === 'corporate-gift' ? 'Firmagaver' : inquiryKind === 'gift' ? 'Gaver og smakssett' : `Smaksprøve av ${tastingRequest.product}`;
+    const inquiryLabel = inquiryKind === 'corporate-gift' ? 'Firmagaver' : inquiryKind === 'gift' ? (giftPreference === 'personal-gift' ? 'Personlig gave' : 'Smakssett') : `Smaksprøve av ${tastingRequest.product}`;
     const subject = `${inquiryLabel} (${isBusiness ? 'bedrift' : 'privat'}) – Doña Anna`;
     const body = [
       `Type forespørsel: ${inquiryLabel}`,
@@ -355,6 +357,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     setInquiryStatus('sending');
     const response = await sendPublicInquiry({
       kind: inquiryKind,
+      giftPreference: inquiryKind === 'gift' ? giftPreference : undefined,
       product: tastingRequest.product,
       audience: tastingRequest.audience as 'private' | 'business',
       name: tastingRequest.name,
@@ -637,7 +640,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <p className="mt-6 text-xs font-bold uppercase tracking-[0.15em] text-[#8a6a19]">Konsept under utvikling</p>
                 <h3 className="mt-2 font-serif text-3xl">Smakssett</h3>
                 <p className="mt-4 flex-1 leading-7 text-black/65">Et mulig utvalg av oljer med veiledning om bruk, opprinnelse og dokumenterte forskjeller – for matinteresserte som vil lære mer.</p>
-                <a href="#tasting" onClick={() => chooseInquiry('gift')}
+                <a href="#tasting" onClick={() => chooseInquiry('gift', 'private', 'tasting-set')}
                   className="mt-7 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#705515] underline-offset-4 hover:underline">Meld interesse <ArrowRight size={16} /></a>
               </article>
               <article className="flex h-full flex-col border border-black/10 bg-white p-7">
@@ -645,7 +648,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <p className="mt-6 text-xs font-bold uppercase tracking-[0.15em] text-[#8a6a19]">Konsept under utvikling</p>
                 <h3 className="mt-2 font-serif text-3xl">Personlig gave</h3>
                 <p className="mt-4 flex-1 leading-7 text-black/65">For vertskap og matglade mennesker. En gjennomtenkt presentasjon med fortellingen om gården som en del av opplevelsen.</p>
-                <a href="#tasting" onClick={() => chooseInquiry('gift')}
+                <a href="#tasting" onClick={() => chooseInquiry('gift', 'private', 'personal-gift')}
                   className="mt-7 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#705515] underline-offset-4 hover:underline">Meld interesse <ArrowRight size={16} /></a>
               </article>
               <article className="flex h-full flex-col border border-black/10 bg-white p-7">
@@ -1005,6 +1008,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <option value="gift">Smakssett / personlig gave</option>
                 <option value="corporate-gift">Firmagaver</option>
               </select>
+              {inquiryKind === 'gift' && (
+                <>
+                  <label htmlFor="gift-preference" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Gavetype</label>
+                  <select id="gift-preference" value={giftPreference} onChange={(event) => setGiftPreference(event.target.value as 'tasting-set' | 'personal-gift')} className="mt-2 h-12 w-full border border-black/12 bg-white px-3 outline-none focus:border-[#d4af37]">
+                    <option value="tasting-set">Smakssett</option>
+                    <option value="personal-gift">Personlig gave</option>
+                  </select>
+                </>
+              )}
               <label htmlFor="tasting-audience" className="block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Jeg henvender meg som</label>
               <select id="tasting-audience" value={tastingRequest.audience} onChange={(event) => setTastingRequest({ ...tastingRequest, audience: event.target.value })} className="mt-2 h-12 w-full border border-black/12 bg-white px-3 outline-none focus:border-[#d4af37]">
                 {inquiryKind !== 'corporate-gift' && <option value="private">Privatperson</option>}

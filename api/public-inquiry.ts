@@ -77,6 +77,7 @@ export default async function handler(req: Request, res: ServerResponse) {
   if (text(data.website, 200)) return respond(res, 200, { accepted: true }); // honeypot
 
   const kind = text(data.kind, 30);
+  const giftPreference = text(data.giftPreference, 30);
   const product = text(data.product, 100);
   const audience = text(data.audience, 15);
   const name = text(data.name, 100);
@@ -89,6 +90,8 @@ export default async function handler(req: Request, res: ServerResponse) {
 
   if (!KINDS.has(kind) || (kind === 'tasting' && !PRODUCTS.has(product)) ||
       (kind === 'corporate-gift' && audience !== 'business') ||
+      (kind === 'gift' && !['tasting-set', 'personal-gift'].includes(giftPreference)) ||
+      (kind !== 'gift' && giftPreference !== '') ||
       !['private', 'business'].includes(audience) || !name || !email ||
       (audience === 'business' && !company) ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !token) {
@@ -117,6 +120,7 @@ export default async function handler(req: Request, res: ServerResponse) {
   const body = [
     'Ny henvendelse via donaanna.com',
     `Type: ${kind}`,
+    ...(kind === 'gift' ? [`Gavetype: ${giftPreference === 'personal-gift' ? 'Personlig gave' : 'Smakssett'}`] : []),
     `Produkt: ${product || 'Ikke spesifisert'}`,
     `Kundetype: ${audience}`,
     `Navn: ${name}`,
