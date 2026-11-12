@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
   BadgeCheck,
@@ -240,6 +240,7 @@ type TurnstileApi = {
     'error-callback': () => void;
   }) => string;
   remove: (widgetId: string) => void;
+  reset: (widgetId: string) => void;
 };
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
@@ -247,6 +248,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   const [livePortfolio, setLivePortfolio] = useState<PublicCommerceProduct[]>([]);
   const [tastingRequest, setTastingRequest] = useState({ product: 'Verde Vivo', audience: 'private', name: '', company: '', role: '', email: '', address: '', notes: '' });
   const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileWidgetId = useRef<string | null>(null);
   const [inquiryStatus, setInquiryStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   const [signal, setSignal] = useState<PublicEstateSignal>({
@@ -279,7 +281,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   useEffect(() => {
     if (!directInquiryEnabled) return;
     let active = true;
-    let widgetId: string | undefined;
     const script = document.createElement('script');
     script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
     script.async = true;
@@ -289,7 +290,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       const turnstile = (window as Window & { turnstile?: TurnstileApi }).turnstile;
       const target = document.getElementById('donaanna-inquiry-turnstile');
       if (!turnstile || !target) return;
-      widgetId = turnstile.render(target, {
+      turnstileWidgetId.current = turnstile.render(target, {
         sitekey: import.meta.env.VITE_DONAANNA_TURNSTILE_SITE_KEY,
         callback: setTurnstileToken,
         'expired-callback': () => setTurnstileToken(''),
@@ -299,8 +300,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     document.head.appendChild(script);
     return () => {
       active = false;
-      if (widgetId !== undefined) {
-        (window as Window & { turnstile?: TurnstileApi }).turnstile?.remove(widgetId);
+      if (turnstileWidgetId.current !== null) {
+        (window as Window & { turnstile?: TurnstileApi }).turnstile?.remove(turnstileWidgetId.current);
+        turnstileWidgetId.current = null;
       }
       script.remove();
     };
@@ -353,6 +355,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     });
     setInquiryStatus(response.accepted ? 'sent' : 'error');
     setTurnstileToken('');
+    // Turnstile tokens are single-use: users need a fresh challenge on retry.
+    // Preserve all form fields and do not retry or claim delivery automatically.
+    if (!response.accepted && turnstileWidgetId.current !== null) {
+      (window as Window & { turnstile?: TurnstileApi }).turnstile?.reset(turnstileWidgetId.current);
+    }
   };
 
   const navLinks = [
