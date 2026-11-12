@@ -230,7 +230,7 @@ const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(va
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [livePortfolio, setLivePortfolio] = useState<PublicCommerceProduct[]>([]);
-  const [tastingRequest, setTastingRequest] = useState({ product: 'Verde Vivo', company: '', role: '', email: '', address: '' });
+  const [tastingRequest, setTastingRequest] = useState({ product: 'Verde Vivo', audience: 'private', name: '', company: '', role: '', email: '', address: '', notes: '' });
   const [signal, setSignal] = useState<PublicEstateSignal>({
     isLive: false,
     parcelCount: 0,
@@ -266,13 +266,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
   const handleTastingRequest = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const subject = `Interesse for ${tastingRequest.product} – Doña Anna`;
+    const isBusiness = tastingRequest.audience === 'business';
+    const subject = `Interesse for ${tastingRequest.product} (${isBusiness ? 'bedrift' : 'privat'}) – Doña Anna`;
     const body = [
       `Produkt: ${tastingRequest.product}`,
-      `Restaurant / virksomhet: ${tastingRequest.company}`,
-      `Rolle: ${tastingRequest.role}`,
+      `Kundetype: ${isBusiness ? 'Restaurant / bedrift' : 'Privatperson'}`,
+      `Navn: ${tastingRequest.name}`,
+      ...(isBusiness ? [`Restaurant / virksomhet: ${tastingRequest.company}`, `Rolle: ${tastingRequest.role || 'Ikke oppgitt'}`] : []),
       `E-post: ${tastingRequest.email}`,
-      `Leveringsadresse: ${tastingRequest.address}`,
+      ...(tastingRequest.address.trim() ? [`Område / leveringssted: ${tastingRequest.address}`] : []),
+      ...(tastingRequest.notes.trim() ? [`Melding: ${tastingRequest.notes}`] : []),
     ].join('\n');
 
     window.location.href = `mailto:info@donaanna.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -902,7 +905,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               </div>
             </div>
             <form data-testid="tasting-request-form" className="border border-black/12 bg-white p-5 shadow-2xl shadow-black/10" onSubmit={handleTastingRequest}>
-              <label htmlFor="tasting-product" className="block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Produkt</label>
+              <label htmlFor="tasting-audience" className="block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Jeg henvender meg som</label>
+              <select id="tasting-audience" value={tastingRequest.audience} onChange={(event) => setTastingRequest({ ...tastingRequest, audience: event.target.value })} className="mt-2 h-12 w-full border border-black/12 bg-white px-3 outline-none focus:border-[#d4af37]">
+                <option value="private">Privatperson</option>
+                <option value="business">Restaurant / bedrift</option>
+              </select>
+              <label htmlFor="tasting-product" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Produkt</label>
               <select id="tasting-product" required value={tastingRequest.product} onChange={(event) => setTastingRequest({ ...tastingRequest, product: event.target.value })} className="mt-2 h-12 w-full border border-black/12 bg-white px-3 outline-none focus:border-[#d4af37]">
                 <option>Verde Vivo</option>
                 <option>Verde Alto</option>
@@ -910,17 +918,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <option>Cocina Viva</option>
                 <option>Mesa · Gordal Noble (planlagt)</option>
               </select>
-              <label htmlFor="tasting-company" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Restaurant / virksomhet</label>
-              <input id="tasting-company" required value={tastingRequest.company} onChange={(event) => setTastingRequest({ ...tastingRequest, company: event.target.value })} className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
-              <label htmlFor="tasting-role" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Rolle</label>
-              <input id="tasting-role" required value={tastingRequest.role} onChange={(event) => setTastingRequest({ ...tastingRequest, role: event.target.value })} placeholder="Kokk, innkjøper eller distributør" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
+              <label htmlFor="tasting-name" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Navn</label>
+              <input id="tasting-name" required autoComplete="name" value={tastingRequest.name} onChange={(event) => setTastingRequest({ ...tastingRequest, name: event.target.value })} className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
+              {tastingRequest.audience === 'business' && (
+                <>
+                  <label htmlFor="tasting-company" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Restaurant / virksomhet</label>
+                  <input id="tasting-company" required value={tastingRequest.company} onChange={(event) => setTastingRequest({ ...tastingRequest, company: event.target.value })} className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
+                  <label htmlFor="tasting-role" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Rolle (valgfritt)</label>
+                  <input id="tasting-role" value={tastingRequest.role} onChange={(event) => setTastingRequest({ ...tastingRequest, role: event.target.value })} placeholder="Kokk, innkjøper eller distributør" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
+                </>
+              )}
               <label htmlFor="tasting-email" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">E-post</label>
-              <input id="tasting-email" required value={tastingRequest.email} onChange={(event) => setTastingRequest({ ...tastingRequest, email: event.target.value })} type="email" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
-              <label htmlFor="tasting-address" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Leveringsadresse</label>
-              <textarea id="tasting-address" required value={tastingRequest.address} onChange={(event) => setTastingRequest({ ...tastingRequest, address: event.target.value })} className="mt-2 h-24 w-full border border-black/12 p-3 outline-none focus:border-[#d4af37]" />
-              <p className="mt-4 text-sm leading-6 text-black/60">Forespørselen åpner en e-post til Doña Anna. Opplysningene sendes ikke til et skjema på nettstedet. Vi svarer når vi kan bekrefte tilgjengelighet og neste steg.</p>
+              <input id="tasting-email" required autoComplete="email" value={tastingRequest.email} onChange={(event) => setTastingRequest({ ...tastingRequest, email: event.target.value })} type="email" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
+              <label htmlFor="tasting-address" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Område / leveringssted (valgfritt)</label>
+              <input id="tasting-address" value={tastingRequest.address} onChange={(event) => setTastingRequest({ ...tastingRequest, address: event.target.value })} placeholder="For eksempel Alicante eller Norge" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
+              <label htmlFor="tasting-notes" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Hva ønsker du å vite? (valgfritt)</label>
+              <textarea id="tasting-notes" value={tastingRequest.notes} onChange={(event) => setTastingRequest({ ...tastingRequest, notes: event.target.value })} className="mt-2 h-24 w-full border border-black/12 p-3 outline-none focus:border-[#d4af37]" />
+              <p className="mt-4 text-sm leading-6 text-black/60">Knappen åpner en ferdig utfylt e-post i e-postprogrammet ditt. Ingenting sendes direkte fra nettstedet, og en smaksprøve er ikke bekreftet før vi har svart.</p>
               <button className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-black px-5 text-xs font-bold uppercase tracking-[0.2em] text-white">
-                Send forespørsel <ArrowRight size={17} />
+                Åpne e-postforespørsel <ArrowRight size={17} />
               </button>
             </form>
           </div>
