@@ -40,7 +40,7 @@ const copy = {
 };
 
 const imagePaths = {
-  estateHero: 'https://ereapsfcsqtdmzosgnnn.supabase.co/storage/v1/object/public/content-images/dona-anna/garden-2025/ChatGPT-bilde%2010.%20nov.%202026%2C%2012_19_52.jpg',
+  estateHero: '/donaanna/hero-image.jpg',
   oliveGrove: 'https://ereapsfcsqtdmzosgnnn.supabase.co/storage/v1/object/public/content-images/dona-anna/garden-2025/ChatGPT-bilde%2010.%20nov.%202026%2C%2012_19_18.jpg',
   harvestHands: '/donaanna/hero-image.jpg',
   harvestClose: '/donaanna/farming-2.jpg',
