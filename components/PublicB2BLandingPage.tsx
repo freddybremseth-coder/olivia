@@ -246,6 +246,7 @@ type TurnstileApi = {
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegister }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [livePortfolio, setLivePortfolio] = useState<PublicCommerceProduct[]>([]);
+  const [inquiryKind, setInquiryKind] = useState<'tasting' | 'gift' | 'corporate-gift'>('tasting');
   const [tastingRequest, setTastingRequest] = useState({ product: 'Verde Vivo', audience: 'private', name: '', company: '', role: '', email: '', address: '', notes: '' });
   const [turnstileToken, setTurnstileToken] = useState('');
   const turnstileWidgetId = useRef<string | null>(null);
@@ -315,11 +316,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   const approvedLivePortfolio = livePortfolio.filter(item => approvedNames.has(item.name.trim().toLowerCase()));
   const portfolioItems = approvedLivePortfolio.length >= 4 ? approvedLivePortfolio : portfolio;
 
+  const chooseInquiry = (kind: 'tasting' | 'gift' | 'corporate-gift', audience: 'private' | 'business' = 'private') => {
+    setInquiryKind(kind);
+    setTastingRequest(current => ({ ...current, audience }));
+    setInquiryStatus('idle');
+  };
+
   const emailFallback = () => {
     const isBusiness = tastingRequest.audience === 'business';
-    const subject = `Interesse for ${tastingRequest.product} (${isBusiness ? 'bedrift' : 'privat'}) – Doña Anna`;
+    const inquiryLabel = inquiryKind === 'corporate-gift' ? 'Firmagaver' : inquiryKind === 'gift' ? 'Gaver og smakssett' : `Smaksprøve av ${tastingRequest.product}`;
+    const subject = `${inquiryLabel} (${isBusiness ? 'bedrift' : 'privat'}) – Doña Anna`;
     const body = [
-      `Produkt: ${tastingRequest.product}`,
+      `Type forespørsel: ${inquiryLabel}`,
+      `Produktinteresse: ${tastingRequest.product}`,
       `Kundetype: ${isBusiness ? 'Restaurant / bedrift' : 'Privatperson'}`,
       `Navn: ${tastingRequest.name}`,
       ...(isBusiness ? [`Restaurant / virksomhet: ${tastingRequest.company}`, `Rolle: ${tastingRequest.role || 'Ikke oppgitt'}`] : []),
@@ -345,7 +354,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     inquirySendingRef.current = true;
     setInquiryStatus('sending');
     const response = await sendPublicInquiry({
-      kind: 'tasting',
+      kind: inquiryKind,
       product: tastingRequest.product,
       audience: tastingRequest.audience as 'private' | 'business',
       name: tastingRequest.name,
@@ -628,7 +637,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <p className="mt-6 text-xs font-bold uppercase tracking-[0.15em] text-[#8a6a19]">Konsept under utvikling</p>
                 <h3 className="mt-2 font-serif text-3xl">Smakssett</h3>
                 <p className="mt-4 flex-1 leading-7 text-black/65">Et mulig utvalg av oljer med veiledning om bruk, opprinnelse og dokumenterte forskjeller – for matinteresserte som vil lære mer.</p>
-                <a href="mailto:info@donaanna.com?subject=Interesse%20for%20Do%C3%B1a%20Anna%20smakssett&body=Hei%2C%20jeg%20vil%20gjerne%20h%C3%B8re%20mer%20om%20smakssett.%0A%C3%98nsket%20antall%3A%20%0ANavn%3A%20"
+                <a href="#tasting" onClick={() => chooseInquiry('gift')}
                   className="mt-7 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#705515] underline-offset-4 hover:underline">Meld interesse <ArrowRight size={16} /></a>
               </article>
               <article className="flex h-full flex-col border border-black/10 bg-white p-7">
@@ -636,7 +645,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <p className="mt-6 text-xs font-bold uppercase tracking-[0.15em] text-[#8a6a19]">Konsept under utvikling</p>
                 <h3 className="mt-2 font-serif text-3xl">Personlig gave</h3>
                 <p className="mt-4 flex-1 leading-7 text-black/65">For vertskap og matglade mennesker. En gjennomtenkt presentasjon med fortellingen om gården som en del av opplevelsen.</p>
-                <a href="mailto:info@donaanna.com?subject=Interesse%20for%20personlig%20gave%20fra%20Do%C3%B1a%20Anna&body=Hei%2C%20jeg%20vil%20gjerne%20h%C3%B8re%20mer%20om%20gavepresentasjoner.%0AAnledning%3A%20%0A%C3%98nsket%20antall%3A%20"
+                <a href="#tasting" onClick={() => chooseInquiry('gift')}
                   className="mt-7 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#705515] underline-offset-4 hover:underline">Meld interesse <ArrowRight size={16} /></a>
               </article>
               <article className="flex h-full flex-col border border-black/10 bg-white p-7">
@@ -644,7 +653,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <p className="mt-6 text-xs font-bold uppercase tracking-[0.15em] text-[#8a6a19]">Forespørsel for bedrifter</p>
                 <h3 className="mt-2 font-serif text-3xl">Firmagaver</h3>
                 <p className="mt-4 flex-1 leading-7 text-black/65">En mulig gave til kunder, ansatte og samarbeidspartnere. Fortell oss om anledning, antall og behov, så vurderer vi hva som kan tilbys.</p>
-                <a href="mailto:info@donaanna.com?subject=Foresp%C3%B8rsel%20firmagaver%20Do%C3%B1a%20Anna&body=Bedrift%3A%20%0AKontaktperson%3A%20%0A%C3%98nsket%20antall%3A%20%0AAnledning%3A%20%0A%C3%98nsket%20tidspunkt%3A%20"
+                <a href="#tasting" onClick={() => chooseInquiry('corporate-gift', 'business')}
                   className="mt-7 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#705515] underline-offset-4 hover:underline">Spør om mulighetene <ArrowRight size={16} /></a>
               </article>
             </div>
@@ -976,9 +985,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[1fr_0.9fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#8a6a19]">Smaksprøve</p>
-              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Meld interesse for smaksprøve.</h2>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">{inquiryKind === 'corporate-gift' ? 'Spør oss om firmagaver.' : inquiryKind === 'gift' ? 'Meld interesse for gaver og smakssett.' : 'Meld interesse for smaksprøve.'}</h2>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-black/66">
-                Velg produktet du ønsker å høre mer om, og fortell oss hvor det skal brukes. Da kan vi følge opp med relevant informasjon og eventuell smaksprøve når produktet blir tilgjengelig.
+                Velg hva du ønsker å høre mer om, og fortell oss litt om behovet ditt. Vi svarer med det vi kan bekrefte om produktene og mulighetene.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a href="mailto:info@donaanna.com?subject=Produktark%20Do%C3%B1a%20Anna" className="inline-flex items-center gap-2 border border-black/15 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em]">
@@ -990,13 +999,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               </div>
             </div>
             <form data-testid="tasting-request-form" className="border border-black/12 bg-white p-5 shadow-2xl shadow-black/10" onSubmit={handleTastingRequest}>
+              <label htmlFor="inquiry-kind" className="block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Hva gjelder henvendelsen?</label>
+              <select id="inquiry-kind" value={inquiryKind} onChange={(event) => chooseInquiry(event.target.value as 'tasting' | 'gift' | 'corporate-gift', event.target.value === 'corporate-gift' ? 'business' : tastingRequest.audience as 'private' | 'business')} className="mt-2 h-12 w-full border border-black/12 bg-white px-3 outline-none focus:border-[#d4af37]">
+                <option value="tasting">Smaksprøve / produktinteresse</option>
+                <option value="gift">Smakssett / personlig gave</option>
+                <option value="corporate-gift">Firmagaver</option>
+              </select>
               <label htmlFor="tasting-audience" className="block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Jeg henvender meg som</label>
               <select id="tasting-audience" value={tastingRequest.audience} onChange={(event) => setTastingRequest({ ...tastingRequest, audience: event.target.value })} className="mt-2 h-12 w-full border border-black/12 bg-white px-3 outline-none focus:border-[#d4af37]">
-                <option value="private">Privatperson</option>
+                {inquiryKind !== 'corporate-gift' && <option value="private">Privatperson</option>}
                 <option value="business">Restaurant / bedrift</option>
               </select>
-              <label htmlFor="tasting-product" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Produkt</label>
+              <label htmlFor="tasting-product" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">{inquiryKind === 'tasting' ? 'Produkt' : 'Produktinteresse (valgfritt)'}</label>
               <select id="tasting-product" required value={tastingRequest.product} onChange={(event) => setTastingRequest({ ...tastingRequest, product: event.target.value })} className="mt-2 h-12 w-full border border-black/12 bg-white px-3 outline-none focus:border-[#d4af37]">
+                {inquiryKind !== 'tasting' && <option value="">Ikke bestemt ennå</option>}
                 <option>Verde Vivo</option>
                 <option>Verde Alto</option>
                 <option>Raíz Antigua</option>
@@ -1017,7 +1033,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <input id="tasting-email" required autoComplete="email" value={tastingRequest.email} onChange={(event) => setTastingRequest({ ...tastingRequest, email: event.target.value })} type="email" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
               <label htmlFor="tasting-address" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Område / leveringssted (valgfritt)</label>
               <input id="tasting-address" value={tastingRequest.address} onChange={(event) => setTastingRequest({ ...tastingRequest, address: event.target.value })} placeholder="For eksempel Alicante eller Norge" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
-              <label htmlFor="tasting-notes" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">Hva ønsker du å vite? (valgfritt)</label>
+              <label htmlFor="tasting-notes" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">{inquiryKind === 'tasting' ? 'Hva ønsker du å vite? (valgfritt)' : 'Anledning, antall og eventuelle ønsker (valgfritt)'}</label>
               <textarea id="tasting-notes" value={tastingRequest.notes} onChange={(event) => setTastingRequest({ ...tastingRequest, notes: event.target.value })} className="mt-2 h-24 w-full border border-black/12 p-3 outline-none focus:border-[#d4af37]" />
               {directInquiryEnabled && <div id="donaanna-inquiry-turnstile" className="mt-5" aria-label="Spamkontroll" />}
               {inquiryStatus === 'sent' ? (
