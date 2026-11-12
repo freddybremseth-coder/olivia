@@ -38,6 +38,8 @@ jobs:
         run: node --test tests/donaannaEstatePhotos.test.mjs
       - name: Compile guarded public inquiry endpoint
         run: npx esbuild api/public-inquiry.ts --outfile=/tmp/donaanna-public-inquiry.js --bundle --platform=node --format=esm
+      - name: Test disabled-by-default contact intake and mail delivery safeguards
+        run: node --test tests/donaannaPublicInquiry.test.mjs
       - name: Validate public measurement script
         run: node --check public/donaanna-analytics.js
       - name: Test public/app menu isolation
