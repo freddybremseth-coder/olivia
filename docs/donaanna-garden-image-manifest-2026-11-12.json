@@ -19,7 +19,8 @@
       "width": null,
       "height": null,
       "licenseVerified": false,
-      "originVerified": false
+      "originVerified": false,
+      "expectedWebPath": "/donaanna/garden-2026/biar-oliventre-kraftig-stamme.webp"
     },
     {
       "id": "biar-oliven-gronn-fiolett",
@@ -33,7 +34,8 @@
       "width": null,
       "height": null,
       "licenseVerified": false,
-      "originVerified": false
+      "originVerified": false,
+      "expectedWebPath": "/donaanna/garden-2026/biar-oliven-modning-gronn-lilla.webp"
     },
     {
       "id": "biar-gronne-oliven",
@@ -47,7 +49,8 @@
       "width": null,
       "height": null,
       "licenseVerified": false,
-      "originVerified": false
+      "originVerified": false,
+      "expectedWebPath": "/donaanna/garden-2026/biar-gronne-oliven-naerbilde.webp"
     },
     {
       "id": "biar-oliventre-bark-rotter",
@@ -62,7 +65,8 @@
       "width": null,
       "height": null,
       "licenseVerified": false,
-      "originVerified": false
+      "originVerified": false,
+      "expectedWebPath": "/donaanna/garden-2026/biar-gammel-oliventre-rotstruktur.webp"
     },
     {
       "id": "biar-morke-oliven",
@@ -76,7 +80,8 @@
       "width": null,
       "height": null,
       "licenseVerified": false,
-      "originVerified": false
+      "originVerified": false,
+      "expectedWebPath": "/donaanna/garden-2026/biar-morke-oliven-gren.webp"
     },
     {
       "id": "biar-olivenlund-landskap",
@@ -91,7 +96,8 @@
       "width": null,
       "height": null,
       "licenseVerified": false,
-      "originVerified": false
+      "originVerified": false,
+      "expectedWebPath": "/donaanna/garden-2026/biar-olivenlund-blaa-himmel.webp"
     },
     {
       "id": "biar-oliventre-lund",
@@ -105,7 +111,8 @@
       "width": null,
       "height": null,
       "licenseVerified": false,
-      "originVerified": false
+      "originVerified": false,
+      "expectedWebPath": "/donaanna/garden-2026/biar-oliventre-lund.webp"
     },
     {
       "id": "biar-gronne-oliven-grener",
@@ -120,7 +127,8 @@
       "width": null,
       "height": null,
       "licenseVerified": false,
-      "originVerified": false
+      "originVerified": false,
+      "expectedWebPath": "/donaanna/garden-2026/biar-gronne-oliven-grener.webp"
     },
     {
       "id": "biar-oliven-mot-himmel",
@@ -134,7 +142,8 @@
       "width": null,
       "height": null,
       "licenseVerified": false,
-      "originVerified": false
+      "originVerified": false,
+      "expectedWebPath": "/donaanna/garden-2026/biar-oliven-gronn-lilla-himmel.webp"
     },
     {
       "id": "biar-oliventre-hul-stamme",
@@ -148,7 +157,9 @@
       "width": null,
       "height": null,
       "licenseVerified": false,
-      "originVerified": false
+      "originVerified": false,
+      "expectedWebPath": "/donaanna/garden-2026/biar-oliventre-hul-stamme.webp"
     }
-  ]
+  ],
+  "note": "expectedWebPath is a staging target, NOT a verified uploaded image URL. publicUrl remains null until actual publication and rights verification."
 }
