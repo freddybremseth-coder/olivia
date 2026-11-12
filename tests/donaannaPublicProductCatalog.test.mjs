@@ -21,6 +21,9 @@ test('publish price and stock figures only with separate approvals', () => {
   assert.match(commerce, /row\?\.metadata\?\.public_site_approved === true/);
 });
 
-test('product cards show product-specific availability messaging', () => {
+test('product cards receive actual product-specific availability messaging', () => {
+  assert.match(page, /availabilityText: string;/);
+  assert.match(page, /availabilityText: product\.availabilityText/);
   assert.match(page, /productMedia\(item\.name\)\.availabilityText/);
+  assert.match(page, /availabilityText: 'Produktinformasjon er ikke tilgjengelig ennå'/);
 });
