@@ -723,7 +723,24 @@ function pageHtml(page: EvergreenPage) {
     });
   }
 
-  // Product rich-result markup is added only when verifiable offer or review data exists.
+  // Product identity markup has no offers, prices, reviews or availability promises.
+  // Commercial rich-result fields are added only when independently verified.
+  if (productDefinition) {
+    schema['@graph'].push({
+      '@type': 'Product',
+      '@id': canonical + '#product',
+      name: 'Doña Anna ' + productDefinition.name,
+      url: canonical,
+      brand: { '@id': ORG },
+      description: productDefinition.role + '. ' + productDefinition.status,
+      category: productDefinition.typeLabel,
+      additionalProperty: [
+        { '@type': 'PropertyValue', name: 'Produktrolle', value: productDefinition.role },
+        { '@type': 'PropertyValue', name: 'Status', value: productDefinition.status },
+        { '@type': 'PropertyValue', name: 'Etikett', value: productDefinition.labelStatusText },
+      ],
+    });
+  }
 
   const sections = page.sections.map(section =>
     '<section class="article-section"><h2>' + escapeHtml(section.heading) + '</h2>' +
