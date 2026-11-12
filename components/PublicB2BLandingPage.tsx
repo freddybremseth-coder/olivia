@@ -249,6 +249,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   const [tastingRequest, setTastingRequest] = useState({ product: 'Verde Vivo', audience: 'private', name: '', company: '', role: '', email: '', address: '', notes: '' });
   const [turnstileToken, setTurnstileToken] = useState('');
   const turnstileWidgetId = useRef<string | null>(null);
+  const inquirySendingRef = useRef(false);
   const [inquiryStatus, setInquiryStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   const [signal, setSignal] = useState<PublicEstateSignal>({
@@ -335,11 +336,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       emailFallback();
       return;
     }
-    if (inquiryStatus === 'sending') return;
+    // Lock synchronously, before React has committed the disabled button state.
+    if (inquirySendingRef.current || inquiryStatus === 'sent') return;
     if (!turnstileToken) {
       setInquiryStatus('error');
       return;
     }
+    inquirySendingRef.current = true;
     setInquiryStatus('sending');
     const response = await sendPublicInquiry({
       kind: 'tasting',
@@ -353,6 +356,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       message: tastingRequest.notes,
       turnstileToken,
     });
+    inquirySendingRef.current = false;
     setInquiryStatus(response.accepted ? 'sent' : 'error');
     setTurnstileToken('');
     // Turnstile tokens are single-use: users need a fresh challenge on retry.
@@ -1023,7 +1027,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   <p className="mt-4 text-sm leading-6 text-black/60">{directInquiryEnabled
                     ? 'Opplysningene sendes via et sikkert nettskjema. En smaksprøve er ikke bekreftet før vi har svart.'
                     : 'Knappen åpner en ferdig utfylt e-post i e-postprogrammet ditt. Ingenting sendes direkte fra nettstedet, og en smaksprøve er ikke bekreftet før vi har svart.'}</p>
-                  {inquiryStatus === 'error' && <p role="alert" className="mt-3 text-sm text-red-800">Vi kunne ikke bekrefte innsendingen. Prøv igjen med ny spamkontroll eller åpne e-postforespørselen i stedet.</p>}
+                  {inquiryStatus === 'error' && <p role="alert" className="mt-3 text-sm text-red-800">Vi kunne ikke bekrefte innsendingen. Henvendelsen kan allerede være mottatt dersom forbindelsen ble brutt. Unngå å sende den samme meldingen flere ganger; bruk e-postalternativet ved behov.</p>}
                   <button disabled={inquiryStatus === 'sending'} className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-black px-5 text-xs font-bold uppercase tracking-[0.2em] text-white disabled:opacity-50">
                     {directInquiryEnabled ? (inquiryStatus === 'sending' ? 'Sender …' : 'Send forespørsel') : 'Åpne e-postforespørsel'} <ArrowRight size={17} />
                   </button>
