@@ -38,7 +38,7 @@ function configure(enabled = false) {
 function call({ origin = 'https://www.donaanna.com', method = 'POST', body = {}, contentType = 'application/json' } = {}) {
   const req = {
     method,
-    headers: { origin, 'content-type': contentType },
+    headers: { origin, 'content-type': contentType, 'x-vercel-forwarded-for': '203.0.113.18' },
     body,
   };
   let status = -1;
@@ -151,8 +151,28 @@ test('RealtyFlow SMTP relay sends exclusively to authenticated existing endpoint
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'https://realtyflow.chatgenius.pro/api/integrations/donaanna/public-inquiry');
   assert.equal(calls[0].options.headers['x-donaanna-inquiry-secret'], 'test-private-bridge-key');
-  assert.equal(JSON.parse(calls[0].options.body).email, valid.email);
+  const envelope = JSON.parse(calls[0].options.body);
+  assert.equal(envelope.email, valid.email);
+  assert.match(envelope.rateIdentityIp, /^[a-f0-9]{64}$/);
+  assert.match(envelope.rateIdentityEmail, /^[a-f0-9]{64}$/);
+  assert.notEqual(envelope.rateIdentityIp, envelope.rateIdentityEmail);
   assert.equal(calls[0].options.body.includes('test-private-bridge-key'), false);
+});
+
+
+test('shared SMTP rejects missing unmetered client IP before forwarding', { concurrency: false }, async () => {
+  configure(true);
+  process.env.DONAANNA_INQUIRY_TRANSPORT = 'realtyflow';
+  process.env.DONAANNA_REALTYFLOW_BRIDGE_SECRET = 'test-private-bridge-key';
+  process.env.DONAANNA_REALTYFLOW_BRIDGE_ENABLED = 'true';
+  process.env.DONAANNA_INQUIRY_ABUSE_CONTROLS_READY = 'true';
+  let called = 0;
+  globalThis.fetch = async () => { called++; throw new Error('Unexpected forward'); };
+  const req = { method: 'POST', headers: { origin: 'https://www.donaanna.com', 'content-type': 'application/json' }, body: { ...valid, turnstileToken: '' } };
+  let status = 0;
+  await handler(req, { writeHead: (s) => { status = s; }, end: () => {} });
+  assert.equal(status, 503);
+  assert.equal(called, 0);
 });
 
 test('RealtyFlow SMTP failure or unconfirmed response is never an accepted inquiry', { concurrency: false }, async () => {
