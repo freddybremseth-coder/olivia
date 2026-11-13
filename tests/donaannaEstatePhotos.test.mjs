@@ -64,3 +64,20 @@ test('remaining stock and illustrative harvest imagery does not claim verified e
   assert.match(landing, /imageAlt: 'Illustrasjon av oliven som råvare'/);
   assert.doesNotMatch(landing, /alt="Mørke oliven på trærne på Doña Anna-gården i Biar"/);
 });
+
+test('visually checked source-to-published photo mapping is unique', () => {
+  const originalNames = [...registry.matchAll(/original: '([^']+)'/g)].map(match => match[1]);
+  assert.equal(originalNames.length, 10);
+  assert.equal(new Set(originalNames).size, 10);
+  const mappings = [
+    ['grove', 'IMG_8334.jpeg'],
+    ['mixed', 'IMG_8343.jpeg'],
+    ['hollow', 'IMG_8332.jpeg'],
+    ['color', 'IMG_8331.jpeg']
+  ];
+  for (const [key, original] of mappings) {
+    const start = registry.indexOf(key + ': {');
+    const next = registry.indexOf('},', start);
+    assert.ok(registry.slice(start, next).includes("original: '" + original + "'"), key + ' wrong source');
+  }
+});
