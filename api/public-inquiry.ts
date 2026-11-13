@@ -1,4 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { createHmac } from 'node:crypto';
+import { isIP } from 'node:net';
 
 /**
  * Public lead intake. Disabled unless BOTH mail delivery and bot protection
@@ -144,6 +146,16 @@ export default async function handler(req: Request, res: ServerResponse) {
 
   try {
     if (usesRealtyflow) {
+      // Vercel overwrites its forwarding header at the trusted edge. Reject
+      // missing/invalid identities: never permit an unmetered email submission.
+      const forwarded = req.headers['x-vercel-forwarded-for'];
+      const rawIp = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+      const ip = typeof rawIp === 'string' ? rawIp.trim() : '';
+      if (isIP(ip) === 0) return respond(res, 503, { error: 'rate_limit_unavailable' });
+      const hmac = (identity: string) =>
+        createHmac('sha256', bridgeSecret!).update(identity).digest('hex');
+      const rateIdentityIp = hmac('ip:' + ip);
+      const rateIdentityEmail = hmac('email:' + email.toLowerCase());
       const delivery = await fetch('https://realtyflow.chatgenius.pro/api/integrations/donaanna/public-inquiry', {
         method: 'POST',
         headers: {
@@ -152,6 +164,7 @@ export default async function handler(req: Request, res: ServerResponse) {
         },
         body: JSON.stringify({
           kind, giftPreference, product, audience, name, email, company, role, area, message,
+          rateIdentityIp, rateIdentityEmail,
         }),
         signal: AbortSignal.timeout(10_000),
       });
