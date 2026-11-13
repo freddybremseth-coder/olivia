@@ -193,7 +193,7 @@ const livingTimeline = [
   ['Høsting', 'Høstedato og råvaregrunnlag dokumenteres for det produktet og den batchen de faktisk gjelder.'],
   ['Mølle', 'Produksjonsdata fra møllen knyttes til riktig oljeprodukt og konkret batch når oljen er produsert.'],
   ['Analyse', 'Analyseverdier og sensoriske notater publiseres først når resultatene foreligger, produkt for produkt.'],
-  ['Emballasje', 'Hvert produkt bruker sin egen godkjente etikett, format og korrekte batchinformasjon.'],
+  ['Emballasje', 'Etikett, format og batchopplysninger godkjennes særskilt for hvert produkt før de presenteres som ferdige.'],
 ];
 
 const knowledgeCards = [
