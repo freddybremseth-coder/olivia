@@ -130,7 +130,7 @@ const specs = [
   ['Format', 'Oppgis separat for hvert produkt når emballasje er bekreftet'],
   ['Kvalitetsklasse', 'Dokumenteres per oljeprodukt og batch før den publiseres som faktum'],
   ['Opprinnelse', 'Biar · Alicante · Spania'],
-  ['Etikett', 'Hvert produkt bruker sin egen godkjente etikett'],
+  ['Etikett', 'Kun godkjente etiketter vises som ferdige; øvrige design er under utvikling'],
   ['Batchdata', 'Høstedato, analyse, sensorikk, pris og tilgjengelighet knyttes til riktig produkt og batch'],
 ];
 
@@ -159,7 +159,7 @@ const b2bPackages = [
 ];
 
 const buyerProof: Array<{ icon: React.ElementType; title: string; text: string }> = [
-  { icon: Package, title: 'Flere tydelige produkter', text: 'Hvert produkt har eget navn, rolle, produktside og etikett. Batchdata og tilgjengelighet holdes adskilt.' },
+  { icon: Package, title: 'Flere tydelige produkter', text: 'Hvert produkt har eget navn, rolle og produktside. Etikett, batchdata og tilgjengelighet blir godkjent og publisert separat.' },
   { icon: QrCode, title: 'Batchdata etter produksjon', text: 'Sporbar informasjon publiseres når den konkrete batchen er dokumentert.' },
   { icon: ShieldCheck, title: 'Ingen oppdiktede produktdata', text: 'Pris, analyse og tilgjengelighet oppgis først når de faktisk finnes.' },
   { icon: Building2, title: 'B2B-dialog', text: 'Restaurant, hotell, butikk og import kan melde interesse før lansering.' },
@@ -560,7 +560,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
         <section id="estate" className="relative scroll-mt-20 overflow-hidden border-y border-white/10 bg-[#111111] py-14 md:py-24">
           <div className="absolute inset-y-0 right-0 hidden w-1/2 md:block">
-            <img src={biarGrovePhoto} alt="Illustrasjon av et oliventre" loading="lazy" decoding="async" className="h-full w-full object-cover opacity-38" />
+            <img src={estatePhotosPublished ? estatePhotos.grove.src : biarGrovePhoto} alt={estatePhotosPublished ? estatePhotos.grove.alt : "Illustrasjon av et oliventre"} loading="lazy" decoding="async" className="h-full w-full object-cover opacity-40" />
             <div className="absolute inset-0 bg-[linear-gradient(90deg,#111111,rgba(17,17,17,.42),rgba(17,17,17,.72))]" />
           </div>
           <div className="relative mx-auto max-w-7xl px-5 md:px-8">
