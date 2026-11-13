@@ -139,14 +139,14 @@ const b2bPackages = [
     title: 'Meld interesse for smaksprøve',
     audience: 'Restaurant / hotell',
     image: imagePaths.harvestHands,
-    imageAlt: 'Grønne oliven ved innhøsting for Doña Anna',
+    imageAlt: 'Illustrasjonsmotiv med oliven',
     text: 'Velg hvilket Doña Anna-produkt du er interessert i. Vi bekrefter tilgjengelighet, batchdata, pris og eventuell smaksprøve for riktig produkt når produksjonen er klar.',
   },
   {
     title: 'Produktinformasjon',
     audience: 'Kjøkken og faghandel',
     image: imagePaths.harvestClose,
-    imageAlt: 'Håndplukkede grønne oliven fra innhøstingen',
+    imageAlt: 'Illustrasjonsmotiv med oliventrær',
     text: 'Produktark og dokumenterte batchopplysninger bygges rundt den faktiske produksjonen – ikke rundt generiske produktløfter.',
   },
   {
@@ -201,14 +201,14 @@ const knowledgeCards = [
     title: 'Tidlig høsting',
     kicker: 'Cosecha temprana',
     image: imagePaths.harvestHands,
-    imageAlt: 'Grønne oliven ved tidlig innhøsting',
+    imageAlt: 'Illustrasjon av grønne oliven',
     text: 'Verde Vivo er utviklet som en tidlig høstet olivenolje med mål om extra virgin-kvalitet. Endelig kvalitetsklasse, smaksprofil og analyseverdier beskrives for den faktiske batchen når den foreligger.',
   },
   {
     title: 'Våre sorter',
     kicker: 'Gården i Biar',
     image: imagePaths.harvestClose,
-    imageAlt: 'Håndplukkede oliven som illustrerer råvaren fra gården',
+    imageAlt: 'Illustrasjon av oliven som råvare',
     text: 'Genovesa, Gordal, Changlot Real og Picual er blant sortene på gården. Vi bruker sortsinformasjon som en del av sporbarheten – ikke som generiske smakslover.',
   },
   {
@@ -451,7 +451,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       </nav>
 
       <header id="top" className="relative min-h-[100svh] overflow-hidden">
-        <img src={imagePaths.estateHero} alt="Mørke oliven på trærne på Doña Anna-gården i Biar" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-42" />
+        <img src={imagePaths.estateHero} alt="Illustrasjonsbilde med oliven på trær" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-42" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(13,13,13,.60),rgba(13,13,13,.88)_65%,rgba(13,13,13,.98))] md:bg-[radial-gradient(circle_at_72%_42%,rgba(212,175,55,.16),transparent_34%),linear-gradient(90deg,rgba(13,13,13,.98),rgba(13,13,13,.78),rgba(13,13,13,.42))]" />
         <div className="relative mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-end px-5 pb-8 pt-24 md:px-8 md:pb-12 md:pt-28">
           <div className="max-w-4xl animate-in fade-in duration-700">
@@ -794,7 +794,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             </div>
             <div className="mt-10 grid gap-5 border border-black/10 bg-[#111111] p-5 text-white lg:grid-cols-[0.82fr_1.18fr]">
               <div className="relative min-h-[320px] overflow-hidden sm:min-h-[360px]">
-                <img src={imagePaths.harvestClose} alt="Oliven på trærne på Doña Anna-gården i Biar" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-72" />
+                <img src={imagePaths.harvestClose} alt="Illustrasjonsbilde med oliven på trær" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-72" />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.92))]" />
                 <div className="absolute bottom-0 p-5 sm:p-6">
                   <Sparkles className="text-[#d4af37]" size={26} />
