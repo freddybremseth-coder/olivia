@@ -46,6 +46,8 @@ jobs:
         run: node --test tests/donaannaGiftInquiryFlow.test.mjs
       - name: Test public catalog completeness and price approval
         run: node --test tests/donaannaPublicProductCatalog.test.mjs
+      - name: Test reuse of existing Doña Anna SMTP bridge
+        run: node --test tests/donaannaExistingSmtpBridge.test.mjs
       - name: Validate public measurement script
         run: node --check public/donaanna-analytics.js
       - name: Test public/app menu isolation
