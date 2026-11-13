@@ -60,7 +60,7 @@ if (!index.includes('"@type": "Place"') && !index.includes('"@type":"Place"')) f
 if (!landing.includes('id="customer-path"') || !landing.includes('Hva vil du bruke Doña Anna til?')) {
   fail('Homepage must retain the intent-first customer journey.');
 }
-if (!landing.includes('Anna Bremseth og Freddy Bremseth') || !landing.includes('Vi er Anna og Freddy')) fail('Visible trust copy must identify both founders and state their relationship to the farm.');
+if (!landing.includes('Anna og Freddy Bremseth') || !landing.includes('Vi er Anna og Freddy')) fail('Visible trust copy must identify both founders and state their relationship to the farm.');
 for (const productName of ['VERDE VIVO','VERDE ALTO','RAÍZ ANTIGUA','COCINA VIVA','MESA · GORDAL NOBLE']) {
   if (!landing.includes(productName)) fail('Visible portfolio missing distinct Doña Anna product: ' + productName);
 }
