@@ -586,23 +586,24 @@ const PAGES: Record<string, EvergreenPage> = {
   personvern: {
     slug: 'personvern',
     title: 'Personvern og kontakt | Doña Anna olivenolje fra Biar',
-    description: 'Slik håndterer Doña Anna kontakt via e-post: hva du oppgir, hvordan vi svarer og hvordan du kan ta kontakt om personopplysninger.',
+    description: 'Slik behandler Doña Anna henvendelser via e-post og nettskjema, hvilke opplysninger som brukes, og hvordan du kontakter oss om personvern.',
     eyebrow: 'Personvern · kontakt',
     h1: 'Personvern og kontakt på DoñaAnna.com',
-    answer: 'På den offentlige siden åpner interesseskjemaet en e-post i brukerens eget e-postprogram. Vi mottar innholdet når du selv sender e-posten, og bruker opplysningene til å besvare henvendelsen. Den planlagte direkteinnsendingen er foreløpig deaktivert.',
+    answer: 'Doña Anna bruker opplysninger du selv oppgir for å besvare forespørsler. Skjemaet viser om det åpner e-postprogrammet ditt eller sender direkte fra nettsiden. Når direkte innsending er aktivert, behandles henvendelsen av vår eksisterende e-postløsning i RealtyFlow PRO. Innsendingen er ikke en bestilling.',
     sections: [
       {
         heading: 'Hvordan sendes en forespørsel om smaksprøve?',
         body: [
-          'Når du fyller ut den offentlige forespørselen og trykker send, åpnes en e-post til info@donaanna.com med opplysningene du har skrevet inn.',
-          'Selve den offentlige nettsiden lagrer ikke disse feltene som en skjemainnsending.'
+          'Når direkte innsending er deaktivert, åpner knappen en ferdig utfylt e-post til info@donaanna.com. Du må selv sende den fra e-postprogrammet ditt.',
+          'Når direkte innsending er aktivert, sender nettsiden navn, e-postadresse, forespørselstype, relevant produkt, eventuell bedrift og meldingen din til Doña Annas server. Serveren videresender henvendelsen til Doña Annas egen e-postkonto gjennom RealtyFlow PRO. Du får først en bekreftelse når e-posttjenesten har akseptert henvendelsen.'
         ]
       },
       {
         heading: 'Hva skjer med opplysningene når du sender oss e-post?',
         body: [
           'Hvis du sender en e-post til Doña Anna, mottar vi de opplysningene du selv tar med, for eksempel navn, e-postadresse, produktinteresse og melding. Vi bruker dem til å besvare henvendelsen og følge opp spørsmålet ditt.',
-          'E-posten behandles i e-postsystemene til avsenderen og mottakeren. Dette er noe annet enn at et offentlig nettskjema lagrer opplysninger i en egen kundedatabase. Ikke send helseopplysninger, betalingskortopplysninger eller andre sensitive opplysninger i en vanlig e-post.',
+          'Ved e-postalternativet behandles meldingen i avsenderens og mottakerens e-postsystemer. Ved direkte nettskjema behandles innholdet også av Doña Annas server og RealtyFlow PRO sin eksisterende e-postmotor, med logg over utsendelsen i e-postsystemet. Meldingen brukes til å besvare henvendelsen, ikke som en automatisk påmelding til markedsføring.',
+          'For å beskytte direkteinnsending mot misbruk brukes kortvarige begrensningskontroller basert på pseudonymiserte avsenderidentiteter. Rå IP-adresser lagres ikke i denne spesifikke begrensningstabellen. Vanlige sikkerhetslogger hos driftsleverandørene kan behandles separat. Ikke send helseopplysninger, betalingskortopplysninger eller andre sensitive data i feltet for melding.',
           'Du kan kontakte info@donaanna.com for spørsmål om hvilke opplysninger som er mottatt og for å be om innsyn eller sletting der det er aktuelt. Henvendelser og lovpålagte oppbevaringshensyn må vurderes konkret.'
         ]
       },
@@ -622,7 +623,7 @@ const PAGES: Record<string, EvergreenPage> = {
       }
     ],
     faqs: [
-      { question: 'Lagrer smaksprøveskjemaet data på den offentlige nettsiden?', answer: 'Nei. Forespørselen åpner en e-post i brukerens eget e-postprogram.' },
+      { question: 'Hvordan sendes forespørselen?', answer: 'Skjemaet viser om det åpner en e-post du selv sender, eller om direkte innsending er aktivert. Ved direkte innsending brukes Doña Annas server og eksisterende RealtyFlow PRO-e-postsystem.' },
       { question: 'Er B2B-portalen offentlig indekserbar?', answer: 'Nei. Innloggede ruter er blokkert fra søkeindeksering.' },
       { question: 'Hva er kontaktadressen?', answer: 'Kontakt Doña Anna på info@donaanna.com.' }
     ],
