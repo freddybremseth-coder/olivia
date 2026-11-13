@@ -52,7 +52,10 @@ test('authentic-photo descriptions must not claim a named cultivar or an exact t
 test('generated illustration placeholders are not presented as actual estate photos', () => {
   assert.match(landing, /Illustrasjonsbilde\. Ekte fotografier fra vår olivengård publiseres/);
   assert.match(landing, /alt=\{estatePhotosPublished \? estatePhotos\.heritageTree\.alt : 'Illustrasjon av en olivenlund'\}/);
-  assert.match(landing, /src=\{biarGrovePhoto\} alt="Illustrasjon av et oliventre"/);
+  assert.match(landing, /src=\{estatePhotosPublished \? estatePhotos\.grove\.src : biarGrovePhoto\}/);
+  assert.match(landing, /alt=\{estatePhotosPublished \? estatePhotos\.grove\.alt : "Illustrasjon av et oliventre"\}/);
+  assert.match(landing, /src=\{estatePhotosPublished \? estatePhotos\.heritageTree\.src : imagePaths\.estateHero\}/);
+  assert.match(landing, /alt=\{estatePhotosPublished \? estatePhotos\.heritageTree\.alt : "Illustrasjonsbilde med oliven på trær"\}/);
   assert.match(landing, /src=\{imagePaths\.oliveGrove\} alt="Illustrasjon av oliven i en lund"/);
 });
 
