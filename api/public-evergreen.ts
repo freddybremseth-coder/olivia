@@ -603,7 +603,7 @@ const PAGES: Record<string, EvergreenPage> = {
         body: [
           'Hvis du sender en e-post til Doña Anna, mottar vi de opplysningene du selv tar med, for eksempel navn, e-postadresse, produktinteresse og melding. Vi bruker dem til å besvare henvendelsen og følge opp spørsmålet ditt.',
           'Ved e-postalternativet behandles meldingen i avsenderens og mottakerens e-postsystemer. Ved direkte nettskjema behandles innholdet også av Doña Annas server og RealtyFlow PRO sin eksisterende e-postmotor, med logg over utsendelsen i e-postsystemet. Meldingen brukes til å besvare henvendelsen, ikke som en automatisk påmelding til markedsføring.',
-          'For å beskytte direkteinnsending mot misbruk brukes kortvarige begrensningskontroller basert på pseudonymiserte avsenderidentiteter. Rå IP-adresser lagres ikke i denne spesifikke begrensningstabellen. Vanlige sikkerhetslogger hos driftsleverandørene kan behandles separat. Ikke send helseopplysninger, betalingskortopplysninger eller andre sensitive data i feltet for melding.'
+          'For å beskytte direkteinnsending mot misbruk brukes kortvarige begrensningskontroller basert på pseudonymiserte avsenderidentiteter. Rå IP-adresser lagres ikke i denne spesifikke begrensningstabellen. Vanlige sikkerhetslogger hos driftsleverandørene kan behandles separat. Ikke send helseopplysninger, betalingskortopplysninger eller andre sensitive data i feltet for melding.',
           'Du kan kontakte info@donaanna.com for spørsmål om hvilke opplysninger som er mottatt og for å be om innsyn eller sletting der det er aktuelt. Henvendelser og lovpålagte oppbevaringshensyn må vurderes konkret.'
         ]
       },
