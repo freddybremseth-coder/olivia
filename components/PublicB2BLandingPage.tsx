@@ -1068,6 +1068,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   <p className="mt-4 text-sm leading-6 text-black/60">{directInquiryEnabled
                     ? 'Opplysningene sendes via et sikkert nettskjema. En smaksprøve er ikke bekreftet før vi har svart.'
                     : 'Knappen åpner en ferdig utfylt e-post i e-postprogrammet ditt. Ingenting sendes direkte fra nettstedet, og en smaksprøve er ikke bekreftet før vi har svart.'}</p>
+                  <p className="mt-2 text-xs leading-5 text-black/60">Les <a href="/personvern" className="font-semibold underline underline-offset-2">hvordan Doña Anna behandler personopplysninger</a> før du sender en henvendelse.</p>
                   {inquiryStatus === 'error' && <p role="alert" className="mt-3 text-sm text-red-800">Vi kunne ikke bekrefte innsendingen. Henvendelsen kan allerede være mottatt dersom forbindelsen ble brutt. Unngå å sende den samme meldingen flere ganger; bruk e-postalternativet ved behov.</p>}
                   <button disabled={inquiryStatus === 'sending'} className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-black px-5 text-xs font-bold uppercase tracking-[0.2em] text-white disabled:opacity-50">
                     {directInquiryEnabled ? (inquiryStatus === 'sending' ? 'Sender …' : 'Send forespørsel') : 'Åpne e-postforespørsel'} <ArrowRight size={17} />
