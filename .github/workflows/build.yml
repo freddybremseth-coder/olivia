@@ -50,6 +50,8 @@ jobs:
         run: node --test tests/donaannaExistingSmtpBridge.test.mjs
       - name: Test privacy notice for both contact methods
         run: node --test tests/donaannaInquiryPrivacy.test.mjs
+      - name: Verify evidence-led Doña Anna premium positioning
+        run: node --test tests/donaannaPremiumBrand.test.mjs
       - name: Validate public measurement script
         run: node --check public/donaanna-analytics.js
       - name: Test public/app menu isolation

@@ -31,9 +31,9 @@ interface LandingPageProps {
 }
 
 const copy = {
-  eyebrow: 'Olivenprosjekt fra Biar · Alicante · Anna & Freddy Bremseth',
-  headline: 'Doña Anna – olivenolje og produkter fra Biar.',
-  subhead: 'Fra vår olivengård i Biar utvikler vi Doña Anna med respekt for råvaren, tydelig opprinnelse og egne produkter for ulike bruksområder. Her kan du bli kjent med gården, utforske produktene og følge arbeidet frem mot dokumenterte lanseringer.',
+  eyebrow: 'Doña Anna · Fra olivengården vår i Biar · Alicante',
+  headline: 'Doña Anna – olivenolje med røtter i Biar.',
+  subhead: 'Vi er Anna og Freddy. Mellom oliventrærne på gården vår i Biar bygger vi Doña Anna: en personlig fortelling om sted, råvare og oljer vi ønsker å være stolte av å sette på bordet. Her møter du menneskene og trærne bak navnet – og følger hvert produkt frem mot dokumentert kvalitet.',
   cta: 'Meld interesse for smaksprøve',
   portal: 'B2B portal',
   specTitle: 'Produktdata publiseres per produkt',
@@ -130,7 +130,7 @@ const specs = [
   ['Format', 'Oppgis separat for hvert produkt når emballasje er bekreftet'],
   ['Kvalitetsklasse', 'Dokumenteres per oljeprodukt og batch før den publiseres som faktum'],
   ['Opprinnelse', 'Biar · Alicante · Spania'],
-  ['Etikett', 'Hvert produkt bruker sin egen godkjente etikett'],
+  ['Etikett', 'Kun godkjente etiketter vises som ferdige; øvrige design er under utvikling'],
   ['Batchdata', 'Høstedato, analyse, sensorikk, pris og tilgjengelighet knyttes til riktig produkt og batch'],
 ];
 
@@ -159,7 +159,7 @@ const b2bPackages = [
 ];
 
 const buyerProof: Array<{ icon: React.ElementType; title: string; text: string }> = [
-  { icon: Package, title: 'Flere tydelige produkter', text: 'Hvert produkt har eget navn, rolle, produktside og etikett. Batchdata og tilgjengelighet holdes adskilt.' },
+  { icon: Package, title: 'Flere tydelige produkter', text: 'Hvert produkt har eget navn, rolle og produktside. Etikett, batchdata og tilgjengelighet blir godkjent og publisert separat.' },
   { icon: QrCode, title: 'Batchdata etter produksjon', text: 'Sporbar informasjon publiseres når den konkrete batchen er dokumentert.' },
   { icon: ShieldCheck, title: 'Ingen oppdiktede produktdata', text: 'Pris, analyse og tilgjengelighet oppgis først når de faktisk finnes.' },
   { icon: Building2, title: 'B2B-dialog', text: 'Restaurant, hotell, butikk og import kan melde interesse før lansering.' },
@@ -193,7 +193,7 @@ const livingTimeline = [
   ['Høsting', 'Høstedato og råvaregrunnlag dokumenteres for det produktet og den batchen de faktisk gjelder.'],
   ['Mølle', 'Produksjonsdata fra møllen knyttes til riktig oljeprodukt og konkret batch når oljen er produsert.'],
   ['Analyse', 'Analyseverdier og sensoriske notater publiseres først når resultatene foreligger, produkt for produkt.'],
-  ['Emballasje', 'Hvert produkt bruker sin egen godkjente etikett, format og korrekte batchinformasjon.'],
+  ['Emballasje', 'Etikett, format og batchopplysninger godkjennes særskilt for hvert produkt før de presenteres som ferdige.'],
 ];
 
 const knowledgeCards = [
@@ -452,7 +452,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       </nav>
 
       <header id="top" className="relative min-h-[100svh] overflow-hidden">
-        <img src={imagePaths.estateHero} alt="Illustrasjonsbilde med oliven på trær" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-42" />
+        <img src={estatePhotosPublished ? estatePhotos.heritageTree.src : imagePaths.estateHero} alt={estatePhotosPublished ? estatePhotos.heritageTree.alt : "Illustrasjonsbilde med oliven på trær"} fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover object-center opacity-55" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(13,13,13,.60),rgba(13,13,13,.88)_65%,rgba(13,13,13,.98))] md:bg-[radial-gradient(circle_at_72%_42%,rgba(212,175,55,.16),transparent_34%),linear-gradient(90deg,rgba(13,13,13,.98),rgba(13,13,13,.78),rgba(13,13,13,.42))]" />
         <div className="relative mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-end px-5 pb-8 pt-24 md:px-8 md:pb-12 md:pt-28">
           <div className="max-w-4xl animate-in fade-in duration-700">
@@ -560,7 +560,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
         <section id="estate" className="relative scroll-mt-20 overflow-hidden border-y border-white/10 bg-[#111111] py-14 md:py-24">
           <div className="absolute inset-y-0 right-0 hidden w-1/2 md:block">
-            <img src={biarGrovePhoto} alt="Illustrasjon av et oliventre" loading="lazy" decoding="async" className="h-full w-full object-cover opacity-38" />
+            <img src={estatePhotosPublished ? estatePhotos.grove.src : biarGrovePhoto} alt={estatePhotosPublished ? estatePhotos.grove.alt : "Illustrasjon av et oliventre"} loading="lazy" decoding="async" className="h-full w-full object-cover opacity-40" />
             <div className="absolute inset-0 bg-[linear-gradient(90deg,#111111,rgba(17,17,17,.42),rgba(17,17,17,.72))]" />
           </div>
           <div className="relative mx-auto max-w-7xl px-5 md:px-8">
@@ -607,9 +607,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             </figure>
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#d4af37]">Menneskene · gården · opprinnelsen</p>
-              <h2 id="story-heading" className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Fra vår gård i Biar. Til ditt bord.</h2>
-              <p className="mt-6 text-lg leading-8 text-white/72">Doña Anna er Anna og Freddys olivenprosjekt i innlandet av Alicante. Vi vil dele historien om stedet, menneskene og arbeidet bak hver olje – ikke bare vise frem en flaske.</p>
-              <p className="mt-4 leading-8 text-white/62">Det som står på etiketten, skal kunne følges tilbake til dokumenterte produkter og batcher. De forskjellige oljene har hver sin identitet, men alle bærer navnet Doña Anna og historien fra Biar.</p>
+              <h2 id="story-heading" className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Ikke et navn funnet på et kontor. Et navn fra vår gård.</h2>
+              <p className="mt-6 text-lg leading-8 text-white/72">Doña Anna begynner hos Anna og Freddy, mellom trærne i innlandet av Alicante. På gården finnes grove, vridde stammer, grønne og mørke oliven og et landskap som ikke er skapt for en reklamefotografering. Nettopp derfor vil vi vise det slik det er: ekte trær, ekte jord og menneskene bak navnet.</p>
+              <p className="mt-4 leading-8 text-white/62">Vi har ambisjoner om oljer med tydelig særpreg og en flaske det er en glede å gi bort. Men en vakker etikett kan ikke dokumentere smaken. Høst, produksjon, analyser og vurdert sensorikk skal knyttes til den enkelte olje før vi omtaler den som ferdig. Slik skal historien fra Biar følge flasken uten at vi lover mer enn vi kan bevise.</p>
               <a href="/om-dona-anna" className="mt-7 inline-flex h-12 items-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.18em] text-black hover:bg-white">Bli kjent med Doña Anna <ArrowRight size={16} /></a>
             </div>
           </div>
@@ -675,11 +675,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             <div className="mt-8 grid gap-6 border border-black/10 bg-[#eee7d7] p-6 md:grid-cols-[0.75fr_1.25fr] md:p-8">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#705515]">Vår designfilosofi</p>
-                <h3 className="mt-3 font-serif text-3xl leading-tight md:text-4xl">Historien skal være like ekte som innholdet.</h3>
+                <h3 className="mt-3 font-serif text-3xl leading-tight md:text-4xl">En vakker flaske er begynnelsen. Ikke beviset.</h3>
               </div>
               <div>
-                <p className="leading-7 text-black/70">Vi utvikler emballasjen rundt én tydelig Doña Anna-identitet: respekt for gården i Biar, egne produktnavn og informasjon som kan dokumenteres. En vakker flaske er viktig, men kvaliteten på råvaren og det vi kan fortelle sant om den kommer først.</p>
-                <p className="mt-3 text-sm leading-6 text-black/60">Flasker, gaveesker og nye etiketter er fremdeles til vurdering. Endelig utforming vises først når fysiske prøver og nødvendig produktinformasjon er godkjent.</p>
+                <p className="leading-7 text-black/70">Vi ønsker at flasken skal føles som en gjennomtenkt gave – med et uttrykk som kan stå på et godt dekket bord. Derfor skal form, etikett, materiale og gaveeske bygge på Anna, oliventrærne og Biar. Selve oljen må fortjene oppmerksomheten: analysene, smaksvurderingen og opprinnelsen må være like sterke som designet.</p>
+                <p className="mt-3 text-sm leading-6 text-black/60">Flasker og gaveesker er under utvikling. Et produktbilde er ikke godkjent som foto av en ferdig flaske før vi har en fysisk emballasjeprøve. Priser og kvalitetsklasse vises først når den konkrete produksjonen er dokumentert.</p>
                 <a href="/om-dona-anna" className="mt-4 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#705515] underline-offset-4 hover:underline">Om gården og menneskene <ArrowRight size={16} /></a>
               </div>
             </div>
@@ -983,11 +983,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[0.78fr_1.22fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#d4af37]">Bak Doña Anna</p>
-              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Anna og Freddy Bremseth bygger Doña Anna sammen i Biar.</h2>
+              <h2 className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Anna og Freddy Bremseth. Navnene bak Doña Anna.</h2>
             </div>
             <div className="self-end">
               <p className="text-lg leading-8 text-white/66">
-                Anna Bremseth og Freddy Bremseth driver Doña Anna sammen. Prosjektet handler om gården, oliventrærne og en portefølje med egne produkter, etiketter og bruksområder – bygget som én langsiktig merkevare med tydelig opprinnelse i Biar.
+                Doña Anna er vår felles satsing på gården i Biar. Vi ønsker ikke en anonym olje med et fint navn, men et produkt der du kan se stedet, møte menneskene og etter hvert lese hva den konkrete oljen faktisk inneholder og hvordan den smaker. Anna er navnet du skal huske; Biar er stedet du skal kjenne igjen.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <a href="/om-dona-anna" className="inline-flex h-11 items-center justify-center border border-white/16 px-5 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:border-[#d4af37]">Anna & Freddy · om prosjektet</a>
