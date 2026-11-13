@@ -29,7 +29,7 @@ export const estatePhotos = {
     src: `${basePath}/biar-olivenlund-blaa-himmel.webp`,
     alt: 'Olivenlund under blå himmel på gården i Biar',
     caption: 'Oliventrær i innlandet av Alicante.',
-    original: 'IMG_8331.jpeg',
+    original: 'IMG_8334.jpeg',
   },
   green: {
     src: `${basePath}/biar-gronne-oliven-naerbilde.webp`,
@@ -39,9 +39,9 @@ export const estatePhotos = {
   },
   mixed: {
     src: `${basePath}/biar-oliven-modning-gronn-lilla.webp`,
-    alt: 'Oliven med grønne og fiolette nyanser på samme gren',
+    alt: 'Grønne og mørkere oliven på grein mot himmelen',
     caption: 'Oliven endrer farge gjennom modningen.',
-    original: 'IMG_8332.jpeg',
+    original: 'IMG_8343.jpeg',
   },
   dark: {
     src: `${basePath}/biar-morke-oliven-gren.webp`,
@@ -53,7 +53,7 @@ export const estatePhotos = {
     src: `${basePath}/biar-oliventre-hul-stamme.webp`,
     alt: 'Oliventre med hulrom i den kraftige stammen',
     caption: 'Detalj fra et karakterfullt tre på gården.',
-    original: 'IMG_8334.jpeg',
+    original: 'IMG_8332.jpeg',
   },
   wholeTree: {
     src: `${basePath}/biar-oliventre-lund.webp`,
@@ -63,14 +63,14 @@ export const estatePhotos = {
   },
   branches: {
     src: `${basePath}/biar-gronne-oliven-grener.webp`,
-    alt: 'Olivenblader og grønne oliven på grener',
-    caption: 'Detalj fra gårdens oliventrær.',
+    alt: 'Et oliventre med tett bladverk i lunden',
+    caption: 'Et av oliventrærne i gårdens lund.',
     original: 'IMG_8383.jpeg',
   },
   color: {
     src: `${basePath}/biar-oliven-gronn-lilla-himmel.webp`,
-    alt: 'Grønne og fiolette oliven mot blå himmel',
-    caption: 'Frukt i ulike modningsstadier.',
-    original: 'IMG_8343.jpeg',
+    alt: 'Mørke oliven mellom lyse blad på grein',
+    caption: 'Mørke oliven blant olivenblader.',
+    original: 'IMG_8331.jpeg',
   },
 } as const;
