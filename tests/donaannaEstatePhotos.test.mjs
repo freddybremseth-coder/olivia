@@ -55,3 +55,12 @@ test('generated illustration placeholders are not presented as actual estate pho
   assert.match(landing, /src=\{biarGrovePhoto\} alt="Illustrasjon av et oliventre"/);
   assert.match(landing, /src=\{imagePaths\.oliveGrove\} alt="Illustrasjon av oliven i en lund"/);
 });
+
+test('remaining stock and illustrative harvest imagery does not claim verified estate provenance', () => {
+  assert.match(landing, /alt="Illustrasjonsbilde med oliven på trær"/);
+  assert.match(landing, /imageAlt: 'Illustrasjonsmotiv med oliven'/);
+  assert.match(landing, /imageAlt: 'Illustrasjonsmotiv med oliventrær'/);
+  assert.match(landing, /imageAlt: 'Illustrasjon av grønne oliven'/);
+  assert.match(landing, /imageAlt: 'Illustrasjon av oliven som råvare'/);
+  assert.doesNotMatch(landing, /alt="Mørke oliven på trærne på Doña Anna-gården i Biar"/);
+});
