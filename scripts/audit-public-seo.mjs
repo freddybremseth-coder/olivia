@@ -28,7 +28,7 @@ if (!index.includes('Hva er Doña Anna?')) fail('First-response homepage must ex
 if (!index.includes('Hva vil du bruke Doña Anna til?') || !index.includes('Restaurant eller hotell') || !index.includes('Butikk eller import') || !index.includes('Matinteressert')) {
   fail('First-response homepage must expose the complete intent-first customer journey.');
 }
-if (!index.includes('mål om extra virgin-kvalitet') || index.includes('Verde Vivo er vår 500 ml extra virgin olivenolje')) {
+if (!index.includes('mål om extra virgin-kvalitet') || !index.includes('faktisk klassifisering') || index.includes('Verde Vivo er vår 500 ml extra virgin olivenolje')) {
   fail('Homepage must not present extra virgin as confirmed before batch classification.');
 }
 if (index.includes('unpkg.com/leaflet') || index.includes('family=Fira+Code') || index.includes('family=Montserrat') || index.includes('family=Roboto')) {
@@ -44,11 +44,11 @@ for (const productName of ['Doña Anna Verde Vivo','Doña Anna Verde Alto','Doñ
   if (!index.includes('"name": "' + productName + '"')) fail('Homepage schema missing distinct product: ' + productName);
 }
 if (index.includes('/donaanna/product-design/')) fail('Homepage social preview must not use unapproved bottle imagery.');
-if (!index.includes('<link rel="preload" as="image" href="/donaanna/hero-image.jpg" fetchpriority="high">')) {
-  fail('Homepage must preload the lightweight LCP hero image.');
+if (!index.includes('<link rel="preload" as="image" href="/donaanna/garden-2026/biar-oliventre-kraftig-stamme.webp" fetchpriority="high">')) {
+  fail('Homepage must preload the approved real Biar LCP hero image.');
 }
-if (!index.includes('https://www.donaanna.com/donaanna/hero-image.jpg')) {
-  fail('Homepage social preview must use the approved lightweight harvest image.');
+if (!index.includes('https://www.donaanna.com/donaanna/garden-2026/biar-oliventre-kraftig-stamme.webp')) {
+  fail('Homepage social preview must use an approved real estate photograph, never an unverified bottle.');
 }
 if (!landing.includes("estateHero: '/donaanna/hero-image.jpg'")) {
   fail('Public landing must retain the lightweight harvest hero.');
@@ -60,7 +60,7 @@ if (!index.includes('"@type": "Place"') && !index.includes('"@type":"Place"')) f
 if (!landing.includes('id="customer-path"') || !landing.includes('Hva vil du bruke Doña Anna til?')) {
   fail('Homepage must retain the intent-first customer journey.');
 }
-if (!landing.includes('Anna Bremseth og Freddy Bremseth driver Doña Anna sammen')) fail('Visible trust copy must name Anna and Freddy together.');
+if (!landing.includes('Anna Bremseth og Freddy Bremseth') || !landing.includes('Vi er Anna og Freddy')) fail('Visible trust copy must identify both founders and state their relationship to the farm.');
 for (const productName of ['VERDE VIVO','VERDE ALTO','RAÍZ ANTIGUA','COCINA VIVA','MESA · GORDAL NOBLE']) {
   if (!landing.includes(productName)) fail('Visible portfolio missing distinct Doña Anna product: ' + productName);
 }
@@ -126,8 +126,8 @@ for (const staleHomepageCopy of [
 ]) {
   if (landing.includes(staleHomepageCopy)) fail('Homepage customer journey must not collapse the portfolio into Verde Vivo.');
 }
-if (!landing.includes('Produktspesifikt batchpass') || !landing.includes('Hvert produkt bruker sin egen godkjente etikett')) {
-  fail('Homepage traceability and product-data sections must be product-specific.');
+if (!landing.includes('Produktspesifikt batchpass') || !landing.includes('Etikett, format og batchopplysninger godkjennes særskilt for hvert produkt')) {
+  fail('Homepage traceability and product-data sections must remain product-specific without falsely approving pending labels.');
 }
 if (!index.includes('Verde Alto') || !index.includes('Raíz Antigua') || !index.includes('Cocina Viva') || !index.includes('Mesa · Gordal Noble')) {
   fail('Crawlable first-response homepage must expose the distinct product line.');
@@ -259,7 +259,7 @@ if (!evergreen.includes('mål om extra virgin-kvalitet') || !evergreen.includes(
 if (!evergreen.includes('Doña Anna har ikke lansert bordoliven som et tilgjengelig produkt nå')) {
   fail('Bordoliven page must clearly distinguish future plans from current products.');
 }
-if (!evergreen.includes('Anna Bremseth og Freddy Bremseth driver Doña Anna sammen')) fail('About page must state shared responsibility.');
+if (!evergreen.includes('Vi er Anna og Freddy Bremseth') || !evergreen.includes('står bak prosjektet')) fail('About page must state shared responsibility without requiring generic administrative copy.');
 
 if (!routeRewrites.some((row) => row.source === '/magasin/:slug' && String(row.destination || '').includes('/api/public-article'))) {
   fail('Magazine article routes must stay server rendered.');
