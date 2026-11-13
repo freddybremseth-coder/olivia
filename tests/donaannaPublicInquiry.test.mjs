@@ -17,11 +17,19 @@ const originalEnv = {
   DONAANNA_RESEND_API_KEY: process.env.DONAANNA_RESEND_API_KEY,
   DONAANNA_MAIL_FROM: process.env.DONAANNA_MAIL_FROM,
   DONAANNA_TURNSTILE_SECRET: process.env.DONAANNA_TURNSTILE_SECRET,
+  DONAANNA_INQUIRY_TRANSPORT: process.env.DONAANNA_INQUIRY_TRANSPORT,
+  DONAANNA_REALTYFLOW_BRIDGE_ENABLED: process.env.DONAANNA_REALTYFLOW_BRIDGE_ENABLED,
+  DONAANNA_REALTYFLOW_BRIDGE_SECRET: process.env.DONAANNA_REALTYFLOW_BRIDGE_SECRET,
+  DONAANNA_INQUIRY_ABUSE_CONTROLS_READY: process.env.DONAANNA_INQUIRY_ABUSE_CONTROLS_READY,
 };
 const originalFetch = globalThis.fetch;
 
 function configure(enabled = false) {
   process.env.DONAANNA_INQUIRY_ENABLED = enabled ? 'true' : 'false';
+  process.env.DONAANNA_INQUIRY_TRANSPORT = 'resend';
+  delete process.env.DONAANNA_REALTYFLOW_BRIDGE_ENABLED;
+  delete process.env.DONAANNA_REALTYFLOW_BRIDGE_SECRET;
+  delete process.env.DONAANNA_INQUIRY_ABUSE_CONTROLS_READY;
   process.env.DONAANNA_RESEND_API_KEY = 'test-key';
   process.env.DONAANNA_MAIL_FROM = 'Doña Anna <noreply@donaanna.com>';
   process.env.DONAANNA_TURNSTILE_SECRET = 'test-secret';
@@ -112,6 +120,49 @@ test('gift preference is validated and carried into provider email', { concurren
   assert.equal(sent.length, 2);
   const email = JSON.parse(sent[1].options.body);
   assert.match(email.text, /Gavetype: Personlig gave/);
+});
+
+test('existing RealtyFlow SMTP path remains off until the anti-abuse and transport gates are satisfied', { concurrency: false }, async () => {
+  configure(true);
+  process.env.DONAANNA_INQUIRY_TRANSPORT = 'realtyflow';
+  process.env.DONAANNA_REALTYFLOW_BRIDGE_SECRET = 'test-private-bridge-key';
+  process.env.DONAANNA_REALTYFLOW_BRIDGE_ENABLED = 'true';
+  let sent = 0;
+  globalThis.fetch = async () => { sent++; throw new Error('Unsafe request sent'); };
+  const response = await call({ body: { ...valid, turnstileToken: '' } });
+  assert.equal(response.status, 503);
+  assert.equal(sent, 0);
+});
+
+test('RealtyFlow SMTP relay sends exclusively to authenticated existing endpoint when deliberately enabled', { concurrency: false }, async () => {
+  configure(true);
+  process.env.DONAANNA_INQUIRY_TRANSPORT = 'realtyflow';
+  process.env.DONAANNA_REALTYFLOW_BRIDGE_SECRET = 'test-private-bridge-key';
+  process.env.DONAANNA_REALTYFLOW_BRIDGE_ENABLED = 'true';
+  process.env.DONAANNA_INQUIRY_ABUSE_CONTROLS_READY = 'true';
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, options });
+    return { ok: true, json: async () => ({ accepted: true }) };
+  };
+  const result = await call({ body: { ...valid, turnstileToken: '' } });
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.payload, { accepted: true });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, 'https://realtyflow.chatgenius.pro/api/integrations/donaanna/public-inquiry');
+  assert.equal(calls[0].options.headers['x-donaanna-inquiry-secret'], 'test-private-bridge-key');
+  assert.equal(JSON.parse(calls[0].options.body).email, valid.email);
+  assert.equal(calls[0].options.body.includes('test-private-bridge-key'), false);
+});
+
+test('RealtyFlow SMTP failure or unconfirmed response is never an accepted inquiry', { concurrency: false }, async () => {
+  configure(true);
+  process.env.DONAANNA_INQUIRY_TRANSPORT = 'realtyflow';
+  process.env.DONAANNA_REALTYFLOW_BRIDGE_SECRET = 'test-private-bridge-key';
+  process.env.DONAANNA_REALTYFLOW_BRIDGE_ENABLED = 'true';
+  process.env.DONAANNA_INQUIRY_ABUSE_CONTROLS_READY = 'true';
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ accepted: false }) });
+  assert.equal((await call({ body: { ...valid, turnstileToken: '' } })).status, 502);
 });
 
 test('provider failure never returns acceptance', { concurrency: false }, async () => {
