@@ -231,9 +231,10 @@ const videoStories: Array<{ title: string; eyebrow: string; src: string; poster:
 
 const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(value);
 
+const usesExistingEmailTransport = import.meta.env.VITE_DONAANNA_INQUIRY_TRANSPORT === 'realtyflow';
 const directInquiryEnabled =
   import.meta.env.VITE_DONAANNA_DIRECT_INQUIRY === 'true' &&
-  Boolean(import.meta.env.VITE_DONAANNA_TURNSTILE_SITE_KEY);
+  (usesExistingEmailTransport || Boolean(import.meta.env.VITE_DONAANNA_TURNSTILE_SITE_KEY));
 
 type TurnstileApi = {
   render: (element: HTMLElement, options: {
@@ -285,7 +286,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
   }, []);
 
   useEffect(() => {
-    if (!directInquiryEnabled) return;
+    if (!directInquiryEnabled || usesExistingEmailTransport) return;
     let active = true;
     const script = document.createElement('script');
     script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
@@ -360,7 +361,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     }
     // Lock synchronously, before React has committed the disabled button state.
     if (inquirySendingRef.current || inquiryStatus === 'sent') return;
-    if (!turnstileToken) {
+    if (!usesExistingEmailTransport && !turnstileToken) {
       setInquiryStatus('error');
       return;
     }
@@ -377,7 +378,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
       role: tastingRequest.role,
       area: tastingRequest.address,
       message: tastingRequest.notes,
-      turnstileToken,
+      turnstileToken: usesExistingEmailTransport ? '' : turnstileToken,
     });
     inquirySendingRef.current = false;
     setInquiryStatus(response.accepted ? 'sent' : 'error');
@@ -1059,7 +1060,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <input id="tasting-address" value={tastingRequest.address} onChange={(event) => setTastingRequest({ ...tastingRequest, address: event.target.value })} placeholder="For eksempel Alicante eller Norge" className="mt-2 h-12 w-full border border-black/12 px-3 outline-none focus:border-[#d4af37]" />
               <label htmlFor="tasting-notes" className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-black/60">{inquiryKind === 'tasting' ? 'Hva ønsker du å vite? (valgfritt)' : 'Anledning, antall og eventuelle ønsker (valgfritt)'}</label>
               <textarea id="tasting-notes" value={tastingRequest.notes} onChange={(event) => setTastingRequest({ ...tastingRequest, notes: event.target.value })} className="mt-2 h-24 w-full border border-black/12 p-3 outline-none focus:border-[#d4af37]" />
-              {directInquiryEnabled && <div id="donaanna-inquiry-turnstile" className="mt-5" aria-label="Spamkontroll" />}
+              {directInquiryEnabled && !usesExistingEmailTransport && <div id="donaanna-inquiry-turnstile" className="mt-5" aria-label="Spamkontroll" />}
               {inquiryStatus === 'sent' ? (
                 <p role="status" className="mt-4 border border-green-700/30 bg-green-50 p-4 text-sm text-green-900">Takk! Henvendelsen ble mottatt av vår e-posttjeneste. Vi tar kontakt når vi har mer informasjon. Dette er ikke en bestillingsbekreftelse.</p>
               ) : (

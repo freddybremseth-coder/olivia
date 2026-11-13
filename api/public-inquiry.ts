@@ -46,13 +46,20 @@ const allowedHosts = new Set(['www.donaanna.com', 'donaanna.com']);
 export default async function handler(req: Request, res: ServerResponse) {
   if (req.method !== 'POST') return respond(res, 405, { error: 'method_not_allowed' });
 
-  // No live public endpoint until a sender domain, provider and CAPTCHA
-  // are configured. This prevents accepting requests that cannot be delivered.
+  // Two mutually exclusive transports; both remain OFF until independently verified.
+  // The RealtyFlow option reuses our existing brand SMTP account without new subscriptions.
+  // It additionally requires verified anti-abuse protection before any public launch.
+  const usesRealtyflow = process.env.DONAANNA_INQUIRY_TRANSPORT === 'realtyflow';
   const apiKey = process.env.DONAANNA_RESEND_API_KEY;
   const from = process.env.DONAANNA_MAIL_FROM;
   const secret = process.env.DONAANNA_TURNSTILE_SECRET;
-  // Explicit publication gate: provisioning secrets alone must never turn on intake.
-  if (process.env.DONAANNA_INQUIRY_ENABLED !== 'true' || !apiKey || !from || !secret) {
+  const bridgeSecret = process.env.DONAANNA_REALTYFLOW_BRIDGE_SECRET;
+  const bridgeReady = usesRealtyflow &&
+    process.env.DONAANNA_REALTYFLOW_BRIDGE_ENABLED === 'true' &&
+    process.env.DONAANNA_INQUIRY_ABUSE_CONTROLS_READY === 'true' &&
+    Boolean(bridgeSecret);
+  const resendReady = !usesRealtyflow && Boolean(apiKey && from && secret);
+  if (process.env.DONAANNA_INQUIRY_ENABLED !== 'true' || (!bridgeReady && !resendReady)) {
     return respond(res, 503, { error: 'not_configured' });
   }
 
@@ -94,27 +101,31 @@ export default async function handler(req: Request, res: ServerResponse) {
       (kind !== 'gift' && giftPreference !== '') ||
       !['private', 'business'].includes(audience) || !name || !email ||
       (audience === 'business' && !company) ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !token) {
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || (!usesRealtyflow && !token)) {
     return respond(res, 400, { error: 'invalid_fields' });
   }
 
-  // Server-side verification. Turnstile tokens are single-use and time-limited.
-  let verified = false;
-  try {
-    const verification = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ secret, response: token }),
-      signal: AbortSignal.timeout(8_000),
-    });
-    if (verification.ok) {
-      const result = await verification.json() as { success?: boolean; hostname?: string };
-      verified = result.success === true && allowedHosts.has(result.hostname || '');
+  // The legacy Resend transport still requires verified Turnstile tokens.
+  // RealtyFlow requires separate, verified firewall/rate limits before launch;
+  // the environment interlock above deliberately fails closed until then.
+  if (!usesRealtyflow) {
+    let verified = false;
+    try {
+      const verification = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ secret: secret!, response: token }),
+        signal: AbortSignal.timeout(8_000),
+      });
+      if (verification.ok) {
+        const result = await verification.json() as { success?: boolean; hostname?: string };
+        verified = result.success === true && allowedHosts.has(result.hostname || '');
+      }
+    } catch {
+      // Fail closed: delivery must not occur if bot verification fails.
     }
-  } catch {
-    // Fail closed: delivery must not occur if bot verification fails.
+    if (!verified) return respond(res, 403, { error: 'verification_failed' });
   }
-  if (!verified) return respond(res, 403, { error: 'verification_failed' });
 
   const subject = `Doña Anna – ${kind === 'tasting' ? 'Smaksprøve' : kind === 'gift' ? 'Gave' : 'Firmagave'} (${audience === 'business' ? 'bedrift' : 'privat'})`;
   const body = [
@@ -132,6 +143,23 @@ export default async function handler(req: Request, res: ServerResponse) {
   ].join('\n');
 
   try {
+    if (usesRealtyflow) {
+      const delivery = await fetch('https://realtyflow.chatgenius.pro/api/integrations/donaanna/public-inquiry', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-donaanna-inquiry-secret': bridgeSecret!,
+        },
+        body: JSON.stringify({
+          kind, giftPreference, product, audience, name, email, company, role, area, message,
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!delivery.ok) return respond(res, 502, { error: 'delivery_failed' });
+      const answer = await delivery.json() as { accepted?: unknown };
+      return respond(res, answer.accepted === true ? 200 : 502,
+        answer.accepted === true ? { accepted: true } : { error: 'delivery_failed' });
+    }
     const delivery = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
