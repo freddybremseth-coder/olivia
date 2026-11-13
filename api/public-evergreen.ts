@@ -548,40 +548,49 @@ const PAGES: Record<string, EvergreenPage> = {
   },
   'om-dona-anna': {
     slug: 'om-dona-anna',
-    title: 'Om Doña Anna | Anna og Freddy Bremseth i Biar, Alicante',
-    description: 'Møt Anna og Freddy Bremseth og les hvordan Doña Anna bygges rundt olivengården i Biar, flere produkter, tydelig opprinnelse og langsiktig merkevarearbeid.',
-    eyebrow: 'Om prosjektet · menneskene · gården',
-    h1: 'Om Doña Anna: Anna og Freddy Bremseth bygger prosjektet sammen',
-    answer: 'Doña Anna er olivenprosjektet til Anna og Freddy Bremseth i Biar, Alicante. Gården, de ulike produktene og den langsiktige merkevaren utvikles sammen.',
+    title: 'Anna, Freddy og olivengården i Biar | Historien om Doña Anna',
+    description: 'Møt Anna og Freddy Bremseth og den virkelige olivengården i Biar. Historien om Doña Anna, trærne, produktene og hvorfor dokumentert kvalitet kommer før luksusløfter.',
+    eyebrow: 'Menneskene · oliventrærne · Biar',
+    h1: 'Doña Anna begynner med Anna. Og med gården vår i Biar.',
+    answer: 'Vi er Anna og Freddy Bremseth. Doña Anna er navnet på olivenprosjektet vi bygger rundt vår egen gård i Biar, Alicante. Her finnes om lag 1 500 oliventrær. Vi vil skape oljer med et gjenkjennelig uttrykk, men lar den faktiske produksjonen og dokumentasjonen avgjøre hva vi kan love.',
     sections: [
       {
-        heading: 'Hvem driver Doña Anna?',
+        heading: 'Et navn med mennesker bak',
         body: [
-          'Anna Bremseth og Freddy Bremseth driver Doña Anna sammen.',
-          'FreddyBremseth.com fungerer som Freddys person- og autoritetsside, mens DoñaAnna.com skal være tydelig avgrenset til gården, oliven, produkter og faginnhold.'
+          'Doña Anna er mer enn et produktnavn. Anna og Freddy Bremseth står bak prosjektet, og Anna er den personlige forbindelsen i navnet. Vi vil at den som velger en flaske, skal vite hvem som står bak – ikke bare kjenne igjen en etikett.',
+          'Det er et langsiktig arbeid. Vi bygger opp oljer og emballasje i eget tempo, med respekt for hva vi kan dokumentere og faktisk levere.'
         ]
       },
       {
-        heading: 'Hva er prosjektet bygget rundt?',
+        heading: 'Jorden, røttene og olivenene i Biar',
         body: [
-          'Utgangspunktet er gården i Biar på rundt 60 000 m² med om lag 1 500 oliventrær.',
-          'Produktlinjen består av Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva som separate olivenoljeprodukter. Mesa · Gordal Noble er et eget planlagt bordolivenprodukt.'
+          'Gården ligger i innlandet av Alicante og omfatter rundt 60 000 m² og omtrent 1 500 oliventrær. Her ser du vridde stammer, røtter, olivengrener og jorden de vokser i. Bildene på nettstedet er tatt på selve gården med kommersiell brukstillatelse.',
+          'Blant sortene på gården er Genovesa, Gordal, Changlot Real og Picual. Det betyr ikke at alle oljene inneholder alle sortene. Råvaresammensetningen må beskrives for den faktiske produksjonen.',
+          'Vi legger ikke eksakt alder på trærne eller bestemte sorter på enkeltfotografier uten dokumentasjon. For oss er trærne interessante også uten store tall.'
         ]
       },
       {
-        heading: 'Hvordan skal Doña Anna bygge tillit?',
+        heading: 'Hvorfor vi bryr oss om flasken',
         body: [
-          'Gjennom synlige personer, presis produktinformasjon, oppdaterte datoer, dokumenterte batchdata og tydelig skille mellom det som finnes nå og det som er planlagt.',
-          'Krysslenker til andre prosjekter brukes bare der de hjelper leseren å forstå helheten.'
+          'En flaske kan være noe du setter frem når du har gjester, gir til et menneske du vil glede, eller åpner for å oppdage en ny smak. Doña Anna skal ha en egen visuell signatur med utgangspunkt i gården – ikke bare se dyr ut.',
+          'Flaskeform, materialer, kork og gaveeske testes og godkjennes fysisk før vi viser dem som ferdige produkter. En illustrasjon eller en designskisse skal ikke fremstå som en flaske vi allerede har produsert.'
+        ]
+      },
+      {
+        heading: 'Oljen må fortjene historien',
+        body: [
+          'Vi utvikler Verde Vivo med tidlig høsting som tydelig retning. Verde Alto, Raíz Antigua og Cocina Viva har ulike produktroller, mens Mesa · Gordal Noble er et planlagt bordolivenprodukt. Dette er ikke ett produkt med fem forskjellige etiketter.',
+          'Når et oljeparti er klart, skal kvalitet, smaksprofil, relevant analyse, produksjonsopplysninger og tilgjengelighet dokumenteres per parti. Ingen pris, extra virgin-klassifisering, begrenset opplag eller spesifikke smaksnotater presenteres som bevist før dokumentasjonen foreligger.'
         ]
       }
     ],
     faqs: [
-      { question: 'Hvem står bak Doña Anna?', answer: 'Anna Bremseth og Freddy Bremseth driver prosjektet sammen.' },
-      { question: 'Hvor ligger gården?', answer: 'Gården ligger i Biar i Alicante, Spania.' },
-      { question: 'Hvilke produkter har Doña Anna?', answer: 'Verde Vivo, Verde Alto, Raíz Antigua og Cocina Viva er separate olivenoljeprodukter. Mesa · Gordal Noble er et planlagt bordolivenprodukt.' }
+      { question: 'Hvem står bak Doña Anna?', answer: 'Anna og Freddy Bremseth, med en olivengård i Biar i Alicante.' },
+      { question: 'Er bildene fra den virkelige gården?', answer: 'Ja. Gårdsbildene i fotografiseksjonen og på forsiden er eiergodkjente bilder fra Biar.' },
+      { question: 'Er oljene tilgjengelige nå?', answer: 'Produktsidene viser hva som er definert og hva som fortsatt avventer godkjenning. Pris, ferdig flaske, kvalitetsklasse og tilgjengelighet oppgis når det er dokumentert for den konkrete produksjonen.' },
+      { question: 'Hva gjør Doña Anna forskjellig?', answer: 'En personlig eierhistorie, en konkret gård i Biar, ekte dokumentarfotografier og en ambisjon om produktvis sporbarhet – fremfor generelle kvalitetsløfter.' }
     ],
-    primaryCta: { label: 'Se Verde Vivo', href: '/#portfolio' }
+    primaryCta: { label: 'Utforsk oljene', href: '/produkter' }
   },
   personvern: {
     slug: 'personvern',
