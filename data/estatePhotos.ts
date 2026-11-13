@@ -8,7 +8,7 @@
  * These photos illustrate the estate. They are NOT verified pictures of any
  * specific cultivar, batch or finalized packaged product.
  */
-export const estatePhotosPublished = false;
+export const estatePhotosPublished = true;
 
 const basePath = '/donaanna/garden-2026';
 
