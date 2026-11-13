@@ -153,7 +153,7 @@ const b2bPackages = [
     title: 'Butikk og import',
     audience: 'Gourmetbutikk / import',
     image: imagePaths.oliveGrove,
-    imageAlt: 'Oliven på Doña Anna-gården i Biar',
+    imageAlt: 'Illustrasjon av en olivenlund',
     text: 'Ta kontakt for dialog om Verde Vivo, Verde Alto, Raíz Antigua, Cocina Viva eller planlagte Mesa · Gordal Noble. Format, dokumentasjon og distribusjon behandles per produkt.',
   },
 ];
@@ -215,7 +215,7 @@ const knowledgeCards = [
     title: 'Sporbar dokumentasjon',
     kicker: 'Batch for batch',
     image: imagePaths.oliveGrove,
-    imageAlt: 'Oliven i ulike modningsstadier på gården i Biar',
+    imageAlt: 'Illustrasjon med oliventrær',
     text: 'Høstedato, produksjonsdata, analyse og sensorikk skal knyttes til den konkrete batchen når informasjonen er klar.',
   },
 ];
@@ -559,7 +559,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
         <section id="estate" className="relative scroll-mt-20 overflow-hidden border-y border-white/10 bg-[#111111] py-14 md:py-24">
           <div className="absolute inset-y-0 right-0 hidden w-1/2 md:block">
-            <img src={biarGrovePhoto} alt="Et gammelt oliventre på Doña Anna-gården i Biar" loading="lazy" decoding="async" className="h-full w-full object-cover opacity-38" />
+            <img src={biarGrovePhoto} alt="Illustrasjon av et oliventre" loading="lazy" decoding="async" className="h-full w-full object-cover opacity-38" />
             <div className="absolute inset-0 bg-[linear-gradient(90deg,#111111,rgba(17,17,17,.42),rgba(17,17,17,.72))]" />
           </div>
           <div className="relative mx-auto max-w-7xl px-5 md:px-8">
@@ -597,12 +597,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             <figure className="border border-white/10 bg-[#0d0d0d]">
               <img
                 src={estatePhotosPublished ? estatePhotos.heritageTree.src : biarGrovePhoto}
-                alt={estatePhotosPublished ? estatePhotos.heritageTree.alt : 'Olivenlund på gården i Biar'}
+                alt={estatePhotosPublished ? estatePhotos.heritageTree.alt : 'Illustrasjon av en olivenlund'}
                 loading="lazy"
                 decoding="async"
                 className="h-80 w-full object-cover object-center md:h-[28rem]"
               />
-              {estatePhotosPublished && <figcaption className="px-4 py-3 text-sm text-white/60">{estatePhotos.heritageTree.caption}</figcaption>}
+              <figcaption className="px-4 py-3 text-sm text-white/60">{estatePhotosPublished ? estatePhotos.heritageTree.caption : 'Illustrasjonsbilde. Ekte fotografier fra vår olivengård publiseres når de er kontrollert og godkjent.'}</figcaption>
             </figure>
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#d4af37]">Menneskene · gården · opprinnelsen</p>
@@ -820,7 +820,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
         <section className="relative overflow-hidden bg-[#0d0d0d] py-14 md:py-24">
           <div className="absolute inset-0 opacity-24">
-            <img src={imagePaths.oliveGrove} alt="Oliven i ulike modningsstadier på Doña Anna-gården" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+            <img src={imagePaths.oliveGrove} alt="Illustrasjon av oliven i en lund" loading="lazy" decoding="async" className="h-full w-full object-cover" />
           </div>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,#0d0d0d,rgba(13,13,13,.78),#0d0d0d)]" />
           <div className="relative mx-auto grid max-w-7xl gap-10 px-5 md:grid-cols-[0.8fr_1.2fr] md:px-8">
