@@ -549,7 +549,7 @@ const PAGES: Record<string, EvergreenPage> = {
   'om-dona-anna': {
     slug: 'om-dona-anna',
     title: 'Anna, Freddy og olivengården i Biar | Historien om Doña Anna',
-    description: 'Møt Anna og Freddy Bremseth og den virkelige olivengården i Biar. Historien om Doña Anna, trærne, produktene og hvorfor dokumentert kvalitet kommer før luksusløfter.',
+    description: 'Møt Anna og Freddy og olivengården i Biar. Historien om Doña Anna, trærne, produktene og hvorfor dokumentert kvalitet kommer før luksusløfter.',
     eyebrow: 'Menneskene · oliventrærne · Biar',
     h1: 'Doña Anna begynner med Anna. Og med gården vår i Biar.',
     answer: 'Vi er Anna og Freddy Bremseth. Doña Anna er navnet på olivenprosjektet vi bygger rundt vår egen gård i Biar, Alicante. Her finnes om lag 1 500 oliventrær. Vi vil skape oljer med et gjenkjennelig uttrykk, men lar den faktiske produksjonen og dokumentasjonen avgjøre hva vi kan love.',
