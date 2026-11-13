@@ -637,6 +637,43 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </section>
         )}
 
+        <section id="premium-craft" aria-labelledby="premium-craft-title" className="scroll-mt-20 border-y border-white/10 bg-[#191813] px-5 py-16 text-white md:px-8 md:py-24">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid items-end gap-9 lg:grid-cols-[1.08fr_0.92fr]">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.26em] text-[#d4af37]">Et produkt å gi videre · under utvikling</p>
+                <h2 id="premium-craft-title" className="mt-4 max-w-3xl font-serif text-4xl leading-tight md:text-6xl">En vakker flaske må fortjene innholdet.</h2>
+                <p className="mt-6 max-w-2xl text-lg leading-8 text-white/70">Vi ønsker å skape en Doña Anna-flaske som føles gjennomtenkt i hånden og naturlig på et vakkert dekket bord. Men historien fra Biar må kunne følges hele veien til oljen i flasken. Derfor utvikler vi uttrykket og kvalitetsdokumentasjonen side om side.</p>
+              </div>
+              <figure className="overflow-hidden border border-white/15 bg-[#0a0a0a]">
+                <img src={estatePhotosPublished ? estatePhotos.roots.src : imagePaths.oliveGrove} alt={estatePhotosPublished ? estatePhotos.roots.alt : 'Illustrasjon av oliventrær'} loading="lazy" decoding="async" className="h-64 w-full object-cover md:h-80" />
+                <figcaption className="px-5 py-3 text-sm leading-6 text-white/60">{estatePhotosPublished ? 'Et ekte bilde av trærne på gården vår i Biar – inspirasjon til Doña Annas egen visuelle signatur.' : 'Illustrasjonsmotiv fra olivenlunden. Ekte gårdsfotografier vises når de er godkjent.'}</figcaption>
+              </figure>
+            </div>
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
+              <article className="border border-white/15 bg-white/[0.03] p-6">
+                <p className="text-xs font-bold uppercase tracking-[0.19em] text-[#d4af37]">01 · Opprinnelse</p>
+                <h3 className="mt-4 font-serif text-2xl">Et sted, ikke et reklameløfte.</h3>
+                <p className="mt-4 leading-7 text-white/64">Anna, Freddy og vår olivengård i Biar skal være lett å kjenne igjen. Vi viser ekte bilder og knytter konkrete påstander om råvarer og produksjon til den riktige batchen.</p>
+              </article>
+              <article className="border border-white/15 bg-white/[0.03] p-6">
+                <p className="text-xs font-bold uppercase tracking-[0.19em] text-[#d4af37]">02 · Kvalitet</p>
+                <h3 className="mt-4 font-serif text-2xl">Smaken må kunne beskrives ærlig.</h3>
+                <p className="mt-4 leading-7 text-white/64">Fruktighet, bitterhet, skarphet, kvalitetsklasse og analyseverdier blir først knyttet til oljen når aktuell produksjon er vurdert og dokumentert. Vi skriver ikke smaksnotater på forskudd.</p>
+              </article>
+              <article className="border border-white/15 bg-white/[0.03] p-6">
+                <p className="text-xs font-bold uppercase tracking-[0.19em] text-[#d4af37]">03 · Presentasjon</p>
+                <h3 className="mt-4 font-serif text-2xl">Laget for å beskytte og glede.</h3>
+                <p className="mt-4 leading-7 text-white/64">Flaske, kork, etikett og gaveeske vurderes både for uttrykk og beskyttelse av oljen mot lys og luft. Endelig design og produktfotografi vises først etter godkjente fysiske prøver.</p>
+              </article>
+            </div>
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-5 border-t border-white/15 pt-7">
+              <p className="max-w-2xl text-sm leading-6 text-white/60">Vi utvikler nå emballasjen og produktdokumentasjonen. Ingen pris, begrenset opplag eller ferdig luksusflaske annonseres før de faktiske produktene er klare.</p>
+              <a href="/om-dona-anna" className="inline-flex min-h-11 items-center gap-2 border border-[#d4af37]/70 px-5 text-xs font-bold uppercase tracking-[0.15em] text-[#e8cc77] hover:bg-[#d4af37] hover:text-black">Møt menneskene og gården <ArrowRight size={16} /></a>
+            </div>
+          </div>
+        </section>
+
         <section id="gifts" aria-labelledby="gifts-heading" className="scroll-mt-20 bg-[#f8f5ea] px-5 py-14 text-black md:px-8 md:py-24">
           <div className="mx-auto max-w-7xl">
             <div className="grid items-end gap-8 lg:grid-cols-[0.9fr_1.1fr]">
