@@ -695,6 +695,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <h3 className="mt-2 font-serif text-3xl">Lær å smake olivenolje</h3>
                 <p className="mt-4 flex-1 leading-7 text-black/65">Fruktighet, bitterhet, pepperaktig skarphet og balanse. Lær å sammenligne to oljer uten å la etikett eller pris bestemme.</p>
                 <a href="/laer-a-smake-olivenolje" className="mt-6 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-[#705515]">Start olivenoljesmaking <ArrowRight size={15}/></a>
+                <a href="/smakejournal" className="mt-3 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-[#705515] underline underline-offset-4">Åpne smakejournal <ArrowRight size={15}/></a>
               </article>
               <article className="flex h-full flex-col bg-white p-7 ring-1 ring-black/10">
                 <Sparkles className="text-[#866424]" size={28}/>
