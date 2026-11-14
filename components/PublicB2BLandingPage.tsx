@@ -1,3 +1,4 @@
+import { TastingJournal } from './TastingJournal';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
@@ -713,6 +714,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               </article>
             </div>
             <p className="mt-6 text-sm leading-6 text-black/60">Guidene er laget for læring og må ikke forveksles med offisiell sensorisk klassifisering, helseråd eller dokumentasjon for bestemte Doña Anna-batcher.</p>
+            <TastingJournal />
           </div>
         </section>
 
