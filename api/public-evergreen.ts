@@ -974,6 +974,7 @@ function pageHtml(page: EvergreenPage) {
       heading: 'Velg din vei inn i smak og kunnskap',
       intro: 'Start gratis med en praktisk smakeøvelse og gå videre til gården, produktene eller forfatterens bokkatalog etter interesse.',
       links: [
+        { href: '/smakejournal', label: 'Før din egen smakejournal – gratis' },
         { href: '/laer-a-smake-olivenolje', label: 'Smaksskolen for olivenolje' },
         { href: '/laer-a-smake-vin', label: 'Smaksskolen for vin' },
         { href: '/om-dona-anna', label: 'Anna og Freddy – historien fra gården' },
@@ -985,6 +986,7 @@ function pageHtml(page: EvergreenPage) {
       intro: 'Knytt sansene til faktiske valg i gården og undervisningen uten å forveksle en hjemmeøvelse med en offisiell kvalitetsklassifisering.',
       links: [
         { href: '/kunnskap-og-boker', label: 'Kunnskapsuniverset og bøkene' },
+        { href: '/smakejournal', label: 'Åpne smakejournalen for to prøver' },
         { href: '/tidlig-hostet-olivenolje', label: 'Hva betyr tidlig høsting?' },
         { href: '/laer-a-smake-vin', label: 'Tren samme observasjonsmetode med vin' },
       ],
@@ -994,6 +996,7 @@ function pageHtml(page: EvergreenPage) {
       intro: 'Du kan lære like mye av å sammenligne sensoriske begreper som av å bedømme én flaske. Gå videre til gratis olivenoljeøvelser.',
       links: [
         { href: '/laer-a-smake-olivenolje', label: 'Lær olivenolje med fruktighet, bitterhet og pungens' },
+        { href: '/smakejournal', label: 'Registrer inntrykk i smakejournalen' },
         { href: '/kunnskap-og-boker', label: 'Se læringsuniverset og bokarbeidet' },
         { href: '/om-dona-anna', label: 'Bli kjent med Doña Anna' },
       ],

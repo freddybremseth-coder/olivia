@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171713">
+  <meta name="description" content="Før din egen smakejournal for olivenolje eller vin. Sammenlign to prøver blindt, registrer sanseinntrykk og skriv ut eller eksporter – helt uten konto.">
+  <link rel="canonical" href="https://www.donaanna.com/smakejournal">
+  <title>Smakejournal for olivenolje og vin | Doña Anna Akademi</title>
+  <style>
+    :root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#27251f;background:#f5f0e7;accent-color:#735b22}
+    *{box-sizing:border-box}body{margin:0}a{color:inherit}button,input,textarea,select{font:inherit}
+    .top{background:#1d201b;color:#f8f4eb;padding:16px max(20px,calc((100vw - 1100px)/2));display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+    .brand{font-family:Georgia,serif;font-size:25px;letter-spacing:.02em;text-decoration:none}.top nav a{font-size:13px;margin-left:17px;color:#e3d7c3}
+    main{max-width:1100px;margin:auto;padding:44px 20px 90px}
+    h1,h2,h3{font-family:Georgia,serif;letter-spacing:-.02em;font-weight:500}h1{font-size:clamp(2.4rem,6vw,4.5rem);line-height:1.07;margin:16px 0}h2{font-size:2rem}
+    p{line-height:1.7}.eyebrow{font-size:12px;font-weight:750;text-transform:uppercase;letter-spacing:.19em;color:#83672d}
+    .intro{font-size:19px;color:#5e594d;max-width:760px}
+    .notice{background:#e9e1d1;border-left:3px solid #8b6a31;padding:15px 18px;font-size:14px;line-height:1.65;margin:28px 0}
+    .switch{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 14px}
+    button{cursor:pointer;border:1px solid #c7bba5;border-radius:4px;background:#fff;color:#29271f;padding:11px 17px;font-weight:650;min-height:44px}
+    button:hover{border-color:#775b25}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #b99d5b;outline-offset:2px}
+    .switch button[aria-pressed="true"]{background:#27271d;color:white;border-color:#27271d}
+    .columns{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:25px}
+    .panel{background:#fffdf9;border:1px solid #e2d9ca;padding:24px;border-radius:6px;min-width:0;box-shadow:0 3px 18px #352a1010}
+    .panel header{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+    .sample-badge{background:#eee5d3;color:#705423;font-size:12px;font-weight:750;letter-spacing:.14em;padding:8px 11px}
+    .hint{font-size:13px;color:#665f53}
+    label{font-size:14px;font-weight:680;display:block;margin-top:17px}input[type="text"],textarea{display:block;width:100%;border:1px solid #c6bbaa;background:#fff;padding:11px 12px;border-radius:3px;margin-top:7px;color:#25221a}
+    textarea{min-height:80px;resize:vertical}
+    .metric{margin-top:18px;padding-top:12px;border-top:1px solid #eee5d8}.metric>label{margin-top:0}
+    .metric .score{display:flex;align-items:center;gap:13px;margin-top:9px}
+    .metric input{width:100%;min-width:0}.metric output{font-variant-numeric:tabular-nums;min-width:3ch;text-align:right;font-weight:780}
+    .metric .scale{display:flex;justify-content:space-between;color:#70695b;font-size:11px;margin-top:4px}
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:25px}
+    .actions button.primary{background:#28271f;border-color:#28271f;color:white}.actions button.warning{color:#87472d}
+    #summary{background:#ede6d8;border:1px solid #d9ceba;margin-top:25px;padding:24px}
+    #summary h2{margin:0 0 9px;font-size:26px}#summary .result{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    #summary dl{margin:0}#summary dt{font-size:12px;text-transform:uppercase;letter-spacing:.13em;color:#746b5a}#summary dd{font-family:Georgia,serif;font-size:19px;margin:3px 0 13px}
+    .foot{margin-top:32px;font-size:13px;color:#605b50}
+    [hidden]{display:none!important}
+    @media(max-width:760px){.columns,#summary .result{grid-template-columns:1fr}.panel{padding:20px}.top nav a{margin-left:0;margin-right:14px}}
+    @media print{.top,.switch,.actions,.foot{display:none!important}main{padding:0}body{background:#fff}.panel,#summary{break-inside:avoid;box-shadow:none}h1{font-size:30px}.notice{padding:10px}}
+  </style>
+</head>
+<body>
+  <header class="top"><a class="brand" href="/">DOÑA ANNA</a><nav aria-label="Akademi"><a href="/kunnskap-og-boker">Kunnskap og bøker</a><a href="/laer-a-smake-olivenolje">Olivenoljesmaking</a><a href="/laer-a-smake-vin">Vinsmaking</a></nav></header>
+  <main>
+    <p class="eyebrow">Doña Anna Akademi · gratis øvelse</p>
+    <h1>Din smakejournal</h1>
+    <p class="intro">Lær å beskrive to prøver – uten å vite hvilken som er hvilken. En god smaksopplevelse begynner med å skille det du faktisk kjenner fra hva du tror og hva du liker.</p>
+    <div class="notice" role="note"><strong>Personvern:</strong> Journalen behandles bare i nettleseren mens denne siden er åpen. Ingen konto, sporing av feltene, serverlagring eller automatisk innsending. Vil du ta vare på notatene, kan du laste ned en JSON-fil eller skrive ut selv. Lukker eller laster du siden på nytt, forsvinner det du ikke har lagret. <strong>Faglig:</strong> Dette er egen læring, ikke en offisiell smakspanelvurdering eller kvalitetsklassifisering.</div>
+    <div class="switch" role="group" aria-label="Velg hva du vil smake">
+      <button id="choose-oil" aria-pressed="true" type="button">Olivenolje</button>
+      <button id="choose-wine" aria-pressed="false" type="button">Vin</button>
+    </div>
+    <p id="guide" class="hint">Olivenolje: lukt først. Vurder fruktighet, bitterhet, pepperaktig pungens, harmoni og lengde hver for seg. Fargen er ikke et kvalitetsbevis.</p>
+    <form id="journal" novalidate>
+      <div class="columns">
+        <section class="panel" aria-labelledby="sample-a-heading">
+          <header><h2 id="sample-a-heading">Prøve A</h2><span class="sample-badge">BLIND A</span></header>
+          <p class="hint">La gjerne en annen person merke prøvene slik at du ikke ser produsent eller pris.</p>
+          <div data-sample="a"></div>
+        </section>
+        <section class="panel" aria-labelledby="sample-b-heading">
+          <header><h2 id="sample-b-heading">Prøve B</h2><span class="sample-badge">BLIND B</span></header>
+          <p class="hint">Bruk like glass, mengder og serveringsforhold. Skriv egne ord, ikke reklamebeskrivelser.</p>
+          <div data-sample="b"></div>
+        </section>
+      </div>
+      <section class="panel" style="margin-top:18px" aria-labelledby="reflection-heading">
+        <h2 id="reflection-heading">Etter smakingen</h2>
+        <label for="observation">Hva observerte du? <span class="hint">(beskriv konkret)</span></label>
+        <textarea id="observation" maxlength="1200" placeholder="For eksempel: A hadde tydeligere grønne aromaer enn B ..."></textarea>
+        <label for="interpretation">Hvordan tolker du forskjellen? <span class="hint">(mulig forklaring – ikke fasit)</span></label>
+        <textarea id="interpretation" maxlength="1200" placeholder="Kan skyldes sort, modningsgrad eller produksjon – jeg vet ikke sikkert ..."></textarea>
+        <label for="preference">Hvilken foretrekker du, og hvorfor?</label>
+        <textarea id="preference" maxlength="1200" placeholder="Jeg foretrekker ... fordi ..."></textarea>
+      </section>
+      <div class="actions">
+        <button class="primary" type="button" id="compare">Sammenlign A og B</button>
+        <button type="button" id="download">Eksporter journal (JSON)</button>
+        <button type="button" id="print">Skriv ut / lagre som PDF</button>
+        <button type="button" class="warning" id="reset">Tøm journalen</button>
+      </div>
+    </form>
+    <section id="summary" hidden aria-live="polite">
+      <h2>Din sammenligning</h2><p class="hint">Tallene er dine egne registreringer, ikke vitenskapelige kvalitetskarakterer. Høyere verdi betyr bare høyere opplevd intensitet.</p>
+      <div class="result"><div id="result-a"></div><div id="result-b"></div></div>
+      <p id="contrast"></p>
+    </section>
+    <p class="foot">Fordyp deg i <a href="/laer-a-smake-olivenolje">olivenoljesmaking</a>, <a href="/laer-a-smake-vin">vinsmaking</a> eller <a href="/kunnskap-og-boker">bøkene bak Doña Anna Akademi</a>. Bøkene om smaking er fortsatt arbeidsmanus.</p>
+  </main>
+  <script>
+  (() => {
+    'use strict';
+    const definitions = {
+      oil: {
+        label: 'Olivenolje',
+        guide: 'Olivenolje: lukt først. Vurder fruktighet, bitterhet, pepperaktig pungens, harmoni og lengde hver for seg. Fargen er ikke et kvalitetsbevis.',
+        metrics: [
+          ['fruit','Fruktighet','Svak','Tydelig'],
+          ['bitter','Bitterhet','Lite','Mye'],
+          ['pungent','Pepperaktig pungens','Lite','Mye'],
+          ['harmony','Opplevd harmoni','Lav','Høy'],
+          ['length','Aromatisk varighet','Kort','Lang']
+        ],
+        aroma: 'Hvilke aromaer kjenner du?',
+        warning: 'Egen smaksskala. Offisiell klassifisering av virgin olivenolje krever et kvalifisert panel og relevante analyser.'
+      },
+      wine: {
+        label: 'Vin',
+        guide: 'Vin: vurder aroma, syre, tannin, alkoholvarme, fylde og lengde. Skille mellom en beskrivelse, din tolkning og personlig preferanse. Smak ansvarlig; spytt gjerne ut.',
+        metrics: [
+          ['aroma','Aromaintensitet','Svak','Tydelig'],
+          ['acidity','Syre','Lav','Høy'],
+          ['tannin','Tannin / tørrhet','Lite','Mye'],
+          ['alcohol','Alkoholvarme','Lav','Høy'],
+          ['body','Fylde','Lett','Fyldig'],
+          ['length','Aromatisk varighet','Kort','Lang']
+        ],
+        aroma: 'Hvilke aromaer kjenner du?',
+        warning: 'Egen læringsjournal; ingen kvalitetsskår eller profesjonell vinsertifisering. Unngå å konkludere druesort eller opprinnelse bare fra én aroma.'
+      }
+    };
+    const $ = (selector) => document.querySelector(selector);
+    let mode='oil';
+    const cleanText = (str) => String(str || '').slice(0,1200);
+    const escapeHtml = (str) => cleanText(str).replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    const sample = (key) => {
+      const root=document.querySelector('[data-sample="'+key+'"]');
+      const def=definitions[mode];
+      const metrics=def.metrics.map(([id,label,low,high]) => '<div class="metric"><label for="'+key+'-'+id+'">'+label+'</label><div class="score"><input type="range" id="'+key+'-'+id+'" name="'+key+'-'+id+'" min="0" max="5" step="1" value="0" aria-describedby="'+key+'-'+id+'-scale"><output for="'+key+'-'+id+'">0</output></div><div id="'+key+'-'+id+'-scale" class="scale"><span>0 · '+low+'</span><span>5 · '+high+'</span></div></div>').join('');
+      root.innerHTML = '<label for="'+key+'-name">Prøvekode / valgfritt navn</label><input type="text" id="'+key+'-name" maxlength="80" autocomplete="off" placeholder="For eksempel kode 124">'+
+        '<label for="'+key+'-aromas">'+def.aroma+'</label><textarea id="'+key+'-aromas" maxlength="600" placeholder="Egne aromaord ..."></textarea>'+metrics+
+        '<label for="'+key+'-finish">Ettersmak og andre notater</label><textarea id="'+key+'-finish" maxlength="700" placeholder="Hva varer? Hva endrer seg?"></textarea>';
+      root.querySelectorAll('input[type="range"]').forEach(input => input.addEventListener('input', () => input.nextElementSibling.value=input.value));
+    };
+    const read = (key) => {
+      const values={};
+      for (const [id] of definitions[mode].metrics) values[id]=Number($('#'+key+'-'+id).value);
+      return {
+        code:cleanText($('#'+key+'-name').value),
+        aromas:cleanText($('#'+key+'-aromas').value),
+        metrics:values,
+        finish:cleanText($('#'+key+'-finish').value)
+      };
+    };
+    const data = () => ({
+      format:'donaanna-tasting-journal-v1',
+      type:mode, learningOnly:true,
+      sampleA:read('a'), sampleB:read('b'),
+      reflection:{
+        observation:cleanText($('#observation').value),
+        interpretation:cleanText($('#interpretation').value),
+        preference:cleanText($('#preference').value)
+      }
+    });
+    const updateType = (next) => {
+      if(next===mode) return;
+      if(!window.confirm('Bytte smakstype? Notater og vurderinger på denne siden vil bli tømt. Eksporter først dersom du vil beholde dem.'))return;
+      mode=next;render();
+    };
+    const render=()=>{
+      $('#choose-oil').setAttribute('aria-pressed',String(mode==='oil'));
+      $('#choose-wine').setAttribute('aria-pressed',String(mode==='wine'));
+      $('#guide').textContent=definitions[mode].guide;
+      ['a','b'].forEach(sample);
+      ['#observation','#interpretation','#preference'].forEach(selector => $(selector).value='');
+      $('#summary').hidden=true;
+    };
+    $('#choose-oil').addEventListener('click',()=>updateType('oil'));
+    $('#choose-wine').addEventListener('click',()=>updateType('wine'));
+    $('#compare').addEventListener('click',()=>{
+      const entry=data();
+      const def=definitions[mode];
+      for(const [key,place] of [['sampleA','#result-a'],['sampleB','#result-b']]){
+        const obj=entry[key];
+        const title=key==='sampleA'?'Prøve A':'Prøve B';
+        const rows=def.metrics.map(([id,label])=>'<dt>'+escapeHtml(label)+'</dt><dd>'+obj.metrics[id]+' / 5</dd>').join('');
+        $(place).innerHTML='<h3>'+title+(obj.code?' · '+escapeHtml(obj.code):'')+'</h3><p><strong>Aroma:</strong> '+escapeHtml(obj.aromas||'Ikke registrert')+'</p><dl>'+rows+'</dl><p><strong>Notater:</strong> '+escapeHtml(obj.finish||'Ikke registrert')+'</p>';
+      }
+      const diffs=def.metrics.map(([id,label])=>({label,delta:entry.sampleA.metrics[id]-entry.sampleB.metrics[id]})).filter(x=>x.delta!==0);
+      $('#contrast').textContent=diffs.length===0?'Du har registrert like intensiteter på begge prøver. Prøv å utdype aromaer og preferanser med egne ord.':'Største registrerte forskjell: '+diffs.sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta))[0].label+'. Husk at intensitet ikke er det samme som kvalitet eller personlig preferanse.';
+      $('#summary').hidden=false;$('#summary').scrollIntoView({behavior:'smooth',block:'start'});
+    });
+    $('#download').addEventListener('click',()=>{
+      const payload=JSON.stringify(data(),null,2);
+      const blob=new Blob([payload],{type:'application/json;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const link=document.createElement('a');
+      link.href=url;link.download='donaanna-smakejournal-'+mode+'.json';document.body.appendChild(link);link.click();link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    });
+    $('#print').addEventListener('click',()=>window.print());
+    $('#reset').addEventListener('click',()=>{
+      if(!window.confirm('Tømme begge prøvene og alle notater? Dette kan ikke angres.'))return;
+      render();
+    });
+    render();
+  })();
+  </script>
+</body>
+</html>

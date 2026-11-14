@@ -81,6 +81,10 @@
       "destination": "/api/public-evergreen?page=om-dona-anna"
     },
     {
+      "source": "/smakejournal",
+      "destination": "/smakejournal.html"
+    },
+    {
       "source": "/kunnskap-og-boker",
       "destination": "/api/public-evergreen?page=kunnskap-og-boker"
     },
