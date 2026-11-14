@@ -24,6 +24,8 @@ import { DONA_ANNA_PRODUCTS, donaAnnaProductByName } from '../content/donaAnnaPr
 import { estatePhotos, estatePhotosPublished } from '../data/estatePhotos';
 import { sendPublicInquiry } from '../services/publicInquiry';
 
+const DONA_ANNA_FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/1837377830741494";
+
 interface LandingPageProps {
   onLogin: () => void;
   onAdminLogin: () => void;
@@ -645,6 +647,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <div className="mt-8 flex flex-wrap gap-3">
                 <a href="/olivenolje-fra-biar" className="inline-flex h-11 items-center gap-2 border border-white/20 px-5 text-xs font-bold uppercase tracking-[0.17em] text-white hover:border-[#d4af37]">Om opprinnelsen <ArrowRight size={16} /></a>
                 <a href="/tidlig-hostet-olivenolje" className="inline-flex h-11 items-center gap-2 border border-white/20 px-5 text-xs font-bold uppercase tracking-[0.17em] text-white hover:border-[#d4af37]">Om høstingen <ArrowRight size={16} /></a>
+                <a href={DONA_ANNA_FACEBOOK_GROUP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 border border-[#d4af37]/80 px-5 text-xs font-bold uppercase tracking-[0.15em] text-[#ead27c] hover:bg-[#d4af37] hover:text-black">Bli med i olivenfellesskapet <ArrowRight size={16} /></a>
               </div>
             </div>
           </section>
@@ -1190,6 +1193,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <button data-testid="olivia-os-footer" onClick={onAdminLogin}>Olivia OS</button>
               <a href="mailto:info@donaanna.com">info@donaanna.com</a>
               <a href="/om-dona-anna">Anna & Freddy · om Doña Anna</a>
+              <a href={DONA_ANNA_FACEBOOK_GROUP_URL} target="_blank" rel="noopener noreferrer">Facebook-gruppen · olivenfellesskapet</a>
               <a href="/personvern">Personvern</a>
               <span>Fra olivengården vår i Biar, Alicante</span>
             </div>

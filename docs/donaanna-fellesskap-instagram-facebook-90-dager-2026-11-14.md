@@ -1,5 +1,5 @@
 # Doña Anna – fellesskap og publikum før høsting
-Dato: 14. november 2026 · Intern strategi · Ingen påstander om at kanaler er opprettet eller innlegg publisert.
+Dato: 14. november 2026 · Intern strategi · Facebook-gruppens URL levert av eier; navn, synlighet og administratorrettigheter er ennå ikke uavhengig kontrollert. Ingen gruppeinnlegg er publisert herfra.
 
 ## Merkevareløfte
 Følg livet i en virkelig olivengård i Biar – fra trær og jord til kunnskap, høsting og olivenolje. Del reelle valg og usikkerhet (bl.a. opphør av dryppvanning), ikke salgsløfter eller målte kvalitetsresultater som ennå ikke finnes.
@@ -7,7 +7,7 @@ Følg livet i en virkelig olivengård i Biar – fra trær og jord til kunnskap,
 ## Kanalroller
 - Instagram: 3 korte, originale Reels/uke og 2 Stories-dager med gårdsopptak, helst med menneskene bak kamera.
 - Facebook-side: 3 innlegg/uke, med samtaler, bilder og utdypning; lenke til relevant guide ved behov.
-- Facebook-gruppe (foreslått navn «Olivenliv – fra tre til olivenolje | Doña Anna»): 3–4 relevante diskusjoner/uke, moderasjon og medlemsbidrag. Ikke ren reklamekanal.
+- Facebook-gruppe: https://www.facebook.com/groups/1837377830741494 (oppgitt av eier). Bruk Facebooks egne verktøy for 3–4 relevante diskusjoner/uke, moderasjon og medlemsbidrag. Gruppens faktiske navn er ikke verifisert. Ikke ren reklamekanal; RealtyFlow må aldri anta at gruppepublisering kan gjøres via Facebook-sidens API.
 - Nettsted: ett kunnskapstema/uke fra eksisterende guider; ett tydelig frivillig nyhetsbrev/gårdsbrev etter at samtykke, personvern og utsendelsesrutine er etablert.
 - E-post: maks 1–2 brev/måned før høsting; personer skal kunne melde seg av enkelt. Ingen automatisk nyhetsbrev ved kontakt- eller salgsforespørsel.
 
@@ -60,3 +60,22 @@ Følg livet i en virkelig olivengård i Biar – fra trær og jord til kunnskap,
 [ ] Sett enkel måling med UTM-kampanjer og aggregert statistikk
 [ ] Avklar hvem som svarer på kommentarer og hvem som modererer gruppen
 [ ] Publiser først når godkjente bilder, tekster og kanaler er tilgjengelige
+
+## Gruppe koblet til prosjektet – 14. november 2026
+- Bekreftet **adresse fra eier**: https://www.facebook.com/groups/1837377830741494
+- Gruppen registrert som manuell community-kanal i RealtyFlow Growth OS. Facebook-side og Instagram fortsetter som separate automatiserte kanaler.
+- Nettsiden har en egen inngang fra gårdsfotogalleriet og footer. Dette er en lenke til gruppen, **ikke** medlemskap, Facebook-innlogging eller bevis på offentlig synlighet.
+- Meta fjernet Groups API i 2024. Innholdsutkast kan planlegges i RealtyFlow, men legges inn manuelt med Facebooks native gruppeverktøy.
+- Ikke hent ut medlemsnavn, poster eller kommentarer fra gruppen via uautoriserte automatiske innsamlinger. Registrer bare eierens egne observasjoner og aggregerte manuelle nøkkeltall.
+
+### Forslag til festet velkomstinnlegg
+«🌿 Velkommen til vårt olivenfellesskap! Vi er Anna og Freddy og deler livet på Doña Anna-gården i Biar, Alicante. Her er både spørsmål, egne erfaringer, oliventrær, olivenoljesmaking og middelhavsmat velkommen. Vi kommer til å vise ekte bilder fra lunden og dele kunnskap gjennom året – også før vi har ferdige flasker å selge.
+
+Hva vil du aller helst lære mer om: dyrking, høsting, olivensorter eller hvordan vi smaker olivenolje? Skriv gjerne i kommentarfeltet!»
+
+### Før vi inviterer mange
+1. Sjekk inne i Facebook at riktig Doña Anna-side og ønskede administratorer har tilgang.
+2. Se over faktisk gruppenavn, synlighet og medlems-/innleggsgodkjenning.
+3. Fest velkomstinnlegg og publiser 3–5 egne diskusjonsstartere med autentiske gårdsbilder fra `public/donaanna/garden-2026`.
+4. Godkjenn enkle grupperegler: saklig diskusjon, ingen spam eller udokumenterte medisinske påstander.
+5. Inviter de første interesserte via Facebook-siden; svar personlig på kommentarer og spørsmål.
