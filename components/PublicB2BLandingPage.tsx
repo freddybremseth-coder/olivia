@@ -1,4 +1,3 @@
-import { TastingJournal } from './TastingJournal';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
@@ -715,7 +714,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
             </div>
             <p className="mt-6 text-sm leading-6 text-black/60">Guidene er laget for læring og må ikke forveksles med offisiell sensorisk klassifisering, helseråd eller dokumentasjon for bestemte Doña Anna-batcher.</p>
             <p className="mt-5 text-sm leading-6 text-black/65">Vil du utforske smaksspråket videre? <a href="/laer-a-smake-vin" className="font-semibold underline underline-offset-4">Lær å smake vin</a> er et eget fordypningstema om aroma og balanse, ikke et produkt fra Doña Anna.</p>
-            <TastingJournal />
           </div>
         </section>
 
