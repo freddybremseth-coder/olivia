@@ -348,8 +348,15 @@ const PAGES: Record<string, EvergreenPage> = {
       {
         heading: 'Hvilke olivensorter finnes på gården?',
         body: [
-          'På gården finnes blant annet Genovesa, Gordal, Changlot Real og Picual.',
+          'På gården finnes blant annet Genovesa, Gordal, Changlot Real, Picual og Arbequina. Sortene er ikke en garanti for en bestemt smak: sammensetning og sensorisk profil må dokumenteres for hver batch.'
           'Hvilke sorter som inngår i en konkret produksjon skal beskrives når batchinformasjonen er klar, i stedet for å love en bestemt smaksprofil på forhånd.'
+        ]
+      },
+      {
+        heading: 'Hvorfor har dere sluttet med dryppvanning?',
+        body: [
+          'Vi har sluttet med dryppvanning og valgt en dyrking der oliventrærne får tåle lengre perioder uten tilført vann. Det innebærer en reell risiko: en tørr sommer kan gi svært liten avling.',
+          'Vi gjør dette fordi vi søker oljer med tydelig karakter fremfor størst mulig volum. Tørke er imidlertid ingen garanti for mer polyfenoler eller bedre smak; kraftig vannstress kan også svekke kvaliteten. Vi dokumenterer derfor resultatet fra hver høsting og batch.'
         ]
       },
       {
@@ -363,6 +370,7 @@ const PAGES: Record<string, EvergreenPage> = {
     faqs: [
       { question: 'Hvor ligger Doña Anna?', answer: 'Doña Anna ligger i Biar i Alicante, Spania.' },
       { question: 'Hvilke sorter finnes på gården?', answer: 'Blant sortene er Genovesa, Gordal, Changlot Real og Picual.' },
+      { question: 'Hvorfor bruker dere ikke lenger dryppvanning?', answer: 'Vi prioriterer dyrking med lengre perioder uten tilført vann og aksepterer risikoen for lav avling. Målet er særpreg, ikke en påstand om at tørke alltid gir bedre olje.' },
       { question: 'Blir produktene sporbare?', answer: 'Målet er produkt- og batchbasert sporbarhet med produksjons- og analyseopplysninger når den konkrete batchen er klar.' }
     ],
     primaryCta: { label: 'Se produktene', href: '/produkter' }
@@ -718,8 +726,15 @@ const PAGES: Record<string, EvergreenPage> = {
         heading: 'Jorden, røttene og olivenene i Biar',
         body: [
           'Gården ligger i innlandet av Alicante og omfatter rundt 60 000 m² og omtrent 1 500 oliventrær. Her ser du vridde stammer, røtter, olivengrener og jorden de vokser i. Bildene på nettstedet er tatt på selve gården med kommersiell brukstillatelse.',
-          'Blant sortene på gården er Genovesa, Gordal, Changlot Real og Picual. Det betyr ikke at alle oljene inneholder alle sortene. Råvaresammensetningen må beskrives for den faktiske produksjonen.',
+          'Blant sortene på gården er Genovesa, Gordal, Changlot Real, Picual og Arbequina. Det betyr ikke at alle oljene inneholder alle sortene. Råvaresammensetningen må beskrives for den faktiske produksjonen.',
           'Vi legger ikke eksakt alder på trærne eller bestemte sorter på enkeltfotografier uten dokumentasjon. For oss er trærne interessante også uten store tall.'
+        ]
+      },
+      {
+        heading: 'Et dyrkingsvalg med en kostnad',
+        body: [
+          'Vi har gått bort fra dryppvanning. Trærne får tåle lengre perioder uten tilført vann, og vi aksepterer at en svært tørr sommer kan bety at vi høster lite olje.',
+          'Vi håper at dyrkingen, sortene og høstingen gir oljer med karakter. Vi lover ikke at tørke i seg selv gjør oljen mer konsentrert eller mer smaksrik. Den faktiske kvaliteten må vurderes for hvert parti.'
         ]
       },
       {
@@ -741,7 +756,7 @@ const PAGES: Record<string, EvergreenPage> = {
       { question: 'Hvem står bak Doña Anna?', answer: 'Anna og Freddy Bremseth, med en olivengård i Biar i Alicante.' },
       { question: 'Er bildene fra den virkelige gården?', answer: 'Ja. Gårdsbildene i fotografiseksjonen og på forsiden er eiergodkjente bilder fra Biar.' },
       { question: 'Er oljene tilgjengelige nå?', answer: 'Produktsidene viser hva som er definert og hva som fortsatt avventer godkjenning. Pris, ferdig flaske, kvalitetsklasse og tilgjengelighet oppgis når det er dokumentert for den konkrete produksjonen.' },
-      { question: 'Hva gjør Doña Anna forskjellig?', answer: 'En personlig eierhistorie, en konkret gård i Biar, ekte dokumentarfotografier og en ambisjon om produktvis sporbarhet – fremfor generelle kvalitetsløfter.' }
+      { question: 'Hva gjør Doña Anna forskjellig?', answer: 'En personlig eierhistorie, en konkret gård i Biar, et bevisst valg om dyrking uten dryppvanning og en ambisjon om produktvis sporbarhet – fremfor generelle kvalitetsløfter.' }
     ],
     primaryCta: { label: 'Utforsk oljene', href: '/produkter' }
   },
