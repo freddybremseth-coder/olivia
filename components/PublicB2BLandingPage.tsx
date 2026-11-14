@@ -622,13 +622,26 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <h2 id="grove-gallery-heading" className="mt-4 max-w-3xl font-serif text-4xl leading-tight md:text-5xl">Trær, røtter og oliven. Fra Biar.</h2>
               <p className="mt-5 max-w-3xl leading-8 text-white/65">Et glimt fra lunden gjennom fruktens ulike stadier. Bildene viser gården og er ikke dokumentasjon for sort, batch eller ferdige produkter.</p>
               <div className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {[estatePhotos.grove, estatePhotos.mixed, estatePhotos.roots].map((photo) => (
-                  <figure key={photo.original} className="border border-white/10 bg-white/[0.03]">
-                    <img src={photo.src} alt={photo.alt} loading="lazy" decoding="async" className="aspect-[4/5] w-full object-cover" />
+                {[estatePhotos.grove, estatePhotos.green, estatePhotos.heritageTree, estatePhotos.mixed, estatePhotos.roots, estatePhotos.dark].map((photo) => (
+                  <figure key={photo.original} className="overflow-hidden border border-white/10 bg-white/[0.03]">
+                    <img src={photo.src} alt={photo.alt} loading="lazy" decoding="async" className="aspect-[4/5] w-full object-cover transition-transform duration-500 hover:scale-[1.025]" />
                     <figcaption className="px-5 py-4 text-sm leading-6 text-white/65">{photo.caption}</figcaption>
                   </figure>
                 ))}
               </div>
+              <details className="group mt-7 border border-white/15 bg-white/[0.03]">
+                <summary className="cursor-pointer px-5 py-4 text-sm font-semibold tracking-wide text-white transition-colors hover:text-[#d4af37]">
+                  Se fire flere bilder fra gården <span className="ml-2 text-[#d4af37] group-open:rotate-90">+</span>
+                </summary>
+                <div className="grid gap-5 border-t border-white/10 p-5 sm:grid-cols-2 lg:grid-cols-4">
+                  {[estatePhotos.hollow, estatePhotos.wholeTree, estatePhotos.branches, estatePhotos.color].map((photo) => (
+                    <figure key={photo.original} className="overflow-hidden border border-white/10 bg-white/[0.03]">
+                      <img src={photo.src} alt={photo.alt} loading="lazy" decoding="async" className="aspect-[4/5] w-full object-cover" />
+                      <figcaption className="px-4 py-3 text-sm leading-6 text-white/65">{photo.caption}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+              </details>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a href="/olivenolje-fra-biar" className="inline-flex h-11 items-center gap-2 border border-white/20 px-5 text-xs font-bold uppercase tracking-[0.17em] text-white hover:border-[#d4af37]">Om opprinnelsen <ArrowRight size={16} /></a>
                 <a href="/tidlig-hostet-olivenolje" className="inline-flex h-11 items-center gap-2 border border-white/20 px-5 text-xs font-bold uppercase tracking-[0.17em] text-white hover:border-[#d4af37]">Om høstingen <ArrowRight size={16} /></a>
