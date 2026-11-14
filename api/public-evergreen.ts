@@ -304,7 +304,7 @@ const PAGES: Record<string, EvergreenPage> = {
     description: 'Doña Anna-guider om olivenolje fra Biar, tidlig høsting, Verde Vivo, restaurantbruk, sporbarhet og planene for bordoliven.',
     eyebrow: 'Guidehub · olivenolje fra Biar',
     h1: 'Guider om olivenolje fra Biar',
-    answer: 'Her samler Doña Anna evergreen-guider som svarer på konkrete spørsmål om gården i Biar, tidlig høsting, Verde Vivo og bruk i restaurant og faghandel.',
+    answer: 'Her samler Doña Anna guider som svarer på konkrete spørsmål om gården i Biar, tidlig høsting, olivenoljekvalitet, bruk i restaurant og smak. Du kan også starte med gratis introduksjoner til olivenolje- og vinsmaking og bli kjent med bøkene bak kunnskapsuniverset.',
     sections: [
       {
         heading: 'Hvor bør du starte?',
@@ -961,6 +961,15 @@ function pageHtml(page: EvergreenPage) {
   // Page-specific reading journeys connect the estate story to relevant product
   // knowledge, rather than sending every visitor to the same generic next step.
   const readingJourneys: Record<string, { heading: string; intro: string; links: { href: string; label: string }[] }> = {
+    guider: {
+      heading: 'Lær mer med Doña Anna',
+      intro: 'I tillegg til guidene om Biar og produktene kan du trene smakssansen med gratis øvelser fra smakebokprosjektene.',
+      links: [
+        { href: '/kunnskap-og-boker', label: 'Kunnskap, bøker og gårdshistorie' },
+        { href: '/laer-a-smake-olivenolje', label: 'Gratis introduksjon til olivenoljesmaking' },
+        { href: '/laer-a-smake-vin', label: 'Læringsguide for vinsmaking' },
+      ],
+    },
     'kunnskap-og-boker': {
       heading: 'Velg din vei inn i smak og kunnskap',
       intro: 'Start gratis med en praktisk smakeøvelse og gå videre til gården, produktene eller forfatterens bokkatalog etter interesse.',
