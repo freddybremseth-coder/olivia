@@ -81,6 +81,18 @@
       "destination": "/api/public-evergreen?page=om-dona-anna"
     },
     {
+      "source": "/kunnskap-og-boker",
+      "destination": "/api/public-evergreen?page=kunnskap-og-boker"
+    },
+    {
+      "source": "/laer-a-smake-olivenolje",
+      "destination": "/api/public-evergreen?page=laer-a-smake-olivenolje"
+    },
+    {
+      "source": "/laer-a-smake-vin",
+      "destination": "/api/public-evergreen?page=laer-a-smake-vin"
+    },
+    {
       "source": "/guider",
       "destination": "/api/public-evergreen?page=guider"
     },
