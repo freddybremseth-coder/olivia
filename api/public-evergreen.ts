@@ -961,6 +961,34 @@ function pageHtml(page: EvergreenPage) {
   // Page-specific reading journeys connect the estate story to relevant product
   // knowledge, rather than sending every visitor to the same generic next step.
   const readingJourneys: Record<string, { heading: string; intro: string; links: { href: string; label: string }[] }> = {
+    'kunnskap-og-boker': {
+      heading: 'Velg din vei inn i smak og kunnskap',
+      intro: 'Start gratis med en praktisk smakeøvelse og gå videre til gården, produktene eller forfatterens bokkatalog etter interesse.',
+      links: [
+        { href: '/laer-a-smake-olivenolje', label: 'Smaksskolen for olivenolje' },
+        { href: '/laer-a-smake-vin', label: 'Smaksskolen for vin' },
+        { href: '/om-dona-anna', label: 'Anna og Freddy – historien fra gården' },
+        { href: 'https://books.freddybremseth.com/', label: 'Bokkatalogen til Freddy Bremseth' },
+      ],
+    },
+    'laer-a-smake-olivenolje': {
+      heading: 'Lær mer om smak og opprinnelse',
+      intro: 'Knytt sansene til faktiske valg i gården og undervisningen uten å forveksle en hjemmeøvelse med en offisiell kvalitetsklassifisering.',
+      links: [
+        { href: '/kunnskap-og-boker', label: 'Kunnskapsuniverset og bøkene' },
+        { href: '/tidlig-hostet-olivenolje', label: 'Hva betyr tidlig høsting?' },
+        { href: '/laer-a-smake-vin', label: 'Tren samme observasjonsmetode med vin' },
+      ],
+    },
+    'laer-a-smake-vin': {
+      heading: 'Fra vinens struktur til oljens karakter',
+      intro: 'Du kan lære like mye av å sammenligne sensoriske begreper som av å bedømme én flaske. Gå videre til gratis olivenoljeøvelser.',
+      links: [
+        { href: '/laer-a-smake-olivenolje', label: 'Lær olivenolje med fruktighet, bitterhet og pungens' },
+        { href: '/kunnskap-og-boker', label: 'Se læringsuniverset og bokarbeidet' },
+        { href: '/om-dona-anna', label: 'Bli kjent med Doña Anna' },
+      ],
+    },
     'om-dona-anna': {
       heading: 'Fra gården til råvaren',
       intro: 'Se hvordan landskapet i Biar, olivenene og høstetidspunktet henger sammen med Doña Annas produktarbeid.',
@@ -968,6 +996,7 @@ function pageHtml(page: EvergreenPage) {
         { href: '/olivenolje-fra-biar', label: 'Oliven fra Biar og opprinnelsen' },
         { href: '/tidlig-hostet-olivenolje', label: 'Hva betyr tidlig høsting?' },
         { href: '/produkter', label: 'Bli kjent med produktfamilien' },
+        { href: '/kunnskap-og-boker', label: 'Bøkene og kunnskap bak gårdsarbeidet' },
       ],
     },
     'olivenolje-fra-biar': {
