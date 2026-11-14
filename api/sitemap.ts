@@ -37,6 +37,7 @@ export default async function handler(_req: IncomingMessage, res: ServerResponse
     '/kunnskap-og-boker',
     '/laer-a-smake-olivenolje',
     '/laer-a-smake-vin',
+    '/smakejournal',
     '/produkter',
     '/verde-vivo',
     '/verde-alto',
