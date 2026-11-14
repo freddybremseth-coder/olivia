@@ -145,13 +145,166 @@ type EvergreenPage = {
 };
 
 const PAGES: Record<string, EvergreenPage> = {
+  'kunnskap-og-boker': {
+    slug: 'kunnskap-og-boker',
+    title: 'Kunnskap, smaking og olivenbøker fra Biar | Doña Anna',
+    description: 'Lær om olivenolje, birøkt, regenerativ dyrking og smaking med Doña Anna. Oppdag Freddy og Annas bøker og nye læringsguider fra gården i Biar.',
+    eyebrow: 'Doña Anna akademi · kunnskap og bøker',
+    h1: 'Fra olivenlunden til smaksglasset og bøkene',
+    answer: 'Doña Anna deler ikke bare produkter, men også kunnskap om oliventrær, jord, bier, høsting, sensorikk og mat. Innholdet bygger blant annet på Freddy Bremseths eksisterende sakprosabøker og nye arbeidsmanus om olivenolje- og vinsmaking. Du kan lære gratis her, og senere fordype deg i bøkene når den aktuelle utgaven er klar.',
+    sections: [
+      {
+        heading: 'Biar er både en gård og et sted å lære',
+        body: [
+          'På vår egen gård i Biar finnes oliventrær, jord, vann og et landskap som gir oss konkrete spørsmål: Hvorfor varierer høstetidspunktet? Hvordan påvirker dyrking og behandling oljen? Hva kan bier og biologisk mangfold bety for et jordbrukssystem? Disse spørsmålene er utgangspunkt for guidene og bøkene – ikke bevis på sertifisering eller målte kvalitetsresultater.',
+          'Boken Birøkt og oliven i hjertet av Alicante tar opp samspillet mellom oliven, bier, jord og regenerativ drift. Fra jord til bord følger råvarens vei fra dyrking og høsting til produksjon og mat. Kunsten å høste tidlig går videre inn på valget mellom modenhet, smak og utbytte.'
+        ]
+      },
+      {
+        heading: 'Lær å smake olivenolje – gratis introduksjon',
+        body: [
+          'Start med forskjellen mellom fruktighet, bitterhet og den pepperaktige følelsen i halsen. Lær hvordan du sammenligner to ferske oljer blindt, og hvorfor den mest intense ikke nødvendigvis er den beste.',
+          'Den tilhørende boken Lær å smake olivenolje er fortsatt et arbeidsmanus. Nettguiden er en selvstendig pedagogisk introduksjon, ikke en offentlig klassifisering av Doña Annas produkter eller et løfte om at boken er i salg.'
+        ]
+      },
+      {
+        heading: 'Lær å smake vin – en bredere smaksskole',
+        body: [
+          'Vinsmaking hjelper oss å forstå forskjellen mellom observasjon, tolkning og preferanse: syre er ikke det samme som kvalitet, og kraft er ikke det samme som balanse. Sammenlign for eksempel en friskere vin med en mildere, eller en lett Pinot Noir med en fyldigere Shiraz.',
+          'Lær å smake vin er også et arbeidsmanus. Innholdet er faglig beslektet med olivenoljesmaking, men vin er et eget læringstema. Doña Anna selger ikke vin gjennom disse guidene.'
+        ]
+      },
+      {
+        heading: 'Hva kan du lese videre?',
+        body: [
+          'I bokuniverset til Freddy Bremseth er blant annet Birøkt og oliven i hjertet av Alicante, Fra jord til bord, Polyfenolens kraft og Kunsten å høste tidlig registrert. Noen titler har ikke verifisert kjøpslenke eller tilgjengelig utgave, og vi oppgir derfor ikke pris eller lovnader om levering her.',
+          'My Journey as a Father forteller om familieliv, ansvar og nye livsfaser. Den kan gi et menneskelig bakteppe for forfatterskapet, men personlige detaljer om familien hører ikke hjemme i Doña Annas produktmarkedsføring uten egen gjennomgang og samtykke.'
+        ]
+      },
+      {
+        heading: 'Kunnskap før kjøpsknapper',
+        body: [
+          'Doña Anna skal gi nyttige, gjennomførbare forklaringer gratis. Bøker, smakssett og fremtidige arrangementer kan gi frivillig fordypning, men det skal alltid være mulig å lære uten å kjøpe noe.',
+          'Du finner forfatterens samlede bokkatalog på books.freddybremseth.com. Kontroller den konkrete bokutgaven og kjøpsmulighetene i katalogen; de to nye smakebøkene står ennå som manus under utvikling.'
+        ]
+      }
+    ],
+    faqs: [
+      { question: 'Kan jeg lære å smake olivenolje gratis?', answer: 'Ja. Doña Anna gir en gratis smakeguide med begreper og en enkel blindsmakingsøvelse. Den erstatter ikke en offisiell sensorisk paneltest.' },
+      { question: 'Er bøkene om olivenolje- og vinsmaking ferdig publisert?', answer: 'Nei. De to smakebøkene er arbeidsmanus og skal redigeres og kvalitetssikres før utgivelse.' },
+      { question: 'Handler kunnskapsdelen bare om Doña Anna-produkter?', answer: 'Nei. Den lærer bort generelle prinsipper om jord, høsting og sensorisk vurdering. Doña Annas egne batchpåstander publiseres først når de er dokumentert.' }
+    ],
+    primaryCta: { label: 'Lær å smake olivenolje', href: '/laer-a-smake-olivenolje' }
+  },
+  'laer-a-smake-olivenolje': {
+    slug: 'laer-a-smake-olivenolje',
+    title: 'Lær å smake olivenolje – øvelser og smak | Doña Anna',
+    description: 'Lær å kjenne fruktighet, bitterhet, pepperaktig pungens og balanse i olivenolje. Gratis øvelser bygget på Freddy Bremseths nye smakebok.',
+    eyebrow: 'Gratis smaksskole · olivenolje',
+    h1: 'Lær å smake olivenolje: lukt, smak og forstå',
+    answer: 'Start med tre sanseinntrykk: fruktighet i aromaen, bitterhet som grunnsmak og pungens – den pepperaktige følelsen i munnen eller svelget. Vurder deretter hvordan de henger sammen. En mild olje kan være svært god, mens en intens olje kan være ubalansert. Bruk denne guiden til læring, ikke til å tildele offisiell kvalitetsklasse.',
+    sections: [
+      {
+        heading: 'Trinn 1: Lukt før du smaker',
+        body: [
+          'Hell litt fersk olivenolje i et rent, lite glass, gjerne med lokk. Prøv å beskrive lukten uten å se på etiketten. Er fruktigheten grønn, moden, tydelig eller dempet? Finner du konkrete assosiasjoner, som grønne urter, olivenblad, frukt eller nøtter? Beskriv bare det du faktisk opplever.',
+          'Fargen sier lite om sensorisk kvalitet. Bruk helst like beholdere og sammenlign prøvene uten å vite hvilken olje som er hvilken.'
+        ]
+      },
+      {
+        heading: 'Trinn 2: Skill bitterhet fra pepperaktig skarphet',
+        body: [
+          'Smak en liten mengde. Bitterhet er en grunnsmak du kjenner i munnen. Pungens er en pepperaktig, irriterende eller prikkende følelse som også kan komme i halsen. Disse er forskjellige sansefenomener; noter dem hver for seg.',
+          'Marker fruktighet, bitterhet og pungens fra 0 til 5 i din egen smakejournal. Dette er en pedagogisk skala, ikke den offisielle metoden for klassifisering av olivenolje.'
+        ]
+      },
+      {
+        heading: 'Trinn 3: Smak to oljer blindt',
+        body: [
+          'Finn én fersk, mild Arbequina og én fersk, mer intens Picual eller Coratina fra en pålitelig produsent. La noen andre kode prøvene A og B. Sørg for omtrent lik temperatur, mengde og oppbevaring.',
+          'Beskriv først lukt og struktur, deretter hva du liker. Spør: Er den milde oljen presis og harmonisk? Er den intense oljen balansert, eller dominerer én egenskap? Ingen av sortene er automatisk bedre, og produksjonsforskjeller påvirker resultatet.'
+        ]
+      },
+      {
+        heading: 'Trinn 4: Lær balanse, kompleksitet og lengde',
+        body: [
+          'Balanse handler om samspillet mellom fruktighet, bitterhet og pungens – ikke at alle tre skal være like sterke. Kompleksitet handler om flere relevante og tydelige sanseinntrykk, ikke flest mulig ord. Lengde handler om hvor lenge passende aroma- og smaksinntrykk varer.',
+          'Noter hva du observerer, hva du tror forklarer det, og hva du personlig foretrekker. Hold de tre kategoriene atskilt.'
+        ]
+      },
+      {
+        heading: 'Fra bok til praksis',
+        body: [
+          'Dette er en gratis introduksjon inspirert av arbeidsmanuset Lær å smake olivenolje, som har kapitler om balanse, blindsmaking, olivensorter, klima og mat. Boken er fortsatt under redigering og ikke annonsert som tilgjengelig for salg.',
+          'Vil du lære mer om gården bak Doña Anna, gå videre til historien om Biar og tidlig høsting. En eventuell framtidig smakepakke skal først presenteres når innhold, varer og levering er reelt godkjent.'
+        ]
+      }
+    ],
+    faqs: [
+      { question: 'Er en intens olivenolje alltid bedre?', answer: 'Nei. Intensitet og kvalitet er forskjellige. En mild, harmonisk olje kan vurderes høyt, mens en intens olje kan mangle balanse.' },
+      { question: 'Er bitterhet et tegn på feil?', answer: 'Ikke i seg selv. Bitterhet kan være et normalt positivt sensorisk kjennetegn ved virgin olivenolje. Eventuelle defekter vurderes etter egen metodikk.' },
+      { question: 'Kan jeg sertifisere en olivenolje ved å følge denne guiden?', answer: 'Nei. En offisiell klassifisering krever relevant kjemisk og organoleptisk vurdering etter gjeldende krav.' }
+    ],
+    primaryCta: { label: 'Utforsk gården i Biar', href: '/om-dona-anna' }
+  },
+  'laer-a-smake-vin': {
+    slug: 'laer-a-smake-vin',
+    title: 'Lær å smake vin – syre, tannin og balanse | Doña Anna',
+    description: 'Gratis introduksjon til vinsmaking med aroma, syre, tannin, fylde, balanse og blindsmaking. En kunnskapsbro til Freddy Bremseths nye vinbok.',
+    eyebrow: 'Gratis smaksskole · vin',
+    h1: 'Lær å smake vin: forskjellene du faktisk kjenner',
+    answer: 'Når du smaker vin, skiller du mellom lukt, syre, tannin, alkoholvarme, fylde, balanse og aromatisk lengde. Start med å beskrive hvert inntrykk før du vurderer kvalitet eller personlige preferanser. En kraftig vin er ikke nødvendigvis bedre enn en lett vin.',
+    sections: [
+      {
+        heading: 'Trinn 1: Beskriv – ikke døm med en gang',
+        body: [
+          'Lukt og noter konkrete assosiasjoner. Er intensiteten lav eller høy? Virker frukten lys, mørk, frisk eller moden? Deretter vurderer du struktur og balanse. Skriv «høy syre» hvis du kjenner høy syre, ikke «for høy syre» før den er vurdert i sammenheng.',
+          'Skille mellom observasjon, tolkning og preferanse gjør smaksnotater mer presise. «Kirsebær» kan være en aromaassosiasjon; «kan være Pinot Noir» er en tolkning; «jeg foretrekker lettere vin» er en personlig mening.'
+        ]
+      },
+      {
+        heading: 'Trinn 2: Syre og tannin – to ulike opplevelser',
+        body: [
+          'Syre gir ofte en frisk, spyttdrivende opplevelse. Tannin kan kjennes som tørrhet eller ruhet i munnen og på tannkjøttet. Alkohol kan gi varme, mens fylde handler om vinens samlede munnfølelse.',
+          'Registrer syre, tannin, alkoholvarme og fylde hver for seg. De kan variere både med druesort, klima, modning og vinmaking.'
+        ]
+      },
+      {
+        heading: 'Trinn 3: Kontrastøvelse med to vinstiler',
+        body: [
+          'Sammenlign en frisk, lettere Pinot Noir med en mer konsentrert Shiraz, gjerne fra ulike klimatiske forhold. Be en annen person kode vinene A og B. Bruk like glass og server ved passende temperatur for de valgte stilene.',
+          'Beskriv aroma, syre, tannin, varme og fylde blindt. Hva varer i ettersmaken? Rangér balanse separat fra personlig smak. Øvelsen lærer forskjeller, men isolerer ikke én enkelt variabel siden druesort og produksjon også varierer.'
+        ]
+      },
+      {
+        heading: 'Trinn 4: Hvordan vurderer du kvalitet?',
+        body: [
+          'Kvalitet er en begrunnet helhetsvurdering av presisjon, harmoni, passende intensitet, lengde og eventuelle feil. Høy alkohol eller lange, varme ettersmaker er ikke automatisk kompleksitet.',
+          'For hver prøve kan du notere én tydelig kvalitet, ett mulig forbedringspunkt og din personlige preferanse. Hvis du vil, kan du gjennomføre øvelsen med spytting for å bevare konsentrasjonen gjennom flere prøver.'
+        ]
+      },
+      {
+        heading: 'Hvorfor vin på et nettsted om olivenolje?',
+        body: [
+          'Doña Anna er et olivenprosjekt, ikke en vinprodusent. Likevel kan vinsmaking hjelpe oss å trene opp presist språk for lukt, tekstur, balanse og kvalitet – ferdigheter som også er nyttige når du lærer å forstå olivenolje.',
+          'Den tilhørende boken Lær å smake vin er et arbeidsmanus med kapitler om balanse, blindsmaking, druesorter, klima, mat og profesjonell smaksmetode. Den er ikke presentert som ferdig utgitt. Innholdet er for voksne, med ansvarlig smaking og mulighet for å spytte ut prøvene.'
+        ]
+      }
+    ],
+    faqs: [
+      { question: 'Hva er forskjellen på syre og tannin?', answer: 'Syre oppleves ofte som friskhet og økt spyttproduksjon. Tannin oppleves mer som tørrhet, ruhet eller sammentrekning i munnen.' },
+      { question: 'Er en kraftig vin alltid bedre enn en lett?', answer: 'Nei. Balanse, presisjon, lengde og helhet sier mer enn bare intensitet.' },
+      { question: 'Selger Doña Anna vin?', answer: 'Nei. Vinsmaking er en separat undervisningsdel i kunnskapsuniverset, ikke en vinbutikk eller en påstand om at Doña Anna lager vin.' }
+    ],
+    primaryCta: { label: 'Lær å smake olivenolje', href: '/laer-a-smake-olivenolje' }
+  },
   guider: {
     slug: 'guider',
     title: 'Guider om olivenolje fra Biar og Alicante | Doña Anna',
     description: 'Doña Anna-guider om olivenolje fra Biar, tidlig høsting, Verde Vivo, restaurantbruk, sporbarhet og planene for bordoliven.',
     eyebrow: 'Guidehub · olivenolje fra Biar',
     h1: 'Guider om olivenolje fra Biar',
-    answer: 'Her samler Doña Anna evergreen-guider som svarer på konkrete spørsmål om gården i Biar, tidlig høsting, Verde Vivo og bruk i restaurant og faghandel.',
+    answer: 'Her samler Doña Anna guider som svarer på konkrete spørsmål om gården i Biar, tidlig høsting, olivenoljekvalitet, bruk i restaurant og smak. Du kan også starte med gratis introduksjoner til olivenolje- og vinsmaking og bli kjent med bøkene bak kunnskapsuniverset.',
     sections: [
       {
         heading: 'Hvor bør du starte?',
@@ -651,6 +804,9 @@ function pageHtml(page: EvergreenPage) {
   // FAQ entries should add something beyond the page introduction and sections.
   // Keep the editorial selection in one place so visible FAQs and JSON-LD agree.
   const usefulFaqQuestions: Record<string, string[]> = {
+    'kunnskap-og-boker': ['Kan jeg lære å smake olivenolje gratis?', 'Er bøkene om olivenolje- og vinsmaking ferdig publisert?'],
+    'laer-a-smake-olivenolje': ['Er en intens olivenolje alltid bedre?', 'Kan jeg sertifisere en olivenolje ved å følge denne guiden?'],
+    'laer-a-smake-vin': ['Hva er forskjellen på syre og tannin?', 'Selger Doña Anna vin?'],
     guider: ['Hva er forskjellen på Verde Vivo og Verde Alto?', 'Hvordan vurderes extra virgin-olivenolje?', 'Hvordan bør olivenolje oppbevares?'],
     'olivenolje-for-restauranter': ['Kan en restaurant melde interesse for smaksprøve?', 'Har alle produktene samme format?'],
     'verde-alto': ['Kan profesjonelle kjøpere melde interesse?'],
@@ -805,6 +961,43 @@ function pageHtml(page: EvergreenPage) {
   // Page-specific reading journeys connect the estate story to relevant product
   // knowledge, rather than sending every visitor to the same generic next step.
   const readingJourneys: Record<string, { heading: string; intro: string; links: { href: string; label: string }[] }> = {
+    guider: {
+      heading: 'Lær mer med Doña Anna',
+      intro: 'I tillegg til guidene om Biar og produktene kan du trene smakssansen med gratis øvelser fra smakebokprosjektene.',
+      links: [
+        { href: '/kunnskap-og-boker', label: 'Kunnskap, bøker og gårdshistorie' },
+        { href: '/laer-a-smake-olivenolje', label: 'Gratis introduksjon til olivenoljesmaking' },
+        { href: '/laer-a-smake-vin', label: 'Læringsguide for vinsmaking' },
+      ],
+    },
+    'kunnskap-og-boker': {
+      heading: 'Velg din vei inn i smak og kunnskap',
+      intro: 'Start gratis med en praktisk smakeøvelse og gå videre til gården, produktene eller forfatterens bokkatalog etter interesse.',
+      links: [
+        { href: '/laer-a-smake-olivenolje', label: 'Smaksskolen for olivenolje' },
+        { href: '/laer-a-smake-vin', label: 'Smaksskolen for vin' },
+        { href: '/om-dona-anna', label: 'Anna og Freddy – historien fra gården' },
+        { href: 'https://books.freddybremseth.com/', label: 'Bokkatalogen til Freddy Bremseth' },
+      ],
+    },
+    'laer-a-smake-olivenolje': {
+      heading: 'Lær mer om smak og opprinnelse',
+      intro: 'Knytt sansene til faktiske valg i gården og undervisningen uten å forveksle en hjemmeøvelse med en offisiell kvalitetsklassifisering.',
+      links: [
+        { href: '/kunnskap-og-boker', label: 'Kunnskapsuniverset og bøkene' },
+        { href: '/tidlig-hostet-olivenolje', label: 'Hva betyr tidlig høsting?' },
+        { href: '/laer-a-smake-vin', label: 'Tren samme observasjonsmetode med vin' },
+      ],
+    },
+    'laer-a-smake-vin': {
+      heading: 'Fra vinens struktur til oljens karakter',
+      intro: 'Du kan lære like mye av å sammenligne sensoriske begreper som av å bedømme én flaske. Gå videre til gratis olivenoljeøvelser.',
+      links: [
+        { href: '/laer-a-smake-olivenolje', label: 'Lær olivenolje med fruktighet, bitterhet og pungens' },
+        { href: '/kunnskap-og-boker', label: 'Se læringsuniverset og bokarbeidet' },
+        { href: '/om-dona-anna', label: 'Bli kjent med Doña Anna' },
+      ],
+    },
     'om-dona-anna': {
       heading: 'Fra gården til råvaren',
       intro: 'Se hvordan landskapet i Biar, olivenene og høstetidspunktet henger sammen med Doña Annas produktarbeid.',
@@ -812,6 +1005,7 @@ function pageHtml(page: EvergreenPage) {
         { href: '/olivenolje-fra-biar', label: 'Oliven fra Biar og opprinnelsen' },
         { href: '/tidlig-hostet-olivenolje', label: 'Hva betyr tidlig høsting?' },
         { href: '/produkter', label: 'Bli kjent med produktfamilien' },
+        { href: '/kunnskap-og-boker', label: 'Bøkene og kunnskap bak gårdsarbeidet' },
       ],
     },
     'olivenolje-fra-biar': {

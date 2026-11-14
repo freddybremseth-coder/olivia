@@ -34,6 +34,9 @@ export default async function handler(_req: IncomingMessage, res: ServerResponse
   const staticPaths = [
     '/',
     '/guider',
+    '/kunnskap-og-boker',
+    '/laer-a-smake-olivenolje',
+    '/laer-a-smake-vin',
     '/produkter',
     '/verde-vivo',
     '/verde-alto',

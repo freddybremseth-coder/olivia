@@ -674,6 +674,47 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
           </div>
         </section>
 
+        <section id="academy" aria-labelledby="academy-heading" className="scroll-mt-20 border-y border-white/10 bg-[#f2eadb] px-5 py-16 text-[#241d14] md:px-8 md:py-24">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid gap-7 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#816124]">Doña Anna akademi · Smak · Jord · Mennesker</p>
+                <h2 id="academy-heading" className="mt-4 font-serif text-4xl leading-tight md:text-6xl">Kunnskapen bak oljen er også en del av historien.</h2>
+                <p className="mt-5 max-w-3xl text-lg leading-8 text-black/70">Vi vil at du skal kunne forstå hva du lukter og smaker, hvorfor høstetidspunktet betyr noe, og hvordan jorden, trærne og menneskene henger sammen. Derfor deler vi gratis læring – bygget på våre erfaringer i Biar og bøkene Freddy skriver om oliven, jordbruk og smaking.</p>
+              </div>
+              <div className="border-l-2 border-[#aa8a4a] pl-6">
+                <p className="font-serif text-2xl leading-snug">Nysgjerrighet først. Kunnskap før kjøp.</p>
+                <p className="mt-3 text-sm leading-7 text-black/65">Kjøpsmuligheter for bøkene vises i forfatterens egen katalog når en utgave finnes. De nye smakebøkene er fortsatt arbeidsmanus, ikke lanserte produkter.</p>
+                <a href="/kunnskap-og-boker" className="mt-5 inline-flex min-h-11 items-center gap-2 font-bold uppercase tracking-[0.13em] text-xs text-[#705515] underline-offset-4 hover:underline">Utforsk kunnskapsuniverset <ArrowRight size={16} /></a>
+              </div>
+            </div>
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
+              <article className="flex h-full flex-col bg-white p-7 ring-1 ring-black/10">
+                <Droplets className="text-[#866424]" size={28}/>
+                <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#80601f]">Gratis smakeøvelse</p>
+                <h3 className="mt-2 font-serif text-3xl">Lær å smake olivenolje</h3>
+                <p className="mt-4 flex-1 leading-7 text-black/65">Fruktighet, bitterhet, pepperaktig skarphet og balanse. Lær å sammenligne to oljer uten å la etikett eller pris bestemme.</p>
+                <a href="/laer-a-smake-olivenolje" className="mt-6 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-[#705515]">Start olivenoljesmaking <ArrowRight size={15}/></a>
+              </article>
+              <article className="flex h-full flex-col bg-white p-7 ring-1 ring-black/10">
+                <Sparkles className="text-[#866424]" size={28}/>
+                <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#80601f]">Gratis smaksskole</p>
+                <h3 className="mt-2 font-serif text-3xl">Lær å smake vin</h3>
+                <p className="mt-4 flex-1 leading-7 text-black/65">Oppdag syre, tannin, fylde og aromatisk lengde. Lær å skille det du kjenner fra det du tror og det du liker.</p>
+                <a href="/laer-a-smake-vin" className="mt-6 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-[#705515]">Start vinsmaking <ArrowRight size={15}/></a>
+              </article>
+              <article className="flex h-full flex-col bg-white p-7 ring-1 ring-black/10">
+                <Leaf className="text-[#866424]" size={28}/>
+                <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#80601f]">Bøker og gårdshistorie</p>
+                <h3 className="mt-2 font-serif text-3xl">Bier, jord og oliven</h3>
+                <p className="mt-4 flex-1 leading-7 text-black/65">Fra jord til bord, Polyfenolens kraft og Birøkt og oliven i hjertet av Alicante. Utforsk temaene og møt Anna og Freddy bak Doña Anna.</p>
+                <a href="/kunnskap-og-boker" className="mt-6 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-[#705515]">Se bøker og læring <ArrowRight size={15}/></a>
+              </article>
+            </div>
+            <p className="mt-6 text-sm leading-6 text-black/60">Guidene er laget for læring og må ikke forveksles med offisiell sensorisk klassifisering, helseråd eller dokumentasjon for bestemte Doña Anna-batcher.</p>
+          </div>
+        </section>
+
         <section id="gifts" aria-labelledby="gifts-heading" className="scroll-mt-20 bg-[#f8f5ea] px-5 py-14 text-black md:px-8 md:py-24">
           <div className="mx-auto max-w-7xl">
             <div className="grid items-end gap-8 lg:grid-cols-[0.9fr_1.1fr]">
