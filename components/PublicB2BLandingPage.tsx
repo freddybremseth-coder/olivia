@@ -699,11 +699,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <a href="/smakejournal" className="mt-3 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-[#705515] underline underline-offset-4">Åpne smakejournal <ArrowRight size={15}/></a>
               </article>
               <article className="flex h-full flex-col bg-white p-7 ring-1 ring-black/10">
-                <Sparkles className="text-[#866424]" size={28}/>
-                <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#80601f]">Gratis smaksskole</p>
-                <h3 className="mt-2 font-serif text-3xl">Lær å smake vin</h3>
-                <p className="mt-4 flex-1 leading-7 text-black/65">Oppdag syre, tannin, fylde og aromatisk lengde. Lær å skille det du kjenner fra det du tror og det du liker.</p>
-                <a href="/laer-a-smake-vin" className="mt-6 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-[#705515]">Start vinsmaking <ArrowRight size={15}/></a>
+                <SunMedium className="text-[#866424]" size={28}/>
+                <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#80601f]">Gårdens dyrkingsvalg</p>
+                <h3 className="mt-2 font-serif text-3xl">Når naturen bestemmer avlingen</h3>
+                <p className="mt-4 flex-1 leading-7 text-black/65">Vi har gått bort fra dryppvanning og lar oliventrærne tåle lengre tørkeperioder. Det kan koste oss store deler av avlingen i tørre år. Vi søker særpreg, men dokumenterer kvaliteten fra hver høsting fremfor å love at tørke alltid gir bedre olje.</p>
+                <a href="/kunnskap-og-boker" className="mt-6 inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-[#705515]">Les om gården og dyrkingen <ArrowRight size={15}/></a>
               </article>
               <article className="flex h-full flex-col bg-white p-7 ring-1 ring-black/10">
                 <Leaf className="text-[#866424]" size={28}/>
@@ -714,6 +714,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               </article>
             </div>
             <p className="mt-6 text-sm leading-6 text-black/60">Guidene er laget for læring og må ikke forveksles med offisiell sensorisk klassifisering, helseråd eller dokumentasjon for bestemte Doña Anna-batcher.</p>
+            <p className="mt-5 text-sm leading-6 text-black/65">Vil du utforske smaksspråket videre? <a href="/laer-a-smake-vin" className="font-semibold underline underline-offset-4">Lær å smake vin</a> er et eget fordypningstema om aroma og balanse, ikke et produkt fra Doña Anna.</p>
             <TastingJournal />
           </div>
         </section>
