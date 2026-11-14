@@ -348,7 +348,7 @@ const PAGES: Record<string, EvergreenPage> = {
       {
         heading: 'Hvilke olivensorter finnes på gården?',
         body: [
-          'På gården finnes blant annet Genovesa, Gordal, Changlot Real, Picual og Arbequina. Sortene er ikke en garanti for en bestemt smak: sammensetning og sensorisk profil må dokumenteres for hver batch.'
+          'På gården finnes blant annet Genovesa, Gordal, Changlot Real, Picual og Arbequina. Sortene er ikke en garanti for en bestemt smak: sammensetning og sensorisk profil må dokumenteres for hver batch.',
           'Hvilke sorter som inngår i en konkret produksjon skal beskrives når batchinformasjonen er klar, i stedet for å love en bestemt smaksprofil på forhånd.'
         ]
       },

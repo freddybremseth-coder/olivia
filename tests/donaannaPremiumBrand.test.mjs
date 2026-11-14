@@ -20,7 +20,7 @@ test('founder story stays specific and avoids unverifiable scarcity or sensory p
   const about = evergreen.slice(start,end);
   assert.match(about,/60 000 m²/);
   assert.match(about,/1 500 oliventrær/);
-  assert.match(about,/Genovesa, Gordal, Changlot Real og Picual/);
+  assert.match(about,/Genovesa, Gordal, Changlot Real, Picual og Arbequina/);
   assert.match(about,/beskrives for den faktiske produksjonen/);
   assert.match(about,/før dokumentasjonen foreligger/);
 });
