@@ -147,7 +147,7 @@ type EvergreenPage = {
 const PAGES: Record<string, EvergreenPage> = {
   'kunnskap-og-boker': {
     slug: 'kunnskap-og-boker',
-    title: 'Kunnskap, smaking og bøker fra Biar | Doña Anna',
+    title: 'Kunnskap, smaking og olivenbøker fra Biar | Doña Anna',
     description: 'Lær om olivenolje, birøkt, regenerativ dyrking og smaking med Doña Anna. Oppdag Freddy og Annas bøker og nye læringsguider fra gården i Biar.',
     eyebrow: 'Doña Anna akademi · kunnskap og bøker',
     h1: 'Fra olivenlunden til smaksglasset og bøkene',
