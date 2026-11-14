@@ -172,8 +172,8 @@ const estateMoments = [
     icon: SunMedium,
   },
   {
-    title: 'Fire sorter',
-    text: 'På gården arbeider vi blant annet med Genovesa, Gordal, Changlot Real og Picual.',
+    title: 'Flere olivensorter',
+    text: 'På gården arbeider vi blant annet med Genovesa, Gordal, Changlot Real, Picual og Arbequina. Sammensetning og smak dokumenteres for hvert oljeparti.',
     icon: Leaf,
   },
   {
@@ -209,7 +209,7 @@ const knowledgeCards = [
     kicker: 'Gården i Biar',
     image: imagePaths.harvestClose,
     imageAlt: 'Illustrasjon av oliven som råvare',
-    text: 'Genovesa, Gordal, Changlot Real og Picual er blant sortene på gården. Vi bruker sortsinformasjon som en del av sporbarheten – ikke som generiske smakslover.',
+    text: 'Genovesa, Gordal, Changlot Real, Picual og Arbequina er blant sortene på gården. Vi bruker sortsinformasjon som en del av sporbarheten – ikke som generiske smakslover.',
   },
   {
     title: 'Sporbar dokumentasjon',
@@ -654,7 +654,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <article className="border border-white/15 bg-white/[0.03] p-6">
                 <p className="text-xs font-bold uppercase tracking-[0.19em] text-[#d4af37]">01 · Opprinnelse</p>
                 <h3 className="mt-4 font-serif text-2xl">Et sted, ikke et reklameløfte.</h3>
-                <p className="mt-4 leading-7 text-white/64">Anna, Freddy og vår olivengård i Biar skal være lett å kjenne igjen. Vi viser ekte bilder og knytter konkrete påstander om råvarer og produksjon til den riktige batchen.</p>
+                <p className="mt-4 leading-7 text-white/64">Anna, Freddy og vår olivengård i Biar skal være lett å kjenne igjen. Vi har også valgt å gå bort fra dryppvanning, selv om tørre år kan gi langt mindre olje. Vi viser ekte bilder og knytter påstander om råvarer og kvalitet til riktig batch.</p>
               </article>
               <article className="border border-white/15 bg-white/[0.03] p-6">
                 <p className="text-xs font-bold uppercase tracking-[0.19em] text-[#d4af37]">02 · Kvalitet</p>
