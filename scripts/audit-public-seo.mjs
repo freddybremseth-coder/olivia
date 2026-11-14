@@ -155,6 +155,9 @@ if (!listing.includes('Fra kunnskap til neste steg')) fail('Editorial hubs must 
 
 const evergreenSlugs = [
   'guider',
+  'kunnskap-og-boker',
+  'laer-a-smake-olivenolje',
+  'laer-a-smake-vin',
   'produkter',
   'verde-vivo',
   'verde-alto',
