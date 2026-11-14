@@ -87,7 +87,7 @@ const portfolio = [
     format: '500 ml · Cosecha temprana',
     role: 'Tidlig høstet olivenolje · mål om extra virgin-kvalitet',
     photo: productMedia('Verde Vivo').safeContextImage,
-    text: 'Verde Vivo er produktet for tidlig høsting. Endelig kvalitetsklasse, sensorikk, analyse, høstedato og tilgjengelighet publiseres for den konkrete batchen.',
+    text: 'Verde Vivo er vår retning for tidlig høsting, der høstetidspunktet er et bevisst valg selv når oljeutbyttet blir mindre. Smak, kvalitet og analyser bekreftes for den konkrete batchen.',
   },
   {
     name: 'Verde Alto',
@@ -95,7 +95,7 @@ const portfolio = [
     format: 'Olivenolje · format bekreftes per produksjon',
     role: 'Balansert premiumprodukt · egen produktidentitet',
     photo: productMedia('Verde Alto').safeContextImage,
-    text: 'Verde Alto er et eget produkt i Doña Anna-porteføljen. Smaksprofil, format, kvalitetsklasse og batchdata skal beskrives ut fra den faktiske produksjonen – ikke gjenbrukes fra Verde Vivo.',
+    text: 'Verde Alto utvikles med balanse og anvendelighet ved matbordet som mål. Dette er en egen produktretning, ikke et løfte om bestemt smak før produksjon og smaking.',
   },
   {
     name: 'Raíz Antigua',
@@ -103,7 +103,7 @@ const portfolio = [
     format: 'Olivenolje · opprinnelse dokumenteres per batch',
     role: 'Heritage-produkt · egen produktidentitet',
     photo: productMedia('Raíz Antigua').safeContextImage,
-    text: 'Raíz Antigua er et separat olivenoljeprodukt med egen historie og etikett. Påstander om trær, sorter, smak og begrenset produksjon publiseres først når de kan knyttes til den konkrete batchen.',
+    text: 'Raíz Antigua skal løfte gårdens røtter og eldre oliventrær, blant annet Changlot Real. Vi knytter ikke et bestemt tre, en alder eller sort til oljen før råvarens opprinnelse er dokumentert for batchen.',
   },
   {
     name: 'Cocina Viva',
