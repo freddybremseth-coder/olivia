@@ -182,8 +182,8 @@ const estateMoments = [
     icon: Trees,
   },
   {
-    title: 'Dryppvanning og økologisk retning',
-    text: 'Driften bruker dryppvanning, og Doña Anna utvikles som en økologisk merkevare med dokumentasjon som publiseres når den er klar.',
+    title: 'Tørketilpasset dyrking · kvalitet fremfor volum',
+    text: 'Vi bruker ikke lenger dryppvanning. Oliventrærne får tåle lengre perioder uten tilført vann, og vi aksepterer risikoen for svært liten avling i tørre somre. Målet er oljer med tydelig karakter, men vannstress garanterer ikke høyere konsentrasjon, polyfenolinnhold eller bedre smak. Kvaliteten vurderes for hver høsting og dokumenteres per batch.',
     icon: Sprout,
   },
 ];
