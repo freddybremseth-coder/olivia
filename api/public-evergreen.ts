@@ -572,7 +572,7 @@ const PAGES: Record<string, EvergreenPage> = {
       {
         heading: 'Hva er Verde Alto?',
         body: [
-          'Verde Alto er definert som et eget produkt med en mer balansert og bredt anvendelig posisjon i porteføljen.',
+          'Verde Alto har en planlagt rolle som en balansert og allsidig olje ved matbordet. Det er en produktretning, ikke en fastslått smaksprofil.',
           'Den faktiske kvalitetsklassen, smaksprofilen, formatet og tilgjengeligheten beskrives først når den konkrete produksjonen er dokumentert.'
         ]
       },
@@ -608,8 +608,8 @@ const PAGES: Record<string, EvergreenPage> = {
       {
         heading: 'Hva skiller Raíz Antigua fra de andre produktene?',
         body: [
-          'Raíz Antigua har en egen heritage-posisjonering og skal ha egen etikett, egen produktside og egen produktfortelling.',
-          'Påstander om gamle trær, bestemte sorter eller begrenset produksjon brukes bare når de kan dokumenteres for den aktuelle råvaren og batchen.'
+          'Raíz Antigua skal bære en fortelling om arv og opprinnelse. Gårdens eldre Changlot Real-trær gir et naturlig utgangspunkt, men vi har ennå ikke dokumentert at et konkret Raíz Antigua-parti kommer fra disse trærne.',
+          'Alder, antall trær, høsteparseller og flaskemengder må dokumenteres før de knyttes til en bestemt olje eller etikett.'
         ]
       },
       {
@@ -629,7 +629,7 @@ const PAGES: Record<string, EvergreenPage> = {
     ],
     faqs: [
       { question: 'Er Raíz Antigua det samme som Verde Vivo?', answer: 'Nei. Raíz Antigua er et separat produkt med egen identitet, etikett og produktside.' },
-      { question: 'Kommer Raíz Antigua fra gamle trær?', answer: 'Dette beskrives først når opprinnelsen til den konkrete batchen kan dokumenteres.' },
+      { question: 'Kommer Raíz Antigua fra gamle trær?', answer: 'Gården har eldre Changlot Real-trær, men sammenhengen med et konkret oljeparti bekreftes først gjennom dokumentert høsting og sporbarhet.' },
       { question: 'Når publiseres sensoriske data?', answer: 'Sensorikk og analyseverdier publiseres per batch etter produksjon og vurdering.' }
     ],
     primaryCta: { label: 'Meld interesse for Raíz Antigua', href: '/?product=raiz-antigua#tasting' }
@@ -727,7 +727,7 @@ const PAGES: Record<string, EvergreenPage> = {
         body: [
           'Gården ligger i innlandet av Alicante og omfatter rundt 60 000 m² og omtrent 1 500 oliventrær. Her ser du vridde stammer, røtter, olivengrener og jorden de vokser i. Bildene på nettstedet er tatt på selve gården med kommersiell brukstillatelse.',
           'Blant sortene på gården er Genovesa, Gordal, Changlot Real, Picual og Arbequina. Det betyr ikke at alle oljene inneholder alle sortene. Råvaresammensetningen må beskrives for den faktiske produksjonen.',
-          'Vi legger ikke eksakt alder på trærne eller bestemte sorter på enkeltfotografier uten dokumentasjon. For oss er trærne interessante også uten store tall.'
+          'Gårdens eldre Changlot Real-trær er en viktig del av historien. Vi ønsker å kartlegge trær, parseller og høsting, og publiserer ikke eksakte alders- eller antallspåstander knyttet til enkeltbilder eller batcher uten kontroll.'
         ]
       },
       {
@@ -747,7 +747,7 @@ const PAGES: Record<string, EvergreenPage> = {
       {
         heading: 'Oljen må fortjene historien',
         body: [
-          'Vi utvikler Verde Vivo med tidlig høsting som tydelig retning. Verde Alto, Raíz Antigua og Cocina Viva har ulike produktroller, mens Mesa · Gordal Noble er et planlagt bordolivenprodukt. Dette er ikke ett produkt med fem forskjellige etiketter.',
+          'Vi utvikler Verde Vivo rundt tidlig høsting, Verde Alto som en allsidig produktretning og Raíz Antigua rundt arv og opprinnelse. Cocina Viva er et separat spor for profesjonelle kjøkken, mens Mesa · Gordal Noble er planlagt bordoliven. Dette er ikke ett produkt med fem forskjellige etiketter.',
           'Når et oljeparti er klart, skal kvalitet, smaksprofil, relevant analyse, produksjonsopplysninger og tilgjengelighet dokumenteres per parti. Ingen pris, extra virgin-klassifisering, begrenset opplag eller spesifikke smaksnotater presenteres som bevist før dokumentasjonen foreligger.'
         ]
       }
