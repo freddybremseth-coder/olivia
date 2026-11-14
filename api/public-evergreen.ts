@@ -620,6 +620,14 @@ const PAGES: Record<string, EvergreenPage> = {
         ]
       },
       {
+        heading: 'Slik skal råvaren kunne spores til flasken',
+        body: [
+          'Før vi omtaler Raíz Antigua som olje fra utvalgte gamle trær, må høsten registrere identifiserte trær eller parseller, sort, dato, innveid mengde og hvilken presselinje eller produksjonsbatch olivenene går til.',
+          'Blandes oliven fra flere områder eller partier, skal dette fremgå av produksjonsjournalen. Deretter kobles presset olje, tank, analyse, sensorisk vurdering og tappet batch til riktig flaske.',
+          'Først etter denne kontrollen kan en etikett eller produktside oppgi eksakt opprinnelse, alder, flasketall og eventuelle analyser. Dette er planen for sporbarheten, ikke en påstand om at alle ledd allerede er verifisert.'
+        ]
+      },
+      {
         heading: 'Hvordan behandles bilder og etikett?',
         body: [
           'Raíz Antigua må vises med sin egen godkjente etikett. Bilder med gamle AI-etiketter eller etiketter fra andre produkter skal ikke brukes.',
@@ -630,7 +638,8 @@ const PAGES: Record<string, EvergreenPage> = {
     faqs: [
       { question: 'Er Raíz Antigua det samme som Verde Vivo?', answer: 'Nei. Raíz Antigua er et separat produkt med egen identitet, etikett og produktside.' },
       { question: 'Kommer Raíz Antigua fra gamle trær?', answer: 'Gården har eldre Changlot Real-trær, men sammenhengen med et konkret oljeparti bekreftes først gjennom dokumentert høsting og sporbarhet.' },
-      { question: 'Når publiseres sensoriske data?', answer: 'Sensorikk og analyseverdier publiseres per batch etter produksjon og vurdering.' }
+      { question: 'Når publiseres sensoriske data?', answer: 'Sensorikk og analyseverdier publiseres per batch etter produksjon og vurdering.' },
+      { question: 'Kan dere garantere et begrenset opplag eller en pris på 80 euro?', answer: 'Nei. Flasketall, emballasje, godkjent kvalitetsklasse, dokumenterte batchdata og pris avklares først når et faktisk produkt er klart.' }
     ],
     primaryCta: { label: 'Meld interesse for Raíz Antigua', href: '/?product=raiz-antigua#tasting' }
   },
