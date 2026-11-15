@@ -118,6 +118,9 @@
     var form = event.target;
     if (!form || !form.matches || !form.matches('form[data-testid="tasting-request-form"]')) return;
 
+    // A submit event is only an ATTEMPT. Production may open the visitor's
+    // email client, and a direct form may fail. Keep an approved product slug
+    // for useful aggregate analysis, but never read personal form fields.
     var productSlug = "";
     try {
       var rawProduct = new URLSearchParams(window.location.search).get("product") || "";
@@ -126,8 +129,8 @@
     } catch (_) {}
 
     sendConversion({
-      eventType: "contact",
-      target: productSlug ? "tasting_request_submitted_" + productSlug : "tasting_request_submitted"
+      eventType: "next_step",
+      target: productSlug ? "tasting_form_attempt_" + productSlug : "tasting_form_attempt"
     });
   });
 

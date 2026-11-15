@@ -272,15 +272,15 @@ if (!routeRewrites.some((row) => row.source === '/sitemap.xml' && String(row.des
 }
 if (!analytics.includes('/api/public/search-discovery')) fail('Public measurement must capture privacy-minimal search/AI arrivals.');
 if (!analytics.includes('/api/public/conversion-event')) fail('Public measurement must capture coarse CTA progression.');
-for (const target of ['tasting_interest','tasting_request_submitted','verde_vivo','restaurant_guide','guide_hub','b2b_portal']) {
+for (const target of ['tasting_interest','tasting_form_attempt','verde_vivo','restaurant_guide','guide_hub','b2b_portal']) {
   if (!analytics.includes(target)) fail('Public measurement missing coarse CTA target ' + target);
 }
 if (!analytics.includes('addEventListener("submit"') || !analytics.includes('tasting-request-form')) {
-  fail('Public measurement must distinguish actual tasting request submission from CTA interest.');
+  fail('Public measurement must distinguish form attempts from CTA interest; successful email delivery is verified separately.');
 }
 if (!analytics.includes('allowedProducts = ["verde-vivo", "verde-alto", "raiz-antigua", "cocina-viva", "mesa-gordal-noble"]') ||
-    !analytics.includes('"tasting_request_submitted_" + productSlug')) {
-  fail('Tasting conversion attribution must preserve non-personal product identity from approved deep links.');
+    !analytics.includes('"tasting_form_attempt_" + productSlug')) {
+  fail('Tasting form-intent measurement must preserve non-personal product identity from approved deep links.');
 }
 if (analytics.includes('tastingRequest') || analytics.includes('email.value') || analytics.includes('company.value')) {
   fail('Public measurement must never read visitor form values.');
