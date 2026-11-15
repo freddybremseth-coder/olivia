@@ -37,8 +37,8 @@ const copy = {
   eyebrow: 'Doña Anna · Fra olivengården vår i Biar · Alicante',
   headline: 'Doña Anna – olivenolje med røtter i Biar.',
   subhead: 'Vi er Anna og Freddy. Mellom oliventrærne på gården vår i Biar bygger vi Doña Anna: en personlig fortelling om sted, råvare og oljer vi ønsker å være stolte av å sette på bordet. Her møter du menneskene og trærne bak navnet – og følger hvert produkt frem mot dokumentert kvalitet.',
-  cta: 'Meld interesse for smaksprøve',
-  portal: 'B2B portal',
+  cta: 'Be om smaksprøve',
+  portal: 'Bedriftsportal',
   specTitle: 'Produktdata publiseres per produkt',
   traceTitle: 'Sporbarhet når batchen er klar',
   traceText: 'Når en batch er produsert og publisert, skal informasjon om høstedato, parsell, sort, sensorisk profil og analyseverdier knyttes til batchen.',
@@ -399,17 +399,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     }
   };
 
+  // One public navigation on the homepage and editorial pages.
+  // Corporate product information remains in the B2B section; access is via Bedriftsportal.
   const navLinks = [
     ['Gården', '#estate'],
     ['Oljesmaking', '#oljesmaking'],
-    ['Produkter', '#portfolio'],
-    ['Historien', '#story'],
-    ['Gaver', '#gifts'],
-    ['Kunnskap', '#knowledge'],
-    ['Guider', '/guider'],
+    ['Produkter', '/produkter'],
+    ['Historien', '/om-dona-anna'],
+    ['Kunnskap', '/kunnskap-og-boker'],
     ['Magasin', '/magasin'],
-    ['For profesjonelle', '#b2b'],
-    ['Om prosjektet', '#people'],
   ];
 
   return (
@@ -423,18 +421,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <p className="text-[11px] uppercase tracking-[0.22em] text-[#d4af37]">Biar · Alicante</p>
             </div>
           </a>
-          <div className="hidden items-center gap-5 lg:flex">
+          <div className="hidden min-w-0 items-center gap-4 xl:gap-6 lg:flex">
             {navLinks.map(([label, href]) => (
-              <a key={href} href={href} className="text-xs uppercase tracking-[0.2em] text-white/62 transition hover:text-white">
+              <a key={href} href={href} className="whitespace-nowrap text-[11px] uppercase tracking-[0.13em] text-white/72 transition hover:text-[#d4af37] xl:text-xs">
                 {label}
               </a>
             ))}
           </div>
-          <div className="hidden items-center gap-2 lg:flex">
-            <a href="#tasting" onClick={() => chooseInquiry('tasting')} className="inline-flex h-10 items-center gap-2 border border-[#d4af37]/55 px-4 text-xs font-bold uppercase tracking-[0.18em] text-[#f7f1df] transition hover:bg-[#d4af37] hover:text-black">
+          <div className="hidden shrink-0 items-center gap-2 lg:flex">
+            <a href="#tasting" onClick={() => chooseInquiry('tasting')} className="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap border border-[#d4af37]/55 px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[#f7f1df] transition hover:bg-[#d4af37] hover:text-black xl:px-4">
               Be om smaksprøve
             </a>
-            <button data-testid="b2b-portal-nav" onClick={onLogin} className="inline-flex h-10 items-center gap-2 bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-black transition hover:bg-[#d4af37]">
+            <button data-testid="b2b-portal-nav" onClick={onLogin} className="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap bg-white px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-black transition hover:bg-[#d4af37] xl:px-4">
               {copy.portal}
             </button>
           </div>
@@ -581,17 +579,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 <p className="mt-6 text-lg leading-8 text-white/66">
                   Doña Anna ligger i Biar i Alicante og omfatter rundt 60 000 m² med om lag 1 500 oliventrær. Vi bygger merkevaren på den faktiske gården, sortene vi har og dokumentasjon fra den konkrete produksjonen – ikke på generiske smaks- eller terroirpåstander.
                 </p>
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <a href="#tasting" onClick={() => chooseInquiry('tasting')} className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
-                    {copy.cta} <ArrowRight size={17} />
+                <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <a href="#tasting" onClick={() => chooseInquiry('tasting')} className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 bg-[#d4af37] px-4 py-3 text-center text-[11px] font-bold uppercase leading-5 tracking-[0.1em] text-black transition hover:bg-white">
+                    <span>{copy.cta}</span> <ArrowRight size={16} className="shrink-0" />
                   </a>
-                  <a href="#oljesmaking" className="inline-flex h-12 items-center justify-center gap-2 border border-white/18 px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-white/8">
-                    Smak olivenolje på gården <ArrowRight size={17} />
-                  </a>
-                  <a href="#traceability" className="inline-flex h-12 items-center justify-center gap-2 border border-white/18 px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-white/8">
-                    Se sporbarhet
+                  <a href="#oljesmaking" className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 border border-white/25 px-4 py-3 text-center text-[11px] font-bold uppercase leading-5 tracking-[0.1em] text-white transition hover:bg-white/8">
+                    <span>Oljesmaking på gården</span> <ArrowRight size={16} className="shrink-0" />
                   </a>
                 </div>
+                <a href="#traceability" className="mt-4 inline-flex min-h-10 items-center gap-2 text-xs font-semibold text-[#d4af37] underline-offset-4 hover:underline">
+                  Se sporbarhet <ArrowRight size={16}/>
+                </a>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {estateMoments.map(item => (
