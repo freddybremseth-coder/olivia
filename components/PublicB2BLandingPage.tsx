@@ -421,14 +421,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               <p className="text-[11px] uppercase tracking-[0.22em] text-[#d4af37]">Biar · Alicante</p>
             </div>
           </a>
-          <div className="hidden min-w-0 items-center gap-4 xl:gap-6 lg:flex">
+          <div className="hidden min-w-0 items-center gap-4 xl:gap-6 xl:flex">
             {navLinks.map(([label, href]) => (
               <a key={href} href={href} className="whitespace-nowrap text-[11px] uppercase tracking-[0.13em] text-white/72 transition hover:text-[#d4af37] xl:text-xs">
                 {label}
               </a>
             ))}
           </div>
-          <div className="hidden shrink-0 items-center gap-2 lg:flex">
+          <div className="hidden shrink-0 items-center gap-2 xl:flex">
             <a href="#tasting" onClick={() => chooseInquiry('tasting')} className="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap border border-[#d4af37]/55 px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[#f7f1df] transition hover:bg-[#d4af37] hover:text-black xl:px-4">
               Be om smaksprøve
             </a>
@@ -436,12 +436,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
               {copy.portal}
             </button>
           </div>
-          <button type="button" className="inline-flex h-11 w-11 items-center justify-center lg:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Lukk meny' : 'Åpne meny'} aria-expanded={menuOpen} aria-controls="donaanna-mobile-navigation">
+          <button type="button" className="inline-flex h-11 w-11 items-center justify-center xl:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Lukk meny' : 'Åpne meny'} aria-expanded={menuOpen} aria-controls="donaanna-mobile-navigation">
             {menuOpen ? <X /> : <Menu />}
           </button>
         </div>
         {menuOpen && (
-          <div id="donaanna-mobile-navigation" className="mx-auto max-h-[calc(100dvh-4rem)] max-w-7xl overflow-y-auto overscroll-contain border-t border-white/10 py-4 lg:hidden">
+          <div id="donaanna-mobile-navigation" className="mx-auto max-h-[calc(100dvh-4rem)] max-w-7xl overflow-y-auto overscroll-contain border-t border-white/10 py-4 xl:hidden">
             {navLinks.map(([label, href]) => (
               <a key={href} href={href} onClick={() => setMenuOpen(false)} className="block py-3 text-sm uppercase tracking-[0.2em] text-white/78">
                 {label}
