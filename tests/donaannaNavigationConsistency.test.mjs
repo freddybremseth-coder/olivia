@@ -55,3 +55,12 @@ test('farm CTAs remain distinct and avoid three cramped equal-width buttons', ()
   assert.doesNotMatch(estate, /sm:flex-row/);
   assert.match(home, /const DONA_ANNA_FARM_TASTING_URL = 'https:\/\/www\.costablancatours\.pro\/#tour\/dona-anna'/);
 });
+
+test('evergreen reading sidebar uses restrained editorial link styling and preserves destinations', () => {
+  assert.match(evergreen, /aside-eyebrow/);
+  assert.match(evergreen, /aside nav a::after/);
+  assert.match(evergreen, /aside nav a:focus-visible/);
+  assert.match(evergreen, /href="\/#oljesmaking" class="aside-feature"/);
+  assert.match(evergreen, /href="\/#tasting" class="aside-feature"/);
+  assert.match(evergreen, /aria-label="Relaterte sider"/);
+});
