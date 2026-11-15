@@ -150,6 +150,7 @@ export default async function handler(
       },
     ],
   };
+  const sharedNavCss = '.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px clamp(20px,5vw,70px);border-bottom:1px solid rgba(255,255,255,.1);background:rgba(13,13,13,.95);color:#fff;backdrop-filter:blur(16px)}.brand{flex-shrink:0;font:600 14px Georgia,serif;letter-spacing:.2em;text-decoration:none;color:#fff}.topnav{display:flex;flex-wrap:nowrap;align-items:center;gap:clamp(12px,1.6vw,22px)}.topnav a{white-space:nowrap;color:#d8d0c1;text-decoration:none;font-size:12px;text-transform:uppercase;letter-spacing:.1em}.topnav a:hover{color:#d4af37}.mobile-nav{display:none}.mobile-nav summary{list-style:none;cursor:pointer;border:1px solid rgba(255,255,255,.3);padding:10px 13px;color:#fff;font-size:12px;text-transform:uppercase}.mobile-nav summary::-webkit-details-marker{display:none}.mobile-nav-links{position:absolute;left:0;right:0;top:100%;display:grid;padding:12px 20px 22px;background:#0d0d0d;border-bottom:1px solid rgba(212,175,55,.3);box-shadow:0 20px 30px rgba(0,0,0,.25)}.mobile-nav-links a{display:block;color:#fff;text-decoration:none;font-size:14px;padding:12px;border-bottom:1px solid rgba(255,255,255,.1)}@media(max-width:900px){.topnav{display:none}.mobile-nav{display:block}}';
   const css = ':root{--ink:#0d0d0d;--paper:#f4efe3;--gold:#9a741d;--gold2:#d4af37;--line:rgba(30,24,15,.14)}' +
     '*{box-sizing:border-box}body{background:var(--paper);color:#191713;margin:0;font-family:Inter,Arial,sans-serif;line-height:1.7}a{color:#765916;text-underline-offset:3px}' +
     'header{position:sticky;top:0;z-index:10;background:rgba(13,13,13,.95);border-bottom:1px solid rgba(255,255,255,.1);padding:17px clamp(20px,5vw,70px);backdrop-filter:blur(16px)}header nav{display:flex;flex-wrap:wrap;gap:18px}header a{color:#d8d0c1;text-decoration:none;font-size:.78rem;text-transform:uppercase;letter-spacing:.12em}' +
@@ -158,7 +159,7 @@ export default async function handler(
     '.byline{margin:26px 0 0;color:#9f9484;font-size:.92rem}.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:22px;margin-top:52px}.card{border:1px solid var(--line);background:#fff;box-shadow:0 18px 46px -42px rgba(35,28,17,.55)}.card img{width:100%;height:220px;object-fit:cover}.card-body{padding:25px}.card h2{font:600 1.8rem/1.15 Georgia,serif;margin:.25rem 0}.card p{color:#5b5448}.card .date{color:#8a6a19;font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em}' +
     '.journey{margin-top:58px;padding:34px;background:#15120e;color:#fff}.journey h2{font:600 clamp(2rem,4vw,3.4rem)/1.05 Georgia,serif;margin:0}.journey p{max-width:760px;color:#d0c7b8}.journey-links{display:flex;flex-wrap:wrap;gap:12px 20px;margin-top:20px}.journey a{color:#d4af37}.guides{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.12)}' +
     '.network{border-top:1px solid rgba(255,255,255,.1);background:#0d0d0d;padding:28px clamp(20px,5vw,70px);color:#8f8372;font-size:.82rem}.network strong{display:block;color:#d4af37;margin-bottom:10px;letter-spacing:.12em;text-transform:uppercase}.network a{color:#b9aa8c;margin-right:16px;white-space:nowrap}' +
-    '@media(max-width:640px){header nav a:nth-child(n+4){display:none}.card img{height:190px}.hero{padding-top:64px}}';
+    '@media(max-width:640px){.topbar .topnav{display:none}.card img{height:190px}.hero{padding-top:64px}}';
   const html = '<!doctype html><html lang="no"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
     '<title>' + escapeHtml(config.seoTitle) + '</title>' +
@@ -169,9 +170,8 @@ export default async function handler(
     '<meta property="og:url" content="' + canonical + '">' +
     '<meta property="og:title" content="' + escapeHtml(config.seoTitle) + '"><meta name="author" content="Doña Anna">' +
     '<script type="application/ld+json">' + JSON.stringify(schema).replace(/</g, '\\u003c') + '</script>' +
-    '<style>' + css + '</style></head><body>' +
-    '<header><nav><a href="/">DOÑA ANNA</a><a href="/guider">Guider</a><a href="/magasin">Magasin</a>' +
-    '<a href="/artikler">Artikler</a><a href="/blogg">Blogg</a><a href="/oppskrifter">Oppskrifter</a><a href="/#tasting">Kontakt</a></nav></header>' +
+    '<style>' + css + sharedNavCss + '</style></head><body>' +
+    '<header class="topbar"><a class="brand" href="/" aria-label="Doña Anna – forsiden">DOÑA ANNA</a><nav class="topnav" aria-label="Hovedmeny"><a href="/#estate">Gården</a><a href="/#oljesmaking">Oljesmaking</a><a href="/produkter">Produkter</a><a href="/om-dona-anna">Historien</a><a href="/kunnskap-og-boker">Kunnskap</a><a href="/magasin">Magasin</a></nav><details class="mobile-nav"><summary>☰ Meny</summary><nav class="mobile-nav-links" aria-label="Mobilmeny"><a href="/#estate">Gården</a><a href="/#oljesmaking">Oljesmaking</a><a href="/produkter">Produkter</a><a href="/om-dona-anna">Historien</a><a href="/kunnskap-og-boker">Kunnskap</a><a href="/magasin">Magasin</a></nav></details></header>' +
     '<section class="hero"><div class="hero-inner"><p class="eyebrow">Doña Anna · kunnskap</p><h1>' + escapeHtml(config.heading) + '</h1><p class="intro">' + escapeHtml(config.description) + '</p><p class="byline">Redaksjonelt innhold fra Doña Anna · <a href="/om-dona-anna">Anna og Freddy Bremseth</a></p></div></section>' +
     '<main>' +
     (cards ? '<section class="cards" aria-label="' + escapeHtml(config.label) + '">' + cards + '</section>'
