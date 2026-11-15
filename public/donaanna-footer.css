@@ -1,0 +1,39 @@
+/* Shared public Doña Anna footer: home, evergreen guides, magazine and articles. */
+.da-footer{--da-gold:#d4af37;position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(ellipse at 12% 0%,rgba(161,122,45,.15),transparent 42%),linear-gradient(145deg,#161710,#0c0e0c 75%);color:#f7f1df;border-top:1px solid rgba(212,175,55,.30);font-family:Inter,ui-sans-serif,system-ui,Arial,sans-serif;padding:0;text-align:left}
+.da-footer *{box-sizing:border-box}
+.da-footer a{color:inherit;text-decoration:none}
+.da-footer a:focus-visible,.da-footer button:focus-visible{outline:2px solid var(--da-gold);outline-offset:4px}
+.da-footer a:hover{color:#f0cd75}
+.da-footer-inner{max-width:1270px;margin:0 auto;padding:70px 28px 36px}
+.da-footer-grid{display:grid;grid-template-columns:minmax(220px,1.5fr) repeat(3,minmax(155px,1fr));gap:clamp(24px,4vw,65px)}
+.da-footer-brand{display:flex;align-items:center;gap:15px;margin-bottom:21px}
+.da-footer-mark{width:46px;height:53px;object-fit:contain;filter:invert(1)}
+.da-footer-wordmark{font:600 21px/1.1 Georgia,serif;letter-spacing:.22em;color:#fff}
+.da-footer-kicker{display:block;margin-top:8px;color:#d7b765;font-size:10px;letter-spacing:.22em;text-transform:uppercase;font-weight:650}
+.da-footer-story{max-width:330px;color:#c2bcae;font-size:14px;line-height:1.85;margin:0}
+.da-footer-heading{margin:5px 0 18px;color:#e5c778;font-size:11px;font-weight:800;line-height:1.5;letter-spacing:.18em;text-transform:uppercase}
+.da-footer-links{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.da-footer-links li{margin:0;padding:0;line-height:1.45;color:#dfd7c6;font-size:13px}
+.da-footer-links a{display:inline-block;line-height:1.55;transition:color .18s ease,transform .18s ease}
+.da-footer-links a:hover{transform:translateX(3px)}
+.da-footer-contact{display:grid;gap:12px;color:#dfd7c6;font-size:13px;line-height:1.65}
+.da-footer-contact-item{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.da-footer-contact-symbol{color:#d4af37;font-size:15px;line-height:1.65;flex-shrink:0}
+.da-footer-contact-item a{overflow-wrap:anywhere}
+.da-footer-mapnote{display:block;color:#9f998b;font-size:11px;line-height:1.55;margin-top:4px}
+.da-footer-feature{display:inline-flex!important;align-items:center;gap:9px;max-width:100%;margin-top:25px;padding:12px 16px;border:1px solid rgba(212,175,55,.48);font-size:11px;font-weight:750;letter-spacing:.1em;text-transform:uppercase;color:#f2d58e!important;transition:background .2s ease}
+.da-footer-feature:hover{background:rgba(212,175,55,.11);transform:none!important}
+.da-footer-social{display:flex;align-items:center;gap:15px;flex-wrap:wrap;margin-top:28px}
+.da-footer-social-label{font-size:10px;letter-spacing:.19em;text-transform:uppercase;color:#a9a28e;font-weight:750}
+.da-footer-social-link{display:inline-flex!important;align-items:center;gap:10px;border:1px solid rgba(212,175,55,.30);border-radius:100px;padding:9px 13px;color:#f2e4c4!important;font-size:12px;font-weight:650}
+.da-footer-social-link:hover{background:rgba(212,175,55,.10);border-color:rgba(212,175,55,.65)}
+.da-footer-social-link svg{width:17px;height:17px;fill:currentColor}
+.da-footer-rule{height:1px;background:linear-gradient(90deg,rgba(212,175,55,.28),rgba(212,175,55,.08));margin:46px 0 25px}
+.da-footer-bottom{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;color:#aba394;font-size:11px;line-height:1.6}
+.da-footer-bottom-links{display:flex;gap:16px 24px;flex-wrap:wrap}
+.da-footer-bottom a{color:#c9bea9}
+.da-footer-admin{background:none;border:0;padding:0;color:#918b80;font:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.da-footer-admin:hover{color:#f0cd75}
+@media(max-width:1050px){.da-footer-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:42px 40px}}
+@media(max-width:640px){.da-footer-inner{padding:52px 22px 110px}.da-footer-grid{grid-template-columns:1fr;gap:33px}.da-footer-story{max-width:none}.da-footer-rule{margin-top:35px}.da-footer-bottom{align-items:flex-start;flex-direction:column;gap:16px}.da-footer-brand{margin-bottom:16px}}
+@media(prefers-reduced-motion:reduce){.da-footer a{transition:none!important}}
