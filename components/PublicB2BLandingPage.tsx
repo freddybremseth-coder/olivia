@@ -369,7 +369,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
     }
     inquirySendingRef.current = true;
     setInquiryStatus('sending');
+    const utm = new URLSearchParams(window.location.search);
+    const source = (utm.get('utm_source') || '').trim().toLowerCase();
+    const contentId = (utm.get('utm_content') || '').trim();
+    const trackable = (source === 'instagram' || source === 'facebook')
+      && /^[a-zA-Z0-9_:.-]{1,240}$/.test(contentId);
     const response = await sendPublicInquiry({
+      ...(trackable ? { utmSource: source as 'facebook' | 'instagram', utmContent: contentId } : {}),
       kind: inquiryKind,
       giftPreference: inquiryKind === 'gift' ? giftPreference : undefined,
       product: tastingRequest.product,
