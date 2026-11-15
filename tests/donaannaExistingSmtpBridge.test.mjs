@@ -19,10 +19,12 @@ test('existing SMTP bridge is server-only and strictly destination constrained',
   assert.match(server, /origin_not_allowed/);
 });
 
-test('shared SMTP frontend is prepared without Cloudflare script or token requirement', () => {
+test('shared SMTP frontend requires verified Turnstile and remains explicitly gated', () => {
   assert.match(client, /usesExistingEmailTransport = import\.meta\.env\.VITE_DONAANNA_INQUIRY_TRANSPORT === 'realtyflow'/);
-  assert.match(client, /if \(!directInquiryEnabled \|\| usesExistingEmailTransport\) return/);
-  assert.match(client, /if \(!usesExistingEmailTransport && !turnstileToken\)/);
-  assert.match(client, /directInquiryEnabled && !usesExistingEmailTransport && <div id="donaanna-inquiry-turnstile"/);
+  assert.match(client, /if \(!directInquiryEnabled\) return/);
+  assert.match(client, /if \(!turnstileToken\)/);
+  assert.match(client, /directInquiryEnabled && <div id="donaanna-inquiry-turnstile"/);
   assert.match(client, /VITE_DONAANNA_DIRECT_INQUIRY === 'true'/);
+  assert.match(server, /Boolean\(bridgeSecret && secret\)/);
+  assert.match(server, /if \(!verified\) return respond\(res, 403/);
 });
