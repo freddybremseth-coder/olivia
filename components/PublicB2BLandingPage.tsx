@@ -234,10 +234,12 @@ const videoStories: Array<{ title: string; eyebrow: string; src: string; poster:
 
 const formatNumber = (value: number) => new Intl.NumberFormat('no-NO').format(value);
 
-const usesExistingEmailTransport = import.meta.env.VITE_DONAANNA_INQUIRY_TRANSPORT === 'realtyflow';
+// Both supported email transports now require a visible Cloudflare Turnstile
+// challenge and server verification. A transport choice must never bypass
+// the public site-key prerequisite for enabling the direct form.
 const directInquiryEnabled =
   import.meta.env.VITE_DONAANNA_DIRECT_INQUIRY === 'true' &&
-  (usesExistingEmailTransport || Boolean(import.meta.env.VITE_DONAANNA_TURNSTILE_SITE_KEY));
+  Boolean(import.meta.env.VITE_DONAANNA_TURNSTILE_SITE_KEY);
 
 type TurnstileApi = {
   render: (element: HTMLElement, options: {
