@@ -224,7 +224,7 @@ export default async function handler(
     '<meta name="twitter:description" content="' + escapeHtml(metaDescription) + '">' +
     (image ? '<meta name="twitter:image" content="' + escapeHtml(image) + '">' : '') +
     '<script type="application/ld+json">' + JSON.stringify(schema).replace(/</g, '\\u003c') + '</script>' +
-    '<style>' + css + sharedNavCss + '</style></head><body>' +
+    '<link rel="stylesheet" href="/donaanna-footer.css"><style>' + css + sharedNavCss + '</style></head><body>' +
     '<header class="topbar"><a class="brand" href="/" aria-label="Doña Anna – forsiden">DOÑA ANNA</a><nav class="topnav" aria-label="Hovedmeny"><a href="/#estate">Gården</a><a href="/#oljesmaking">Oljesmaking</a><a href="/produkter">Produkter</a><a href="/om-dona-anna">Historien</a><a href="/kunnskap-og-boker">Kunnskap</a><a href="/magasin">Magasin</a></nav><details class="mobile-nav"><summary>☰ Meny</summary><nav class="mobile-nav-links" aria-label="Mobilmeny"><a href="/#estate">Gården</a><a href="/#oljesmaking">Oljesmaking</a><a href="/produkter">Produkter</a><a href="/om-dona-anna">Historien</a><a href="/kunnskap-og-boker">Kunnskap</a><a href="/magasin">Magasin</a></nav></details></header>' +
     '<main><p class="crumbs"><a href="/">Doña Anna</a> · <a href="/' + destination + '">' + escapeHtml(destination) + '</a></p><article><h1>' + escapeHtml(title) + '</h1><p class="summary">' + escapeHtml(summary) + '</p>' +
     '<p class="byline">Doña Anna redaksjon · <a href="/om-dona-anna">Anna og Freddy Bremseth</a>' +
@@ -234,11 +234,29 @@ export default async function handler(
     '<aside class="author-card"><strong>Om Doña Anna</strong><p>Anna og Freddy Bremseth driver Doña Anna sammen i Biar, Alicante. <a href="/om-dona-anna">Les om gården, prosjektet og menneskene bak</a>.</p></aside>' +
     '<section class="next"><h2>Hva vil du gjøre videre?</h2><p>Gå fra artikkelen til produkt, opprinnelse eller en konkret forespørsel. Doña Anna viser bare tilgjengelighet, pris og batchdata som faktisk er publisert.</p><div class="next-links"><a href="/#portfolio">Se produktene</a><a href="/olivenolje-fra-biar">Olivenolje fra Biar</a><a href="/tidlig-hostet-olivenolje">Tidlig høstet olivenolje</a><a href="/olivenolje-for-restauranter">For restauranter</a><a href="/#tasting">Be om smaksprøve</a></div></section>' +
     '</article><p><a href="/' + destination + '">← Tilbake</a></p></main>' +
-    '<footer class="network"><strong>Relatert</strong>' +
-    '<a href="/om-dona-anna">Om Doña Anna</a>' +
-    '<a href="https://www.freddybremseth.com/">FreddyBremseth.com</a>' +
-    '<a href="https://www.pinosoecolife.com/">Pinoso Eco Life</a>' +
-    '<a href="/personvern">Personvern</a></footer><script src="/donaanna-analytics.js" defer></script></body></html>';
+    '<footer class="da-footer" aria-label="Doña Anna – kontakt og lenker">
+<div class="da-footer-inner">
+<div class="da-footer-grid">
+<div>
+<div class="da-footer-brand"><img class="da-footer-mark" src="/labels/dona-anna-figure.svg" alt="" loading="lazy"><div><span class="da-footer-wordmark">DOÑA ANNA</span><span class="da-footer-kicker">Fra olivenlunden i Biar · Alicante</span></div></div>
+<p class="da-footer-story">Oliven, jord og ekte mennesker. Doña Anna vokser frem på gården vår i Biar. Bli bedre kjent med oljene, oppdag historien og besøk oss for en personlig smaksopplevelse.</p>
+<a class="da-footer-feature" href="/#oljesmaking">Opplev oljesmaking på gården →</a>
+<div class="da-footer-social"><span class="da-footer-social-label">Følg oss</span><a class="da-footer-social-link" href="https://www.facebook.com/groups/1837377830741494" target="_blank" rel="noopener noreferrer" aria-label="Doña Anna olivenfellesskap på Facebook">
+<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.98H7.9V12h2.54V9.8c0-2.5 1.49-3.88 3.77-3.88 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.9h-2.34v6.98A10 10 0 0 0 22 12Z"/></svg>Facebook · olivenfellesskapet</a></div>
+</div>
+<div><h2 class="da-footer-heading">Opplev og utforsk</h2><ul class="da-footer-links">
+<li><a href="/#oljesmaking">Oljesmaking og gårdsbesøk</a></li><li><a href="/#estate">Vår olivengård i Biar</a></li><li><a href="/produkter">Oljer og produkter</a></li><li><a href="/kunnskap-og-boker">Kunnskap og bøker</a></li><li><a href="/laer-a-smake-olivenolje">Lær å smake olivenolje</a></li><li><a href="/magasin">Magasin fra gården</a></li></ul></div>
+<div><h2 class="da-footer-heading">For restauranter og faghandel</h2><ul class="da-footer-links"><li><a href="/#b2b">Samarbeid og B2B</a></li><li><a href="/olivenolje-for-restauranter">Olivenolje til restauranter</a></li><li><a href="/#tasting">Be om smaksprøve</a></li><li><a href="mailto:info@donaanna.com?subject=B2B%20Do%C3%B1a%20Anna">Kontakt bedriftsavdelingen</a></li></ul></div>
+<div><h2 class="da-footer-heading">Kontakt og besøk</h2><div class="da-footer-contact">
+<div class="da-footer-contact-item"><span class="da-footer-contact-symbol" aria-hidden="true">✉</span><a href="mailto:info@donaanna.com">info@donaanna.com</a></div>
+<div class="da-footer-contact-item"><span class="da-footer-contact-symbol" aria-hidden="true">⌖</span><div>Olivenlunden vår<br>Biar, Alicante, Spania<span class="da-footer-mapnote">Privat gård · besøk etter avtale</span></div></div>
+<div class="da-footer-contact-item"><span class="da-footer-contact-symbol" aria-hidden="true">↗</span><div><a href="https://www.google.com/maps/search/?api=1&amp;query=Biar%2C%20Alicante%2C%20Spain" target="_blank" rel="noopener noreferrer">Se Biar på Google Maps</a><span class="da-footer-mapnote">Kartet viser området, ikke nøyaktig gårdsadresse</span></div></div>
+<div class="da-footer-contact-item"><span class="da-footer-contact-symbol" aria-hidden="true">☎</span><span>Telefon oppgis ved avtale</span></div>
+</div></div>
+</div><div class="da-footer-rule"></div>
+<div class="da-footer-bottom"><span>© 2026 Doña Anna · Anna &amp; Freddy · Biar, Alicante</span>
+<nav class="da-footer-bottom-links" aria-label="Bunntekst og juridisk"><a href="/om-dona-anna">Historien vår</a><a href="/personvern">Personvern</a><a href="https://www.freddybremseth.com/" target="_blank" rel="noopener noreferrer">FreddyBremseth.com</a><a href="https://www.pinosoecolife.com/" target="_blank" rel="noopener noreferrer">Pinoso Eco Life</a></nav></div>
+</div></footer><script src="/donaanna-analytics.js" defer></script></body></html>';
 
   res.writeHead(200, {
     'Content-Type': 'text/html; charset=utf-8',
