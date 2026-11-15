@@ -59,7 +59,7 @@ export default async function handler(req: Request, res: ServerResponse) {
   const bridgeReady = usesRealtyflow &&
     process.env.DONAANNA_REALTYFLOW_BRIDGE_ENABLED === 'true' &&
     process.env.DONAANNA_INQUIRY_ABUSE_CONTROLS_READY === 'true' &&
-    Boolean(bridgeSecret);
+    Boolean(bridgeSecret && secret);
   const resendReady = !usesRealtyflow && Boolean(apiKey && from && secret);
   if (process.env.DONAANNA_INQUIRY_ENABLED !== 'true' || (!bridgeReady && !resendReady)) {
     return respond(res, 503, { error: 'not_configured' });
@@ -109,31 +109,29 @@ export default async function handler(req: Request, res: ServerResponse) {
       (kind !== 'gift' && giftPreference !== '') ||
       !['private', 'business'].includes(audience) || !name || !email ||
       (audience === 'business' && !company) ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || (!usesRealtyflow && !token)) {
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !token) {
     return respond(res, 400, { error: 'invalid_fields' });
   }
 
-  // The legacy Resend transport still requires verified Turnstile tokens.
-  // RealtyFlow requires separate, verified firewall/rate limits before launch;
-  // the environment interlock above deliberately fails closed until then.
-  if (!usesRealtyflow) {
-    let verified = false;
-    try {
-      const verification = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ secret: secret!, response: token }),
-        signal: AbortSignal.timeout(8_000),
-      });
-      if (verification.ok) {
-        const result = await verification.json() as { success?: boolean; hostname?: string };
-        verified = result.success === true && allowedHosts.has(result.hostname || '');
-      }
-    } catch {
-      // Fail closed: delivery must not occur if bot verification fails.
+  // Both transports must verify a single-use Turnstile token on the server.
+  // The RealtyFlow bridge also requires its existing edge/firewall, atomic rate
+  // limits and explicit activation gates; Turnstile does not replace them.
+  let verified = false;
+  try {
+    const verification = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ secret: secret!, response: token }),
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (verification.ok) {
+      const result = await verification.json() as { success?: boolean; hostname?: string };
+      verified = result.success === true && allowedHosts.has(result.hostname || '');
     }
-    if (!verified) return respond(res, 403, { error: 'verification_failed' });
+  } catch {
+    // Fail closed: delivery must not occur if bot verification fails.
   }
+  if (!verified) return respond(res, 403, { error: 'verification_failed' });
 
   const subject = `Doña Anna – ${kind === 'tasting' ? 'Smaksprøve' : kind === 'gift' ? 'Gave' : 'Firmagave'} (${audience === 'business' ? 'bedrift' : 'privat'})`;
   const body = [
