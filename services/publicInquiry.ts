@@ -14,6 +14,9 @@ export type PublicInquiryPayload = {
   area?: string;
   message?: string;
   turnstileToken: string;
+  /** Optional organic Meta attribution, taken only from landing UTM parameters. */
+  utmSource?: 'facebook' | 'instagram';
+  utmContent?: string;
 };
 
 export type PublicInquiryResult = { accepted: true } | { accepted: false; error: string };
