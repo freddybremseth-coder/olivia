@@ -5,7 +5,9 @@ import { readFileSync } from 'node:fs';
 const analytics = readFileSync('public/donaanna-analytics.js', 'utf8');
 
 test('Doña Anna tasting intent is a coarse next_step, never a fake delivered inquiry', () => {
-  assert.match(analytics, /eventType: "next_step", target: "tasting_form_attempt"/);
+  assert.match(analytics, /eventType: "next_step"/);
+  assert.match(analytics, /target: productSlug \? "tasting_form_attempt_" \+ productSlug : "tasting_form_attempt"/);
+  assert.match(analytics, /allowedProducts = \["verde-vivo", "verde-alto", "raiz-antigua", "cocina-viva", "mesa-gordal-noble"\]/);
   assert.doesNotMatch(analytics, /tasting_request_submitted/);
   assert.doesNotMatch(analytics, /tasting_request_delivered/);
   assert.doesNotMatch(analytics, /lead_created/);
