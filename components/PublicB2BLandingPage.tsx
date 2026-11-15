@@ -24,6 +24,7 @@ import { DONA_ANNA_PRODUCTS, donaAnnaProductByName } from '../content/donaAnnaPr
 import { estatePhotos, estatePhotosPublished } from '../data/estatePhotos';
 import { sendPublicInquiry } from '../services/publicInquiry';
 
+const DONA_ANNA_FARM_TASTING_URL = 'https://www.costablancatours.pro/#tour/dona-anna';
 const DONA_ANNA_FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/1837377830741494";
 
 interface LandingPageProps {
@@ -400,6 +401,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
 
   const navLinks = [
     ['Gården', '#estate'],
+    ['Oljesmaking', '#oljesmaking'],
     ['Produkter', '#portfolio'],
     ['Historien', '#story'],
     ['Gaver', '#gifts'],
@@ -583,6 +585,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   <a href="#tasting" onClick={() => chooseInquiry('tasting')} className="inline-flex h-12 items-center justify-center gap-2 bg-[#d4af37] px-6 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:bg-white">
                     {copy.cta} <ArrowRight size={17} />
                   </a>
+                  <a href="#oljesmaking" className="inline-flex h-12 items-center justify-center gap-2 border border-white/18 px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-white/8">
+                    Smak olivenolje på gården <ArrowRight size={17} />
+                  </a>
                   <a href="#traceability" className="inline-flex h-12 items-center justify-center gap-2 border border-white/18 px-6 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-white/8">
                     Se sporbarhet
                   </a>
@@ -597,6 +602,31 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   </article>
                 ))}
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="oljesmaking" aria-labelledby="farm-tasting-heading" className="scroll-mt-20 border-y border-[#d4af37]/20 bg-[#15140f] px-5 py-16 md:px-8 md:py-24">
+          <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="overflow-hidden border border-[#d4af37]/20">
+              <img src={estatePhotosPublished ? estatePhotos.grove.src : biarGrovePhoto}
+                alt={estatePhotosPublished ? estatePhotos.grove.alt : "Olivenlund i Biar, Alicante"}
+                loading="lazy" decoding="async" className="h-72 w-full object-cover md:h-[26rem]" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#d4af37]">Besøk Doña Anna · Biar, Alicante</p>
+              <h2 id="farm-tasting-heading" className="mt-4 font-serif text-4xl leading-tight md:text-5xl">Kom til gården og lær å smake olivenolje.</h2>
+              <p className="mt-6 text-base leading-8 text-white/75">
+                Vi inviterer til private besøk i olivenlunden vår i Biar. Bli kjent med trærne, sortene og arbeidet bak Doña Anna, og lær hvordan du opplever duft, smak og kvalitet i extra virgin olivenolje.
+              </p>
+              <p className="mt-4 text-base leading-8 text-white/65">
+                Besøket kan kombineres med en hyggelig lunsj i Biar eller Villena. Smaking, dato, transport og eventuelt måltid avtales individuelt. Grupper på inntil fire gjester.
+              </p>
+              <a href={DONA_ANNA_FARM_TASTING_URL} target="_blank" rel="noopener noreferrer"
+                className="mt-8 inline-flex min-h-12 items-center justify-center gap-3 bg-[#d4af37] px-6 py-3 text-xs font-bold uppercase tracking-[0.16em] text-black transition hover:bg-white">
+                Se oljesmaking på gården og forespør dato <ArrowRight size={18} />
+              </a>
+              <p className="mt-3 text-xs text-white/45">Åpner Doña Anna-opplevelsen hos Costa Blanca Tours. Besøk bekreftes etter forespørsel.</p>
             </div>
           </div>
         </section>
