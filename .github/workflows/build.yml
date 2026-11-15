@@ -60,6 +60,8 @@ jobs:
         run: node --test tests/donaannaTasteJournal.test.mjs
       - name: Validate public measurement script
         run: node --check public/donaanna-analytics.js
+      - name: Prevent false Doña Anna form-delivery analytics
+        run: node --test tests/donaannaFormIntentTelemetry.test.mjs
       - name: Test public/app menu isolation
         run: node --test tests/publicMenuIsolation.test.mjs
       - name: Compile public SEO handlers
