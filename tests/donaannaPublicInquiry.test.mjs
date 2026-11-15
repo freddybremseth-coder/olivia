@@ -134,7 +134,21 @@ test('existing RealtyFlow SMTP path remains off until the anti-abuse and transpo
   assert.equal(sent, 0);
 });
 
-test('RealtyFlow SMTP relay sends exclusively to authenticated existing endpoint when deliberately enabled', { concurrency: false }, async () => {
+test('RealtyFlow bridge refuses missing or invalid Turnstile before sending customer mail', { concurrency: false }, async () => {
+  configure(true);
+  process.env.DONAANNA_INQUIRY_TRANSPORT = 'realtyflow';
+  process.env.DONAANNA_REALTYFLOW_BRIDGE_SECRET = 'test-private-bridge-key';
+  process.env.DONAANNA_REALTYFLOW_BRIDGE_ENABLED = 'true';
+  process.env.DONAANNA_INQUIRY_ABUSE_CONTROLS_READY = 'true';
+  let count = 0;
+  globalThis.fetch = async () => { count++; return { ok: true, json: async () => ({ success: false, hostname: 'www.donaanna.com' }) }; };
+  assert.equal((await call({ body: { ...valid, turnstileToken: '' } })).status, 400);
+  assert.equal(count, 0);
+  assert.equal((await call({ body: valid })).status, 403);
+  assert.equal(count, 1);
+});
+
+test('RealtyFlow SMTP relay requires verified Turnstile and authenticated destination', { concurrency: false }, async () => {
   configure(true);
   process.env.DONAANNA_INQUIRY_TRANSPORT = 'realtyflow';
   process.env.DONAANNA_REALTYFLOW_BRIDGE_SECRET = 'test-private-bridge-key';
@@ -143,22 +157,23 @@ test('RealtyFlow SMTP relay sends exclusively to authenticated existing endpoint
   const calls = [];
   globalThis.fetch = async (url, options) => {
     calls.push({ url, options });
+    if (url.includes('turnstile')) return { ok: true, json: async () => ({ success: true, hostname: 'www.donaanna.com' }) };
     return { ok: true, json: async () => ({ accepted: true }) };
   };
-  const result = await call({ body: { ...valid, turnstileToken: '' } });
+  const result = await call({ body: valid });
   assert.equal(result.status, 200);
   assert.deepEqual(result.payload, { accepted: true });
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, 'https://realtyflow.chatgenius.pro/api/integrations/donaanna/public-inquiry');
-  assert.equal(calls[0].options.headers['x-donaanna-inquiry-secret'], 'test-private-bridge-key');
-  const envelope = JSON.parse(calls[0].options.body);
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].url, 'https://challenges.cloudflare.com/turnstile/v0/siteverify');
+  assert.equal(calls[1].url, 'https://realtyflow.chatgenius.pro/api/integrations/donaanna/public-inquiry');
+  assert.equal(calls[1].options.headers['x-donaanna-inquiry-secret'], 'test-private-bridge-key');
+  const envelope = JSON.parse(calls[1].options.body);
   assert.equal(envelope.email, valid.email);
   assert.match(envelope.rateIdentityIp, /^[a-f0-9]{64}$/);
   assert.match(envelope.rateIdentityEmail, /^[a-f0-9]{64}$/);
   assert.notEqual(envelope.rateIdentityIp, envelope.rateIdentityEmail);
-  assert.equal(calls[0].options.body.includes('test-private-bridge-key'), false);
+  assert.equal(calls[1].options.body.includes('test-private-bridge-key'), false);
 });
-
 
 test('shared SMTP rejects missing unmetered client IP before forwarding', { concurrency: false }, async () => {
   configure(true);
@@ -166,13 +181,17 @@ test('shared SMTP rejects missing unmetered client IP before forwarding', { conc
   process.env.DONAANNA_REALTYFLOW_BRIDGE_SECRET = 'test-private-bridge-key';
   process.env.DONAANNA_REALTYFLOW_BRIDGE_ENABLED = 'true';
   process.env.DONAANNA_INQUIRY_ABUSE_CONTROLS_READY = 'true';
-  let called = 0;
-  globalThis.fetch = async () => { called++; throw new Error('Unexpected forward'); };
-  const req = { method: 'POST', headers: { origin: 'https://www.donaanna.com', 'content-type': 'application/json' }, body: { ...valid, turnstileToken: '' } };
+  const calls = [];
+  globalThis.fetch = async (url) => {
+    calls.push(url);
+    if (url.includes('turnstile')) return { ok: true, json: async () => ({ success: true, hostname: 'www.donaanna.com' }) };
+    throw new Error('Unexpected forward');
+  };
+  const req = { method: 'POST', headers: { origin: 'https://www.donaanna.com', 'content-type': 'application/json' }, body: valid };
   let status = 0;
   await handler(req, { writeHead: (s) => { status = s; }, end: () => {} });
   assert.equal(status, 503);
-  assert.equal(called, 0);
+  assert.equal(calls.length, 1);
 });
 
 test('RealtyFlow SMTP failure or unconfirmed response is never an accepted inquiry', { concurrency: false }, async () => {
@@ -181,8 +200,10 @@ test('RealtyFlow SMTP failure or unconfirmed response is never an accepted inqui
   process.env.DONAANNA_REALTYFLOW_BRIDGE_SECRET = 'test-private-bridge-key';
   process.env.DONAANNA_REALTYFLOW_BRIDGE_ENABLED = 'true';
   process.env.DONAANNA_INQUIRY_ABUSE_CONTROLS_READY = 'true';
-  globalThis.fetch = async () => ({ ok: true, json: async () => ({ accepted: false }) });
-  assert.equal((await call({ body: { ...valid, turnstileToken: '' } })).status, 502);
+  globalThis.fetch = async (url) =>
+    url.includes('turnstile') ? { ok: true, json: async () => ({ success: true, hostname: 'www.donaanna.com' }) }
+    : { ok: true, json: async () => ({ accepted: false }) };
+  assert.equal((await call({ body: valid })).status, 502);
 });
 
 test('provider failure never returns acceptance', { concurrency: false }, async () => {
