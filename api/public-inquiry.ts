@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { createHmac } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import { isIP } from 'node:net';
 
 /**
@@ -96,6 +96,12 @@ export default async function handler(req: Request, res: ServerResponse) {
   const area = text(data.area, 150);
   const message = text(data.message, 1_500);
   const token = text(data.turnstileToken, 2_048);
+  const utmContent = text(data.utmContent, 240);
+  const utmSource = text(data.utmSource, 20).toLowerCase();
+  // Origin parameters are never a verified lead. RealtyFlow validates them
+  // against an actual published Doña Anna post before recording form_submit.
+  const validAttribution = /^[a-zA-Z0-9_:.-]{1,240}$/.test(utmContent)
+    && (utmSource === 'facebook' || utmSource === 'instagram');
 
   if (!KINDS.has(kind) || (kind === 'tasting' && !PRODUCTS.has(product)) ||
       (kind === 'corporate-gift' && audience !== 'business') ||
@@ -165,6 +171,7 @@ export default async function handler(req: Request, res: ServerResponse) {
         body: JSON.stringify({
           kind, giftPreference, product, audience, name, email, company, role, area, message,
           rateIdentityIp, rateIdentityEmail,
+          ...(validAttribution ? { utmContent, utmSource, trackingEventId: randomUUID() } : {}),
         }),
         signal: AbortSignal.timeout(10_000),
       });
