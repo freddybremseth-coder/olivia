@@ -118,17 +118,10 @@
     var form = event.target;
     if (!form || !form.matches || !form.matches('form[data-testid="tasting-request-form"]')) return;
 
-    var productSlug = "";
-    try {
-      var rawProduct = new URLSearchParams(window.location.search).get("product") || "";
-      var allowedProducts = ["verde-vivo", "verde-alto", "raiz-antigua", "cocina-viva", "mesa-gordal-noble"];
-      if (allowedProducts.indexOf(rawProduct) !== -1) productSlug = rawProduct;
-    } catch (_) {}
-
-    sendConversion({
-      eventType: "contact",
-      target: productSlug ? "tasting_request_submitted_" + productSlug : "tasting_request_submitted"
-    });
+    // A submit event is only an ATTEMPT. The live site defaults to opening
+    // the visitor's email client; even with a direct form, delivery may fail.
+    // Do not emit a "submitted", "delivered", or "lead" conversion here.
+    sendConversion({ eventType: "next_step", target: "tasting_form_attempt" });
   });
 
   document.addEventListener("click", function (event) {
