@@ -20,7 +20,8 @@ test('existing SMTP bridge is server-only and strictly destination constrained',
 });
 
 test('shared SMTP frontend requires verified Turnstile and remains explicitly gated', () => {
-  assert.match(client, /usesExistingEmailTransport = import\.meta\.env\.VITE_DONAANNA_INQUIRY_TRANSPORT === 'realtyflow'/);
+  assert.doesNotMatch(client, /usesExistingEmailTransport/);
+  assert.match(client, /Boolean\(import\.meta\.env\.VITE_DONAANNA_TURNSTILE_SITE_KEY\)/);
   assert.match(client, /if \(!directInquiryEnabled\) return/);
   assert.match(client, /if \(!turnstileToken\)/);
   assert.match(client, /directInquiryEnabled && <div id="donaanna-inquiry-turnstile"/);
