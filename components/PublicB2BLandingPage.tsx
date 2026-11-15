@@ -1211,31 +1211,62 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
         </section>
       </main>
 
-      <footer className="border-t border-white/10 bg-[#0d0d0d] px-5 py-8 md:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/labels/dona-anna-figure.svg" alt="" className="h-8 w-8 object-contain invert" />
-            <p className="font-serif text-lg tracking-[0.18em]">DOÑA ANNA</p>
-          </div>
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-4 text-xs uppercase tracking-[0.18em] text-white/54">
-              <a href="/guider">Guider</a>
-              <a href="/magasin">Magasin</a>
-              <a href="/artikler">Artikler</a>
-              <a href="/oppskrifter">Oppskrifter</a>
-              <button data-testid="b2b-portal-footer" onClick={onLogin}>B2B Portal</button>
-              <button data-testid="olivia-os-footer" onClick={onAdminLogin}>Olivia OS</button>
-              <a href="mailto:info@donaanna.com">info@donaanna.com</a>
-              <a href="/om-dona-anna">Anna & Freddy · om Doña Anna</a>
-              <a href={DONA_ANNA_FACEBOOK_GROUP_URL} target="_blank" rel="noopener noreferrer">Facebook-gruppen · olivenfellesskapet</a>
-              <a href="/personvern">Personvern</a>
-              <span>Fra olivengården vår i Biar, Alicante</span>
+      <footer className="da-footer" aria-label="Doña Anna – kontakt og lenker">
+        <div className="da-footer-inner">
+          <div className="da-footer-grid">
+            <div>
+              <div className="da-footer-brand">
+                <img className="da-footer-mark" src="/labels/dona-anna-figure.svg" alt="" loading="lazy" />
+                <div><span className="da-footer-wordmark">DOÑA ANNA</span><span className="da-footer-kicker">Fra olivenlunden i Biar · Alicante</span></div>
+              </div>
+              <p className="da-footer-story">Oliven, jord og ekte mennesker. Doña Anna vokser frem på gården vår i Biar. Bli bedre kjent med oljene, oppdag historien og besøk oss for en personlig smaksopplevelse.</p>
+              <a className="da-footer-feature" href="/#oljesmaking">Opplev oljesmaking på gården <ArrowRight size={16}/></a>
+              <div className="da-footer-social" aria-label="Følg oss">
+                <span className="da-footer-social-label">Følg oss</span>
+                <a className="da-footer-social-link" href={DONA_ANNA_FACEBOOK_GROUP_URL} target="_blank" rel="noopener noreferrer" aria-label="Doña Anna olivenfellesskap på Facebook">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.98H7.9V12h2.54V9.8c0-2.5 1.49-3.88 3.77-3.88 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.9h-2.34v6.98A10 10 0 0 0 22 12Z"/></svg>
+                  Facebook · olivenfellesskapet
+                </a>
+              </div>
             </div>
-            <nav aria-label="Relaterte prosjekter" className="flex flex-wrap gap-x-4 gap-y-2 text-[10px] uppercase tracking-[0.16em] text-white/38">
-              <span className="text-[#d4af37]">Relatert</span>
-              <a href="https://www.freddybremseth.com/">FreddyBremseth.com</a>
-              <a href="https://www.pinosoecolife.com/">Pinoso Eco Life</a>
-              <a href="https://books.freddybremseth.com/">Books</a>
+            <div>
+              <h2 className="da-footer-heading">Opplev og utforsk</h2>
+              <ul className="da-footer-links">
+                <li><a href="/#oljesmaking">Oljesmaking og gårdsbesøk</a></li>
+                <li><a href="/#estate">Vår olivengård i Biar</a></li>
+                <li><a href="/produkter">Oljer og produkter</a></li>
+                <li><a href="/kunnskap-og-boker">Kunnskap og bøker</a></li>
+                <li><a href="/laer-a-smake-olivenolje">Lær å smake olivenolje</a></li>
+                <li><a href="/magasin">Magasin fra gården</a></li>
+              </ul>
+            </div>
+            <div>
+              <h2 className="da-footer-heading">For restauranter og faghandel</h2>
+              <ul className="da-footer-links">
+                <li><a href="/#b2b">Samarbeid og B2B</a></li>
+                <li><a href="/olivenolje-for-restauranter">Olivenolje til restauranter</a></li>
+                <li><a href="/#tasting" onClick={() => chooseInquiry('tasting')}>Be om smaksprøve</a></li>
+                <li><button data-testid="b2b-portal-footer" className="da-footer-admin" type="button" onClick={onLogin}>Logg inn i bedriftsportalen</button></li>
+              </ul>
+            </div>
+            <div>
+              <h2 className="da-footer-heading">Kontakt og besøk</h2>
+              <div className="da-footer-contact">
+                <div className="da-footer-contact-item"><span className="da-footer-contact-symbol" aria-hidden="true">✉</span><a href="mailto:info@donaanna.com">info@donaanna.com</a></div>
+                <div className="da-footer-contact-item"><span className="da-footer-contact-symbol" aria-hidden="true">⌖</span><div>Olivenlunden vår<br/>Biar, Alicante, Spania<span className="da-footer-mapnote">Privat gård · besøk etter avtale</span></div></div>
+                <div className="da-footer-contact-item"><span className="da-footer-contact-symbol" aria-hidden="true">↗</span><div><a href="https://www.google.com/maps/search/?api=1&amp;query=Biar%2C%20Alicante%2C%20Spain" target="_blank" rel="noopener noreferrer">Se Biar på Google Maps</a><span className="da-footer-mapnote">Kartet viser området, ikke nøyaktig gårdsadresse</span></div></div>
+                <div className="da-footer-contact-item"><span className="da-footer-contact-symbol" aria-hidden="true">☎</span><span>Telefon oppgis ved avtale</span></div>
+              </div>
+            </div>
+          </div>
+          <div className="da-footer-rule"/>
+          <div className="da-footer-bottom">
+            <span>© 2026 Doña Anna · Anna &amp; Freddy · Biar, Alicante</span>
+            <nav aria-label="Bunntekst og juridisk" className="da-footer-bottom-links">
+              <a href="/om-dona-anna">Historien vår</a><a href="/personvern">Personvern</a>
+              <a href="https://www.freddybremseth.com/" target="_blank" rel="noopener noreferrer">FreddyBremseth.com</a>
+              <a href="https://www.pinosoecolife.com/" target="_blank" rel="noopener noreferrer">Pinoso Eco Life</a>
+              <button className="da-footer-admin" data-testid="olivia-os-footer" type="button" onClick={onAdminLogin}>Olivia OS</button>
             </nav>
           </div>
         </div>
