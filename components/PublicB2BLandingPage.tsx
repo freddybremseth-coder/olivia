@@ -1227,6 +1227,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                   <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.98H7.9V12h2.54V9.8c0-2.5 1.49-3.88 3.77-3.88 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.9h-2.34v6.98A10 10 0 0 0 22 12Z"/></svg>
                   Facebook · olivenfellesskapet
                 </a>
+                <a className="da-footer-social-link" href="https://www.instagram.com/dona_anna_olives/" target="_blank" rel="noopener noreferrer" aria-label="Doña Anna på Instagram">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+                  Instagram · @dona_anna_olives
+                </a>
               </div>
             </div>
             <div>
