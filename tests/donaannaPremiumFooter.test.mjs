@@ -41,3 +41,10 @@ test('B2B and Olivia login buttons are preserved on React homepage', () => {
   assert.match(home, /onClick=\{onLogin\}/);
   assert.match(home, /onClick=\{onAdminLogin\}/);
 });
+
+test('footer symbol is large, legible and uses brand gold and cream instead of inversion', () => {
+  assert.match(style, /\.da-footer-mark\{[^}]*width:76px;height:102px/);
+  assert.doesNotMatch(style, /\.da-footer-mark\{[^}]*filter:invert\(1\)/);
+  assert.match(style, /\.da-footer-wordmark\{[^}]*font:600 clamp\(26px/);
+  assert.match(style, /@media\(max-width:640px\)\{[^}]*\.da-footer-mark\{width:64px;height:88px\}/);
+});
