@@ -559,6 +559,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onAdminLogin, onRegi
                 </a>
               </div>
             </div>
+            <div className="mt-10 border-t border-black/10 pt-8">
+              <h2 className="font-serif text-2xl text-[#272017] md:text-3xl">Lær mer om olivenolje</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-black/65">Praktiske råd og kunnskap fra olivengården vår i Biar.</p>
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                {[
+                  { href: '/artikler/hvordan-velge-god-olivenolje', title: 'Hvordan velge god olivenolje', description: 'Syv ting du kan se etter når du vurderer kvalitet.' },
+                  { href: '/magasin/tidlig-hostet-olivenolje-biar', title: 'Hva betyr tidlig høsting?', description: 'Om smak, modenhet og oljeutbytte fra Biar.' },
+                  { href: '/magasin/oppbevaring-av-olivenolje', title: 'Oppbevar olivenolje riktig', description: 'Seks enkle råd om lys, varme, luft og holdbarhet.' },
+                ].map(article => (
+                  <a key={article.href} href={article.href} className="group rounded-2xl border border-[#8a6a19]/20 bg-white/75 p-5 transition hover:-translate-y-0.5 hover:border-[#8a6a19]/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a6a19]">
+                    <h3 className="font-serif text-xl text-[#272017]">{article.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-black/65">{article.description}</p>
+                    <span className="mt-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#705515]">Les artikkelen <ArrowRight size={15} aria-hidden="true" /></span>
+                  </a>
+                ))}
+              </div>
+            </div>
             <nav className="mt-8 flex flex-wrap gap-x-6 gap-y-3 border-t border-black/10 pt-6 text-sm" aria-label="Doña Anna guider">
               <a className="font-semibold text-[#705515] underline-offset-4 hover:underline" href="/olivenolje-fra-biar">Olivenolje fra Biar</a>
               <a className="font-semibold text-[#705515] underline-offset-4 hover:underline" href="/tidlig-hostet-olivenolje">Tidlig høstet olivenolje</a>
